@@ -52,7 +52,7 @@ class PostgresLedgerRepository:
             seq = await conn.fetchval(
                 """
                 SELECT append_event(
-                    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb, $11
+                    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12
                 )
                 """,
                 draft.project_id,
@@ -64,6 +64,7 @@ class PostgresLedgerRepository:
                 draft.causation_id,
                 draft.correlation_id,
                 draft.provenance.value,
+                draft.produced_at,
                 json.dumps(redacted_payload),
                 digest,
             )

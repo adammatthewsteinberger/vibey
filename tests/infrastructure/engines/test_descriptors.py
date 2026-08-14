@@ -37,6 +37,7 @@ def test_by_engine_id_matches_all_descriptors() -> None:
 def test_claudeloop_and_agyloop_achieve_full_five_level_range() -> None:
     for effort in ALL_EFFORTS:
         assert CLAUDELOOP.invoke(effort).achieved is effort
+        assert AGYLOOP.invoke(effort).achieved is effort
 
 
 def test_codexloop_saturates_at_high() -> None:
@@ -46,9 +47,9 @@ def test_codexloop_saturates_at_high() -> None:
     assert CODEXLOOP.saturates_at(Effort.HIGH) is False
 
 
-def test_agyloop_saturates_at_high() -> None:
-    assert AGYLOOP.invoke(Effort.MAX).achieved is Effort.HIGH
-    assert AGYLOOP.saturates_at(Effort.MAX) is True
+def test_agyloop_uses_real_five_level_effort_flag() -> None:
+    assert AGYLOOP.invoke(Effort.MAX).argv == ("--preset", "high", "--effort", "max")
+    assert AGYLOOP.saturates_at(Effort.MAX) is False
 
 
 def test_cursorloop_has_no_effort_flag_only_model_ids() -> None:

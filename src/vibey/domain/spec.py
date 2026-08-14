@@ -51,6 +51,11 @@ class DesignSpec:
             violations.append("at least one acceptance criterion is required")
         if not self.walking_skeleton:
             violations.append("a walking skeleton must be identified")
+        for criterion in self.criteria:
+            if not criterion.fit:
+                violations.append(
+                    f"acceptance criterion {criterion.criterion_id!r} is missing a fit criterion"
+                )
         for nfr in self.nfrs:
             if not nfr.scale or not nfr.meter or not nfr.must:
                 violations.append(f"NFR {nfr.nfr_id!r} is missing a scale, meter, or must value")

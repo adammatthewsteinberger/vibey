@@ -34,6 +34,12 @@ def test_is_buildable_flags_missing_walking_skeleton() -> None:
     assert any("walking skeleton" in v for v in violations)
 
 
+def test_is_buildable_flags_criterion_without_fit_criterion() -> None:
+    criterion = AcceptanceCriterion("c1", "given", "when", "then", "")
+    violations = _spec(criteria=(criterion,)).is_buildable()
+    assert any("c1" in v and "fit" in v for v in violations)
+
+
 def test_is_buildable_flags_incomplete_nfr() -> None:
     bad_nfr = NonFunctionalRequirement(
         nfr_id="n1", attribute="latency", scale="", meter="", must="", wish=None, fit_criterion=""

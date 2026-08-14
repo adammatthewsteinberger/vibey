@@ -3,15 +3,11 @@ fifth engine is a new descriptor plus an adapter, with no change to
 domain/rotation.py.
 
 The effort projections for claudeloop, codexloop, and cursorloop are
-transcribed verbatim from rotation-and-engines.md §3, which states they are
-built from reading the runners' sources. agyloop's doc entry ("same shape as
-claudeloop with gemini aliases") conflicts with its own capability-matrix row
-in §1, which lists no top-level `effort` command for agyloop -- only
-`preset`. Since there is no `--effort` flag to combine with `--preset`, this
-descriptor treats agyloop as preset-only and saturating at HIGH, the same
-pattern verified for codexloop, rather than inventing two more preset tiers
-the source table doesn't name. Flag this against the real binary in
-conformance once agyloop is installed anywhere this runs.
+transcribed from rotation-and-engines.md §3. agyloop was originally a
+documented preset-only stand-in because no binary was available. It was
+verified against installed agyloop 0.1.0 on 2026-08-14: `agyloop run --help`
+exposes both `--preset` and the full `low|medium|high|xhigh|max` `--effort`
+flag, so its projection now follows the same five-level shape as claudeloop.
 """
 
 from vibey.domain.effort import Effort
@@ -157,13 +153,19 @@ AGYLOOP = EngineDescriptor(
         }
     ),
     effort_projection={
-        Effort.TRIVIAL: EngineInvocation(("--preset", "low"), achieved=Effort.TRIVIAL),
-        Effort.LOW: EngineInvocation(("--preset", "low"), achieved=Effort.LOW),
-        Effort.STANDARD: EngineInvocation(("--preset", "medium"), achieved=Effort.STANDARD),
-        Effort.HIGH: EngineInvocation(("--preset", "high"), achieved=Effort.HIGH),
-        Effort.MAX: EngineInvocation(
-            ("--preset", "high"), achieved=Effort.HIGH, notes="saturates: no tier above high"
+        Effort.TRIVIAL: EngineInvocation(
+            ("--preset", "low", "--effort", "low"), achieved=Effort.TRIVIAL
         ),
+        Effort.LOW: EngineInvocation(
+            ("--preset", "low", "--effort", "medium"), achieved=Effort.LOW
+        ),
+        Effort.STANDARD: EngineInvocation(
+            ("--preset", "medium", "--effort", "high"), achieved=Effort.STANDARD
+        ),
+        Effort.HIGH: EngineInvocation(
+            ("--preset", "high", "--effort", "high"), achieved=Effort.HIGH
+        ),
+        Effort.MAX: EngineInvocation(("--preset", "high", "--effort", "max"), achieved=Effort.MAX),
     },
     session_verb="sessions",
     isolation_flags={

@@ -1,1 +1,1 @@
-claudeloop run --preset high --effort max --cwd /repo/.vibey/worktrees/c1-item-001 --run-id 00000000-0000-0000-0000-000000000001
+claudeloop run /repo/.vibey/worktrees/c1-item-001/.vibey/plans/00000000-0000-0000-0000-000000000001.md --preset high --effort max --cwd /repo/.vibey/worktrees/c1-item-001

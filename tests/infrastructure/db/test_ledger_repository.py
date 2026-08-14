@@ -42,6 +42,7 @@ async def test_append_assigns_seq_starting_at_one(
 
     assert event.seq == 1
     assert event.project_id == project_id
+    assert event.produced_at == NOW
 
 
 async def test_append_seq_increments_sequentially(

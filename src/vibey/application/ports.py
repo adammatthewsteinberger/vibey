@@ -72,6 +72,8 @@ class HumanGateRepository(Protocol):
         self, gate_id: UUID, *, answer: Mapping[str, object], answered_by: str
     ) -> HumanGateRecord: ...
 
+    async def latest_for_job(self, job_id: UUID) -> HumanGateRecord | None: ...
+
 
 @runtime_checkable
 class JobReadyNotifier(Protocol):

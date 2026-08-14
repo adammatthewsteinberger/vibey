@@ -151,6 +151,10 @@ class FakeHumanGateRepository:
         self.raised = [answered if r.gate_id == gate_id else r for r in self.raised]
         return answered
 
+    async def latest_for_job(self, job_id: UUID) -> HumanGateRecord | None:
+        matching = [record for record in self.raised if record.job_id == job_id]
+        return matching[-1] if matching else None
+
 
 def _with(job: JobRecord, **overrides: object) -> JobRecord:
     from dataclasses import replace

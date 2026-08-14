@@ -31,6 +31,19 @@ class EnqueueRequest:
 
 
 @dataclass(frozen=True, slots=True)
+class ProjectRecord:
+    project_id: UUID
+    name: str
+    repo_path: Path
+    phase: Phase
+    cycle: int
+    max_cycles: int
+    config: Mapping[str, object]
+    created_at: datetime
+    updated_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
 class JobRecord:
     id: UUID
     project_id: UUID

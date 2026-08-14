@@ -60,7 +60,7 @@ class PostgresHumanGateRepository:
     async def answer(
         self, gate_id: UUID, *, answer: Mapping[str, object], answered_by: str
     ) -> HumanGateRecord:
-        async with self._pool.acquire() as conn:
+        async with self._pool.acquire() as conn, conn.transaction():
             row = await conn.fetchrow(
                 """
                 UPDATE human_gate SET
@@ -73,9 +73,31 @@ class PostgresHumanGateRepository:
                 answered_by,
             )
             row = _require(row, context=f"answer: no gate {gate_id}")
+            if row["job_id"] is not None:
+                await conn.execute(
+                    """
+                    UPDATE job SET state = 'ready', updated_at = now()
+                    WHERE id = $1 AND state = 'awaiting_human'
+                    """,
+                    row["job_id"],
+                )
+                await conn.execute(f"NOTIFY vibey_job_ready, '{row['project_id']}'")
             return _row_to_record(row)
 
     async def get(self, gate_id: UUID) -> HumanGateRecord | None:
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow("SELECT * FROM human_gate WHERE gate_id = $1", gate_id)
+            return _row_to_record(row) if row is not None else None
+
+    async def latest_for_job(self, job_id: UUID) -> HumanGateRecord | None:
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """
+                SELECT * FROM human_gate
+                WHERE job_id = $1
+                ORDER BY raised_at DESC, gate_id DESC
+                LIMIT 1
+                """,
+                job_id,
+            )
             return _row_to_record(row) if row is not None else None

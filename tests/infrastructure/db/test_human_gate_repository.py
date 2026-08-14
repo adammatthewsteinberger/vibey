@@ -20,6 +20,9 @@ async def test_raise_and_answer_round_trip(migrated_pool: asyncpg.Pool, project_
     jobs = PostgresJobRepository(migrated_pool)
     gates = PostgresHumanGateRepository(migrated_pool)
     job = await jobs.enqueue(_request(project_id))
+    claimed = await jobs.claim(project_id, owner="w1", lease=LEASE)
+    assert claimed is not None
+    assert await jobs.park(job.id, owner="w1")
 
     raised = await gates.raise_gate(
         project_id,
@@ -40,6 +43,9 @@ async def test_raise_and_answer_round_trip(migrated_pool: asyncpg.Pool, project_
     fetched = await gates.get(raised.gate_id)
     assert fetched is not None
     assert fetched.answer == {"choice": "yes"}
+    requeued = await jobs.get(job.id)
+    assert requeued is not None
+    assert requeued.state is JobState.READY
 
 
 async def test_parked_job_releases_lease_immediately_and_worker_is_free(
