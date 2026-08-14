@@ -1,0 +1,1 @@
+cursorloop run --model grok-4.5 --cwd /repo/.vibey/worktrees/c1-item-001 --run-id 00000000-0000-0000-0000-000000000001

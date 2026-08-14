@@ -5,9 +5,12 @@ be pure -- they are shapes, not behavior."""
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import datetime
+from pathlib import Path
 from uuid import UUID
 
-from vibey.domain.job import JobState
+from vibey.domain.effort import Effort
+from vibey.domain.engine import EngineId, IsolationLevel
+from vibey.domain.job import FailureClass, JobState
 from vibey.domain.phase import Phase
 
 
@@ -74,3 +77,100 @@ class HumanGateRecord:
     timeout_at: datetime | None
     answered_at: datetime | None
     answered_by: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class RunSpec:
+    """What to run: the prompt/task plus the effort and isolation the
+    adapter must translate into the engine's own flags."""
+
+    run_id: UUID
+    worktree_path: Path
+    prompt: str
+    effort: Effort
+    isolation: IsolationLevel
+    session_id: str | None = None  # set to resume a warm session
+
+
+@dataclass(frozen=True, slots=True)
+class RunHandle:
+    run_id: UUID
+    engine_id: EngineId
+    run_dir: Path
+    pid: int | None
+
+
+@dataclass(frozen=True, slots=True)
+class PreflightResult:
+    installed: bool
+    version: str | None
+    auth_ok: bool
+    detail: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class StopSummary:
+    run_id: UUID
+    complete: bool
+    summary: str
+    remaining_work: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class SnapshotRef:
+    path: Path
+    schema_version: int
+    session_id: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class EngineEvent:
+    """One line of a runner's events.jsonl, before translation into a
+    vibey LedgerEvent -- the adapter's own vocabulary, not ours."""
+
+    kind: str
+    at: datetime
+    payload: Mapping[str, object]
+
+
+@dataclass(frozen=True, slots=True)
+class ConformanceCheckResult:
+    name: str
+    ok: bool
+    detail: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class ConformanceReport:
+    engine_id: EngineId
+    checks: tuple[ConformanceCheckResult, ...]
+
+    @property
+    def ok(self) -> bool:
+        return all(c.ok for c in self.checks)
+
+
+@dataclass(frozen=True, slots=True)
+class EngineHealthRecord:
+    project_id: UUID
+    engine_id: EngineId
+    installed: bool
+    version: str | None
+    conformance_ok: bool
+    conformance_at: datetime | None
+    auth_ok_at: datetime | None
+    circuit: str
+    capacity_state: str | None
+    resets_at: datetime | None
+    probe_next_at: datetime | None
+    probe_attempt: int
+    consecutive_fail: int
+    ewma_failure: float
+    cost_usd_cycle: float
+    selected_count: int
+
+
+@dataclass(frozen=True, slots=True)
+class FailureAttribution:
+    failure_class: FailureClass
+    detail: str
