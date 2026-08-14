@@ -188,4 +188,14 @@ def _find_reusable_result(spec: RunSpec) -> ClaudeLoopResult | None:
 
 def _looks_structured(response: str) -> bool:
     stripped = response.lstrip()
-    return stripped.startswith("{") or stripped.startswith("```json")
+    candidate = stripped
+    fence = stripped.find("```json")
+    if fence >= 0:
+        closing_fence = stripped.find("```", fence + 7)
+        if closing_fence < 0:
+            return False
+        candidate = stripped[fence + 7 : closing_fence].strip()
+    try:
+        return isinstance(json.loads(candidate), dict)
+    except json.JSONDecodeError:
+        return False

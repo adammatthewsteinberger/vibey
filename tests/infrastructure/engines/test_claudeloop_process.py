@@ -177,6 +177,24 @@ async def test_identical_prompt_reuses_completed_run_without_another_paid_call(
     assert executor.calls == []
 
 
+async def test_identical_prompt_reuses_fenced_json_after_leading_prose(tmp_path: Path) -> None:
+    previous_plan = tmp_path / ".vibey" / "plans" / "previous.md"
+    previous_plan.parent.mkdir(parents=True)
+    previous_plan.write_text("# Bounded DESIGN research\n")
+    run_dir = tmp_path / ".claudeloop" / "runs" / "20260814T120000Z-abcd1234"
+    run_dir.mkdir(parents=True)
+    (run_dir / "meta.json").write_text(json.dumps({"plan_path": str(previous_plan)}))
+    response = 'Research result:\n```json\n{"recovered":true}\n```'
+    (run_dir / "events.jsonl").write_text(
+        json.dumps({"event_type": "chatter.assistant", "payload": {"text": response}})
+    )
+    executor = FakeExecutor(CommandResult(0, "", "should not run"))
+    process = ClaudeLoopProcess(executor=executor, max_turns=1, max_dollars=0.1)
+
+    assert (await process.run(spec(tmp_path))).response == response
+    assert executor.calls == []
+
+
 async def test_unstructured_incomplete_response_is_not_reused(tmp_path: Path) -> None:
     previous_plan = tmp_path / ".vibey" / "plans" / "previous.md"
     previous_plan.parent.mkdir(parents=True)

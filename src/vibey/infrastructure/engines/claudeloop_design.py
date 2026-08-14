@@ -157,11 +157,12 @@ class ClaudeLoopDesignProvider:
 
 def _object(text: str) -> dict[str, object]:
     stripped = text.strip()
-    if stripped.startswith("```json"):
-        closing_fence = stripped.find("```", 7)
+    fence = stripped.find("```json")
+    if fence >= 0:
+        closing_fence = stripped.find("```", fence + 7)
         if closing_fence < 0:
             raise ValueError("provider JSON fence is not closed")
-        stripped = stripped[7:closing_fence].strip()
+        stripped = stripped[fence + 7 : closing_fence].strip()
     try:
         value = json.loads(stripped)
     except json.JSONDecodeError as exc:

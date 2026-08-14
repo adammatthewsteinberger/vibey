@@ -93,3 +93,20 @@ async def test_question_provider_rejects_malformed_or_empty_batches(
     provider = ClaudeLoopDesignProvider(process=FakeProcess([response]), worktree_path=tmp_path)
     with pytest.raises(ValueError):
         await provider.batch(DesignStage.CONTEXT_FREE, ())
+
+
+async def test_provider_extracts_fenced_json_after_leading_prose(tmp_path: Path) -> None:
+    provider = ClaudeLoopDesignProvider(
+        process=FakeProcess(
+            [
+                "Based on web research:\n```json\n"
+                '{"title":"Prior art","source":"https://example.test","content":"Evidence"}'
+                "\n```\nCLAUDELOOP_TASK_FULLY_COMPLETE"
+            ]
+        ),
+        worktree_path=tmp_path,
+    )
+
+    result = await provider.research("prior-art")
+
+    assert result.title == "Prior art"
