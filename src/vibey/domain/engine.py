@@ -1,0 +1,78 @@
+from collections.abc import Mapping
+from dataclasses import dataclass
+from enum import StrEnum
+
+from vibey.domain.effort import Effort
+
+
+class EngineId(StrEnum):
+    CLAUDELOOP = "claudeloop"
+    CODEXLOOP = "codexloop"
+    CURSORLOOP = "cursorloop"
+    AGYLOOP = "agyloop"
+
+
+class Capability(StrEnum):
+    SAVEPOINTS = "savepoints"
+    UNWIND = "unwind"
+    STRUCTURED_VERDICT = "structured_verdict"
+    MID_RUN_PROMPT = "mid_run_prompt"
+    MID_RUN_MODEL = "mid_run_model"
+    MID_RUN_EFFORT = "mid_run_effort"
+    ATTACHMENTS = "attachments"
+    SLASH_COMMANDS = "slash_commands"
+    WEB_SEARCH = "web_search"
+    SNAPSHOT = "snapshot"
+    SANDBOX = "sandbox"
+
+
+class IsolationLevel(StrEnum):
+    WORKTREE = "worktree"
+    CONTAINER = "container"
+    VM = "vm"
+
+
+@dataclass(frozen=True, slots=True)
+class EngineInvocation:
+    argv: tuple[str, ...]
+    achieved: Effort
+    notes: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class EngineDescriptor:
+    engine_id: EngineId
+    binary: str
+    min_version: str
+    state_dir: str
+    done_marker: str
+    auth_env: tuple[str, ...]
+    capabilities: frozenset[Capability]
+    effort_projection: Mapping[Effort, EngineInvocation]
+    session_verb: str
+    isolation_flags: Mapping[IsolationLevel, tuple[str, ...]]
+    cost_per_mtok_in: float
+    cost_per_mtok_out: float
+    context_window: int
+    base_weight: int = 1
+
+    def invoke(self, effort: Effort) -> EngineInvocation:
+        try:
+            return self.effort_projection[effort]
+        except KeyError:
+            # Fall back to the highest projection at or below the requested
+            # effort -- the descriptor's own saturation point.
+            candidates = sorted((e for e in self.effort_projection if e <= effort), reverse=True)
+            if not candidates:
+                raise
+            return self.effort_projection[candidates[0]]
+
+    def saturates_at(self, effort: Effort) -> bool:
+        return self.invoke(effort).achieved < effort
+
+
+@dataclass(frozen=True, slots=True)
+class JobRequirement:
+    effort: Effort
+    capabilities: frozenset[Capability] = frozenset()
+    excluded: frozenset[EngineId] = frozenset()  # the "must differ" constraint
