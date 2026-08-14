@@ -8,6 +8,22 @@ on:
 jobs:
   gates:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: vibey
+          POSTGRES_PASSWORD: vibey
+          POSTGRES_DB: vibey_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      VIBEY_TEST_DATABASE_URL: postgresql://vibey:vibey@localhost:5432/vibey_test
     steps:
       - uses: actions/checkout@v4
 
