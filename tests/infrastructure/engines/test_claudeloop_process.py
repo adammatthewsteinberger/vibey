@@ -133,6 +133,28 @@ async def test_result_message_is_a_fallback_when_chatter_is_absent(tmp_path: Pat
     assert (await process.run(spec(tmp_path))).response == "fallback"
 
 
+async def test_valid_structured_chatter_survives_turn_exhaustion_exit(tmp_path: Path) -> None:
+    run_id = "20260814T120000Z-abcd1234"
+    events = tmp_path / ".claudeloop" / "runs" / run_id / "events.jsonl"
+    events.parent.mkdir(parents=True)
+    response = '```json\n{"questions": []}\n```'
+    events.write_text(
+        json.dumps({"event_type": "chatter.assistant", "payload": {"text": response}})
+    )
+    process = ClaudeLoopProcess(
+        executor=FakeExecutor(
+            CommandResult(1, "", f"Run id: {run_id}\nReached maximum number of turns (1)")
+        ),
+        max_turns=1,
+        max_dollars=0.25,
+    )
+
+    result = await process.run(spec(tmp_path))
+
+    assert result.response == response
+    assert result.run_dir == events.parent
+
+
 async def test_identical_prompt_reuses_completed_run_without_another_paid_call(
     tmp_path: Path,
 ) -> None:

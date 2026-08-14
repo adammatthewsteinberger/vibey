@@ -85,6 +85,9 @@ class ClaudeLoopProcess:
             capacity = _capacity_deferred(spec.worktree_path, completed.stderr)
             if capacity is not None:
                 raise capacity
+            recovered = _reported_structured_result(spec.worktree_path, completed.stderr)
+            if recovered is not None:
+                return recovered
             detail = completed.stderr.strip() or completed.stdout.strip()
             raise RuntimeError(f"claudeloop failed with exit {completed.returncode}: {detail}")
         run_id = _reported_run_id(completed.stderr)
@@ -125,6 +128,18 @@ def _capacity_deferred(worktree_path: Path, stderr: str) -> CapacityDeferred | N
         detail = f"claudeloop {limit} capacity exhausted until {retry_at.isoformat()}"
         return CapacityDeferred(retry_at, detail)
     return None
+
+
+def _reported_structured_result(worktree_path: Path, stderr: str) -> ClaudeLoopResult | None:
+    try:
+        run_id = _reported_run_id(stderr)
+    except RuntimeError:
+        return None
+    run_dir = worktree_path / CLAUDELOOP.state_dir / "runs" / run_id
+    response = _last_response(run_dir / "events.jsonl")
+    if not _looks_structured(response):
+        return None
+    return ClaudeLoopResult(run_id, run_dir, response)
 
 
 def _last_response(events_path: Path) -> str:
