@@ -1,0 +1,43 @@
+[importlinter]
+root_packages =
+    vibey
+include_external_packages = True
+
+[importlinter:contract:onion-layers]
+name = Onion architecture layering
+type = layers
+layers =
+    cli | tui
+    infrastructure
+    application
+    domain
+containers =
+    vibey
+
+[importlinter:contract:domain-independence]
+name = domain imports nothing but stdlib and itself
+type = forbidden
+source_modules =
+    vibey.domain
+forbidden_modules =
+    vibey.application
+    vibey.infrastructure
+    vibey.cli
+    vibey.tui
+    asyncpg
+    psycopg
+    httpx
+    typer
+    structlog
+    pydantic
+    textual
+
+[importlinter:contract:application-independence]
+name = application does not import infrastructure, cli, or tui
+type = forbidden
+source_modules =
+    vibey.application
+forbidden_modules =
+    vibey.infrastructure
+    vibey.cli
+    vibey.tui
