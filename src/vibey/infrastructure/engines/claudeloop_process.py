@@ -128,6 +128,11 @@ def _find_reusable_result(spec: RunSpec) -> ClaudeLoopResult | None:
         except (FileNotFoundError, KeyError, json.JSONDecodeError, OSError):
             continue
         response = _last_response(run_dir / "events.jsonl")
-        if response.strip():
+        if _looks_structured(response):
             return ClaudeLoopResult(run_dir.name, run_dir, response)
     return None
+
+
+def _looks_structured(response: str) -> bool:
+    stripped = response.lstrip()
+    return stripped.startswith("{") or stripped.startswith("```json")

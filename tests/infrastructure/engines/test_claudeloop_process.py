@@ -107,16 +107,38 @@ async def test_identical_prompt_reuses_completed_run_without_another_paid_call(
     run_dir.mkdir(parents=True)
     (run_dir / "meta.json").write_text(json.dumps({"plan_path": str(previous_plan)}))
     (run_dir / "events.jsonl").write_text(
-        json.dumps({"event_type": "chatter.assistant", "payload": {"text": "recovered"}})
+        json.dumps({"event_type": "chatter.assistant", "payload": {"text": '{"recovered":true}'}})
     )
     executor = FakeExecutor(CommandResult(0, "", "should not run"))
     process = ClaudeLoopProcess(executor=executor, max_turns=1, max_dollars=0.1)
 
     result = await process.run(spec(tmp_path))
 
-    assert result.response == "recovered"
+    assert result.response == '{"recovered":true}'
     assert result.run_dir == run_dir
     assert executor.calls == []
+
+
+async def test_unstructured_incomplete_response_is_not_reused(tmp_path: Path) -> None:
+    previous_plan = tmp_path / ".vibey" / "plans" / "previous.md"
+    previous_plan.parent.mkdir(parents=True)
+    previous_plan.write_text("# Bounded DESIGN research\n")
+    old_run = tmp_path / ".claudeloop" / "runs" / "20260814T120000Z-abcd1234"
+    old_run.mkdir(parents=True)
+    (old_run / "meta.json").write_text(json.dumps({"plan_path": str(previous_plan)}))
+    (old_run / "events.jsonl").write_text(
+        json.dumps({"event_type": "chatter.assistant", "payload": {"text": "I'll examine this."}})
+    )
+    new_run = tmp_path / ".claudeloop" / "runs" / "20260814T130000Z-abcd1234"
+    new_run.mkdir()
+    (new_run / "events.jsonl").write_text(
+        json.dumps({"event_type": "chatter.assistant", "payload": {"text": "{}"}})
+    )
+    executor = FakeExecutor(CommandResult(0, "", "Run id: 20260814T130000Z-abcd1234\n"))
+    process = ClaudeLoopProcess(executor=executor, max_turns=1, max_dollars=0.1)
+
+    assert (await process.run(spec(tmp_path))).response == "{}"
+    assert len(executor.calls) == 1
 
 
 @pytest.mark.parametrize(

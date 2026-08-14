@@ -44,6 +44,7 @@ class ClaudeLoopDesignProvider:
         prompt = (
             "You are conducting one bounded stage of a software DESIGN interview. "
             "Ask 1 to 4 concise questions. Every question needs a useful proposed default. "
+            "Do not inspect files or call tools; answer immediately in this first turn. "
             'Return only JSON with shape {"questions":[{"question_id":str,'
             '"text":str,"default":str,"blocking":bool}]}.\n'
             f"Stage: {stage.value}\nPrior ledger events: {_events_json(prior_events)}"

@@ -73,6 +73,7 @@ async def test_provider_adapts_all_three_design_ports_with_strict_structures(
     assert [web for _, web in process.calls] == [False, True, False]
     assert [call.effort.name for call, _ in process.calls] == ["LOW", "STANDARD", "HIGH"]
     assert all("Return only JSON" in call.prompt for call, _ in process.calls)
+    assert "Do not inspect files or call tools" in process.calls[0][0].prompt
 
 
 @pytest.mark.parametrize(
