@@ -21,6 +21,7 @@ from vibey.application.dto import (
 )
 from vibey.domain.capacity import CapacityState
 from vibey.domain.engine import EngineDescriptor
+from vibey.domain.handoff import GateMode, HandoffBrief, Violation
 from vibey.domain.job import FailureClass
 
 
@@ -117,6 +118,17 @@ class EngineAdapter(Protocol):
         ...
 
     def attribute(self, exit_code: int, tail: str) -> FailureClass: ...
+
+
+@runtime_checkable
+class BriefProducer(Protocol):
+    """A brief producer is a job, not a method call (handoff-protocol.md
+    §6.5): the outgoing engine, the incoming engine, any healthy engine, or
+    vibey's own deterministic template can all fill this role."""
+
+    async def produce(
+        self, *, attempt: int, mode: GateMode, violations: tuple[Violation, ...]
+    ) -> HandoffBrief: ...
 
 
 @runtime_checkable
