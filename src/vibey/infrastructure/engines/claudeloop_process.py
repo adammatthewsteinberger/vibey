@@ -58,6 +58,9 @@ class ClaudeLoopProcess:
         self._max_dollars = max_dollars
 
     async def run(self, spec: RunSpec, *, web_search: bool = False) -> ClaudeLoopResult:
+        reusable = _find_reusable_result(spec)
+        if reusable is not None:
+            return reusable
         write_plan(spec)
         argv = (
             *build_argv(CLAUDELOOP, spec),
@@ -107,3 +110,24 @@ def _last_response(events_path: Path) -> str:
         ):
             return str(payload["result"])
     return ""
+
+
+def _find_reusable_result(spec: RunSpec) -> ClaudeLoopResult | None:
+    runs_root = spec.worktree_path / CLAUDELOOP.state_dir / "runs"
+    plans_root = (spec.worktree_path / ".vibey" / "plans").resolve()
+    if not runs_root.is_dir():
+        return None
+    for run_dir in sorted(runs_root.iterdir(), reverse=True):
+        if not run_dir.is_dir() or not _RUN_ID.fullmatch(run_dir.name):
+            continue
+        try:
+            meta = json.loads((run_dir / "meta.json").read_text())
+            plan = Path(str(meta["plan_path"])).resolve()
+            if not plan.is_relative_to(plans_root) or plan.read_text() != spec.prompt:
+                continue
+        except (FileNotFoundError, KeyError, json.JSONDecodeError, OSError):
+            continue
+        response = _last_response(run_dir / "events.jsonl")
+        if response.strip():
+            return ClaudeLoopResult(run_dir.name, run_dir, response)
+    return None

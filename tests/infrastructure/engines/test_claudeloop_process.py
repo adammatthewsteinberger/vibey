@@ -97,6 +97,28 @@ async def test_result_message_is_a_fallback_when_chatter_is_absent(tmp_path: Pat
     assert (await process.run(spec(tmp_path))).response == "fallback"
 
 
+async def test_identical_prompt_reuses_completed_run_without_another_paid_call(
+    tmp_path: Path,
+) -> None:
+    previous_plan = tmp_path / ".vibey" / "plans" / "previous.md"
+    previous_plan.parent.mkdir(parents=True)
+    previous_plan.write_text("# Bounded DESIGN research\n")
+    run_dir = tmp_path / ".claudeloop" / "runs" / "20260814T120000Z-abcd1234"
+    run_dir.mkdir(parents=True)
+    (run_dir / "meta.json").write_text(json.dumps({"plan_path": str(previous_plan)}))
+    (run_dir / "events.jsonl").write_text(
+        json.dumps({"event_type": "chatter.assistant", "payload": {"text": "recovered"}})
+    )
+    executor = FakeExecutor(CommandResult(0, "", "should not run"))
+    process = ClaudeLoopProcess(executor=executor, max_turns=1, max_dollars=0.1)
+
+    result = await process.run(spec(tmp_path))
+
+    assert result.response == "recovered"
+    assert result.run_dir == run_dir
+    assert executor.calls == []
+
+
 @pytest.mark.parametrize(
     ("result", "message"),
     [

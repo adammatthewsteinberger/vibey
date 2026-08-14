@@ -28,7 +28,8 @@ async def test_provider_adapts_all_three_design_ports_with_strict_structures(
     process = FakeProcess(
         [
             '```json\n{"questions":[{"question_id":"q-1","text":"What outcome?",'
-            '"default":"Ship one path","blocking":true}]}\n```',
+            '"default":"Ship one path","blocking":true}]}\n```\n\n'
+            "CLAUDELOOP_TASK_FULLY_COMPLETE",
             '{"title":"Prior art","source":"https://example.test/doc","content":"Evidence"}',
             json.dumps(
                 {
@@ -70,6 +71,7 @@ async def test_provider_adapts_all_three_design_ports_with_strict_structures(
     assert research.source == "https://example.test/doc"
     assert design.is_buildable() == ()
     assert [web for _, web in process.calls] == [False, True, False]
+    assert [call.effort.name for call, _ in process.calls] == ["LOW", "STANDARD", "HIGH"]
     assert all("Return only JSON" in call.prompt for call, _ in process.calls)
 
 

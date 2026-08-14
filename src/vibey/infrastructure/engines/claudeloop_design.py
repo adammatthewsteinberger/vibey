@@ -48,7 +48,7 @@ class ClaudeLoopDesignProvider:
             '"text":str,"default":str,"blocking":bool}]}.\n'
             f"Stage: {stage.value}\nPrior ledger events: {_events_json(prior_events)}"
         )
-        raw = await self._invoke(prompt, effort=Effort.STANDARD)
+        raw = await self._invoke(prompt, effort=Effort.LOW)
         questions_raw = _object(raw).get("questions")
         if not isinstance(questions_raw, list) or not questions_raw:
             raise ValueError("DESIGN question output requires a non-empty questions list")
@@ -154,8 +154,11 @@ class ClaudeLoopDesignProvider:
 
 def _object(text: str) -> dict[str, object]:
     stripped = text.strip()
-    if stripped.startswith("```json") and stripped.endswith("```"):
-        stripped = stripped[7:-3].strip()
+    if stripped.startswith("```json"):
+        closing_fence = stripped.find("```", 7)
+        if closing_fence < 0:
+            raise ValueError("provider JSON fence is not closed")
+        stripped = stripped[7:closing_fence].strip()
     try:
         value = json.loads(stripped)
     except json.JSONDecodeError as exc:
