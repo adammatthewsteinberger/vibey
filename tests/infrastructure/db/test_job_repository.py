@@ -1,5 +1,5 @@
 import asyncio
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 import asyncpg
@@ -176,9 +176,32 @@ async def test_park_sets_awaiting_human_and_releases_lease(
     assert record is not None
     assert record.state is JobState.AWAITING_HUMAN
     assert record.lease_owner is None
+    assert record.attempts == 0
 
     # A parked job is not claimable -- it is not 'ready'.
     assert await repo.claim(project_id, owner="worker-2", lease=LEASE) is None
+
+
+async def test_defer_capacity_releases_lease_without_consuming_attempt(
+    migrated_pool: asyncpg.Pool, project_id: UUID
+) -> None:
+    repo = PostgresJobRepository(migrated_pool)
+    job = await repo.enqueue(_request(project_id))
+    await repo.claim(project_id, owner="worker-1", lease=LEASE)
+    retry_at = datetime(2026, 8, 14, 20, 10, tzinfo=UTC)
+
+    assert await repo.defer(
+        job.id,
+        owner="worker-1",
+        retry_at=retry_at,
+        error={"class": "capacity", "detail": "window exhausted"},
+    )
+    record = await repo.get(job.id)
+    assert record is not None
+    assert record.state is JobState.READY
+    assert record.attempts == 0
+    assert record.run_after == retry_at
+    assert record.last_error == {"class": "capacity", "detail": "window exhausted"}
 
 
 async def test_reap_reclaims_expired_leases(migrated_pool: asyncpg.Pool, project_id: UUID) -> None:

@@ -49,6 +49,17 @@ class JobRepository(Protocol):
 
     async def nack(self, job_id: UUID, *, owner: str, error: Mapping[str, object]) -> bool: ...
 
+    async def defer(
+        self,
+        job_id: UUID,
+        *,
+        owner: str,
+        retry_at: datetime,
+        error: Mapping[str, object],
+    ) -> bool:
+        """Releases a capacity-blocked lease without consuming a failure attempt."""
+        ...
+
     async def park(self, job_id: UUID, *, owner: str) -> bool:
         """Marks the job awaiting_human and releases its lease immediately,
         without counting as a failure attempt."""

@@ -9,10 +9,12 @@ import asyncio
 import json
 import re
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Protocol
 
 from vibey.application.dto import RunSpec
+from vibey.application.worker import CapacityDeferred
 from vibey.infrastructure.engines.argv import build_argv
 from vibey.infrastructure.engines.descriptors import CLAUDELOOP
 from vibey.infrastructure.engines.plan_writer import write_plan
@@ -38,7 +40,12 @@ class AsyncSubprocessExecutor:
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
-        stdout, stderr = await process.communicate()
+        try:
+            stdout, stderr = await process.communicate()
+        except asyncio.CancelledError:
+            process.terminate()
+            await process.wait()
+            raise
         return CommandResult(process.returncode or 0, stdout.decode(), stderr.decode())
 
 
@@ -69,10 +76,15 @@ class ClaudeLoopProcess:
             "--max-dollars",
             format(self._max_dollars, "g"),
             "--no-auto-model",
+            "--max-wait",
+            "1",
             *(("--web-search",) if web_search else ()),
         )
         completed = await self._executor.execute(argv)
         if completed.returncode != 0:
+            capacity = _capacity_deferred(spec.worktree_path, completed.stderr)
+            if capacity is not None:
+                raise capacity
             detail = completed.stderr.strip() or completed.stdout.strip()
             raise RuntimeError(f"claudeloop failed with exit {completed.returncode}: {detail}")
         run_id = _reported_run_id(completed.stderr)
@@ -87,6 +99,32 @@ def _reported_run_id(stderr: str) -> str:
             if _RUN_ID.fullmatch(run_id):
                 return run_id
     raise RuntimeError("claudeloop did not report a run id")
+
+
+def _capacity_deferred(worktree_path: Path, stderr: str) -> CapacityDeferred | None:
+    try:
+        run_id = _reported_run_id(stderr)
+    except RuntimeError:
+        return None
+    events_path = worktree_path / CLAUDELOOP.state_dir / "runs" / run_id / "events.jsonl"
+    if not events_path.is_file():
+        return None
+    for line in reversed(events_path.read_text().splitlines()):
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        payload = record.get("payload")
+        if not isinstance(payload, dict) or payload.get("type") != "RateLimitEvent":
+            continue
+        reset = payload.get("resets_at")
+        if payload.get("status") != "rejected" or not isinstance(reset, int | float):
+            continue
+        retry_at = datetime.fromtimestamp(reset, UTC)
+        limit = str(payload.get("rate_limit_type", "provider"))
+        detail = f"claudeloop {limit} capacity exhausted until {retry_at.isoformat()}"
+        return CapacityDeferred(retry_at, detail)
+    return None
 
 
 def _last_response(events_path: Path) -> str:

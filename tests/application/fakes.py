@@ -92,7 +92,34 @@ class FakeJobRepository:
         if job is None or job.lease_owner != owner:
             return False
         self._jobs[job_id] = _with(
-            job, state=JobState.AWAITING_HUMAN, lease_owner=None, lease_expires_at=None
+            job,
+            state=JobState.AWAITING_HUMAN,
+            lease_owner=None,
+            lease_expires_at=None,
+            attempts=max(job.attempts - 1, 0),
+        )
+        return True
+
+    async def defer(
+        self,
+        job_id: UUID,
+        *,
+        owner: str,
+        retry_at: datetime,
+        error: Mapping[str, object],
+    ) -> bool:
+        self.calls.append("defer")
+        job = self._jobs.get(job_id)
+        if job is None or job.lease_owner != owner:
+            return False
+        self._jobs[job_id] = _with(
+            job,
+            state=JobState.READY,
+            lease_owner=None,
+            lease_expires_at=None,
+            attempts=max(job.attempts - 1, 0),
+            run_after=retry_at,
+            last_error=dict(error),
         )
         return True
 

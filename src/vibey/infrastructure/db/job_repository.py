@@ -5,7 +5,7 @@ correctness rests on Postgres's guarantees, not ours."""
 
 import json
 from collections.abc import Mapping
-from datetime import timedelta
+from datetime import datetime, timedelta
 from uuid import UUID
 
 import asyncpg
@@ -187,11 +187,37 @@ class PostgresJobRepository:
                 """
                 UPDATE job SET
                     state = 'awaiting_human', lease_owner = NULL,
-                    lease_expires_at = NULL, updated_at = now()
+                    lease_expires_at = NULL,
+                    attempts = greatest(attempts - 1, 0),
+                    updated_at = now()
                 WHERE id = $1 AND lease_owner = $2
                 """,
                 job_id,
                 owner,
+            )
+            return _rowcount(result) == 1
+
+    async def defer(
+        self,
+        job_id: UUID,
+        *,
+        owner: str,
+        retry_at: datetime,
+        error: Mapping[str, object],
+    ) -> bool:
+        async with self._pool.acquire() as conn:
+            result = await conn.execute(
+                """
+                UPDATE job SET
+                    state = 'ready', lease_owner = NULL, lease_expires_at = NULL,
+                    attempts = greatest(attempts - 1, 0), run_after = $3,
+                    last_error = $4::jsonb, updated_at = now()
+                WHERE id = $1 AND lease_owner = $2 AND state = 'leased'
+                """,
+                job_id,
+                owner,
+                retry_at,
+                json.dumps(dict(error)),
             )
             return _rowcount(result) == 1
 

@@ -7,7 +7,7 @@ import asyncio
 import contextlib
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Protocol, runtime_checkable
 from uuid import UUID
 
@@ -32,7 +32,20 @@ class Park:
     request: HumanGateRequest
 
 
-Outcome = Success | Failure | Park
+@dataclass(frozen=True, slots=True)
+class Defer:
+    retry_at: datetime
+    detail: str
+
+
+class CapacityDeferred(Exception):
+    def __init__(self, retry_at: datetime, detail: str) -> None:
+        super().__init__(detail)
+        self.retry_at = retry_at
+        self.detail = detail
+
+
+Outcome = Success | Failure | Park | Defer
 
 
 @runtime_checkable
@@ -67,6 +80,8 @@ class WorkerLoop:
         try:
             try:
                 outcome: Outcome = await self._handler.handle(job)
+            except CapacityDeferred as exc:
+                outcome = Defer(exc.retry_at, exc.detail)
             except Exception as exc:  # noqa: BLE001 - any handler bug becomes a VIBEY-class nack
                 outcome = Failure(FailureClass.VIBEY, str(exc))
         finally:
@@ -92,6 +107,13 @@ class WorkerLoop:
             # human_gate row exists to explain why it is parked.
             await self._gates.raise_gate(job.project_id, job.id, outcome.request)
             await self._jobs.park(job.id, owner=self._owner)
+        elif isinstance(outcome, Defer):
+            await self._jobs.defer(
+                job.id,
+                owner=self._owner,
+                retry_at=outcome.retry_at,
+                error={"class": FailureClass.CAPACITY.value, "detail": outcome.detail},
+            )
 
     async def _heartbeat_forever(self, job_id: UUID) -> None:
         interval = self._lease.total_seconds() / 3

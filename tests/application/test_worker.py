@@ -1,10 +1,10 @@
 import asyncio
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 from tests.application.fakes import FakeHumanGateRepository, FakeJobRepository, make_job
 from vibey.application.dto import HumanGateRequest, JobRecord
-from vibey.application.worker import Failure, Outcome, Park, Success, WorkerLoop
+from vibey.application.worker import CapacityDeferred, Failure, Outcome, Park, Success, WorkerLoop
 from vibey.domain.job import FailureClass, JobState
 
 PROJECT_ID = uuid4()
@@ -100,6 +100,30 @@ async def test_handler_exception_becomes_a_vibey_class_failure() -> None:
     record = await jobs.get(job.id)
     assert record is not None
     assert record.last_error == {"class": "vibey", "detail": "unexpected"}
+
+
+async def test_capacity_exception_defers_without_consuming_an_attempt() -> None:
+    job = make_job(PROJECT_ID, attempts=2)
+    jobs = FakeJobRepository([job])
+    retry_at = datetime(2026, 8, 14, 20, 10, tzinfo=UTC)
+    loop = WorkerLoop(
+        jobs=jobs,
+        gates=FakeHumanGateRepository(),
+        handler=_FixedHandler(CapacityDeferred(retry_at, "five-hour window exhausted")),
+        owner="w1",
+    )
+
+    await loop.run_once(PROJECT_ID)
+
+    record = await jobs.get(job.id)
+    assert record is not None
+    assert record.state is JobState.READY
+    assert record.attempts == 2
+    assert record.run_after == retry_at
+    assert record.last_error == {
+        "class": "capacity",
+        "detail": "five-hour window exhausted",
+    }
 
 
 async def test_park_outcome_raises_the_gate_before_parking_the_job() -> None:
