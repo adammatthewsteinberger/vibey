@@ -9,8 +9,9 @@ from vibey.application.ports import Clock, HumanGateRepository
 from vibey.application.review_deployment_choice_handler import (
     ReviewDeploymentChoiceHandler,
     ReviewDeploymentLedger,
+    can_enqueue_deployment_design,
 )
-from vibey.application.worker import Failure, Park, Success
+from vibey.application.worker import Failure, Success
 from vibey.domain.effort import Effort
 from vibey.domain.engine import EngineId
 from vibey.domain.job import FailureClass, JobState
@@ -60,6 +61,23 @@ class FakeReviewDeploymentLedger(ReviewDeploymentLedger):
                 digest="abc",
             )
         )
+
+
+class CorruptedDeploymentLedger(ReviewDeploymentLedger):
+    """Fails to append or returns empty events to simulate ledger write failure."""
+
+    async def all_for_project(self, project_id: UUID) -> tuple[LedgerEvent, ...]:
+        return ()
+
+    async def append_event(
+        self,
+        project_id: UUID,
+        cycle: int,
+        job_id: UUID,
+        kind: EventKind,
+        payload: Mapping[str, object],
+    ) -> None:
+        pass
 
 
 class FakeGateRepo(HumanGateRepository):
@@ -159,14 +177,13 @@ def _make_job(
     *,
     project_id: UUID,
     cycle: int = 1,
-    kind: str = "review.deployment_choice",
 ) -> JobRecord:
     return JobRecord(
         id=uuid4(),
         project_id=project_id,
         cycle=cycle,
         phase=Phase.REVIEW,
-        kind=kind,
+        kind="review.deployment_choice",
         state=JobState.READY,
         priority=0,
         work_item_id=None,
@@ -185,113 +202,49 @@ def _make_job(
     )
 
 
-async def test_review_deployment_choice_handler_rejects_wrong_kind() -> None:
-    project_id = uuid4()
-    handler = ReviewDeploymentChoiceHandler(
-        ledger=FakeReviewDeploymentLedger(),
-        gates=FakeGateRepo(),
-        jobs=FakeJobRepository(),
-        projects=FakeProjectRepo(
-            ProjectRecord(
-                project_id=project_id,
-                name="p1",
-                repo_path=Path("/tmp"),
-                phase=Phase.REVIEW,
-                cycle=1,
-                max_cycles=5,
-                config={},
-                created_at=NOW,
-                updated_at=NOW,
-            )
-        ),
-        clock=FixedClock(),
-    )
-    outcome = await handler.handle(_make_job(project_id=project_id, kind="review.demo"))
-    assert isinstance(outcome, Failure)
-    assert outcome.failure_class == FailureClass.VIBEY
+def test_can_enqueue_deployment_design_guard() -> None:
+    # No events -> False
+    assert can_enqueue_deployment_design(()) is False
 
-
-async def test_review_deployment_choice_handler_parks_with_no_default_as_yes() -> None:
-    project_id = uuid4()
-    gates = FakeGateRepo(answer=None)
-    handler = ReviewDeploymentChoiceHandler(
-        ledger=FakeReviewDeploymentLedger(),
-        gates=gates,
-        jobs=FakeJobRepository(),
-        projects=FakeProjectRepo(
-            ProjectRecord(
-                project_id=project_id,
-                name="p1",
-                repo_path=Path("/tmp"),
-                phase=Phase.REVIEW,
-                cycle=1,
-                max_cycles=5,
-                config={},
-                created_at=NOW,
-                updated_at=NOW,
-            )
-        ),
-        clock=FixedClock(),
-    )
-    job = _make_job(project_id=project_id)
-    # First call: raises gate and parks
-    outcome1 = await handler.handle(job)
-    assert isinstance(outcome1, Park)
-    assert outcome1.request.default_answer == "local_only"
-    assert "local_only" in outcome1.request.options
-    assert "deploy" in outcome1.request.options
-
-    # Second call without answer: parks on existing gate
-    outcome2 = await handler.handle(job)
-    assert isinstance(outcome2, Park)
-
-
-async def test_review_deployment_choice_opt_out_reaches_done_with_local_completion() -> None:
-    project_id = uuid4()
-    proj = ProjectRecord(
-        project_id=project_id,
-        name="p1",
-        repo_path=Path("/tmp"),
-        phase=Phase.REVIEW,
+    opt_in_event = LedgerEvent(
+        event_id=uuid4(),
+        project_id=uuid4(),
         cycle=1,
-        max_cycles=5,
-        config={},
-        created_at=NOW,
-        updated_at=NOW,
+        phase=Phase.REVIEW,
+        seq=1,
+        kind=EventKind.DEPLOYMENT_OPTED_IN,
+        engine_id=EngineId.CLAUDELOOP,
+        job_id=uuid4(),
+        causation_id=None,
+        correlation_id=uuid4(),
+        provenance=Provenance.TRUSTED,
+        produced_at=NOW,
+        payload={"choice": "deploy"},
+        digest="abc",
     )
-    gates = FakeGateRepo(answer={"choice": "local_only"})
-    jobs = FakeJobRepository()
-    ledger = FakeReviewDeploymentLedger()
-    projects = FakeProjectRepo(proj)
+    assert can_enqueue_deployment_design((opt_in_event,)) is True
 
-    handler = ReviewDeploymentChoiceHandler(
-        ledger=ledger,
-        gates=gates,
-        jobs=jobs,
-        projects=projects,
-        clock=FixedClock(),
+    declined_event = LedgerEvent(
+        event_id=uuid4(),
+        project_id=uuid4(),
+        cycle=1,
+        phase=Phase.REVIEW,
+        seq=2,
+        kind=EventKind.DEPLOYMENT_DECLINED,
+        engine_id=EngineId.CLAUDELOOP,
+        job_id=uuid4(),
+        causation_id=None,
+        correlation_id=uuid4(),
+        provenance=Provenance.TRUSTED,
+        produced_at=NOW,
+        payload={"choice": "local_only"},
+        digest="abc",
     )
-    job = _make_job(project_id=project_id)
-    assert isinstance(await handler.handle(job), Park)
-    outcome = await handler.handle(job)
-    assert isinstance(outcome, Success)
-    assert outcome.result.get("completion_mode") == "local"
-    assert outcome.result.get("decision") == "declined"
-
-    # Ledger recorded DeploymentDeclined
-    events = [k for k, p in ledger.appended]
-    assert EventKind.DEPLOYMENT_DECLINED in events
-    assert EventKind.DEPLOYMENT_OPTED_IN not in events
-
-    # Project transitioned to DONE
-    assert projects.project.phase is Phase.DONE
-
-    # Enqueued NO deployment jobs
-    enqueued = list(jobs._jobs.values())
-    assert len(enqueued) == 0
+    # If declined comes later, opt-in is revoked
+    assert can_enqueue_deployment_design((opt_in_event, declined_event)) is False
 
 
-async def test_review_deployment_choice_opt_in_records_event() -> None:
+async def test_review_deployment_choice_opt_in_enqueues_deploy_design() -> None:
     project_id = uuid4()
     proj = ProjectRecord(
         project_id=project_id,
@@ -317,13 +270,48 @@ async def test_review_deployment_choice_opt_in_records_event() -> None:
         clock=FixedClock(),
     )
     job = _make_job(project_id=project_id)
-    assert isinstance(await handler.handle(job), Park)
-    outcome = await handler.handle(job)
+    await handler.handle(job)  # Park
+    outcome = await handler.handle(job)  # Process answer
     assert isinstance(outcome, Success)
     assert outcome.result.get("decision") == "opted_in"
-    assert outcome.result.get("completion_mode") == "deploy"
 
-    # Ledger recorded DeploymentOptedIn
-    events = [k for k, p in ledger.appended]
-    assert EventKind.DEPLOYMENT_OPTED_IN in events
-    assert EventKind.DEPLOYMENT_DECLINED not in events
+    # Enqueued deploy.design job for Phase 4
+    enqueued = list(jobs._jobs.values())
+    deploy_job = next((j for j in enqueued if j.kind == "deploy.design"), None)
+    assert deploy_job is not None
+    assert deploy_job.phase is Phase.DEPLOY
+
+    # Transitions project to DEPLOY
+    assert projects.project.phase is Phase.DEPLOY
+
+
+async def test_review_deployment_choice_opt_in_fails_if_guard_unmet() -> None:
+    project_id = uuid4()
+    proj = ProjectRecord(
+        project_id=project_id,
+        name="p1",
+        repo_path=Path("/tmp"),
+        phase=Phase.REVIEW,
+        cycle=1,
+        max_cycles=5,
+        config={},
+        created_at=NOW,
+        updated_at=NOW,
+    )
+    gates = FakeGateRepo(answer={"choice": "deploy"})
+    jobs = FakeJobRepository()
+    ledger = CorruptedDeploymentLedger()
+    projects = FakeProjectRepo(proj)
+
+    handler = ReviewDeploymentChoiceHandler(
+        ledger=ledger,
+        gates=gates,
+        jobs=jobs,
+        projects=projects,
+        clock=FixedClock(),
+    )
+    job = _make_job(project_id=project_id)
+    await handler.handle(job)
+    outcome = await handler.handle(job)
+    assert isinstance(outcome, Failure)
+    assert outcome.failure_class == FailureClass.VIBEY

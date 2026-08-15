@@ -11,12 +11,23 @@ from collections.abc import Mapping, Sequence
 from typing import Any, Protocol
 from uuid import UUID
 
-from vibey.application.dto import HumanGateRequest, JobRecord
+from vibey.application.dto import EnqueueRequest, HumanGateRequest, JobRecord
 from vibey.application.ports import Clock, HumanGateRepository, JobRepository
 from vibey.application.worker import Failure, Outcome, Park, Success
-from vibey.domain.job import FailureClass
+from vibey.domain.effort import Effort
+from vibey.domain.job import FailureClass, idempotency_key
 from vibey.domain.ledger import EventKind, LedgerEvent
 from vibey.domain.phase import Phase
+
+
+def can_enqueue_deployment_design(events: Sequence[LedgerEvent]) -> bool:
+    """Evaluates DEPLOY_DESIGN guard: only explicit DeploymentOptedIn allows
+    enqueueing Phase 4 deployment jobs."""
+    latest_decision: EventKind | None = None
+    for e in sorted(events, key=lambda ev: ev.seq):
+        if e.kind in (EventKind.DEPLOYMENT_OPTED_IN, EventKind.DEPLOYMENT_DECLINED):
+            latest_decision = e.kind
+    return latest_decision is EventKind.DEPLOYMENT_OPTED_IN
 
 
 class ReviewDeploymentLedger(Protocol):
@@ -99,6 +110,32 @@ class ReviewDeploymentChoiceHandler:
                 job_id=job.id,
                 kind=EventKind.DEPLOYMENT_OPTED_IN,
                 payload={"choice": "deploy"},
+            )
+            events = await self._ledger.all_for_project(job.project_id)
+            if not can_enqueue_deployment_design(events):
+                return Failure(
+                    FailureClass.VIBEY,
+                    "cannot enqueue deployment design without explicit opt-in",
+                )
+
+            if hasattr(self._projects, "transition"):
+                await self._projects.transition(
+                    job.project_id,
+                    expected=Phase.REVIEW,
+                    to=Phase.DEPLOY,
+                )
+
+            await self._jobs.enqueue(
+                EnqueueRequest(
+                    project_id=job.project_id,
+                    cycle=job.cycle,
+                    phase=Phase.DEPLOY,
+                    kind="deploy.design",
+                    idempotency_key=idempotency_key(
+                        job.project_id, job.cycle, "deploy.design", str(job.id)
+                    ),
+                    requirement={"effort": Effort.HIGH.name.lower()},
+                )
             )
             return Success({"decision": "opted_in", "completion_mode": "deploy"})
 
