@@ -32,8 +32,9 @@ async def _use_test_database(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("VIBEY_PG_URL", url)
 
     conn = await asyncpg.connect(database_url())
-    await conn.execute("DROP SCHEMA public CASCADE")
-    await conn.execute("CREATE SCHEMA public")
+    await conn.execute("DROP SCHEMA IF EXISTS public CASCADE")
+    await conn.execute("CREATE SCHEMA IF NOT EXISTS public")
+
     await conn.close()
 
 

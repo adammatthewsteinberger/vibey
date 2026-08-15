@@ -168,8 +168,9 @@ async def test_fetch_dashboard_state_from_db(
     monkeypatch.setenv("VIBEY_PG_URL", url)
 
     conn = await asyncpg.connect(database_url())
-    await conn.execute("DROP SCHEMA public CASCADE")
-    await conn.execute("CREATE SCHEMA public")
+    await conn.execute("DROP SCHEMA IF EXISTS public CASCADE")
+    await conn.execute("CREATE SCHEMA IF NOT EXISTS public")
+
     await conn.close()
 
     async with build_app() as resources:
