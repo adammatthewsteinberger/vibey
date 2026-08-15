@@ -29,6 +29,11 @@ class VisualDecision(StrEnum):
     WAIVED = "waived"
 
 
+class DeploymentDecision(StrEnum):
+    OPTED_IN = "opted_in"
+    DECLINED = "declined"
+
+
 TERMINAL: frozenset[Phase] = frozenset({Phase.DONE, Phase.ABANDONED})
 INTERACTIVE: frozenset[Phase] = frozenset({Phase.DESIGN, Phase.VISUAL_DESIGN, Phase.REVIEW})
 
@@ -77,6 +82,7 @@ class TransitionEvidence:
     blocked_on_ambiguity: int = 0
     visual_decision: VisualDecision | None = None
     visual_inventory_complete: bool = False
+    deployment_decision: DeploymentDecision | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -175,6 +181,12 @@ def _guard_review_to_done(evidence: TransitionEvidence) -> tuple[str, ...]:
     return ()
 
 
+def _guard_done_to_deploy(evidence: TransitionEvidence) -> tuple[str, ...]:
+    if evidence.deployment_decision is not DeploymentDecision.OPTED_IN:
+        return ("DEPLOY requires explicit deployment opt-in",)
+    return ()
+
+
 _GUARDS = {
     (Phase.DESIGN, Phase.BUILD): _guard_design_to_build,
     (Phase.DESIGN, Phase.VISUAL_DESIGN): _guard_design_to_visual_design,
@@ -182,6 +194,7 @@ _GUARDS = {
     (Phase.BUILD, Phase.REVIEW): _guard_build_to_review,
     (Phase.BUILD, Phase.DESIGN): _guard_build_to_design,
     (Phase.REVIEW, Phase.DONE): _guard_review_to_done,
+    (Phase.DONE, Phase.DEPLOY): _guard_done_to_deploy,
 }
 
 

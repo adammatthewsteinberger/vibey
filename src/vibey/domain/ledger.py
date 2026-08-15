@@ -38,6 +38,8 @@ class EventKind(StrEnum):
     VISUAL_DESIGN_DECLINED = "VisualDesignDeclined"
     VISUAL_DESIGN_ACCEPTED = "VisualDesignAccepted"
     VISUAL_DESIGN_WAIVED = "VisualDesignWaived"
+    DEPLOYMENT_OPTED_IN = "DeploymentOptedIn"
+    DEPLOYMENT_DECLINED = "DeploymentDeclined"
 
 
 CLOSABLE: frozenset[EventKind] = frozenset(
