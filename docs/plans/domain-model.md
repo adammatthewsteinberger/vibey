@@ -9,7 +9,7 @@
 
 ## 1. Why the domain is this large
 
-A thin domain would push the phase machine, the rotation algorithm, and the
+A thin domain would push the six-phase machine, the rotation algorithm, and the
 no-loss gate into `application/`, where they would be tested against fakes rather
 than against their own properties. The three things vibey must get right —
 *which engine next*, *did the handoff lose anything*, *is this transition legal* —
@@ -23,10 +23,14 @@ them without a database.
 ```python
 class Phase(StrEnum):
     INTAKE = "intake"; DESIGN = "design"; BUILD = "build"
-    REVIEW = "review"; DEPLOY = "deploy"; DONE = "done"; ABANDONED = "abandoned"
+    REVIEW = "review"; DEPLOY_DESIGN = "deploy_design"
+    DEPLOY_EXECUTE = "deploy_execute"; DEPLOY_REVIEW = "deploy_review"
+    DONE = "done"; ABANDONED = "abandoned"
 
 TERMINAL: frozenset[Phase] = frozenset({Phase.DONE, Phase.ABANDONED})
-INTERACTIVE: frozenset[Phase] = frozenset({Phase.DESIGN, Phase.REVIEW})
+INTERACTIVE: frozenset[Phase] = frozenset({
+    Phase.DESIGN, Phase.REVIEW, Phase.DEPLOY_DESIGN, Phase.DEPLOY_REVIEW,
+})
 
 
 @dataclass(frozen=True, slots=True)
@@ -61,6 +65,12 @@ class TransitionEvidence:
     user_verdict: UserVerdict | None = None
     budget_exhausted: bool = False
     blocked_on_ambiguity: int = 0
+    deployment_spec_complete: bool = False
+    deployment_consent_recorded: bool = False
+    preflight_accepted: bool = False
+    deployment_outcome: DeploymentOutcome | None = None
+    deployment_attempt: int = 0
+    deployment_attempt_cap: int = 0
 
 
 Allowed = Literal["allowed"]
@@ -82,12 +92,19 @@ def next_phase_after_review(
 ) -> Phase:
     """The routing decision from ADR-0010, isolated so it is trivially testable."""
     if not findings:
-        return Phase.DONE
+        return Phase.DEPLOY_DESIGN
     if strict_loopback:
         return Phase.DESIGN
     if any(f.ambiguity is Ambiguity.NEEDS_CLARIFICATION for f in findings):
         return Phase.DESIGN
     return Phase.BUILD
+
+
+def next_phase_after_deploy_review(
+    outcome: DeploymentOutcome, verdict: DeploymentVerdict
+) -> Phase:
+    """Route success, deployment-input changes, retries, and product defects."""
+    ...
 ```
 
 ### Invariants (property-tested)
@@ -95,6 +112,8 @@ def next_phase_after_review(
 - Every non-terminal phase reaches `DONE` by some path from `INTAKE`.
 - `DONE` and `ABANDONED` have no outgoing edges.
 - No transition is legal when `cycle > max_cycles` except `→ ABANDONED`.
+- `DEPLOY_EXECUTE → DEPLOY_EXECUTE` is illegal at the attempt/time/cost cap.
+- No incomplete, unconsented deployment specification reaches `DEPLOY_EXECUTE`.
 - `evaluate_transition` is total: every `(state, request)` pair returns without raising.
 
 ---
@@ -110,7 +129,9 @@ PHASE_BASE_EFFORT: Mapping[Phase, Effort] = {
     Phase.DESIGN: Effort.HIGH,     # the user's requirement
     Phase.BUILD:  Effort.LOW,      # the user's requirement
     Phase.REVIEW: Effort.HIGH,     # the user's requirement
-    Phase.DEPLOY: Effort.LOW,
+    Phase.DEPLOY_DESIGN: Effort.HIGH,
+    Phase.DEPLOY_EXECUTE: Effort.LOW,
+    Phase.DEPLOY_REVIEW: Effort.HIGH,
 }
 
 # attempt -> effort, for Phase 2's per-item escalation ladder

@@ -1,7 +1,8 @@
 # Session Handoff — vibey, after M0–M4
 
 > **You are picking up an in-progress, test-first implementation of vibey**, a
-> queue-based three-phase conductor for autonomous software delivery. This
+> queue-based six-phase conductor for autonomous software delivery. It has two
+> three-phase stage sets: delivery (①–③) and Azure deployment (④–⑥). This
 > document is written so you can continue the work with zero prior context.
 > Read it fully before touching code. It is long on purpose — the previous
 > session spent its entire budget building a foundation that a rushed
@@ -12,7 +13,7 @@
 `docs/plans/implementation-plan.md` (the milestone table is the spec for
 "what to build next") → `docs/plans/domain-model.md` → whichever of
 `data-model.md` / `handoff-protocol.md` / `rotation-and-engines.md` /
-`phase-protocols.md` covers the milestone you're starting. The 12 ADRs in
+`phase-protocols.md` covers the milestone you're starting. The 13 ADRs in
 `docs/architecture/decisions/` explain *why* the hard calls were made — read
 the ones relevant to what you're touching before you touch it.
 
@@ -53,7 +54,7 @@ vibey/
 ├── .importlinter                 # onion contract: domain / application / infrastructure / cli+tui
 ├── .pre-commit-config.yaml       # ruff, ruff-format, mypy, lint-imports, full test suite, conventional-commit
 ├── docs/                         # the design docs — READ THESE, do not skim
-│   ├── architecture/decisions/   # 12 ADRs, 0001-0012
+│   ├── architecture/decisions/   # 13 ADRs, 0001-0013 (0012 superseded)
 │   └── plans/                    # architecture-and-roadmap, domain-model, data-model,
 │                                 # handoff-protocol, rotation-and-engines, phase-protocols,
 │                                 # implementation-plan  <- the milestone table lives here
@@ -394,7 +395,11 @@ Per `docs/plans/implementation-plan.md`, in order:
   reporting, OTel, notifications.
 - **M9 — Isolation and security.** Container/VM isolation levels beyond the
   `worktree` default; threat-model review.
-- **M10 — `vibey-deploy`.** Separate package over `azure-bootstrap`.
+- **M10 — Phases ④–⑥, the Azure deployment stage set.** Phase ④ interactively
+  establishes an accepted deployment contract, Phase ⑤ deploys autonomously
+  until verified success or a failure needs user input, and Phase ⑥ demos the
+  result or routes the failure back to ④, ⑤, or the appropriate delivery phase.
+  ADR-0013 supersedes ADR-0012's separate-CLI lifecycle decision.
 
 The implementation plan explicitly notes M5 onward is "the bootstrap: the
 tool builds its own remaining phases" — i.e., once DESIGN/BUILD/REVIEW work

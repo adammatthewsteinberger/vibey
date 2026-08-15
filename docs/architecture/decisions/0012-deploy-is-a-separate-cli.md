@@ -1,6 +1,10 @@
 # 0012 — Deployment is a separate CLI built on `azure-bootstrap`
 
-**Status:** accepted · **Date:** 2026-08-14
+**Status:** superseded by ADR-0013 · **Date:** 2026-08-14
+
+> Historical decision only. Deployment is now the second three-phase stage set
+> in vibey's core lifecycle. See
+> [ADR-0013](0013-deployment-is-a-three-phase-stage-set.md).
 
 ## Context
 

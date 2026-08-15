@@ -82,7 +82,7 @@ They are enforced by CI, not by convention.
 ```mermaid
 graph TB
     User["👤 Developer<br/>(the person with the idea)"]
-    Vibey["<b>vibey</b><br/>three-phase conductor"]
+    Vibey["<b>vibey</b><br/>six-phase conductor"]
 
     subgraph Engines["Autonomous session runners (local CLIs)"]
         CL["claudeloop<br/>Anthropic"]
@@ -100,7 +100,7 @@ graph TB
     subgraph External["External"]
         Providers["Model providers<br/>Anthropic / OpenAI / Cursor / Google"]
         Market["vibe-engineering-skills<br/>plugin marketplace"]
-        Azure["Azure<br/>(post-phase deploy)"]
+        Azure["Azure<br/>(Phases ④–⑥)"]
     end
 
     User -->|"interview answers,<br/>review verdicts"| Vibey
@@ -112,7 +112,7 @@ graph TB
     Vibey --> Git
     Vibey --> FS
     Vibey -->|"provision skills<br/>into worktrees"| Market
-    Vibey -.->|"vibey-deploy"| Azure
+    Vibey -->|"plan, deploy,<br/>verify, demo"| Azure
 ```
 
 **Trust boundary note.** Everything inside *Local* is on the developer's machine.
@@ -265,13 +265,15 @@ src/vibey/
 | `DESIGN` (①) | **yes** | `HIGH` | Interview the user to a testable spec |
 | `BUILD` (②) | no | `LOW` (auto-escalating) | Decompose, implement, verify, integrate |
 | `REVIEW` (③) | **yes** | `HIGH` | Demo what was built, collect change requests |
-| `DEPLOY` | no | `LOW` | Post-phase: Azure deployment |
+| `DEPLOY_DESIGN` (④) | **yes** | `HIGH` | Establish and accept the Azure deployment contract |
+| `DEPLOY_EXECUTE` (⑤) | no | `LOW` (auto-escalating) | Plan, provision, release, verify, and recover autonomously |
+| `DEPLOY_REVIEW` (⑥) | **yes** | `HIGH` | Demo success or resolve a failure that needs user input |
 | `DONE` | — | — | Terminal success |
 | `ABANDONED` | — | — | Terminal failure / user cancel |
 
-Effort assignment is the user's explicit requirement: high-effort models for the
-two conversations with a human, low-effort for the bulk autonomous build. §9.3
-covers the escalation ladder that keeps `BUILD` from getting stuck at `LOW`.
+The lifecycle contains two three-phase stage sets: delivery (①–③) and deployment
+(④–⑥). High-effort models conduct the four human conversations; low-effort models
+handle bulk autonomous build and deployment work. §9.3 covers escalation ladders.
 
 ### 6.2 Transitions
 
@@ -287,14 +289,24 @@ stateDiagram-v2
     BUILD --> DESIGN: blocked on ambiguity<br/>(spec insufficient)
     BUILD --> ABANDONED: budget exhausted<br/>+ user declines top-up
 
-    REVIEW --> DONE: user accepts
+    REVIEW --> DEPLOY_DESIGN: user accepts build
     REVIEW --> DESIGN: changes need clarification
     REVIEW --> BUILD: changes are unambiguous<br/>(fast path)
     REVIEW --> ABANDONED: user cancels
 
-    DONE --> DEPLOY: deploy requested
-    DEPLOY --> DONE: deployed
-    DEPLOY --> REVIEW: deployment verification failed
+    DEPLOY_DESIGN --> DEPLOY_EXECUTE: deployment spec accepted<br/>+ mutation consent recorded
+    DEPLOY_DESIGN --> ABANDONED: user cancels
+
+    DEPLOY_EXECUTE --> DEPLOY_EXECUTE: retryable / waitable failure
+    DEPLOY_EXECUTE --> DEPLOY_REVIEW: verified success<br/>or user input required
+
+    DEPLOY_REVIEW --> DONE: successful demo accepted
+    DEPLOY_REVIEW --> DEPLOY_DESIGN: deployment details must change
+    DEPLOY_REVIEW --> DEPLOY_EXECUTE: unambiguous retry
+    DEPLOY_REVIEW --> DESIGN: product intent changed
+    DEPLOY_REVIEW --> BUILD: application fix is unambiguous
+    DEPLOY_REVIEW --> REVIEW: acceptance evidence must be reconsidered
+    DEPLOY_REVIEW --> ABANDONED: user cancels
 ```
 
 **On `REVIEW → BUILD` (the fast path).** The source diagram specifies
@@ -308,12 +320,24 @@ path taken only when *every* open finding is `unambiguous` and the user has not
 set `strict_loopback = true`. See
 [ADR-0010](../architecture/decisions/0010-review-loopback-routing.md).
 
-### 6.3 Cycle accounting
+**Automatic does not mean ambient authority.** Acceptance in ③ automatically
+enters ④. Phase ④ is read-only discovery and conversation. The first Azure
+mutation is guarded by a trusted, accepted deployment specification and explicit
+consent naming the tenant, subscription, scope, environment, cost boundary,
+verification contract, and recovery policy. See
+[ADR-0013](../architecture/decisions/0013-deployment-is-a-three-phase-stage-set.md).
+
+### 6.3 Cycle and deployment-attempt accounting
 
 Every pass through the machine increments `cycle`. The ledger, worktree branches,
 and artifacts are all `cycle`-scoped, so cycle 3's build does not overwrite cycle
 2's evidence. `max_cycles` (default 10) is a hard stop that raises a human gate
 rather than looping forever.
+
+Phase ⑤ also increments a separately bounded `deployment_attempt` for each
+apply/release attempt. Retryable failures remain autonomous only while attempt,
+elapsed-time, and cost caps allow. Reaching a cap raises a Phase ⑥ human gate;
+it never turns into an unbounded cloud loop.
 
 ### 6.4 Transition guards
 
@@ -326,6 +350,11 @@ A transition fires only when its guard holds. Guards are pure functions in
 | `BUILD → REVIEW` | every work item is `integrated` or `waived`, integration branch is green |
 | `BUILD → DESIGN` | ≥1 work item is `blocked_on_ambiguity` and retries exhausted |
 | `REVIEW → *` | user issued a verdict and triage has classified every finding |
+| `REVIEW → DEPLOY_DESIGN` | build accepted and integration evidence remains green |
+| `DEPLOY_DESIGN → DEPLOY_EXECUTE` | complete trusted deployment spec, preflight/what-if accepted, explicit mutation consent |
+| `DEPLOY_EXECUTE → DEPLOY_EXECUTE` | failure is retryable or waitable and all attempt/time/cost caps remain |
+| `DEPLOY_EXECUTE → DEPLOY_REVIEW` | runtime verification succeeded, or failure requires human input |
+| `DEPLOY_REVIEW → *` | user verdict recorded and outcome/failure routing is classified |
 | `* → ABANDONED` | explicit user cancel, or budget exhausted with declined top-up |
 
 ---
@@ -414,9 +443,12 @@ Full DDL, indices, and the reaper query are in [data-model.md](data-model.md).
 | `review.demo` | ③ | no | read-only worktree | `HIGH` |
 | `review.collect` | ③ | no | none | `HIGH` |
 | `review.triage` | ③ | no | none | `HIGH` |
+| `deploy.interview` / `deploy.spec` | ④ | no | none | `HIGH` |
+| `deploy.discover` / `deploy.plan` / `deploy.validate` | ⑤ | yes where read-only | none | `STANDARD` |
+| `deploy.apply` / `deploy.release` / `deploy.verify` / `deploy.recover` | ⑤ | dependency-ordered | accepted Azure scope | `LOW` ↑ |
+| `deploy.demo` / `deploy.collect` / `deploy.triage` | ⑥ | no | read-only Azure evidence | `HIGH` |
 | `handoff.produce` | any | inherits | inherits | one tier below source |
 | `handoff.verify` | any | inherits | none | `LOW` (deterministic + cheap model) |
-| `deploy.*` | post | no | none | `LOW` |
 
 ### 7.4 Leases, retries, idempotency
 
@@ -721,9 +753,10 @@ and `ai-security-practices` skills:
 | **Destructive command** | `rm -rf`, `git push --force`, `DROP DATABASE` | Deny-list enforced at the engine adapter *and* in container mode at the mount level; `git push` requires explicit `allow_push = true` |
 | **Credential handling** | Provider keys | Vibey never reads provider keys. Each engine authenticates itself from its own env/keychain; vibey only observes `doctor` exit codes |
 
-Vibey does not run `git push`, open pull requests, or deploy without an explicit,
-per-project opt-in flag. The default posture is: everything happens on local
-branches until a human says otherwise.
+Vibey does not run `git push`, open pull requests, or mutate Azure without
+explicit, scope-bound authorization. Entry into Phase ④ is automatic after the
+build is accepted; deployment authority is not. The default posture remains:
+local branches and read-only discovery until a human accepts the deployment spec.
 
 ---
 
@@ -746,30 +779,34 @@ branches until a human says otherwise.
 
 ---
 
-## 14. Post-phase: deployment
+## 14. Deployment stage set (Phases ④–⑥)
 
-Per the source diagram, deployment is a **separate CLI library**, not part of the
-phase machine's core.
+Deployment is the second three-phase stage set in the core lifecycle, governed by
+[ADR-0013](../architecture/decisions/0013-deployment-is-a-three-phase-stage-set.md)
+and specified turn-by-turn in [phase-protocols.md](phase-protocols.md). Azure
+implementations remain behind application ports and optional infrastructure
+dependencies so `domain/` stays provider-agnostic and stdlib-only.
 
-`vibey-deploy` is a thin orchestration layer over
-[`azure-bootstrap`](https://github.com/TheViziusGroup/azure-bootstrap) `3.0.1`,
-which already provides the `azbootstrap` scaffold entry point, the App
-Configuration/Key Vault/App Insights bootstrap, and the logging transports. Vibey
-adds:
+1. **④ DEPLOY DESIGN (interactive)** discovers the target and authority, selects
+   service topology from requirements, resolves secret *references*, defines IaC,
+   migration, cost, health, rollout, and recovery policies, and records consent.
+2. **⑤ DEPLOY EXECUTE (autonomous)** creates an immutable plan, runs static and
+   provider preflight checks plus ARM `what-if`, provisions idempotently, releases
+   progressively when supported, verifies runtime health and acceptance, and
+   executes only pre-authorized recovery actions. Retryable failures loop in ⑤;
+   authority, ambiguity, unexpected deletion, destructive data change, policy,
+   budget, or recovery decisions enter ⑥.
+3. **⑥ DEPLOY REVIEW (interactive)** presents a live demo with redacted evidence
+   on success, or asks only for the input needed to unblock a classified failure.
+   It may finish, revise the deployment contract in ④, retry in ⑤, or return an
+   application/specification defect to the appropriate delivery phase.
 
-1. **Target detection** — read the built artifact, classify it (Functions app,
-   container, static site, library) using the `azure-services-catalog` skill's
-   decision ladder: App Service → Container Apps → AKS.
-2. **IaC emission** — Bicep by default; Terraform when `iac = "terraform"`.
-3. **Environment promotion** — `dev → staging → prod` with App Service deployment
-   slots for zero-downtime swap.
-4. **Post-deploy verification** — health endpoint probe, smoke test, and on
-   failure a `DEPLOY → REVIEW` transition carrying the failure as a
-   `FindingRaised` event.
-
-Deployment is opt-in per project and gated behind an explicit
-`vibey deploy --confirm`. It is the one place where vibey touches something
-outside the developer's machine, so it never happens implicitly.
+Success means declared resources converged *and* the workload passed health,
+smoke/acceptance, and bake-window checks. A successful CLI exit or ARM operation
+alone is insufficient. Every mutation records redacted command intent, operation
+and resource IDs, artifact digests, verification evidence, and recovery actions.
+Secrets remain in Key Vault or another approved secret store and enter the ledger
+only as references.
 
 ---
 
@@ -784,7 +821,7 @@ Following the marketplace's `test-strategy` and `python-quality-testing` skills.
 | `infrastructure/db` | Integration tests against a real ephemeral Postgres (testcontainers) — never mocked, because `SKIP LOCKED` semantics are the thing under test | 90% |
 | `infrastructure/engines` | **Engine conformance suite** (below) + a `ScriptedEngine` for offline determinism | 90% |
 | `cli` | Typer runner smoke tests | 90% |
-| End-to-end | `pytest -m system`: a scripted engine drives a full `DESIGN→BUILD→REVIEW→DESIGN→BUILD→DONE` cycle on a throwaway git repo, no network, no provider account | — |
+| End-to-end | `pytest -m system`: scripted engine and Azure adapter drive `①→②→③→④→⑤→⑥`, including both stage-set loop-backs, on throwaway local resources with no network | — |
 
 ### The engine conformance suite
 
@@ -861,9 +898,13 @@ effort = "high"
 plugins = ["software-architecture", "quality-engineering", "security-first-dev", "engineering-process"]
 
 [deploy]
-enabled = false
 target  = "azure"
 iac     = "bicep"
+environment = "dev"
+max_attempts = 5
+max_dollars = 20.00
+# Tenant, subscription, scope, region, identity, health, rollout, recovery, and
+# secret references are completed and accepted interactively in Phase ④.
 ```
 
 ---
@@ -885,7 +926,7 @@ Detail, with test-first task breakdowns, in
 | **M7** | Phase ③ REVIEW + loop-backs | Full `③→①→②→③` cycle on a real project |
 | **M8** | TUI, cost reporting, OTel, notifications | `vibey watch` usable for an overnight run |
 | **M9** | Isolation levels (container), security hardening, threat-model review | Container mode passes egress allow-list test |
-| **M10** | `vibey-deploy` on `azure-bootstrap` | A built app deploys to an Azure dev slot and passes health verification |
+| **M10** | Phases ④–⑥: Azure deployment stage set | Accepted build enters ④, deploys durably in ⑤, and reaches a verified demo or actionable human gate in ⑥ |
 
 ---
 
@@ -895,7 +936,7 @@ Detail, with test-first task breakdowns, in
 |---|---|---|
 | **The four runners drift** — they are pre-1.0 and actively changing | high | Conformance suite (§15) run in CI and at `doctor`; descriptors are versioned and pinned; a failing engine is marked ineligible, not fatal |
 | **The no-loss gate is only as good as the ids** — if an agent records a decision without an id, the gate can't check it | high | Ids are assigned by *vibey* at append time, not by the agent; the agent's free text is the payload, the id is infrastructure |
-| **Interactive phases fight the runners' "never block" design** | medium | Vibey inverts control: it owns the conversation and parks jobs; runners are only used for the autonomous parts of ① and ③ (research, synthesis, demo generation) |
+| **Interactive phases fight the runners' "never block" design** | medium | Vibey owns conversations and parks jobs; runners perform bounded research, synthesis, execution, and demo generation without holding a worker lease while awaiting a human |
 | **Round-robin across vendors produces inconsistent code style** | medium | Agent-surface provisioning (§10) gives every engine identical guidance; `build.verify` enforces the project's own lint/format gates regardless of author |
 | **Cost is unpredictable across four providers** | medium | Hard caps per cycle and per project; `cost_factor` in rotation weights biases toward cheaper engines at equal capability |
 | **Postgres is a dependency a "local tool" shouldn't need** | low | `vibey up` makes it a one-command concern with three fallbacks; the alternative (SQLite) is disqualified on `SKIP LOCKED` grounds |
@@ -925,4 +966,5 @@ Detail, with test-first task breakdowns, in
 | [0009](../architecture/decisions/0009-human-gates-are-parked-jobs.md) | Human gates park jobs; they never block workers |
 | [0010](../architecture/decisions/0010-review-loopback-routing.md) | Review loops back to design by default, to build on the fast path |
 | [0011](../architecture/decisions/0011-agent-surface-provisioning.md) | One source of truth materialized into every engine's guidance files |
-| [0012](../architecture/decisions/0012-deploy-is-a-separate-cli.md) | Deployment is a separate CLI built on `azure-bootstrap` |
+| [0012](../architecture/decisions/0012-deploy-is-a-separate-cli.md) | Superseded: deployment as a separate CLI |
+| [0013](../architecture/decisions/0013-deployment-is-a-three-phase-stage-set.md) | Deployment is a three-phase stage set in the core lifecycle |

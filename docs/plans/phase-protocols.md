@@ -1,6 +1,6 @@
 # Phase Protocols
 
-> What Phase ①, ②, and ③ actually do — the jobs they enqueue, the conversation
+> What all six phases actually do — the jobs they enqueue, the conversation
 > they hold, the artifacts they produce, and the conditions under which they hand
 > control to the next phase or loop back.
 
@@ -55,7 +55,18 @@ sequenceDiagram
     else any finding needs clarification
         S->>Q: → ① DESIGN (default loop-back)
     else no findings
-        S->>U: DONE
+        S->>Q: → ④ DEPLOY DESIGN
+        Q->>E: deployment interview → accepted contract
+        S->>Q: → ⑤ DEPLOY EXECUTE
+        Q->>E: plan → validate → apply → release → verify
+        S->>Q: → ⑥ DEPLOY REVIEW
+        alt verified success
+            E->>U: live demo + deployment evidence
+            U-->>S: accept → DONE
+        else user input required
+            E->>U: failure evidence + one blocking question
+            U-->>S: revise ④ / retry ⑤ / repair ①–③
+        end
     end
 ```
 
@@ -302,7 +313,7 @@ omitted by a model that would rather present a clean result.
 
 `review.collect` holds the conversation. The developer can:
 
-- accept (`vibey review accept`) → `DONE`
+- accept (`vibey review accept`) → `④ DEPLOY DESIGN`
 - request changes in free text → each becomes a `FindingRaised`
 - ask questions about what was built → answered from the ledger, not from a fresh
   reading of the code, so the answer includes *why* something was done
@@ -335,7 +346,7 @@ Anything else is `needs_clarification`.
 ### 3.4 The loop-back
 
 ```
-if no open findings                       → DONE
+if no open findings                       → ④ DEPLOY DESIGN
 elif any finding is needs_clarification   → ① DESIGN     (the default)
 elif strict_loopback                      → ① DESIGN
 else                                      → ② BUILD      (fast path)
@@ -361,7 +372,132 @@ cycle 1 are still in front of the engine working cycle 3.
 
 ---
 
-## 4. Human gates
+## 4. Phase ④ — DEPLOY DESIGN
+
+**Interactive. `HIGH` effort. Goal: turn deployment uncertainty into a trusted,
+accepted, replayable Azure deployment contract without mutating Azure.**
+
+Acceptance in Phase ③ enters Phase ④ automatically. The phase may use read-only
+Azure discovery, repository inspection, official documentation research, and
+installed skills/plugins, but a worker may not create, update, or delete an Azure
+resource. Questions are batched with proposed defaults just as in Phase ①.
+
+### 4.1 Interview stages
+
+| Stage | Questions that must be settled |
+|---|---|
+| 1. Target and environment | tenant, subscription, resource-group scope, environment, region/data residency, ownership tags |
+| 2. Identity and authority | approved workload/CLI identity, least-privilege roles, who may grant missing authority |
+| 3. Workload topology | artifact type, compute/data/network dependencies, ingress, DNS/TLS, scaling, availability, RTO/RPO |
+| 4. Configuration and secrets | environment configuration and Key Vault/approved-store references; never secret values |
+| 5. Data and compatibility | schema migration order, backward compatibility, backup, rollback/roll-forward limits |
+| 6. Release and recovery | Bicep/Terraform, progressive exposure, health gates, rollback/roll-forward/fallback policy |
+| 7. Verification, cost, and consent | health/smoke/acceptance checks, bake window, budget caps, destructive-change policy, explicit mutation consent |
+
+The target service is selected from requirements; App Service, Container Apps,
+Functions, AKS, Static Web Apps, or another Azure service is an output, not an
+assumption. Production promotion is a distinct environment contract, not a side
+effect of accepting a dev deployment.
+
+### 4.2 Jobs and artifacts
+
+| Job | Effort | Mutating? | Produces |
+|---|---|---|---|
+| `deploy.interview` | `HIGH` | no | questions, answers, decisions, consent candidates |
+| `deploy.discover` | `STANDARD` | no | redacted inventory and policy/capability evidence |
+| `deploy.research` | `STANDARD` | no | authoritative target/IaC/recovery references with provenance |
+| `deploy.synthesize` | `HIGH` | no | draft deployment specification and runbook |
+| `deploy.spec` | `HIGH` | no | accepted artifacts plus immutable target-scope digest |
+
+Artifacts live under `.vibey/context/deploy/`:
+
+```
+deployment-spec.md        target, topology, configuration references, IaC
+deployment-acceptance.md  health, smoke, acceptance, and bake-window checks
+deployment-runbook.md     release, migration, recovery, ownership, escalation
+deployment-plan.json      machine-readable immutable contract, with scope digest
+```
+
+### 4.3 Exit criteria (`DEPLOY_DESIGN → DEPLOY_EXECUTE` guard)
+
+All required fields above are resolved; discovery provenance is trusted or
+explicitly accepted; cost/attempt/time caps are set; static validation, provider
+preflight, and the proposed `what-if` policy are accepted; no secret value is in
+an artifact or ledger event; and the user records explicit consent for the named
+target and mutations. A change to target scope invalidates consent and stays in ④.
+
+---
+
+## 5. Phase ⑤ — DEPLOY EXECUTE
+
+**Autonomous. `LOW` effort, escalating. Goal: reach a verified deployment or a
+precisely classified failure that genuinely requires user input.**
+
+The durable dependency graph is:
+
+```text
+discover → plan → validate → what-if → apply → configure → migrate
+                                              → release → verify → bake
+                                                   ↘ recover when policy permits
+```
+
+Every side effect is idempotent and records its intent before execution plus a
+redacted result afterward. Azure operation/deployment IDs, resource IDs, artifact
+digests, verification evidence, and recovery actions make worker-death replay
+auditable. Infrastructure is code (Bicep by default; Terraform through the same
+port), deployment is incremental by default, and identity uses workload
+identity/OIDC or a user-approved CLI session rather than stored client secrets.
+
+### 5.1 Autonomous loop and failure routing
+
+| Failure class | Route |
+|---|---|
+| transient API/network, throttling, waitable capacity | stay in ⑤ with durable backoff |
+| known idempotent conflict or failed health gate with pre-authorized recovery | recover/replan and stay in ⑤ |
+| attempt/time/cost cap, missing authority, policy denial | enter ⑥ |
+| ambiguous target/configuration, unexpected delete/scope expansion | enter ⑥; do not mutate |
+| destructive or incompatible data migration | enter ⑥; do not mutate |
+| recovery choice outside the accepted runbook | enter ⑥ |
+| application/specification defect | enter ⑥ with evidence for delivery routing |
+
+The retry ladder increases diagnostic effort and rotates engines at defined
+attempts, but never expands Azure scope or authorized recovery actions. A worker
+parks `awaiting_capacity` or a human gate and releases its lease; it never sleeps
+while holding queue work.
+
+### 5.2 Success criteria (`DEPLOY_EXECUTE → DEPLOY_REVIEW`)
+
+Provider success is necessary but insufficient. Success requires declared
+resources to converge, the expected artifact digest to be serving, health checks
+to remain green, smoke and deployment acceptance checks to pass, and the accepted
+bake window to complete without degradation. Verified success and failures that
+require user input both enter ⑥ with different typed outcomes.
+
+---
+
+## 6. Phase ⑥ — DEPLOY REVIEW
+
+**Interactive. `HIGH` effort. Goal: demo the live result or obtain exactly the
+input needed to resume safely.**
+
+On success, `deploy.demo` presents the endpoint, deployed version/digest,
+topology, health and acceptance evidence, known limitations, cost snapshot, and
+recovery posture. Sensitive values are redacted. The user can accept the demo to
+reach `DONE`, request a deployment-contract change (④), or request an
+unambiguous redeploy (⑤).
+
+On failure, `deploy.triage` explains the attempted action, confirmed state,
+failed check, autonomous recovery already attempted, blast radius, and the one
+decision/permission/value still needed. The answer may route to ④ when the
+contract changes, to ⑤ when the accepted contract can be retried unchanged, or
+to ①/②/③ when the product intent, implementation, or acceptance evidence must
+change. Returning to delivery preserves the deployment findings in the ledger;
+after delivery acceptance, the lifecycle re-enters ④ so stale deployment consent
+cannot be reused silently.
+
+---
+
+## 7. Human gates
 
 The `*loop` runners never block on a human. Vibey preserves that property while
 still being interactive, by making human input a **queue state** rather than a
@@ -396,7 +532,7 @@ decision is visible and travels through handoffs.
 
 ---
 
-## 5. Effort and rotation summary
+## 8. Effort and rotation summary
 
 | Phase | Job | Effort | Engine selection |
 |---|---|---|---|
@@ -411,6 +547,15 @@ decision is visible and travels through handoffs.
 | ③ | `review.demo` | `HIGH` | rotate |
 | ③ | `review.collect` | `HIGH` | rotate |
 | ③ | `review.triage` | `HIGH` → `MAX` on critical | rotate |
+| ④ | `deploy.interview` | `HIGH` | rotate between interview stages |
+| ④ | `deploy.discover` / `deploy.research` | `STANDARD` | rotate per question; parallel when read-only |
+| ④ | `deploy.synthesize` / `deploy.spec` | `HIGH` | synthesizer differs from majority interviewer |
+| ⑤ | `deploy.plan` / `deploy.validate` | `STANDARD` | rotate; validation excludes planner where possible |
+| ⑤ | `deploy.apply` / `deploy.release` | `LOW` → ladder | sticky on safe retry; rotate on escalation |
+| ⑤ | `deploy.verify` | `STANDARD` | differs from release executor where possible |
+| ⑤ | `deploy.recover` | `HIGH` | only within accepted recovery policy |
+| ⑥ | `deploy.demo` / `deploy.collect` | `HIGH` | rotate |
+| ⑥ | `deploy.triage` | `HIGH` → `MAX` on destructive/critical | rotate |
 
 The two **must differ** constraints are the design's built-in cross-checks: the
 thing that writes the spec is not the thing that ran the interview, and the thing

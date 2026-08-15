@@ -1,13 +1,14 @@
 # vibey
 
-**A queue-based, three-phase conductor for autonomous software delivery — built
+**A queue-based, six-phase conductor for autonomous software delivery — built
 on top of the `*loop` autonomous session runners.**
 
 You describe what you want. Vibey interviews you until the spec is sharp (Phase 1),
 builds it autonomously while you sleep (Phase 2), then demos it back and asks what
-to change (Phase 3) — looping back as many times as it takes. Every phase rotates
-across multiple AI engines round-robin, and hands the full conversation from one
-engine to the next without losing anything.
+to change (Phase 3). Once accepted, vibey interviews you for Azure deployment
+details (Phase 4), deploys autonomously until success or a failure needs you
+(Phase 5), and demos the live deployment or asks for the missing input (Phase 6).
+Both three-phase stage sets can loop without losing the conversation.
 
 | | |
 |---|---|
@@ -22,24 +23,24 @@ engine to the next without losing anything.
 ## The shape of it
 
 ```
-                 ┌─────────────────────────────────────────┐
-                 │                                         │
-                 ▼                                         │
-  INTAKE → ① DESIGN ──────→ ② BUILD ──────→ ③ REVIEW ──────┤
-           interactive      autonomous      interactive     │
-           HIGH effort      LOW effort      HIGH effort     │
-                 ▲              ▲                           │
-                 │              └───────────────────────────┘
-                 └──────────────────────────────────────────┘
-                                                            │
-                                                            ▼
-                                                    POST: DEPLOY (Azure)
+  DELIVERY STAGE SET
+  INTAKE → ① DESIGN ⇄ ② BUILD ⇄ ③ REVIEW
+              interactive / autonomous / interactive
+                              │ accepted
+                              ▼
+  DEPLOYMENT STAGE SET
+           ④ DEPLOY DESIGN ⇄ ⑤ DEPLOY EXECUTE ⇄ ⑥ DEPLOY REVIEW → DONE
+              interactive       autonomous          interactive
+                    ▲                 │                    │
+                    └─────────────────┴────────────────────┘
 ```
 
-Phase 1 and Phase 3 talk to you. Phase 2 does not — it runs unattended for hours,
-survives rate-limit windows and credit exhaustion, and rotates engines when one
-runs dry. Phase 3 can send work back to Phase 1 (needs re-clarification) or
-straight to Phase 2 (change is already unambiguous).
+Phases 1, 3, 4, and 6 talk to you. Phases 2 and 5 run unattended, survive
+rate-limit windows and credit exhaustion, and rotate engines when one runs dry.
+Phase 3 routes product changes back through delivery. Phase 6 accepts a successful
+deployment, requests changed deployment details in Phase 4, retries an
+unambiguous deployment in Phase 5, or routes an application defect back to the
+appropriate delivery phase.
 
 ## Why it isn't just another agent framework
 
@@ -66,7 +67,7 @@ three things those runners deliberately do not do:
 | [Data model](docs/plans/data-model.md) | Full PostgreSQL DDL, queue semantics, indices |
 | [Handoff protocol](docs/plans/handoff-protocol.md) | The event ledger, the envelope, and the no-loss gate |
 | [Rotation & engines](docs/plans/rotation-and-engines.md) | Capability matrix, effort normalization, smooth weighted round robin |
-| [Phase protocols](docs/plans/phase-protocols.md) | What Phase 1, 2, and 3 actually do, turn by turn |
+| [Phase protocols](docs/plans/phase-protocols.md) | What all six phases do, turn by turn |
 | [Implementation plan](docs/plans/implementation-plan.md) | Milestone-by-milestone, test-first task breakdown |
 | [Decision records](docs/architecture/decisions/) | Why each hard call was made |
 

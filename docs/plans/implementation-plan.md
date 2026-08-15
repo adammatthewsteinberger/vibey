@@ -173,7 +173,7 @@ integration branch, having survived at least one capacity rejection.
 | 7.4 | `review.triage` — severity × ambiguity, `MAX` effort on critical | classification fixtures | the 4 `clear` conditions are all checked |
 | 7.5 | `next_phase_after_review` wired; cycle increment; cycle-scoped artifacts | — | cycle 2 never overwrites cycle 1's evidence |
 | 7.6 | Re-entrant DESIGN scoped to findings (not a fresh elicitation) | — | ≤5 question batches on a typical re-design |
-| 7.7 | **Full-cycle system test**: `①→②→③→①→②→③→DONE`, scripted engines, throwaway repo | `pytest -m system` | no network, no provider account, deterministic |
+| 7.7 | **Delivery-stage-set system test**: `①→②→③→①→②→③→④`, scripted engines, throwaway repo | `pytest -m system` | no network, no provider account, deterministic |
 
 **Exit:** task 7.7 green. The product's core promise works end to end.
 
@@ -197,23 +197,35 @@ integration branch, having survived at least one capacity rejection.
 |---|---|---|
 | 9.1 | `container` isolation: Docker/Podman, bind mount, egress allow-list | an agent cannot reach a non-allow-listed host |
 | 9.2 | Destructive-command denies at adapter and mount level | `rm -rf /` and `git push --force` both blocked |
-| 9.3 | `allow_push` gate — no push, no PR, no deploy without opt-in | default posture is local-branches-only |
+| 9.3 | Scope-bound mutation gate — no push, PR, or Azure mutation without explicit authority | automatic `③→④` performs read-only work until the Phase ④ deployment contract is accepted |
 | 9.4 | Untrusted-provenance handling in seed prompts | injection corpus test: planted instructions in fetched content are not obeyed |
 | 9.5 | Threat-model review against `threat-modeling-playbook` + `ai-security-practices` | documented, with residual risks accepted explicitly |
 | 9.6 | `bandit` + `pip-audit` clean; SECURITY.md | — |
 
 ---
 
-## M10 — `vibey-deploy`
+## M10 — Deployment stage set (Phases ④–⑥)
 
 | # | Task | Done when |
 |---|---|---|
-| 10.1 | Separate package, thin layer over `azure-bootstrap` 3.0.1 `azbootstrap` | installs independently |
-| 10.2 | Target detection via the `azure-services-catalog` decision ladder | Functions / Container Apps / App Service classified correctly |
-| 10.3 | Bicep emission (default), Terraform behind `iac = "terraform"` | — |
-| 10.4 | `dev → staging → prod` with App Service deployment slots | zero-downtime swap |
-| 10.5 | Post-deploy verification → on failure, `DEPLOY → REVIEW` with a `FindingRaised` | — |
-| 10.6 | `vibey deploy --confirm` gate | deployment never happens implicitly |
+| 10.1 | Test-first expansion of the pure phase machine to `DEPLOY_DESIGN`, `DEPLOY_EXECUTE`, and `DEPLOY_REVIEW` | property tests cover every legal/illegal edge, terminal reachability, and bounded deployment attempts; `domain/` remains 100% |
+| 10.2 | Immutable `DeploymentSpec`, consent evidence, failure taxonomy, and routing policy | target/scope/identity/cost/health/recovery omissions block `④→⑤`; every classified outcome has one deterministic route |
+| 10.3 | Phase ④ interactive interview, read-only Azure discovery, synthesis, and acceptance | user can answer in batches until a complete `deployment-spec.md`, `deployment-runbook.md`, and consent record exist |
+| 10.4 | Azure application port plus optional adapter using workload identity/OIDC or an approved CLI identity | domain/application tests use fakes; adapter contract tests redact credentials and reject scope expansion |
+| 10.5 | Bicep default and Terraform port; static checks, provider preflight, and ARM `what-if` | unexpected deletion, policy denial, destructive data change, or cost expansion parks before mutation |
+| 10.6 | Durable Phase ⑤ graph: discover → plan → validate → apply → configure → migrate → release → verify | replay is idempotent; leases, operation IDs, resource IDs, and artifact digests survive worker death |
+| 10.7 | Deployment retry/escalation ladder with attempt, elapsed-time, and dollar caps | retryable/capacity failures loop in ⑤; cap/authority/ambiguity failures enter ⑥ without a blocked worker |
+| 10.8 | Progressive exposure and policy-bound rollback/roll-forward/fallback | health degradation stops rollout; only pre-authorized recovery actions execute autonomously |
+| 10.9 | Runtime verification contract: convergence, health, smoke/acceptance, and bake window | provider success alone cannot satisfy `⑤→⑥` as a successful outcome |
+| 10.10 | Phase ⑥ success demo and failure-remediation conversation | user sees live endpoint and redacted evidence, or is asked only for the missing input |
+| 10.11 | Phase ⑥ loop routing | success can reach `DONE`; deployment changes route to ④; unambiguous retry to ⑤; application/spec defects to ①/②/③ |
+| 10.12 | CLI/TUI surfaces for deployment status, plan diff, consent, retry, evidence, and demo | automatic `③→④` is visible; no Azure mutation occurs before accepted consent |
+| 10.13 | Offline six-phase system test plus a tightly scoped real-Azure dev proof | `①→②→③→④→⑤→⑥→DONE`, internal loop-backs, worker crash replay, and one live deployment all pass |
+
+M10 follows [ADR-0013](../architecture/decisions/0013-deployment-is-a-three-phase-stage-set.md).
+Azure resources are chosen from Phase ④ requirements rather than a fixed service.
+Production promotion is not implied by a successful dev deployment; each
+environment needs its own accepted scope and recovery contract.
 
 ---
 
@@ -237,7 +249,7 @@ gantt
     section Hardening
     M8 operability       :m8, after m7, 2
     M9 isolation/security:m9, after m7, 2
-    M10 deploy           :m10, after m8, 2
+    M10 DEPLOY ④–⑥      :m10, after m8, 3
 ```
 
 M2 and M3 are independent and can run in parallel once M1 lands. **M4 is the
@@ -271,11 +283,11 @@ Two guardrails, because a tool that edits itself while running is a footgun:
 ## Definition of done for v1
 
 - [ ] `pytest` green, `domain/`+`application/` at 100%
-- [ ] `pytest -m system` runs the full `①→②→③→①→②→③` cycle offline
+- [ ] `pytest -m system` runs the full `①→②→③→④→⑤→⑥` lifecycle and both stage-set loop-backs offline
 - [ ] Chaos test green at 8 workers with random kills
 - [ ] No-loss property suite green over 10,000 adversarial examples
 - [ ] `vibey doctor --conformance` passes on all four installed runners
 - [ ] One real project taken from idea to deployed Azure dev slot
-- [ ] All 12 ADRs written and accurate
+- [ ] All 13 ADRs written and accurate; superseded decisions are clearly marked
 - [ ] Threat model reviewed; residual risks documented
 - [ ] `mkdocs build --strict` clean

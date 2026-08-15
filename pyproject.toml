@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "vibey"
 version = "0.1.0"
-description = "A queue-based, three-phase conductor for autonomous software delivery."
+description = "A queue-based, six-phase conductor for autonomous software delivery."
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }

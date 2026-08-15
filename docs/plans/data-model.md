@@ -50,7 +50,9 @@ erDiagram
 
 ```sql
 CREATE TYPE phase AS ENUM (
-    'intake','design','build','review','deploy','done','abandoned'
+    'intake','design','build','review',
+    'deploy_design','deploy_execute','deploy_review',
+    'done','abandoned'
 );
 
 CREATE TABLE project (
@@ -68,6 +70,52 @@ CREATE TABLE project (
 
 CREATE UNIQUE INDEX project_repo_uniq ON project (repo_path);
 ```
+
+The M10 forward migration replaces the legacy single `deploy` enum value with
+`deploy_design`, `deploy_execute`, and `deploy_review`; it never rewrites an
+already-applied migration. Existing projects in legacy `deploy` are migrated to
+`deploy_design` so target scope and consent are re-established safely.
+
+### 3.1.1 Deployment contracts and attempts
+
+```sql
+CREATE TYPE deployment_outcome AS ENUM (
+    'running','verified_success','input_required','cancelled'
+);
+
+CREATE TABLE deployment_contract (
+    id                  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id          uuid NOT NULL REFERENCES project(id) ON DELETE CASCADE,
+    cycle               integer NOT NULL,
+    revision            integer NOT NULL,
+    target_scope_digest text NOT NULL,
+    spec                jsonb NOT NULL, -- no secret values; references only
+    accepted_event_id   uuid NOT NULL,
+    consent_event_id    uuid NOT NULL,
+    accepted_at         timestamptz NOT NULL,
+    superseded_at       timestamptz,
+    UNIQUE (project_id, cycle, revision)
+);
+
+CREATE TABLE deployment_attempt (
+    id                    uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    contract_id           uuid NOT NULL REFERENCES deployment_contract(id),
+    attempt               integer NOT NULL CHECK (attempt >= 1),
+    outcome               deployment_outcome NOT NULL DEFAULT 'running',
+    azure_operation_ids   text[] NOT NULL DEFAULT '{}',
+    resource_ids          text[] NOT NULL DEFAULT '{}',
+    artifact_digest       text NOT NULL,
+    cost_usd              numeric(12,6) NOT NULL DEFAULT 0 CHECK (cost_usd >= 0),
+    started_at            timestamptz NOT NULL DEFAULT now(),
+    completed_at          timestamptz,
+    evidence              jsonb NOT NULL DEFAULT '{}',
+    UNIQUE (contract_id, attempt)
+);
+```
+
+The accepted and consent event IDs bind each attempt to trusted append-only
+ledger evidence. Retrying an unchanged contract creates another attempt; changing
+scope creates a new contract revision and invalidates the previous consent.
 
 ### 3.2 `event` — the ledger
 
