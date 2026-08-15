@@ -16,6 +16,7 @@ async def test_create_get_and_transition_project(
     )
     assert isinstance(created.project_id, UUID)
     assert created.phase is Phase.INTAKE
+    assert created.cycle == 1
     assert created.max_cycles == 7
 
     same = await repo.get(created.project_id)
@@ -23,6 +24,14 @@ async def test_create_get_and_transition_project(
 
     transitioned = await repo.transition(created.project_id, expected=Phase.INTAKE, to=Phase.DESIGN)
     assert transitioned.phase is Phase.DESIGN
+    assert transitioned.cycle == 1
+
+    # Transition with cycle increment
+    transitioned_loop = await repo.transition(
+        created.project_id, expected=Phase.DESIGN, to=Phase.BUILD, cycle=2
+    )
+    assert transitioned_loop.phase is Phase.BUILD
+    assert transitioned_loop.cycle == 2
 
 
 async def test_transition_rejects_stale_expected_phase(

@@ -51,6 +51,47 @@ async def test_file_review_artifact_writer(tmp_path: Path) -> None:
     assert run_it_path.stat().st_mode & 0o111  # executable
 
 
+async def test_file_review_artifact_writer_cycle_isolation(tmp_path: Path) -> None:
+    project_id = uuid4()
+    proj = ProjectRecord(
+        project_id=project_id,
+        name="test-proj",
+        repo_path=tmp_path,
+        phase=Phase.REVIEW,
+        cycle=1,
+        max_cycles=5,
+        config={},
+        created_at=NOW,
+        updated_at=NOW,
+    )
+    writer = FileReviewArtifactWriter(FakeProjectRepo(proj))
+
+    # Write cycle 1
+    await writer.write_review_artifacts(
+        project_id,
+        1,
+        {"DEMO.md": "# Demo Cycle 1", "deltas.md": "# Deltas Cycle 1"},
+    )
+
+    # Write cycle 2
+    await writer.write_review_artifacts(
+        project_id,
+        2,
+        {"DEMO.md": "# Demo Cycle 2", "deltas.md": "# Deltas Cycle 2"},
+    )
+
+    c1_demo = tmp_path / ".vibey" / "runs" / "1" / "review" / "DEMO.md"
+    c2_demo = tmp_path / ".vibey" / "runs" / "2" / "review" / "DEMO.md"
+
+    # Cycle 1 is preserved and not overwritten
+    assert c1_demo.exists()
+    assert c1_demo.read_text() == "# Demo Cycle 1"
+
+    # Cycle 2 has its own isolated content
+    assert c2_demo.exists()
+    assert c2_demo.read_text() == "# Demo Cycle 2"
+
+
 async def test_file_review_artifact_writer_unknown_project(tmp_path: Path) -> None:
     writer = FileReviewArtifactWriter(FakeProjectRepo(None))
     with pytest.raises(LookupError):

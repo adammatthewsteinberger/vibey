@@ -58,18 +58,40 @@ class PostgresProjectRepository:
             row = await conn.fetchrow("SELECT * FROM project WHERE id = $1", project_id)
             return _row_to_project(row) if row is not None else None
 
-    async def transition(self, project_id: UUID, *, expected: Phase, to: Phase) -> ProjectRecord:
+    async def transition(
+        self,
+        project_id: UUID,
+        *,
+        expected: Phase,
+        to: Phase,
+        cycle: int | None = None,
+    ) -> ProjectRecord:
         async with self._pool.acquire() as conn:
-            row = await conn.fetchrow(
-                """
-                UPDATE project SET phase = $3, updated_at = now()
-                WHERE id = $1 AND phase = $2
-                RETURNING *
-                """,
-                project_id,
-                expected.value,
-                to.value,
-            )
+            if cycle is not None:
+                row = await conn.fetchrow(
+                    """
+                    UPDATE project
+                    SET phase = $3, cycle = $4, updated_at = now()
+                    WHERE id = $1 AND phase = $2
+                    RETURNING *
+                    """,
+                    project_id,
+                    expected.value,
+                    to.value,
+                    cycle,
+                )
+            else:
+                row = await conn.fetchrow(
+                    """
+                    UPDATE project
+                    SET phase = $3, updated_at = now()
+                    WHERE id = $1 AND phase = $2
+                    RETURNING *
+                    """,
+                    project_id,
+                    expected.value,
+                    to.value,
+                )
             if row is None:
                 raise ValueError(
                     f"project {project_id} is not in expected phase {expected.value!r}"

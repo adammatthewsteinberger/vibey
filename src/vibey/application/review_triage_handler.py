@@ -1,4 +1,4 @@
-"""Durable ``review.triage`` handler (M7 task 7.4).
+"""Durable ``review.triage`` handler (M7 task 7.4 & 7.5).
 
 Performs severity x ambiguity classification on open findings:
 - Severity: CRITICAL, HIGH, MEDIUM, LOW.
@@ -7,11 +7,12 @@ Performs severity x ambiguity classification on open findings:
   - If no findings: routes to DONE and enqueues ``review.deployment_choice``.
   - If CLEAR findings only: fast loop-back to BUILD (enqueues ``build.plan``).
   - If any NEEDS_CLARIFICATION or strict: routes to DESIGN (enqueues ``design.interview``).
+- Increments the cycle and updates project state on loop-back.
 - Critical findings unconditionally require Effort.MAX.
 """
 
 from collections.abc import Mapping, Sequence
-from typing import Protocol
+from typing import Any, Protocol
 from uuid import UUID
 
 from vibey.application.dto import EnqueueRequest, JobRecord
@@ -43,6 +44,17 @@ class ReviewTriageLedger(Protocol):
     ) -> None: ...
 
 
+class ProjectTransitioner(Protocol):
+    async def transition(
+        self,
+        project_id: UUID,
+        *,
+        expected: Phase,
+        to: Phase,
+        cycle: int | None = None,
+    ) -> Any: ...
+
+
 class ReviewTriageHandler:
     def __init__(
         self,
@@ -51,11 +63,13 @@ class ReviewTriageHandler:
         specs: ReviewSpecRepository,
         jobs: JobRepository,
         clock: Clock,
+        projects: ProjectTransitioner | object = None,
     ) -> None:
         self._ledger = ledger
         self._specs = specs
         self._jobs = jobs
         self._clock = clock
+        self._projects = projects
 
     async def handle(self, job: JobRecord) -> Outcome:
         if job.kind != "review.triage":
@@ -102,17 +116,27 @@ class ReviewTriageHandler:
 
         effort = triage_required_effort(triaged_refs)
         has_critical = any(f.severity is Severity.CRITICAL for f in triaged_refs)
-        next_phase = next_phase_after_review(triaged_refs, strict_loopback=False)
+        strict_loopback = bool(job.payload.get("strict_loopback", False))
+        next_phase = next_phase_after_review(triaged_refs, strict_loopback=strict_loopback)
+
+        next_cycle = job.cycle + 1
+        if self._projects is not None and hasattr(self._projects, "transition"):
+            await self._projects.transition(
+                job.project_id,
+                expected=Phase.REVIEW,
+                to=next_phase,
+                cycle=next_cycle,
+            )
 
         if next_phase is Phase.DESIGN:
             await self._jobs.enqueue(
                 EnqueueRequest(
                     project_id=job.project_id,
-                    cycle=job.cycle + 1,
+                    cycle=next_cycle,
                     phase=Phase.DESIGN,
                     kind="design.interview",
                     idempotency_key=idempotency_key(
-                        job.project_id, job.cycle + 1, "design.interview", str(job.id)
+                        job.project_id, next_cycle, "design.interview", str(job.id)
                     ),
                     requirement={"effort": effort.name.lower()},
                 )
@@ -121,11 +145,11 @@ class ReviewTriageHandler:
             await self._jobs.enqueue(
                 EnqueueRequest(
                     project_id=job.project_id,
-                    cycle=job.cycle + 1,
+                    cycle=next_cycle,
                     phase=Phase.BUILD,
                     kind="build.plan",
                     idempotency_key=idempotency_key(
-                        job.project_id, job.cycle + 1, "build.plan", str(job.id)
+                        job.project_id, next_cycle, "build.plan", str(job.id)
                     ),
                     requirement={"effort": effort.name.lower()},
                 )
