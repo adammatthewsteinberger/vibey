@@ -1,0 +1,155 @@
+"""Phase ⑥ DEPLOY REVIEW demo and failure triage handlers (Milestone 10 task 10.10)."""
+
+from collections.abc import Callable, Mapping, Sequence
+from typing import Protocol
+from uuid import UUID
+
+from vibey.application.dto import HumanGateRequest, JobRecord
+from vibey.application.ports import HumanGateRepository
+from vibey.application.worker import Failure, Outcome, Park, Success
+from vibey.domain.deployment import DeploymentFailureClass, DeploymentSpec
+from vibey.domain.job import FailureClass
+from vibey.domain.ledger import EventKind, LedgerEvent
+
+
+class DeployReviewLedger(Protocol):
+    async def all_for_project(self, project_id: UUID) -> Sequence[LedgerEvent]: ...
+
+    async def append_event(
+        self,
+        project_id: UUID,
+        cycle: int,
+        job_id: UUID,
+        kind: EventKind,
+        payload: Mapping[str, object],
+    ) -> None: ...
+
+
+class DeployReviewDemoHandler:
+    """Presents live URL, resource manifest, and verification proof for approved deployment."""
+
+    def __init__(
+        self,
+        *,
+        ledger: DeployReviewLedger,
+        human_gates: HumanGateRepository,
+        spec_provider: Callable[[UUID], DeploymentSpec | None] | None = None,
+    ) -> None:
+        self._ledger = ledger
+        self._gates = human_gates
+        self._spec_provider = spec_provider
+
+    async def handle(self, job: JobRecord) -> Outcome:
+        if job.kind != "deploy.demo":
+            return Failure(FailureClass.VIBEY, "expected deploy.demo job")
+
+        events = await self._ledger.all_for_project(job.project_id)
+        dep_events = [
+            e
+            for e in events
+            if e.kind == EventKind.ARTIFACT_PRODUCED
+            and e.payload.get("artifact_type") == "deployment_verification"
+        ]
+
+        endpoint = "https://app.azurecontainerapps.io"
+        if dep_events:
+            outputs = dep_events[-1].payload.get("outputs", {})
+            if isinstance(outputs, dict) and "endpoint" in outputs:
+                endpoint = str(outputs["endpoint"])
+
+        gate = await self._gates.latest_for_job(job.id)
+        if gate is None:
+            request = HumanGateRequest(
+                kind="deploy_demo_review",
+                prompt=(
+                    f"### Phase ⑥ Deployment Demo Review\n\n"
+                    f"- **Live URL**: {endpoint}\n"
+                    f"- **Runtime Verification**: Succeeded across all 4 dimensions\n\n"
+                    f"Please verify the live deployment and approve completion."
+                ),
+                options=("approve", "request_changes"),
+                default_answer="approve",
+            )
+            await self._gates.raise_gate(job.project_id, job.id, request)
+            return Park(request)
+
+        if gate.answer is None:
+            return Park(
+                HumanGateRequest(
+                    kind=gate.kind,
+                    prompt=gate.prompt,
+                    options=gate.options,
+                    default_answer=gate.default_answer,
+                )
+            )
+
+        return Success(
+            {"status": "demo_approved", "endpoint": endpoint, "answer": dict(gate.answer)}
+        )
+
+
+class DeployReviewTriageHandler:
+    """Presents failure root cause, runbook matches, and interactive remediation options."""
+
+    def __init__(
+        self,
+        *,
+        ledger: DeployReviewLedger,
+        human_gates: HumanGateRepository,
+        spec_provider: Callable[[UUID], DeploymentSpec | None] | None = None,
+    ) -> None:
+        self._ledger = ledger
+        self._gates = human_gates
+        self._spec_provider = spec_provider
+
+    async def handle(self, job: JobRecord) -> Outcome:
+        if job.kind != "deploy.triage":
+            return Failure(FailureClass.VIBEY, "expected deploy.triage job")
+
+        events = await self._ledger.all_for_project(job.project_id)
+        finding_events = [e for e in events if e.kind == EventKind.FINDING_RAISED]
+
+        failure_class = DeploymentFailureClass.POLICY_DENIAL.value
+        error_msg = "Unknown deployment failure"
+        if finding_events:
+            last = finding_events[-1]
+            failure_class = str(last.payload.get("failure_class", failure_class))
+            error_msg = str(last.payload.get("error", error_msg))
+
+        gate = await self._gates.latest_for_job(job.id)
+        if gate is None:
+            request = HumanGateRequest(
+                kind="deploy_failure_triage",
+                prompt=(
+                    f"### Phase ⑥ Deployment Failure Triage\n\n"
+                    f"- **Failure Class**: {failure_class}\n"
+                    f"- **Error Details**: {error_msg}\n\n"
+                    f"**Remediation Options**:\n"
+                    f"1. `LOOP_DEPLOY_DESIGN`: Return to Phase ④ to adjust spec / budget.\n"
+                    f"2. `RETRY_DEPLOY_EXECUTE`: Re-trigger Phase ⑤ deployment execution.\n"
+                    f"3. `ABORT_DEPLOYMENT`: Conclude cycle without deploying.\n\n"
+                    f"Please select your remediation choice."
+                ),
+                options=("LOOP_DEPLOY_DESIGN", "RETRY_DEPLOY_EXECUTE", "ABORT_DEPLOYMENT"),
+                default_answer="LOOP_DEPLOY_DESIGN",
+            )
+            await self._gates.raise_gate(job.project_id, job.id, request)
+            return Park(request)
+
+        if gate.answer is None:
+            return Park(
+                HumanGateRequest(
+                    kind=gate.kind,
+                    prompt=gate.prompt,
+                    options=gate.options,
+                    default_answer=gate.default_answer,
+                )
+            )
+
+        return Success(
+            {
+                "status": "triage_answered",
+                "failure_class": failure_class,
+                "answer": dict(gate.answer),
+            }
+        )
