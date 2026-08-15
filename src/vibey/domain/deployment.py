@@ -360,3 +360,80 @@ def evaluate_exposure_step(
 
     next_percent = min(100, current_percent + step_size)
     return (next_percent, None)
+
+
+class VerificationDimension(StrEnum):
+    CONVERGENCE = "convergence"
+    HEALTH = "health"
+    SMOKE = "smoke"
+    BAKE_WINDOW = "bake_window"
+
+
+@dataclass(slots=True, frozen=True)
+class VerificationResult:
+    passed: bool
+    dimension_results: Mapping[str, bool]
+    failed_dimension: VerificationDimension | None = None
+    failure_reason: str | None = None
+
+
+def evaluate_verification_contract(
+    contract: VerificationContract,
+    *,
+    convergence_succeeded: bool,
+    health_status_code: int,
+    smoke_commands_passed: bool,
+    bake_window_errors_count: int,
+) -> VerificationResult:
+    """Evaluates all 4 dimensions of the deployment runtime verification contract."""
+    dimension_results = {
+        "convergence": convergence_succeeded,
+        "health": 200 <= health_status_code < 300,
+        "smoke": smoke_commands_passed,
+        "bake_window": bake_window_errors_count == 0,
+    }
+
+    if not convergence_succeeded:
+        return VerificationResult(
+            passed=False,
+            dimension_results=dimension_results,
+            failed_dimension=VerificationDimension.CONVERGENCE,
+            failure_reason="Convergence failed: resource provisioning state is not Succeeded",
+        )
+
+    if not (200 <= health_status_code < 300):
+        return VerificationResult(
+            passed=False,
+            dimension_results=dimension_results,
+            failed_dimension=VerificationDimension.HEALTH,
+            failure_reason=(
+                f"Health check at {contract.health_endpoint} failed with HTTP status "
+                f"{health_status_code}"
+            ),
+        )
+
+    if not smoke_commands_passed:
+        return VerificationResult(
+            passed=False,
+            dimension_results=dimension_results,
+            failed_dimension=VerificationDimension.SMOKE,
+            failure_reason="One or more smoke/acceptance verification commands failed",
+        )
+
+    if bake_window_errors_count > 0:
+        return VerificationResult(
+            passed=False,
+            dimension_results=dimension_results,
+            failed_dimension=VerificationDimension.BAKE_WINDOW,
+            failure_reason=(
+                f"Bake window ({contract.bake_window_seconds}s) recorded "
+                f"{bake_window_errors_count} error occurrences"
+            ),
+        )
+
+    return VerificationResult(
+        passed=True,
+        dimension_results=dimension_results,
+        failed_dimension=None,
+        failure_reason=None,
+    )
