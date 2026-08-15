@@ -8,7 +8,7 @@ __pycache__/
 .coverage.*
 htmlcov/
 *.egg-info/
-dist/
-build/
+/dist/
+/build/
 .claudeloop/
 .vibey/plans/

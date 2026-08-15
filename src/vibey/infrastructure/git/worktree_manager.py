@@ -38,6 +38,12 @@ class GitWorktreeManager:
         self._cycle = cycle
         self._executor = executor or CleanGitEnvSubprocessExecutor()
 
+    def path_for(self, item_id: str) -> Path:
+        """No I/O, no mutation: where this item's worktree lives (or would
+        live), for callers like build.verify that must operate on an
+        already-created worktree without create()'s self-healing wipe."""
+        return self._repo_root / worktree_subpath(self._cycle, item_id)
+
     async def create(self, item_id: str, *, base_ref: str = "HEAD") -> Path:
         path = self._repo_root / worktree_subpath(self._cycle, item_id)
         branch = branch_name(self._cycle, item_id)

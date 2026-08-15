@@ -1,7 +1,7 @@
-"""Real-Postgres, real-git, real-worktree end-to-end for build.implement:
-decompose -> worktree -> provision -> run -> ledger, driven entirely through
-the actual queue (WorkerLoop), same shape as
-test_design_interview_end_to_end.py."""
+"""Real-Postgres, real-git, real-worktree end-to-end for build.implement and
+build.verify: decompose -> worktree -> provision -> implement -> gates ->
+diff review -> ledger, driven entirely through the actual queue (WorkerLoop),
+same shape as test_design_interview_end_to_end.py."""
 
 from datetime import UTC, datetime
 from pathlib import Path
@@ -10,6 +10,7 @@ import asyncpg
 
 from vibey.application.build_decompose_handler import BuildDecomposeHandler
 from vibey.application.build_implement_handler import BuildImplementHandler
+from vibey.application.build_verify_handler import BuildVerifyHandler
 from vibey.application.dto import EnqueueRequest
 from vibey.application.job_dispatcher import JobDispatcher
 from vibey.application.worker import WorkerLoop
@@ -18,13 +19,14 @@ from vibey.domain.job import JobState, idempotency_key
 from vibey.domain.phase import Phase
 from vibey.domain.plan import VerificationSpec, WorkItem
 from vibey.domain.spec import AcceptanceCriterion, DesignSpec
+from vibey.infrastructure.build.gate_runner import SubprocessGateRunner
 from vibey.infrastructure.db.build_ledger import PostgresBuildLedger
 from vibey.infrastructure.db.design_spec_repository import FileDesignSpecRepository
 from vibey.infrastructure.db.human_gate_repository import PostgresHumanGateRepository
 from vibey.infrastructure.db.job_repository import PostgresJobRepository
 from vibey.infrastructure.db.ledger_repository import PostgresLedgerRepository
 from vibey.infrastructure.db.project_repository import PostgresProjectRepository
-from vibey.infrastructure.engines.descriptors import CLAUDELOOP
+from vibey.infrastructure.engines.descriptors import CLAUDELOOP, CODEXLOOP
 from vibey.infrastructure.engines.scripted import ScriptedEngine
 from vibey.infrastructure.git.clean_env import CleanGitEnvSubprocessExecutor
 from vibey.infrastructure.git.worktree_manager import GitWorktreeManager
@@ -46,7 +48,7 @@ class Decomposer:
                 depends_on=(),
                 est_effort=Effort.LOW,
                 files_touched_hint=(),
-                verification=VerificationSpec(commands=("pytest",), criteria_checked=("AC-1",)),
+                verification=VerificationSpec(commands=("true",), criteria_checked=("AC-1",)),
             ),
         )
 
@@ -56,7 +58,7 @@ async def _run(*argv: str) -> None:
     assert result.returncode == 0, result.stderr
 
 
-async def test_decompose_then_implement_run_end_to_end_through_the_queue(
+async def test_decompose_implement_verify_run_end_to_end_through_the_queue(
     migrated_pool: asyncpg.Pool, tmp_path: Path
 ) -> None:
     repo_path = tmp_path / "repo"
@@ -106,7 +108,14 @@ async def test_decompose_then_implement_run_end_to_end_through_the_queue(
                 provisioner=AgentSurfaceProvisioner(),
                 engine=ScriptedEngine(descriptor=CLAUDELOOP, base_dir=tmp_path / "engine"),
                 ledger=PostgresBuildLedger(ledger_repo),
+                jobs=jobs,
                 clock=FixedClock(),
+            ),
+            "build.verify": BuildVerifyHandler(
+                worktrees=GitWorktreeManager(repo_path, cycle=1),
+                gates=SubprocessGateRunner(),
+                reviewer=ScriptedEngine(descriptor=CODEXLOOP, base_dir=tmp_path / "engine"),
+                ledger=PostgresBuildLedger(ledger_repo),
             ),
         }
     )
@@ -114,6 +123,7 @@ async def test_decompose_then_implement_run_end_to_end_through_the_queue(
 
     assert await worker.run_once(project_id)  # build.decompose
     assert await worker.run_once(project_id)  # build.implement
+    assert await worker.run_once(project_id)  # build.verify
 
     async with migrated_pool.acquire() as conn:
         rows = await conn.fetch("SELECT kind, state FROM job WHERE project_id = $1", project_id)
@@ -121,6 +131,7 @@ async def test_decompose_then_implement_run_end_to_end_through_the_queue(
     assert states == {
         "build.decompose": JobState.SUCCEEDED.value,
         "build.implement": JobState.SUCCEEDED.value,
+        "build.verify": JobState.SUCCEEDED.value,
     }
 
     worktree = repo_path / ".vibey" / "worktrees" / "1" / "skeleton"

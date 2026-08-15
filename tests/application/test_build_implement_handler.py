@@ -3,7 +3,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
 
-from tests.application.fakes import make_job
+from tests.application.fakes import FakeJobRepository, make_job
 from vibey.application.build_implement_handler import BuildImplementHandler
 from vibey.application.dto import EngineEvent
 from vibey.application.worker import Defer, Failure, Park, Success
@@ -62,6 +62,7 @@ def _handler(
         provisioner=provisioner,
         engine=engine,
         ledger=ledger,
+        jobs=FakeJobRepository(),
         clock=FixedClock(),
     )
     return handler, worktrees, provisioner
@@ -70,15 +71,32 @@ def _handler(
 async def test_successful_run_provisions_and_records_events_and_succeeds(tmp_path: Path) -> None:
     engine = ScriptedEngine(descriptor=CLAUDELOOP, base_dir=tmp_path / "engine")
     ledger = FakeLedger()
-    handler, worktrees, provisioner = _handler(tmp_path, engine=engine, ledger=ledger)
+    worktrees = FakeWorktrees(tmp_path)
+    provisioner = FakeProvisioner()
+    jobs = FakeJobRepository()
+    handler = BuildImplementHandler(
+        worktrees=worktrees,
+        provisioner=provisioner,
+        engine=engine,
+        ledger=ledger,
+        jobs=jobs,
+        clock=FixedClock(),
+    )
 
-    outcome = await handler.handle(_job(payload={"title": "do the thing", "verification": {}}))
+    job = _job(payload={"title": "do the thing", "verification": {}})
+    outcome = await handler.handle(job)
 
     assert isinstance(outcome, Success)
     assert outcome.result["work_item_id"] == "item-1"
     assert worktrees.created == ["item-1"]
     assert provisioner.calls == [tmp_path / "item-1"]
     assert any(event.kind == "VerdictRendered" for event in ledger.recorded)
+
+    enqueued = await jobs.claim(job.project_id, owner="t", lease=timedelta(seconds=5))
+    assert enqueued is not None
+    assert enqueued.kind == "build.verify"
+    assert enqueued.work_item_id == "item-1"
+    assert enqueued.requirement["implementer_engine_id"] == "claudeloop"
 
 
 async def test_rejects_wrong_kind_and_missing_work_item_id() -> None:
