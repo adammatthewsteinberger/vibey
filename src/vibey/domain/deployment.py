@@ -247,3 +247,63 @@ def evaluate_iac_plan(
         is_safe_for_automated_apply=safe,
         blocking_reasons=tuple(reasons),
     )
+
+
+class DeploymentLadderDecision(StrEnum):
+    RETRY = "retry"
+    ROLLBACK = "rollback"
+    HALT_AND_TRIAGE = "halt_and_triage"
+
+
+@dataclass(slots=True, frozen=True)
+class DeploymentAttemptRecord:
+    attempt_number: int
+    elapsed_seconds: float
+    total_spent_usd: float
+    last_failure_class: DeploymentFailureClass | None = None
+
+
+def evaluate_retry_ladder(
+    attempt: DeploymentAttemptRecord, spec: DeploymentSpec
+) -> tuple[DeploymentLadderDecision, str]:
+    """Evaluates retry and escalation ladder against attempt limits and dollar caps."""
+    if attempt.total_spent_usd > spec.cost_boundary.max_deployment_cost_usd:
+        return (
+            DeploymentLadderDecision.HALT_AND_TRIAGE,
+            f"Deployment dollar cap exceeded (${attempt.total_spent_usd:.2f} > "
+            f"${spec.cost_boundary.max_deployment_cost_usd:.2f})",
+        )
+
+    if attempt.elapsed_seconds > 1800.0:
+        return (
+            DeploymentLadderDecision.HALT_AND_TRIAGE,
+            f"Deployment timeout elapsed cap exceeded ({attempt.elapsed_seconds:.1f}s > 1800.0s)",
+        )
+
+    max_allowed_attempts = spec.recovery_policy.max_rollback_attempts + 1
+    if attempt.attempt_number >= max_allowed_attempts:
+        return (
+            DeploymentLadderDecision.HALT_AND_TRIAGE,
+            f"Max deployment attempts exceeded "
+            f"({attempt.attempt_number} >= {max_allowed_attempts})",
+        )
+
+    if attempt.last_failure_class in (
+        DeploymentFailureClass.TRANSIENT_CAPACITY,
+        DeploymentFailureClass.IDEMPOTENT_CONFLICT,
+    ):
+        return (
+            DeploymentLadderDecision.RETRY,
+            f"Transient failure ({attempt.last_failure_class}) eligible for retry with backoff",
+        )
+
+    if spec.recovery_policy.auto_rollback_on_health_failure:
+        return (
+            DeploymentLadderDecision.ROLLBACK,
+            "Health failure encountered; initiating automated rollback",
+        )
+
+    return (
+        DeploymentLadderDecision.HALT_AND_TRIAGE,
+        "Non-retryable failure requires human triage in review",
+    )
