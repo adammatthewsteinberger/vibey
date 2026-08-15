@@ -10,9 +10,9 @@ import typer
 from vibey import __version__
 from vibey.application.design_acceptance import DesignAcceptanceService
 from vibey.application.dto import EnqueueRequest
-from vibey.bootstrap import DesignProvider, build_app, build_design_worker
+from vibey.bootstrap import DesignProvider, SystemClock, build_app, build_design_worker
 from vibey.domain.job import idempotency_key
-from vibey.domain.phase import Phase
+from vibey.domain.phase import Phase, VisualDecision
 from vibey.domain.spec import (
     AcceptanceCriterion,
     Constraint,
@@ -193,10 +193,22 @@ def _load_spec(path: Path) -> DesignSpec:
 def accept_design(
     project_id: UUID,
     spec_json: Annotated[Path | None, typer.Option("--spec-json")] = None,
+    visual: Annotated[
+        bool,
+        typer.Option(
+            "--visual/--no-visual",
+            help="Opt in to the VISUAL_DESIGN interstitial instead of going straight to BUILD.",
+        ),
+    ] = False,
 ) -> None:
-    """Accept the synthesized spec, optionally importing JSON first, and enter BUILD."""
+    """Accept the synthesized spec, optionally importing JSON first.
 
-    async def accept() -> Path:
+    The visual-design choice is explicit and never defaults to yes: pass
+    --visual to enter VISUAL_DESIGN, or omit it (or pass --no-visual) to
+    decline and go straight to BUILD.
+    """
+
+    async def accept() -> tuple[Path, Phase]:
         async with build_app() as resources:
             project = await resources.projects.get(project_id)
             if project is None:
@@ -207,11 +219,18 @@ def accept_design(
                 projects=resources.projects,
                 ledger=resources.design_ledger,
                 specs=resources.design_specs,
-            ).accept(project_id)
-            return accepted.repo_path
+                jobs=resources.jobs,
+                clock=SystemClock(),
+            ).accept(
+                project_id,
+                visual_choice=VisualDecision.OPTED_IN if visual else VisualDecision.DECLINED,
+            )
+            return accepted.repo_path, accepted.phase
 
-    repo_path = asyncio.run(accept())
-    typer.echo(f"accepted design for {project_id}; context written under {repo_path}")
+    repo_path, phase = asyncio.run(accept())
+    typer.echo(
+        f"accepted design for {project_id}; entered {phase.value}; context under {repo_path}"
+    )
 
 
 if __name__ == "__main__":

@@ -132,8 +132,8 @@ async def test_real_queue_runs_and_resumes_all_seven_interview_stages(
     assert len(research) == 3
     assert all(event.provenance.value == "untrusted" for event in research)
 
-    accepted = await DesignAcceptanceService(projects=projects, ledger=ledger, specs=specs).accept(
-        project_id
-    )
+    accepted = await DesignAcceptanceService(
+        projects=projects, ledger=ledger, specs=specs, jobs=jobs, clock=FixedClock()
+    ).accept(project_id)
     assert accepted.phase is Phase.BUILD
     assert (await specs.load(project_id, 1)).is_buildable() == ()  # type: ignore[union-attr]

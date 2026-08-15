@@ -113,3 +113,26 @@ def test_design_with_no_subcommand_shows_help() -> None:
 
     assert result.exit_code == 0, result.output
     assert "resume" in result.output.lower() or "accept" in result.output.lower()
+
+
+def test_design_accept_visual_opts_into_visual_design(tmp_path: Path) -> None:
+    created = runner.invoke(app, ["new", "widget", "--repo", str(tmp_path)])
+    assert created.exit_code == 0, created.output
+    project_line, job_line = created.output.strip().splitlines()
+    project_id = UUID(project_line.removeprefix("project "))
+    interview_job_id = UUID(job_line.removeprefix("design job "))
+
+    for number in range(1, 8):
+        worked = runner.invoke(app, ["work", str(project_id)])
+        assert worked.exit_code == 0, worked.output
+        gate_id = asyncio.run(_latest_gate_id(interview_job_id))
+        answered = runner.invoke(app, ["answer", str(gate_id), f"q-{number}=answer-{number}"])
+        assert answered.exit_code == 0, answered.output
+
+    for _ in range(6):
+        worked = runner.invoke(app, ["work", str(project_id)])
+        assert worked.exit_code == 0, worked.output
+
+    accepted = runner.invoke(app, ["design", "accept", str(project_id), "--visual"])
+    assert accepted.exit_code == 0, accepted.output
+    assert "entered visual_design" in accepted.output

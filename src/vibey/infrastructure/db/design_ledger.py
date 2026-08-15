@@ -18,8 +18,8 @@ class PostgresDesignLedger:
         self,
         project_id: UUID,
         cycle: int,
-        job_id: UUID,
-        engine_id: EngineId,
+        job_id: UUID | None,
+        engine_id: EngineId | None,
         event: DesignEvent,
     ) -> None:
         payload = dict(event.payload)

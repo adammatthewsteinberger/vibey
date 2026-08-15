@@ -34,6 +34,8 @@ class EventKind(StrEnum):
     HANDOFF_ACCEPTED = "HandoffAccepted"
     PHASE_TRANSITIONED = "PhaseTransitioned"
     BUDGET_SPENT = "BudgetSpent"
+    VISUAL_DESIGN_OPTED_IN = "VisualDesignOptedIn"
+    VISUAL_DESIGN_DECLINED = "VisualDesignDeclined"
 
 
 CLOSABLE: frozenset[EventKind] = frozenset(
