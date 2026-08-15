@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "reason": "manual",
+  "produced_at": "2026-08-15T05:42:21.697278+00:00",
+  "run_id": "20260815T050628Z-c3b3796a",
+  "meta": {
+    "run_id": "20260815T050628Z-c3b3796a",
+    "pid": 86412,
+    "cwd": "/Users/adam/git/vibey",
+    "started_at": "2026-08-15T05:06:28.964725+00:00",
+    "session_id": "41b4834f-ba19-4880-9249-a12b28127ddc",
+    "plan_path": "/Users/adam/git/vibey/.vibey/plans/m6-remainder.md",
+    "status": "stopped",
+    "phase": "FAILED",
+    "attempt": 0,
+    "waiting_until": "2026-08-15T05:49:59.937524+00:00",
+    "model": "claude-opus-4-6",
+    "effort": "high",
+    "preset": "medium",
+    "capacity": "WindowExhausted"
+  },
+  "status": {
+    "phase": "FAILED",
+    "status": "stopped",
+    "session_id": "41b4834f-ba19-4880-9249-a12b28127ddc",
+    "attempt": 0,
+    "turns_spent": null,
+    "dollars_spent": null,
+    "probe_count": null,
+    "started_waiting_at": null,
+    "waiting_until": "2026-08-15T05:49:59.937524+00:00",
+    "model": "claude-opus-4-6",
+    "effort": "high",
+    "preset": "medium",
+    "capacity": "WindowExhausted"
+  },
+  "resources": {
+    "attachments": [],
+    "folders": [],
+    "skills": [],
+    "plugins": [],
+    "connectors": {},
+    "github": {},
+    "web_search": false,
+    "deep_research": false,
+    "permission_mode": "bypass",
+    "cwd": "/Users/adam/git/vibey",
+    "attachment_inventory": []
+  },
+  "memories": {
+    "items": []
+  },
+  "artifacts": [],
+  "plan": {
+    "plan_path": "/Users/adam/git/vibey/.vibey/plans/m6-remainder.md",
+    "remaining_items": [],
+    "remaining_work": []
+  },
+  "profile": {
+    "model": "claude-opus-4-6",
+    "effort": "high",
+    "preset": "medium"
+  },
+  "permission_mode": "bypass",
+  "cwd": "/Users/adam/git/vibey",
+  "budget": {
+    "turns_spent": null,
+    "dollars_spent": null,
+    "max_turns": null,
+    "max_dollars": null,
+    "max_attempts": null
+  },
+  "savepoints": [
+    {
+      "run_id": "20260815T050628Z-c3b3796a",
+      "n": 1,
+      "ref": "refs/claudeloop/20260815T050628Z-c3b3796a/1",
+      "sha": "27c13d171f2619672a8e82c6685599491402e2e2",
+      "label": "turn-1",
+      "at": "2026-08-15T05:19:54.472091+00:00",
+      "plan_item": null,
+      "committed": false,
+      "subject": null,
+      "path_count": 0
+    }
+  ],
+  "paths": {
+    "events": "events.jsonl",
+    "audit": "audit.jsonl",
+    "bus": "bus.jsonl",
+    "status": "status.json",
+    "stop_summary": "stop-summary.md",
+    "savepoints": "savepoints.jsonl"
+  },
+  "claude_session": {
+    "found": true,
+    "session_id": "41b4834f-ba19-4880-9249-a12b28127ddc",
+    "transcript_path": "/Users/adam/.claude/projects/-Users-adam-git-vibey/41b4834f-ba19-4880-9249-a12b28127ddc.jsonl",
+    "project_dir": "/Users/adam/.claude/projects/-Users-adam-git-vibey",
+    "transcript_copied": "snapshots/claude/41b4834f-ba19-4880-9249-a12b28127ddc.jsonl"
+  }
+}
