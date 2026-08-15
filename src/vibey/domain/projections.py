@@ -1,5 +1,5 @@
 """Pure projections over a replayed event range (architecture-and-roadmap.md
-§4): OpenItems, DecisionLog, CostReport, and Deltas. Projections are derived and
+§4): OpenItems, DecisionLog, CostReport, Deltas, and Q&A. Projections are derived and
 disposable -- any of them can be rebuilt by replaying the log, which is
 exactly what makes them safe to materialize for query speed without ever
 becoming a second source of truth."""
@@ -204,6 +204,84 @@ def build_deltas(events: Sequence[LedgerEvent]) -> DeltasReport:
         assumptions=tuple(sorted(assumptions_map.values(), key=lambda a: a.seq)),
         findings=tuple(sorted(findings_map.values(), key=lambda f: f.seq)),
     )
+
+
+_STOPWORDS = frozenset(
+    {
+        "why",
+        "did",
+        "you",
+        "use",
+        "the",
+        "for",
+        "what",
+        "how",
+        "and",
+        "with",
+        "from",
+        "is",
+        "a",
+        "an",
+    }
+)
+
+
+def answer_why_question(events: Sequence[LedgerEvent], question: str) -> str:
+    """Answers developer questions about what was built by reading the ledger.
+
+    Examines DecisionRecorded and AssumptionStated events so that answers explain
+    the recorded rationale rather than inventing a new one from a fresh model call.
+    """
+    words = [
+        w.strip("?,.!:;\"'")
+        for w in question.lower().split()
+        if w.strip("?,.!:;\"'") not in _STOPWORDS and len(w.strip("?,.!:;\"'")) > 1
+    ]
+
+    decisions: list[dict[str, object]] = []
+    assumptions: list[dict[str, object]] = []
+
+    for e in events:
+        if e.kind is EventKind.DECISION_RECORDED:
+            decisions.append(dict(e.payload))
+        elif e.kind is EventKind.ASSUMPTION_STATED:
+            assumptions.append(dict(e.payload))
+
+    matched_decisions = []
+    for d in decisions:
+        alts = " ".join(_as_str_tuple(d.get("alternatives", [])))
+        combined = (
+            f"{d.get('decision_id', '')} {d.get('title', '')} "
+            f"{d.get('choice', '')} {d.get('rationale', '')} {alts}"
+        ).lower()
+        if any(w in combined for w in words):
+            matched_decisions.append(d)
+
+    matched_assumptions = []
+    for a in assumptions:
+        combined = f"{a.get('assumption_id', '')} {a.get('text', '')}".lower()
+        if any(w in combined for w in words):
+            matched_assumptions.append(a)
+
+    target_decisions = matched_decisions if matched_decisions else decisions
+    target_assumptions = matched_assumptions if matched_assumptions else assumptions
+
+    if not target_decisions and not target_assumptions:
+        return "No decisions or assumptions recorded in the ledger."
+
+    lines: list[str] = ["Based on the ledger:"]
+    for d in target_decisions:
+        did = d.get("decision_id", "decision")
+        title = d.get("title", "")
+        choice = d.get("choice", "")
+        rationale = d.get("rationale", "")
+        lines.append(f"- Decision [{did}] '{title}': chose '{choice}' because {rationale}")
+    for a in target_assumptions:
+        aid = a.get("assumption_id", "assumption")
+        text = a.get("text", "")
+        lines.append(f"- Assumption [{aid}]: {text}")
+
+    return "\n".join(lines)
 
 
 def _as_str_tuple(value: object) -> tuple[str, ...]:
