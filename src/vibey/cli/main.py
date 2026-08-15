@@ -41,6 +41,8 @@ design_app = typer.Typer(name="design", invoke_without_command=True)
 app.add_typer(design_app, name="design")
 visual_app = typer.Typer(name="visual", invoke_without_command=True)
 app.add_typer(visual_app, name="visual")
+ledger_app = typer.Typer(name="ledger", invoke_without_command=True)
+app.add_typer(ledger_app, name="ledger")
 
 
 def _version_callback(value: bool) -> None:
@@ -324,6 +326,225 @@ def watch_dashboard(
             await tui_app.run_async()
 
     asyncio.run(run_dashboard())
+
+
+@app.command("status")
+def status(
+    project_id: Annotated[UUID | None, typer.Argument(help="Optional project ID")] = None,
+    as_json: Annotated[bool, typer.Option("--json", help="Output status as JSON")] = False,
+) -> None:
+    """Show status of the project, queue, and engine circuits."""
+    from vibey.infrastructure.db.engine_health_repository import PostgresEngineHealthRepository
+    from vibey.tui.dashboard import fetch_dashboard_state
+
+    async def get_status() -> None:
+        async with build_app() as resources:
+            target_id = project_id
+            if target_id is None:
+                latest = await resources.projects.get_latest()
+                if latest is None:
+                    typer.echo("no projects found; create one with `vibey new` first")
+                    raise typer.Exit(1)
+                target_id = latest.project_id
+
+            health_repo = PostgresEngineHealthRepository(resources.ledger._pool)
+            state = await fetch_dashboard_state(
+                projects=resources.projects,
+                jobs=resources.jobs,
+                health=health_repo,
+                ledger=resources.ledger,
+                project_id=target_id,
+            )
+
+            if as_json:
+                data = {
+                    "project_id": str(state.project_id),
+                    "name": state.project_name,
+                    "phase": state.phase.value,
+                    "cycle": state.cycle,
+                    "max_cycles": state.max_cycles,
+                    "repo_path": str(state.repo_path),
+                    "visual_decision": state.visual_decision,
+                    "deployment_decision": state.deployment_decision,
+                    "queue_depth": {k.value: v for k, v in state.queue_depth.items()},
+                    "circuits": [
+                        {
+                            "engine_id": c.engine_id,
+                            "installed": c.installed,
+                            "version": c.version,
+                            "conformance_ok": c.conformance_ok,
+                            "circuit": (
+                                c.circuit.value if hasattr(c.circuit, "value") else str(c.circuit)
+                            ),
+                            "capacity_state": str(c.capacity_state) if c.capacity_state else None,
+                            "consecutive_fail": c.consecutive_fail,
+                            "cost_usd_cycle": c.cost_usd_cycle,
+                            "selected_count": c.selected_count,
+                        }
+                        for c in state.circuits
+                    ],
+                    "active_worktrees": list(state.active_worktrees),
+                }
+                typer.echo(json.dumps(data, indent=2))
+            else:
+                vis = f" | Visual: {state.visual_decision}" if state.visual_decision else ""
+                dep = f" | Deploy: {state.deployment_decision}" if state.deployment_decision else ""
+                typer.echo(f"Project: {state.project_name} ({state.project_id})")
+                typer.echo(
+                    f"Phase: {state.phase.name} | Cycle: {state.cycle}/{state.max_cycles}{vis}{dep}"
+                )
+                typer.echo(f"Repo: {state.repo_path}")
+                typer.echo("\nQueue Depth:")
+                for k, v in state.queue_depth.items():
+                    typer.echo(f"  {k.name}: {v}")
+                typer.echo("\nCircuits:")
+                if not state.circuits:
+                    typer.echo("  (no engines recorded)")
+                else:
+                    for c in state.circuits:
+                        st = c.circuit.value if hasattr(c.circuit, "value") else str(c.circuit)
+                        summary = (
+                            f"{c.engine_id}: {st} "
+                            f"(fails={c.consecutive_fail}, cost=${c.cost_usd_cycle:.2f})"
+                        )
+                        typer.echo(f"  {summary}")
+
+    asyncio.run(get_status())
+
+
+@app.command("engines")
+def engines(
+    project_id: Annotated[UUID | None, typer.Argument(help="Optional project ID")] = None,
+) -> None:
+    """Show engine health, circuit breakers, and selection metrics."""
+    from vibey.infrastructure.db.engine_health_repository import PostgresEngineHealthRepository
+
+    async def list_engines() -> None:
+        async with build_app() as resources:
+            target_id = project_id
+            if target_id is None:
+                latest = await resources.projects.get_latest()
+                if latest is None:
+                    typer.echo("no projects found; create one with `vibey new` first")
+                    raise typer.Exit(1)
+                target_id = latest.project_id
+
+            health_repo = PostgresEngineHealthRepository(resources.ledger._pool)
+            records = await health_repo.list_for_project(target_id)
+            if not records:
+                typer.echo("no engines recorded for project")
+                return
+
+            header = (
+                f"{'ENGINE':<12} {'VERSION':<10} {'CIRCUIT':<10} "
+                f"{'FAILS':<6} {'SELECTED':<10} {'COST':<8}"
+            )
+            typer.echo(header)
+            typer.echo("-" * 60)
+            for r in records:
+                circuit_str = r.circuit.value if hasattr(r.circuit, "value") else str(r.circuit)
+                typer.echo(
+                    f"{r.engine_id:<12} {r.version or '-':<10} {circuit_str:<10} "
+                    f"{r.consecutive_fail:<6} {r.selected_count:<10} ${r.cost_usd_cycle:<7.2f}"
+                )
+
+    asyncio.run(list_engines())
+
+
+@app.command("cost")
+def cost(
+    project_id: Annotated[UUID | None, typer.Argument(help="Optional project ID")] = None,
+) -> None:
+    """Show cost breakdown and budget consumption."""
+    from vibey.infrastructure.db.engine_health_repository import PostgresEngineHealthRepository
+
+    async def show_cost() -> None:
+        async with build_app() as resources:
+            target_id = project_id
+            if target_id is None:
+                latest = await resources.projects.get_latest()
+                if latest is None:
+                    typer.echo("no projects found; create one with `vibey new` first")
+                    raise typer.Exit(1)
+                project = latest
+            else:
+                proj = await resources.projects.get(target_id)
+                if proj is None:
+                    typer.echo(f"unknown project {target_id}")
+                    raise typer.Exit(1)
+                project = proj
+
+            health_repo = PostgresEngineHealthRepository(resources.ledger._pool)
+            records = await health_repo.list_for_project(project.project_id)
+            total_cost = sum(r.cost_usd_cycle for r in records)
+
+            budget_cfg = (
+                project.config.get("budget", {}) if isinstance(project.config, dict) else {}
+            )
+            cycle_cap = budget_cfg.get("max_dollars_per_cycle", 40.0)
+            total_cap = budget_cfg.get("max_dollars_total", 250.0)
+
+            typer.echo(f"Project: {project.name} (Cycle {project.cycle})")
+            typer.echo(f"Total Spend (Cycle): ${total_cost:.2f}")
+            typer.echo(f"Cycle Budget Cap:    ${float(cycle_cap):.2f}")
+
+            typer.echo(f"Total Budget Cap:    ${float(total_cap):.2f}")
+            typer.echo("\nPer-Engine Spend (Current Cycle):")
+            for r in records:
+                typer.echo(f"  • {r.engine_id}: ${r.cost_usd_cycle:.2f} ({r.selected_count} turns)")
+
+    asyncio.run(show_cost())
+
+
+@ledger_app.callback(invoke_without_command=True)
+def ledger(ctx: typer.Context) -> None:
+    """Inspect the append-only event ledger."""
+    if ctx.invoked_subcommand is None:
+        typer.echo(ctx.get_help())
+        raise typer.Exit()
+
+
+@ledger_app.command("show")
+def ledger_show(
+    project_id: Annotated[UUID | None, typer.Argument(help="Optional project ID")] = None,
+    limit: Annotated[int, typer.Option("--limit", "-n", min=1)] = 50,
+    phase: Annotated[str | None, typer.Option("--phase")] = None,
+    kind: Annotated[str | None, typer.Option("--kind")] = None,
+) -> None:
+    """Show the append-only event ledger history."""
+
+    async def show_events() -> None:
+        async with build_app() as resources:
+            target_id = project_id
+            if target_id is None:
+                latest = await resources.projects.get_latest()
+                if latest is None:
+                    typer.echo("no projects found; create one with `vibey new` first")
+                    raise typer.Exit(1)
+                target_id = latest.project_id
+
+            events = await resources.ledger.all_for_project(target_id)
+            if phase is not None:
+                events = tuple(
+                    e
+                    for e in events
+                    if e.phase.value.lower() == phase.lower()
+                    or e.phase.name.lower() == phase.lower()
+                )
+            if kind is not None:
+                events = tuple(
+                    e
+                    for e in events
+                    if e.kind.value.lower() == kind.lower() or e.kind.name.lower() == kind.lower()
+                )
+
+            displayed = events[-limit:] if len(events) > limit else events
+            for e in displayed:
+                ts = e.produced_at.strftime("%Y-%m-%d %H:%M:%S")
+                eng = f" [{e.engine_id.value}]" if e.engine_id else ""
+                typer.echo(f"#{e.seq:<4} {ts} [{e.phase.name}] {e.kind.value}{eng}")
+
+    asyncio.run(show_events())
 
 
 if __name__ == "__main__":
