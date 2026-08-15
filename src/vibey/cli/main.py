@@ -10,7 +10,15 @@ import typer
 from vibey import __version__
 from vibey.application.design_acceptance import DesignAcceptanceService
 from vibey.application.dto import EnqueueRequest
-from vibey.bootstrap import DesignProvider, SystemClock, build_app, build_design_worker
+from vibey.application.visual_acceptance import VisualAcceptanceService
+from vibey.bootstrap import (
+    DesignProvider,
+    SystemClock,
+    VisualProvider,
+    build_app,
+    build_design_worker,
+    build_visual_worker,
+)
 from vibey.domain.job import idempotency_key
 from vibey.domain.phase import Phase, VisualDecision
 from vibey.domain.spec import (
@@ -26,10 +34,13 @@ from vibey.infrastructure.engines.claudeloop_process import (
     ClaudeLoopProcess,
 )
 from vibey.infrastructure.engines.scripted_design import ScriptedDesignProvider
+from vibey.infrastructure.engines.scripted_visual import ScriptedVisualProvider
 
 app = typer.Typer(name="vibey", no_args_is_help=True)
 design_app = typer.Typer(name="design", invoke_without_command=True)
 app.add_typer(design_app, name="design")
+visual_app = typer.Typer(name="visual", invoke_without_command=True)
+app.add_typer(visual_app, name="visual")
 
 
 def _version_callback(value: bool) -> None:
@@ -138,6 +149,18 @@ async def _work_once(project_id: UUID, provider: str, max_turns: int, max_dollar
         project = await resources.projects.get(project_id)
         if project is None:
             raise ValueError(f"unknown project {project_id}")
+        owner = f"cli-{os.getpid()}"
+        if project.phase is Phase.VISUAL_DESIGN:
+            visual_provider: VisualProvider
+            if provider == "scripted":
+                visual_provider = ScriptedVisualProvider()
+            else:
+                raise ValueError(
+                    "no live VisualProvider is implemented yet; use --provider scripted"
+                )
+            worker = build_visual_worker(resources=resources, provider=visual_provider, owner=owner)
+            return await worker.run_once(project_id)
+
         design_provider: DesignProvider
         if provider == "scripted":
             design_provider = ScriptedDesignProvider()
@@ -157,7 +180,7 @@ async def _work_once(project_id: UUID, provider: str, max_turns: int, max_dollar
             resources=resources,
             project=project,
             provider=design_provider,
-            owner=f"cli-{os.getpid()}",
+            owner=owner,
         )
         return await worker.run_once(project_id)
 
@@ -231,6 +254,39 @@ def accept_design(
     typer.echo(
         f"accepted design for {project_id}; entered {phase.value}; context under {repo_path}"
     )
+
+
+@visual_app.callback(invoke_without_command=True)
+def visual(ctx: typer.Context) -> None:
+    """Settle the VISUAL_DESIGN interstitial via subcommands."""
+    if ctx.invoked_subcommand is None:
+        typer.echo(ctx.get_help())
+        raise typer.Exit()
+
+
+async def _settle_visual(project_id: UUID, decision: VisualDecision) -> Phase:
+    async with build_app() as resources:
+        settled = await VisualAcceptanceService(
+            projects=resources.projects,
+            ledger=resources.design_ledger,
+            inventories=resources.visual_inventories,
+            clock=SystemClock(),
+        ).settle(project_id, decision=decision)
+        return settled.phase
+
+
+@visual_app.command("accept")
+def accept_visual(project_id: UUID) -> None:
+    """Accept the reviewed visual plan and enter BUILD."""
+    phase = asyncio.run(_settle_visual(project_id, VisualDecision.ACCEPTED))
+    typer.echo(f"accepted visual design for {project_id}; entered {phase.value}")
+
+
+@visual_app.command("waive")
+def waive_visual(project_id: UUID) -> None:
+    """Explicitly waive the visual plan (inventory must still be complete) and enter BUILD."""
+    phase = asyncio.run(_settle_visual(project_id, VisualDecision.WAIVED))
+    typer.echo(f"waived visual design for {project_id}; entered {phase.value}")
 
 
 if __name__ == "__main__":

@@ -1,7 +1,8 @@
 from dataclasses import replace
+from datetime import timedelta
 from uuid import UUID, uuid4
 
-from tests.application.fakes import make_job
+from tests.application.fakes import FakeJobRepository, make_job
 from vibey.application.design import DesignEvent
 from vibey.application.visual_handler import VisualInventoryHandler, VisualPlanHandler
 from vibey.application.worker import Failure, Success
@@ -61,14 +62,18 @@ class FakeInventories:
         self.published = True
 
 
-async def test_inventory_handler_saves_a_complete_inventory() -> None:
+async def test_inventory_handler_saves_a_complete_inventory_and_enqueues_the_plan() -> None:
     job = replace(make_job(uuid4()), kind="visual.inventory")
     inventories = FakeInventories()
+    jobs = FakeJobRepository()
     outcome = await VisualInventoryHandler(
-        ledger=FakeLedger(), producer=FakeProducer(inventory()), inventories=inventories
+        ledger=FakeLedger(), producer=FakeProducer(inventory()), inventories=inventories, jobs=jobs
     ).handle(job)
     assert isinstance(outcome, Success)
     assert inventories.value == inventory()
+    claimed = await jobs.claim(job.project_id, owner="test", lease=timedelta(seconds=5))
+    assert claimed is not None
+    assert claimed.kind == "visual.plan"
 
 
 async def test_inventory_handler_rejects_wrong_kind_and_incomplete_result() -> None:
@@ -77,6 +82,7 @@ async def test_inventory_handler_rejects_wrong_kind_and_incomplete_result() -> N
         ledger=FakeLedger(),
         producer=FakeProducer(VisualInventory(())),
         inventories=inventories,
+        jobs=FakeJobRepository(),
     )
     assert await handler.handle(make_job(uuid4())) == Failure(
         FailureClass.VIBEY, "expected visual.inventory job"

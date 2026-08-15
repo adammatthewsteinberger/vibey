@@ -36,6 +36,8 @@ class EventKind(StrEnum):
     BUDGET_SPENT = "BudgetSpent"
     VISUAL_DESIGN_OPTED_IN = "VisualDesignOptedIn"
     VISUAL_DESIGN_DECLINED = "VisualDesignDeclined"
+    VISUAL_DESIGN_ACCEPTED = "VisualDesignAccepted"
+    VISUAL_DESIGN_WAIVED = "VisualDesignWaived"
 
 
 CLOSABLE: frozenset[EventKind] = frozenset(

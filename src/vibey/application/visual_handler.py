@@ -14,9 +14,12 @@ from uuid import UUID
 
 from vibey.application.design import DesignEvent
 from vibey.application.design_handler import DesignLedger
-from vibey.application.dto import JobRecord
+from vibey.application.dto import EnqueueRequest, JobRecord
+from vibey.application.ports import JobRepository
 from vibey.application.worker import Failure, Outcome, Success
-from vibey.domain.job import FailureClass
+from vibey.domain.effort import Effort
+from vibey.domain.job import FailureClass, idempotency_key
+from vibey.domain.phase import Phase
 from vibey.domain.visual import VisualInventory
 
 
@@ -39,10 +42,12 @@ class VisualInventoryHandler:
         ledger: DesignLedger,
         producer: VisualInventoryProducer,
         inventories: VisualInventoryRepository,
+        jobs: JobRepository,
     ) -> None:
         self._ledger = ledger
         self._producer = producer
         self._inventories = inventories
+        self._jobs = jobs
 
     async def handle(self, job: JobRecord) -> Outcome:
         if job.kind != "visual.inventory":
@@ -53,6 +58,16 @@ class VisualInventoryHandler:
         if violations:
             return Failure(FailureClass.WORK, "; ".join(violations))
         await self._inventories.save(job.project_id, job.cycle, inventory)
+        await self._jobs.enqueue(
+            EnqueueRequest(
+                project_id=job.project_id,
+                cycle=job.cycle,
+                phase=Phase.VISUAL_DESIGN,
+                kind="visual.plan",
+                idempotency_key=idempotency_key(job.project_id, job.cycle, "visual.plan", "plan"),
+                requirement={"effort": Effort.HIGH.name.lower()},
+            )
+        )
         return Success({"surfaces": len(inventory.surfaces)})
 
 

@@ -17,9 +17,11 @@ from vibey.application.design_research_handler import DesignResearchHandler
 from vibey.application.design_synthesis_handler import DesignSpecHandler, DesignSynthesizeHandler
 from vibey.application.dto import ProjectRecord
 from vibey.application.job_dispatcher import JobDispatcher
+from vibey.application.visual_handler import VisualInventoryHandler, VisualPlanHandler
 from vibey.application.worker import WorkerLoop
 from vibey.domain.engine import EngineId
 from vibey.domain.spec import DesignSpec
+from vibey.domain.visual import VisualInventory
 from vibey.infrastructure.db.design_ledger import PostgresDesignLedger
 from vibey.infrastructure.db.design_spec_repository import FileDesignSpecRepository
 from vibey.infrastructure.db.human_gate_repository import PostgresHumanGateRepository
@@ -27,6 +29,7 @@ from vibey.infrastructure.db.job_repository import PostgresJobRepository
 from vibey.infrastructure.db.ledger_repository import PostgresLedgerRepository
 from vibey.infrastructure.db.migrator import apply_migrations, discover_migrations
 from vibey.infrastructure.db.project_repository import PostgresProjectRepository
+from vibey.infrastructure.db.visual_inventory_repository import FileVisualInventoryRepository
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,6 +40,7 @@ class AppResources:
     ledger: PostgresLedgerRepository
     design_ledger: PostgresDesignLedger
     design_specs: FileDesignSpecRepository
+    visual_inventories: FileVisualInventoryRepository
 
 
 class DesignProvider(Protocol):
@@ -47,6 +51,10 @@ class DesignProvider(Protocol):
     async def research(self, topic: str) -> ResearchResult: ...
 
     async def synthesize(self, events: Sequence[DesignEvent]) -> DesignSpec: ...
+
+
+class VisualProvider(Protocol):
+    async def inventory(self, events: Sequence[DesignEvent]) -> VisualInventory: ...
 
 
 class SystemClock:
@@ -90,6 +98,28 @@ def build_design_worker(
     )
 
 
+def build_visual_worker(
+    *, resources: AppResources, provider: VisualProvider, owner: str
+) -> WorkerLoop:
+    dispatcher = JobDispatcher(
+        {
+            "visual.inventory": VisualInventoryHandler(
+                ledger=resources.design_ledger,
+                producer=provider,
+                inventories=resources.visual_inventories,
+                jobs=resources.jobs,
+            ),
+            "visual.plan": VisualPlanHandler(inventories=resources.visual_inventories),
+        }
+    )
+    return WorkerLoop(
+        jobs=resources.jobs,
+        gates=resources.gates,
+        handler=dispatcher,
+        owner=owner,
+    )
+
+
 def database_url() -> str:
     return os.environ.get("VIBEY_PG_URL", f"postgresql://{getpass.getuser()}@localhost:5432/vibey")
 
@@ -112,6 +142,7 @@ async def build_app(*, url: str | None = None) -> AsyncIterator[AppResources]:
             ledger=ledger,
             design_ledger=PostgresDesignLedger(ledger),
             design_specs=FileDesignSpecRepository(projects),
+            visual_inventories=FileVisualInventoryRepository(projects),
         )
     finally:
         await pool.close()

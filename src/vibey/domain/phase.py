@@ -74,6 +74,7 @@ class TransitionEvidence:
     budget_exhausted: bool = False
     blocked_on_ambiguity: int = 0
     visual_decision: VisualDecision | None = None
+    visual_inventory_complete: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -128,11 +129,17 @@ def _guard_design_to_visual_design(evidence: TransitionEvidence) -> tuple[str, .
 
 
 def _guard_visual_design_to_build(evidence: TransitionEvidence) -> tuple[str, ...]:
+    violations = []
     if evidence.visual_decision not in (VisualDecision.ACCEPTED, VisualDecision.WAIVED):
-        return (
-            "visual_design -> build requires the visual plan to be accepted or explicitly waived",
+        violations.append(
+            "visual_design -> build requires the visual plan to be accepted or explicitly waived"
         )
-    return ()
+    if not evidence.visual_inventory_complete:
+        violations.append(
+            "visual_design -> build requires a complete screen/state inventory "
+            "(build cannot consume an incomplete or unreviewed visual plan)"
+        )
+    return tuple(violations)
 
 
 def _guard_build_to_review(evidence: TransitionEvidence) -> tuple[str, ...]:

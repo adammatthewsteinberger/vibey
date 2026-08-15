@@ -217,6 +217,23 @@ def test_visual_design_to_build_denied_without_confirmation() -> None:
 
 
 @pytest.mark.parametrize("decision", [VisualDecision.ACCEPTED, VisualDecision.WAIVED])
+def test_visual_design_to_build_denied_with_incomplete_inventory(
+    decision: VisualDecision,
+) -> None:
+    state = _state(Phase.VISUAL_DESIGN)
+    request = TransitionRequest(
+        to=Phase.BUILD,
+        reason="visuals settled",
+        evidence=TransitionEvidence(visual_decision=decision, visual_inventory_complete=False),
+    )
+
+    outcome = evaluate_transition(state, request)
+
+    assert isinstance(outcome, Denied)
+    assert any("complete screen/state inventory" in v for v in outcome.violations)
+
+
+@pytest.mark.parametrize("decision", [VisualDecision.ACCEPTED, VisualDecision.WAIVED])
 def test_visual_design_to_build_allowed_when_confirmed_or_waived(
     decision: VisualDecision,
 ) -> None:
@@ -224,7 +241,7 @@ def test_visual_design_to_build_allowed_when_confirmed_or_waived(
     request = TransitionRequest(
         to=Phase.BUILD,
         reason="visuals settled",
-        evidence=TransitionEvidence(visual_decision=decision),
+        evidence=TransitionEvidence(visual_decision=decision, visual_inventory_complete=True),
     )
 
     assert evaluate_transition(state, request) == ALLOWED

@@ -43,33 +43,29 @@ async def test_scripted_visual_inventory_and_plan_run_end_to_end(
             idempotency_key=idempotency_key(project_id, 1, "visual.inventory", "integration"),
         )
     )
-    plan_job = await jobs.enqueue(
-        EnqueueRequest(
-            project_id=project_id,
-            cycle=1,
-            phase=Phase.VISUAL_DESIGN,
-            kind="visual.plan",
-            idempotency_key=idempotency_key(project_id, 1, "visual.plan", "integration"),
-            depends_on=(inventory_job.id,),
-        )
-    )
 
     dispatcher = JobDispatcher(
         {
             "visual.inventory": VisualInventoryHandler(
-                ledger=ledger, producer=provider, inventories=inventories
+                ledger=ledger, producer=provider, inventories=inventories, jobs=jobs
             ),
             "visual.plan": VisualPlanHandler(inventories=inventories),
         }
     )
     worker = WorkerLoop(jobs=jobs, gates=gates, handler=dispatcher, owner="visual-worker")
 
+    # visual.inventory runs and enqueues visual.plan; then visual.plan runs.
     assert await worker.run_once(project_id)
     assert await worker.run_once(project_id)
     assert not await worker.run_once(project_id)
 
+    async with migrated_pool.acquire() as conn:
+        kinds = await conn.fetch("SELECT kind, state FROM job WHERE project_id = $1", project_id)
+    assert {row["kind"]: row["state"] for row in kinds} == {
+        "visual.inventory": JobState.SUCCEEDED.value,
+        "visual.plan": JobState.SUCCEEDED.value,
+    }
     assert (await jobs.get(inventory_job.id)).state is JobState.SUCCEEDED  # type: ignore[union-attr]
-    assert (await jobs.get(plan_job.id)).state is JobState.SUCCEEDED  # type: ignore[union-attr]
     assert (tmp_path / ".vibey/context/visual/screen-inventory.md").exists()
     saved = await inventories.load(project_id, 1)
     assert saved is not None
