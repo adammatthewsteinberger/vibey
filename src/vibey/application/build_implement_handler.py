@@ -27,12 +27,13 @@ from collections.abc import Mapping
 from datetime import timedelta
 from pathlib import Path
 from typing import Protocol
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from vibey.application.build_engine_run import BuildLedger, run_and_record
 from vibey.application.dto import EnqueueRequest, HumanGateRequest, JobRecord, RunSpec
 from vibey.application.ports import Clock, EngineAdapter, JobRepository
 from vibey.application.worker import Defer, Failure, Outcome, Park, Success
+from vibey.domain.budget import BudgetLedger
 from vibey.domain.effort import PHASE_BASE_EFFORT, effort_for_attempt, forces_rotation
 from vibey.domain.engine import IsolationLevel
 from vibey.domain.errors import EscalationExhausted
@@ -51,6 +52,10 @@ class BuildProvisioner(Protocol):
     async def provision(self, worktree_path: Path, spec: ProvisionSpec) -> tuple[Path, ...]: ...
 
 
+class BudgetSource(Protocol):
+    async def current(self, project_id: UUID, cycle: int) -> BudgetLedger: ...
+
+
 class BuildImplementHandler:
     def __init__(
         self,
@@ -63,6 +68,7 @@ class BuildImplementHandler:
         clock: Clock,
         provision_spec: ProvisionSpec = _EMPTY_PROVISION_SPEC,
         capacity_backoff: timedelta = timedelta(minutes=5),
+        budget_source: BudgetSource | None = None,
     ) -> None:
         self._worktrees = worktrees
         self._provisioner = provisioner
@@ -72,6 +78,7 @@ class BuildImplementHandler:
         self._clock = clock
         self._provision_spec = provision_spec
         self._capacity_backoff = capacity_backoff
+        self._budget_source = budget_source
 
     async def handle(self, job: JobRecord) -> Outcome:
         if job.kind != "build.implement":
@@ -92,6 +99,24 @@ class BuildImplementHandler:
                     ),
                 )
             )
+
+        if self._budget_source is not None and job.attempts > 1:
+            projected = job.payload.get("projected_cost_per_attempt")
+            if isinstance(projected, int | float):
+                budget = await self._budget_source.current(job.project_id, job.cycle)
+                if budget.would_exceed(float(projected)):
+                    cap = f"${budget.max_dollars:.2f}" if budget.max_dollars is not None else "?"
+                    return Park(
+                        HumanGateRequest(
+                            kind="budget_exhausted",
+                            prompt=(
+                                f"work item {job.work_item_id!r} would exceed the cycle "
+                                f"budget (${budget.dollars_spent:.2f} spent of "
+                                f"{cap} cap) with projected cost "
+                                f"${float(projected):.2f} for attempt {job.attempts}"
+                            ),
+                        )
+                    )
 
         previous_engine_id = job.payload.get("previous_engine_id")
         if previous_engine_id is not None and job.attempts > 1:

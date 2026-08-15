@@ -207,6 +207,90 @@ async def test_no_forced_rotation_at_non_crossing_attempts(tmp_path: Path, attem
     assert not is_rotation_failure
 
 
+async def test_budget_exceeded_parks_before_escalation(tmp_path: Path) -> None:
+    """When the projected cost of an escalated attempt would exceed the budget,
+    the handler must park for a human gate instead of proceeding."""
+    from vibey.domain.budget import BudgetLedger as BudgetLedgerDC
+
+    class FixedBudgetSource:
+        def __init__(self, ledger: BudgetLedgerDC) -> None:
+            self._ledger = ledger
+
+        async def current(self, project_id: object, cycle: int) -> BudgetLedgerDC:
+            return self._ledger
+
+    engine = ScriptedEngine(descriptor=CLAUDELOOP, base_dir=tmp_path / "engine")
+    budget = BudgetLedgerDC(turns_spent=0, dollars_spent=9.50, max_turns=None, max_dollars=10.0)
+    worktrees = FakeWorktrees(tmp_path)
+    provisioner = FakeProvisioner()
+    handler = BuildImplementHandler(
+        worktrees=worktrees,
+        provisioner=provisioner,
+        engine=engine,
+        ledger=FakeLedger(),
+        jobs=FakeJobRepository(),
+        clock=FixedClock(),
+        budget_source=FixedBudgetSource(budget),
+    )
+
+    job = _job(
+        attempts=2,
+        payload={"title": "t", "projected_cost_per_attempt": 1.00},
+    )
+    outcome = await handler.handle(job)
+
+    assert isinstance(outcome, Park)
+    assert "budget" in outcome.request.prompt.lower()
+
+
+async def test_budget_at_exact_cap_is_allowed(tmp_path: Path) -> None:
+    """An escalation that lands exactly at the cap is allowed."""
+    from vibey.domain.budget import BudgetLedger as BudgetLedgerDC
+
+    class FixedBudgetSource:
+        def __init__(self, ledger: BudgetLedgerDC) -> None:
+            self._ledger = ledger
+
+        async def current(self, project_id: object, cycle: int) -> BudgetLedgerDC:
+            return self._ledger
+
+    engine = ScriptedEngine(descriptor=CLAUDELOOP, base_dir=tmp_path / "engine")
+    budget = BudgetLedgerDC(turns_spent=0, dollars_spent=9.00, max_turns=None, max_dollars=10.0)
+    worktrees = FakeWorktrees(tmp_path)
+    provisioner = FakeProvisioner()
+    handler = BuildImplementHandler(
+        worktrees=worktrees,
+        provisioner=provisioner,
+        engine=engine,
+        ledger=FakeLedger(),
+        jobs=FakeJobRepository(),
+        clock=FixedClock(),
+        budget_source=FixedBudgetSource(budget),
+    )
+
+    job = _job(
+        attempts=2,
+        payload={"title": "t", "projected_cost_per_attempt": 1.00},
+    )
+    outcome = await handler.handle(job)
+
+    assert isinstance(outcome, Success)
+
+
+async def test_no_budget_source_skips_check(tmp_path: Path) -> None:
+    """When no budget source is provided, the handler proceeds normally."""
+    engine = ScriptedEngine(descriptor=CLAUDELOOP, base_dir=tmp_path / "engine")
+    handler, _, _ = _handler(tmp_path, engine=engine, ledger=FakeLedger())
+
+    job = _job(
+        attempts=2,
+        payload={"title": "t", "projected_cost_per_attempt": 999.0},
+    )
+    outcome = await handler.handle(job)
+
+    assert isinstance(outcome, Success)
+
+
 async def test_run_without_a_completion_verdict_fails_as_work(tmp_path: Path) -> None:
     now = datetime(2026, 1, 1, tzinfo=UTC).isoformat()
     engine = ScriptedEngine(
