@@ -307,3 +307,56 @@ def evaluate_retry_ladder(
         DeploymentLadderDecision.HALT_AND_TRIAGE,
         "Non-retryable failure requires human triage in review",
     )
+
+
+class ExposureType(StrEnum):
+    REVISION = "revision"
+    SLOT = "slot"
+    CANARY = "canary"
+    BLUE_GREEN = "blue_green"
+    STAMP = "stamp"
+
+
+class RecoveryActionType(StrEnum):
+    ROLLBACK = "rollback"
+    ROLL_FORWARD = "roll_forward"
+    FALLBACK = "fallback"
+
+
+@dataclass(slots=True, frozen=True)
+class RecoveryAction:
+    action_type: RecoveryActionType
+    target_revision_or_slot: str
+    initiated_reason: str
+    max_attempts: int = 2
+
+
+def evaluate_exposure_step(
+    current_percent: int,
+    *,
+    is_healthy: bool,
+    policy: RecoveryPolicy,
+    step_size: int = 25,
+) -> tuple[int, RecoveryAction | None]:
+    """Computes next traffic percentage or required policy-bound recovery action."""
+    if not is_healthy:
+        if policy.auto_rollback_on_health_failure:
+            return (
+                0,
+                RecoveryAction(
+                    action_type=RecoveryActionType.ROLLBACK,
+                    target_revision_or_slot="previous_stable",
+                    initiated_reason="Health check degradation during rollout",
+                ),
+            )
+        return (
+            current_percent,
+            RecoveryAction(
+                action_type=RecoveryActionType.FALLBACK,
+                target_revision_or_slot="hold",
+                initiated_reason="Health check degradation with auto-rollback disabled",
+            ),
+        )
+
+    next_percent = min(100, current_percent + step_size)
+    return (next_percent, None)
