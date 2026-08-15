@@ -83,9 +83,12 @@ three things those runners deliberately do not do:
 
 ## Status
 
-**Design stage.** Nothing is implemented yet. The documents above are the approved
-plan to build from. See the [implementation plan](docs/plans/implementation-plan.md)
-for the milestone sequence and the definition of done for each.
+**M7 complete.** Milestones M0 through M7 are fully implemented and verified
+against the 7-gate CI sweep, including Phase ① DESIGN (with optional visual-design
+interstitial), Phase ② BUILD (with isolated git worktree integration, escalation ladder,
+and budget checks), and Phase ③ REVIEW (with `review.demo`, `review.collect`, automated findings
+pre-triage, `review.triage`, re-entrant design loop-backs, and explicit deployment-choice gates).
+See the [implementation plan](docs/plans/implementation-plan.md) for the milestone sequence.
 
 ## License
 
