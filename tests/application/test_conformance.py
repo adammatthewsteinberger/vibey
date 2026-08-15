@@ -195,3 +195,50 @@ async def test_agyloop_structured_verdict_not_claimed_is_ok(tmp_path: Path) -> N
     check = next(c for c in report.checks if c.name == "structured_verdict")
     assert check.ok is True
     assert check.detail == "not claimed"
+
+
+async def test_a_missing_snapshot_fails_the_run_dir_shape_check(tmp_path: Path) -> None:
+    """snapshots/latest.json is what a supervisor reads to learn where a run
+    got to, so a run directory without one is not conformant even if every
+    other file is present."""
+
+    class _NoSnapshot(ScriptedEngine):
+        async def start(self, spec: object) -> object:
+            handle = await super().start(spec)  # type: ignore[arg-type]
+            (handle.run_dir / "snapshots" / "latest.json").unlink(missing_ok=True)
+            return handle
+
+    engine = _NoSnapshot(
+        descriptor=CLAUDELOOP,
+        base_dir=tmp_path,
+        script=[{"kind": "SessionSeeded", "at": "2026-01-01T00:00:00+00:00", "payload": {}}],
+    )
+
+    report = await run_conformance(engine)
+
+    shape = next(c for c in report.checks if c.name == "run_dir_shape")
+    assert shape.ok is False
+    assert "snapshots/latest.json" in shape.detail
+
+
+async def test_an_adapter_that_raises_fails_the_control_plane_check_rather_than_the_suite(
+    tmp_path: Path,
+) -> None:
+    """A conformance suite exists to report on adapters, so an adapter that
+    throws has to become a failed check, not an exception out of the runner."""
+
+    class _RaisingInbox(ScriptedEngine):
+        async def send_prompt(self, handle: object, text: str, *, now: bool) -> None:
+            raise RuntimeError("inbox is not writable")
+
+    engine = _RaisingInbox(
+        descriptor=CLAUDELOOP,
+        base_dir=tmp_path,
+        script=[{"kind": "SessionSeeded", "at": "2026-01-01T00:00:00+00:00", "payload": {}}],
+    )
+
+    report = await run_conformance(engine)
+
+    control = next(c for c in report.checks if c.name == "control_plane")
+    assert control.ok is False
+    assert "not writable" in control.detail
