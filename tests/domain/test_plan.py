@@ -1,5 +1,7 @@
+import pytest
+
 from vibey.domain.effort import Effort
-from vibey.domain.plan import VerificationSpec, WorkItem, validate_decomposition
+from vibey.domain.plan import VerificationSpec, WorkItem, build_parallelism, validate_decomposition
 
 
 def _item(item_id: str, **overrides: object) -> WorkItem:
@@ -76,3 +78,42 @@ def test_validate_decomposition_reports_every_violation_at_once() -> None:
         items, criteria_ids=("AC-1",), walking_skeleton_item_id="skeleton"
     )
     assert len(violations) >= 2
+
+
+# --- build_parallelism tests ---
+
+
+def test_build_parallelism_picks_minimum_of_three_inputs() -> None:
+    assert build_parallelism(config_parallelism=4, eligible_items=10, cpu_count=8) == 4
+    assert build_parallelism(config_parallelism=4, eligible_items=1, cpu_count=8) == 2
+    assert build_parallelism(config_parallelism=4, eligible_items=10, cpu_count=3) == 3
+
+
+def test_build_parallelism_none_config_uses_default() -> None:
+    result = build_parallelism(config_parallelism=None, eligible_items=5, cpu_count=8)
+    assert result == min(4, 5 * 2, 8)
+
+
+def test_build_parallelism_zero_eligible_items_returns_zero() -> None:
+    assert build_parallelism(config_parallelism=4, eligible_items=0, cpu_count=8) == 0
+
+
+def test_build_parallelism_always_at_least_zero() -> None:
+    assert build_parallelism(config_parallelism=0, eligible_items=5, cpu_count=8) == 0
+
+
+@pytest.mark.parametrize(
+    ("config", "eligible", "cpu", "expected"),
+    [
+        (4, 3, 16, 4),
+        (None, 3, 16, 4),
+        (10, 2, 16, 4),
+        (10, 10, 2, 2),
+        (1, 100, 100, 1),
+    ],
+)
+def test_build_parallelism_table(
+    config: int | None, eligible: int, cpu: int, expected: int
+) -> None:
+    result = build_parallelism(config_parallelism=config, eligible_items=eligible, cpu_count=cpu)
+    assert result == expected

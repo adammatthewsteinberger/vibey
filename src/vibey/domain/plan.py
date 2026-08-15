@@ -73,3 +73,22 @@ def validate_decomposition(
         )
 
     return tuple(violations)
+
+
+_DEFAULT_BUILD_PARALLELISM = 4
+
+
+def build_parallelism(
+    *,
+    config_parallelism: int | None,
+    eligible_items: int,
+    cpu_count: int,
+) -> int:
+    """Return the concurrency bound for BUILD: ``min(config, eligible×2, cpu)``.
+
+    ``config_parallelism`` comes from ``phases.build.parallelism`` in vibey.toml
+    (None means use the default of 4).  ``eligible_items`` and ``cpu_count`` are
+    supplied by the caller — the domain does not read them from the environment.
+    """
+    cfg = config_parallelism if config_parallelism is not None else _DEFAULT_BUILD_PARALLELISM
+    return min(cfg, eligible_items * 2, cpu_count)
