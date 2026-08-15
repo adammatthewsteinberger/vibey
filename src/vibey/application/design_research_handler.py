@@ -1,18 +1,15 @@
 """``design.research`` handler with forced untrusted provenance."""
 
-from typing import Protocol
-
-from vibey.application.design import ResearchResult, research_event
+from vibey.application.design import research_event
 from vibey.application.design_handler import DesignLedger
 from vibey.application.dto import JobRecord
+from vibey.application.interfaces import (
+    ResearchProvider,
+)
 from vibey.application.ports import Clock
 from vibey.application.worker import Failure, Outcome, Success
 from vibey.domain.engine import EngineId
 from vibey.domain.job import FailureClass
-
-
-class ResearchProvider(Protocol):
-    async def research(self, topic: str) -> ResearchResult: ...
 
 
 class DesignResearchHandler:
@@ -39,3 +36,10 @@ class DesignResearchHandler:
         event = research_event(result, now=self._clock.now())
         await self._ledger.append(job.project_id, job.cycle, job.id, self._engine_id, event)
         return Success({"topic": topic, "source": result.source})
+
+
+# Re-exported for the same reason `application/ports.py` re-exports the
+# interfaces package: the seam moved, the import path should not break.
+__all__ = [
+    "ResearchProvider",
+]

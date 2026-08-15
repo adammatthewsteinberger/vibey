@@ -14,82 +14,39 @@ findings on the ledger before the human developer sees them.
 On success, records an ARTIFACT_PRODUCED ledger event and enqueues ``review.collect``.
 """
 
-from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Protocol
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 from vibey.application.dto import EnqueueRequest, JobRecord
+from vibey.application.interfaces import (
+    AutomatedFinding,
+    AutomatedReviewRunner,
+    DesignSpecReader,
+    PhaseLedger,
+    ReviewArtifactWriter,
+)
 from vibey.application.ports import Clock, JobRepository
 from vibey.application.worker import Failure, Outcome, Success
 from vibey.domain.effort import Effort
 from vibey.domain.job import FailureClass, idempotency_key
-from vibey.domain.ledger import EventKind, LedgerEvent
+from vibey.domain.ledger import EventKind
 from vibey.domain.phase import Phase
 from vibey.domain.projections import build_deltas
 from vibey.domain.review import (
-    Ambiguity,
-    Severity,
     render_deltas_markdown,
     render_demo_markdown,
     render_run_it_script,
     render_walkthrough_markdown,
 )
-from vibey.domain.spec import DesignSpec
 
 DEFAULT_TEST_REPORT = "<testsuites><testsuite name='gates' tests='1' failures='0'/></testsuites>"
-
-
-@dataclass(frozen=True, slots=True)
-class AutomatedFinding:
-    category: str
-    text: str
-    severity: Severity = Severity.MEDIUM
-    ambiguity: Ambiguity = Ambiguity.CLEAR
-    finding_id: str | None = None
-
-
-class AutomatedReviewRunner(Protocol):
-    async def run_automated_reviews(
-        self, project_id: UUID, cycle: int
-    ) -> tuple[AutomatedFinding, ...]: ...
-
-
-class ReviewSpecRepository(Protocol):
-    async def load(self, project_id: UUID, cycle: int) -> DesignSpec | None: ...
-
-
-class ReviewLedger(Protocol):
-    async def all_for_project(self, project_id: UUID) -> Sequence[LedgerEvent]: ...
-
-    async def append_event(
-        self,
-        project_id: UUID,
-        cycle: int,
-        job_id: UUID,
-        kind: EventKind,
-        payload: Mapping[str, object],
-    ) -> None: ...
-
-
-class ReviewArtifactWriter(Protocol):
-    async def write_review_artifacts(
-        self,
-        project_id: UUID,
-        cycle: int,
-        artifacts: Mapping[str, str],
-        *,
-        executable: Sequence[str] = (),
-    ) -> Mapping[str, Path]: ...
 
 
 class ReviewDemoHandler:
     def __init__(
         self,
         *,
-        specs: ReviewSpecRepository,
-        ledger: ReviewLedger,
+        specs: DesignSpecReader,
+        ledger: PhaseLedger,
         artifacts: ReviewArtifactWriter,
         jobs: JobRepository,
         clock: Clock,
@@ -188,3 +145,14 @@ class ReviewDemoHandler:
         )
 
         return Success({"cycle": job.cycle, "artifacts": tuple(artifacts_dict.keys())})
+
+
+# Re-exported for the same reason `application/ports.py` re-exports the
+# interfaces package: the seam moved, the import path should not break.
+__all__ = [
+    "AutomatedFinding",
+    "AutomatedReviewRunner",
+    "DesignSpecReader",
+    "PhaseLedger",
+    "ReviewArtifactWriter",
+]

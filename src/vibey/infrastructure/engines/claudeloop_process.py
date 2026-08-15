@@ -11,13 +11,13 @@ import re
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Protocol
 
 from vibey.application.dto import RunSpec
 from vibey.application.worker import CapacityDeferred
 from vibey.infrastructure.engines.argv import build_argv
 from vibey.infrastructure.engines.descriptors import CLAUDELOOP
 from vibey.infrastructure.engines.plan_writer import write_plan
+from vibey.infrastructure.interfaces import CommandExecutor
 
 _RUN_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 
@@ -27,10 +27,6 @@ class CommandResult:
     returncode: int
     stdout: str
     stderr: str
-
-
-class CommandExecutor(Protocol):
-    async def execute(self, argv: tuple[str, ...]) -> CommandResult: ...
 
 
 class AsyncSubprocessExecutor:

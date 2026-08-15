@@ -1,28 +1,17 @@
 """Phase ⑥ DEPLOY REVIEW demo and failure triage handlers (Milestone 10 task 10.10)."""
 
-from collections.abc import Callable, Mapping, Sequence
-from typing import Protocol
+from collections.abc import Callable
 from uuid import UUID
 
 from vibey.application.dto import HumanGateRequest, JobRecord
+from vibey.application.interfaces import (
+    PhaseLedger,
+)
 from vibey.application.ports import HumanGateRepository
 from vibey.application.worker import Failure, Outcome, Park, Success
 from vibey.domain.deployment import DeploymentFailureClass, DeploymentSpec
 from vibey.domain.job import FailureClass
-from vibey.domain.ledger import EventKind, LedgerEvent
-
-
-class DeployReviewLedger(Protocol):
-    async def all_for_project(self, project_id: UUID) -> Sequence[LedgerEvent]: ...
-
-    async def append_event(
-        self,
-        project_id: UUID,
-        cycle: int,
-        job_id: UUID,
-        kind: EventKind,
-        payload: Mapping[str, object],
-    ) -> None: ...
+from vibey.domain.ledger import EventKind
 
 
 class DeployReviewDemoHandler:
@@ -31,7 +20,7 @@ class DeployReviewDemoHandler:
     def __init__(
         self,
         *,
-        ledger: DeployReviewLedger,
+        ledger: PhaseLedger,
         human_gates: HumanGateRepository,
         spec_provider: Callable[[UUID], DeploymentSpec | None] | None = None,
     ) -> None:
@@ -94,7 +83,7 @@ class DeployReviewTriageHandler:
     def __init__(
         self,
         *,
-        ledger: DeployReviewLedger,
+        ledger: PhaseLedger,
         human_gates: HumanGateRepository,
         spec_provider: Callable[[UUID], DeploymentSpec | None] | None = None,
     ) -> None:
