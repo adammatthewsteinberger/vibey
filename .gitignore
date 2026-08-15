@@ -12,3 +12,4 @@ htmlcov/
 /build/
 .claudeloop/
 .vibey/plans/
+.agyloop/
