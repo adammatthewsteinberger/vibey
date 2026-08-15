@@ -93,11 +93,18 @@ def new_project(
     typer.echo(f"project {project_id}\ndesign job {job_id}")
 
 
-@design_app.callback()
-def design(project_id: Annotated[UUID | None, typer.Argument()] = None) -> None:
+@design_app.callback(invoke_without_command=True)
+def design(ctx: typer.Context) -> None:
+    """Enqueue or resume the project's DESIGN interview, or manage it via subcommands."""
+    if ctx.invoked_subcommand is None:
+        typer.echo(ctx.get_help())
+        raise typer.Exit()
+
+
+@design_app.command("resume")
+def resume_design(project_id: UUID) -> None:
     """Enqueue or resume the project's DESIGN interview."""
-    if project_id is not None:
-        typer.echo(f"design job {asyncio.run(_enqueue_design(project_id))}")
+    typer.echo(f"design job {asyncio.run(_enqueue_design(project_id))}")
 
 
 def _parse_question_answers(items: tuple[str, ...]) -> dict[str, object]:

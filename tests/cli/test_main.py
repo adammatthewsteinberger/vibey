@@ -41,7 +41,7 @@ def test_design_command_enqueues_interview(monkeypatch) -> None:  # type: ignore
         return "job-1"
 
     monkeypatch.setattr(cli_main, "_enqueue_design", fake_enqueue)
-    result = runner.invoke(app, ["design", str(project_id)])
+    result = runner.invoke(app, ["design", "resume", str(project_id)])
     assert result.exit_code == 0
     assert "design job job-1" in result.stdout
 
