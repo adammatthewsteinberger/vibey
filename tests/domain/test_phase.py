@@ -266,12 +266,26 @@ def test_next_phase_after_design_rejects_non_buildable_spec() -> None:
         next_phase_after_design(visual_decision=VisualDecision.DECLINED, spec_is_buildable=False)
 
 
+def _build_to_review_evidence(**overrides: object) -> TransitionEvidence:
+    """Full passing evidence for BUILD -> REVIEW (M6 exit criteria)."""
+    defaults: dict[str, object] = {
+        "work_items_total": 3,
+        "work_items_settled": 3,
+        "integration_green": True,
+        "criteria_with_passing_tests": 3,
+        "acceptance_criteria": 3,
+        "build_savepoint_exists": True,
+    }
+    defaults.update(overrides)
+    return TransitionEvidence(**defaults)  # type: ignore[arg-type]
+
+
 def test_build_to_review_denied_when_no_work_items() -> None:
     state = _state(Phase.BUILD)
     request = TransitionRequest(
         to=Phase.REVIEW,
         reason="build finished",
-        evidence=TransitionEvidence(work_items_total=0, integration_green=True),
+        evidence=_build_to_review_evidence(work_items_total=0),
     )
 
     outcome = evaluate_transition(state, request)
@@ -285,8 +299,12 @@ def test_build_to_review_denied_when_integration_not_green() -> None:
     request = TransitionRequest(
         to=Phase.REVIEW,
         reason="build finished",
-        evidence=TransitionEvidence(
-            work_items_total=1, work_items_settled=1, integration_green=False
+        evidence=_build_to_review_evidence(
+            work_items_total=1,
+            work_items_settled=1,
+            integration_green=False,
+            acceptance_criteria=1,
+            criteria_with_passing_tests=1,
         ),
     )
 
@@ -301,9 +319,7 @@ def test_build_to_review_denied_when_items_unsettled() -> None:
     request = TransitionRequest(
         to=Phase.REVIEW,
         reason="build finished",
-        evidence=TransitionEvidence(
-            work_items_total=3, work_items_settled=2, integration_green=True
-        ),
+        evidence=_build_to_review_evidence(work_items_settled=2),
     )
 
     outcome = evaluate_transition(state, request)
@@ -316,12 +332,66 @@ def test_build_to_review_allowed_when_settled_and_green() -> None:
     request = TransitionRequest(
         to=Phase.REVIEW,
         reason="build finished",
-        evidence=TransitionEvidence(
-            work_items_total=3, work_items_settled=3, integration_green=True
-        ),
+        evidence=_build_to_review_evidence(),
     )
 
     assert evaluate_transition(state, request) == ALLOWED
+
+
+def test_build_to_review_denied_when_criteria_lack_passing_tests() -> None:
+    state = _state(Phase.BUILD)
+    request = TransitionRequest(
+        to=Phase.REVIEW,
+        reason="build finished",
+        evidence=_build_to_review_evidence(
+            acceptance_criteria=3,
+            criteria_with_passing_tests=2,
+        ),
+    )
+
+    outcome = evaluate_transition(state, request)
+
+    assert isinstance(outcome, Denied)
+    assert any("passing test" in v for v in outcome.violations)
+
+
+def test_build_to_review_denied_without_savepoint() -> None:
+    state = _state(Phase.BUILD)
+    request = TransitionRequest(
+        to=Phase.REVIEW,
+        reason="build finished",
+        evidence=_build_to_review_evidence(build_savepoint_exists=False),
+    )
+
+    outcome = evaluate_transition(state, request)
+
+    assert isinstance(outcome, Denied)
+    assert any("savepoint" in v for v in outcome.violations)
+
+
+def test_build_to_design_allowed_when_blocked_on_ambiguity() -> None:
+    state = _state(Phase.BUILD)
+    request = TransitionRequest(
+        to=Phase.DESIGN,
+        reason="ambiguity found",
+        evidence=TransitionEvidence(blocked_on_ambiguity=1),
+    )
+
+    assert evaluate_transition(state, request) == ALLOWED
+
+
+def test_build_to_design_denied_when_no_ambiguity() -> None:
+    state = _state(Phase.BUILD)
+    request = TransitionRequest(
+        to=Phase.DESIGN,
+        reason="want to loop back",
+        evidence=TransitionEvidence(blocked_on_ambiguity=0),
+    )
+
+    outcome = evaluate_transition(state, request)
+
+    assert isinstance(outcome, Denied)
+    assert any("ambiguity" in v.lower() for v in outcome.violations)
 
 
 def test_review_to_done_denied_with_open_findings() -> None:

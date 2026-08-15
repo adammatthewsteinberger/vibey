@@ -69,6 +69,8 @@ class TransitionEvidence:
     work_items_total: int = 0
     work_items_settled: int = 0
     integration_green: bool = False
+    criteria_with_passing_tests: int = 0
+    build_savepoint_exists: bool = False
     open_findings: tuple[FindingRef, ...] = ()
     user_verdict: UserVerdict | None = None
     budget_exhausted: bool = False
@@ -151,7 +153,18 @@ def _guard_build_to_review(evidence: TransitionEvidence) -> tuple[str, ...]:
         violations.append(f"{remaining} work item(s) not yet integrated or waived")
     if not evidence.integration_green:
         violations.append("integration branch is not green")
+    if evidence.criteria_with_passing_tests < evidence.acceptance_criteria:
+        gap = evidence.acceptance_criteria - evidence.criteria_with_passing_tests
+        violations.append(f"{gap} acceptance criterion/criteria without a passing test")
+    if not evidence.build_savepoint_exists:
+        violations.append("no build savepoint exists at the integration head")
     return tuple(violations)
+
+
+def _guard_build_to_design(evidence: TransitionEvidence) -> tuple[str, ...]:
+    if evidence.blocked_on_ambiguity < 1:
+        return ("BUILD -> DESIGN requires at least 1 item blocked on ambiguity",)
+    return ()
 
 
 def _guard_review_to_done(evidence: TransitionEvidence) -> tuple[str, ...]:
@@ -167,6 +180,7 @@ _GUARDS = {
     (Phase.DESIGN, Phase.VISUAL_DESIGN): _guard_design_to_visual_design,
     (Phase.VISUAL_DESIGN, Phase.BUILD): _guard_visual_design_to_build,
     (Phase.BUILD, Phase.REVIEW): _guard_build_to_review,
+    (Phase.BUILD, Phase.DESIGN): _guard_build_to_design,
     (Phase.REVIEW, Phase.DONE): _guard_review_to_done,
 }
 
