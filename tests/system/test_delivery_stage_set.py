@@ -1,9 +1,10 @@
-"""Delivery-stage-set system tests (M7 task 7.9).
+"""Delivery-stage-set system tests (M7 task 7.9 and M10 task 10.13).
 
 Validates the full deterministic, offline delivery stage set:
 Phase 1 (DESIGN) -> (Visual Opt-In / Opt-Out) -> Phase 2 (BUILD)
 -> Phase 3 (REVIEW) -> (Deployment Opt-In / Opt-Out)
-including review loopback to re-entrant DESIGN.
+including review loopback to re-entrant DESIGN, and the full
+deployment path: ①→②→③→④→⑤→⑥→DONE.
 """
 
 from collections.abc import Mapping, Sequence
@@ -16,7 +17,17 @@ from uuid import UUID, uuid4
 import pytest
 
 from tests.application.fakes import FakeHumanGateRepository, FakeJobRepository
+from vibey.application.azure_port import (
+    AzureDiscoveryResult,
+    AzureExecutionResult,
+    AzureResourceStatus,
+)
 from vibey.application.build_decompose_handler import BuildDecomposeHandler
+from vibey.application.deploy_acceptance_handler import DeployAcceptanceHandler
+from vibey.application.deploy_design_handler import DeployInterviewHandler, DeploySynthesizeHandler
+from vibey.application.deploy_execute_handler import DeployExecuteHandler
+from vibey.application.deploy_review_handler import DeployReviewDemoHandler
+from vibey.application.deploy_review_routing import DeployReviewRoutingHandler
 from vibey.application.design import (
     DesignEvent,
     stages_for_cycle,
@@ -42,6 +53,16 @@ from vibey.application.review_triage_handler import ReviewTriageHandler
 from vibey.application.visual_acceptance import VisualAcceptanceService
 from vibey.application.visual_handler import VisualInventoryHandler, VisualPlanHandler
 from vibey.application.worker import Park, Success
+from vibey.domain.deployment import (
+    AzureTargetScope,
+    CostBoundary,
+    DeploymentConsent,
+    DeploymentSpec,
+    IdentityAuthority,
+    RecoveryPolicy,
+    TopologyConfig,
+    VerificationContract,
+)
 from vibey.domain.effort import Effort
 from vibey.domain.engine import EngineId
 from vibey.domain.job import JobState
@@ -721,3 +742,355 @@ async def test_delivery_stage_set_loopback_to_reentrant_design(tmp_path: Path) -
     final_reentrant = await interview_handler.handle(cycle2_interview_job)
     assert isinstance(final_reentrant, Success)
     assert final_reentrant.result.get("stages") == 4
+
+
+class FakeAzureClient:
+    """Deterministic, offline Azure client for system tests."""
+
+    def __init__(self) -> None:
+        self.steps_run: list[str] = []
+
+    async def discover_environment(self, scope: AzureTargetScope) -> AzureDiscoveryResult:
+        self.steps_run.append("discover")
+        return AzureDiscoveryResult(
+            tenant_id=scope.tenant_id,
+            subscription_id=scope.subscription_id,
+            resource_group=scope.resource_group,
+            location=scope.region,
+        )
+
+    async def execute_plan(
+        self, spec: DeploymentSpec, consent: DeploymentConsent
+    ) -> AzureExecutionResult:
+        self.steps_run.append("apply")
+        return AzureExecutionResult(
+            deployment_id=f"dep-{spec.spec_id}",
+            provisioning_state="Succeeded",
+            outputs={"endpoint": f"https://{spec.spec_id}.azurecontainerapps.io"},
+            applied_at=NOW,
+        )
+
+    async def get_resource_status(
+        self, scope: AzureTargetScope, resource_id: str
+    ) -> AzureResourceStatus:
+        self.steps_run.append("verify")
+        return AzureResourceStatus(resource_id, "Succeeded", "Healthy")
+
+    async def delete_resource(
+        self, scope: AzureTargetScope, resource_id: str, consent: DeploymentConsent
+    ) -> None:
+        self.steps_run.append("delete")
+
+
+def _sample_deployment_spec() -> DeploymentSpec:
+    target = AzureTargetScope("tenant-1", "sub-1", "rg-sys", "dev", "eastus")
+    identity = IdentityAuthority("workload_identity", "id-1", ("Contributor",))
+    topology = TopologyConfig("container_app", "bicep", "Standard_B1s")
+    recovery = RecoveryPolicy("revision", True)
+    verification = VerificationContract("/health", ("curl /health",), 30)
+    cost = CostBoundary(100.0, 10.0)
+    return DeploymentSpec(
+        spec_id="spec-sys",
+        version="1.0",
+        target_scope=target,
+        identity=identity,
+        topology=topology,
+        recovery_policy=recovery,
+        verification=verification,
+        cost_boundary=cost,
+    )
+
+
+@pytest.mark.system
+async def test_full_delivery_to_deployment_stage_set(tmp_path: Path) -> None:
+    """Full offline optional-path delivery-to-deployment system test (task 10.13):
+    ① DESIGN → ② BUILD → ③ REVIEW → ④ DEPLOY_DESIGN → ⑤ DEPLOY_EXECUTE
+    → ⑥ DEPLOY_REVIEW → DONE (deployed).
+
+    Verifies deterministic, offline execution with zero network dependency.
+    """
+    project_id = uuid4()
+    clock = SystemTestClock()
+    ledger = InMemoryLedger()
+    jobs = FakeJobRepository()
+    gates = FakeHumanGateRepository()
+    projects = InMemoryProjects(
+        ProjectRecord(
+            project_id=project_id,
+            name="vibey-full-deploy",
+            repo_path=tmp_path,
+            phase=Phase.DESIGN,
+            cycle=1,
+            max_cycles=5,
+            config={},
+            created_at=NOW,
+            updated_at=NOW,
+        )
+    )
+    specs = InMemorySpecs()
+    artifacts = InMemoryArtifactWriter()
+    design_provider = ScriptedDesignProvider()
+    azure_client = FakeAzureClient()
+    dep_spec = _sample_deployment_spec()
+    dep_consent: DeploymentConsent | None = None
+
+    # ── Phase ① DESIGN ──────────────────────────────────────────────
+
+    interview_handler = DesignInterviewHandler(
+        ledger=ledger,
+        jobs=jobs,
+        gates=gates,
+        questions=design_provider,
+        clock=clock,
+        interviewer=EngineId.CLAUDELOOP,
+    )
+    interview_job = _make_job(project_id=project_id, kind="design.interview")
+    await _run_interview_to_completion(interview_handler, gates, interview_job)
+
+    research_handler = DesignResearchHandler(
+        ledger=ledger,
+        researcher=design_provider,
+        clock=clock,
+        engine_id=EngineId.CLAUDELOOP,
+    )
+    for topic in ("prior-art", "libraries"):
+        res_job = _make_job(project_id=project_id, kind="design.research")
+        from dataclasses import replace as _replace
+
+        res_job = _replace(res_job, payload={"topic": topic})
+        assert isinstance(await research_handler.handle(res_job), Success)
+
+    synthesize_handler = DesignSynthesizeHandler(
+        ledger=ledger,
+        synthesizer=design_provider,
+        specs=specs,
+    )
+    synth_job = _make_job(project_id=project_id, kind="design.synthesize")
+    assert isinstance(await synthesize_handler.handle(synth_job), Success)
+
+    spec_handler = DesignSpecHandler(specs=specs)
+    spec_job = _make_job(project_id=project_id, kind="design.spec")
+    assert isinstance(await spec_handler.handle(spec_job), Success)
+
+    # Accept design, visual opt-out → BUILD
+    design_acceptance = DesignAcceptanceService(
+        projects=projects,
+        ledger=ledger,
+        specs=specs,
+        jobs=jobs,
+        clock=clock,
+    )
+    accepted = await design_acceptance.accept(project_id, visual_choice=VisualDecision.DECLINED)
+    assert accepted.phase is Phase.BUILD
+
+    # ── Phase ② BUILD ───────────────────────────────────────────────
+
+    decompose_handler = BuildDecomposeHandler(
+        specs=specs,
+        decomposer=DeterministicDecomposer(),
+        jobs=jobs,
+    )
+    decompose_job = _make_job(project_id=project_id, phase=Phase.BUILD, kind="build.decompose")
+    assert isinstance(await decompose_handler.handle(decompose_job), Success)
+
+    await projects.transition(project_id, expected=Phase.BUILD, to=Phase.REVIEW)
+
+    # ── Phase ③ REVIEW ──────────────────────────────────────────────
+
+    demo_handler = ReviewDemoHandler(
+        specs=specs,
+        ledger=ledger,
+        artifacts=artifacts,
+        jobs=jobs,
+        clock=clock,
+        automated_reviewer=NoOpAutomatedReviewRunner(),
+    )
+    demo_job = _make_job(project_id=project_id, phase=Phase.REVIEW, kind="review.demo")
+    assert isinstance(await demo_handler.handle(demo_job), Success)
+
+    collect_handler = ReviewCollectHandler(
+        ledger=ledger,
+        gates=gates,
+        jobs=jobs,
+        clock=clock,
+    )
+    collect_job = _make_job(project_id=project_id, phase=Phase.REVIEW, kind="review.collect")
+    outcome = await collect_handler.handle(collect_job)
+    assert isinstance(outcome, Park)
+
+    gate = await gates.latest_for_job(collect_job.id)
+    assert gate is not None
+    await gates.answer(gate.gate_id, answer={"verdict": "accept"}, answered_by="reviewer")
+    assert isinstance(await collect_handler.handle(collect_job), Success)
+
+    triage_handler = ReviewTriageHandler(
+        ledger=ledger,
+        specs=specs,
+        jobs=jobs,
+        projects=projects,
+        clock=clock,
+    )
+    triage_job = _make_job(project_id=project_id, phase=Phase.REVIEW, kind="review.triage")
+    assert isinstance(await triage_handler.handle(triage_job), Success)
+
+    # Deployment choice: opt-in
+    deployment_choice_handler = ReviewDeploymentChoiceHandler(
+        ledger=ledger,
+        gates=gates,
+        jobs=jobs,
+        projects=projects,
+        clock=clock,
+    )
+    deploy_choice_job = _make_job(
+        project_id=project_id, phase=Phase.REVIEW, kind="review.deployment_choice"
+    )
+    assert isinstance(await deployment_choice_handler.handle(deploy_choice_job), Park)
+    deploy_gate = await gates.latest_for_job(deploy_choice_job.id)
+    assert deploy_gate is not None
+    await gates.answer(deploy_gate.gate_id, answer={"choice": "deploy"}, answered_by="developer")
+    deploy_choice_outcome = await deployment_choice_handler.handle(deploy_choice_job)
+    assert isinstance(deploy_choice_outcome, Success)
+    assert deploy_choice_outcome.result.get("decision") == "opted_in"
+    assert projects.project.phase is Phase.DEPLOY
+
+    # Bridge: DEPLOY → DEPLOY_DESIGN
+    await projects.transition(project_id, expected=Phase.DEPLOY, to=Phase.DEPLOY_DESIGN)
+
+    # ── Phase ④ DEPLOY_DESIGN ──────────────────────────────────────
+
+    deploy_interview_handler = DeployInterviewHandler(
+        ledger=ledger,
+        gates=gates,
+        clock=clock,
+    )
+    deploy_interview_job = _make_job(
+        project_id=project_id, phase=Phase.DEPLOY_DESIGN, kind="deploy.interview"
+    )
+    assert isinstance(await deploy_interview_handler.handle(deploy_interview_job), Park)
+    int_gate = await gates.latest_for_job(deploy_interview_job.id)
+    assert int_gate is not None
+    await gates.answer(
+        int_gate.gate_id, answer={"choice": "accept_defaults"}, answered_by="developer"
+    )
+    int_outcome = await deploy_interview_handler.handle(deploy_interview_job)
+    assert isinstance(int_outcome, Success)
+
+    deploy_synthesize_handler = DeploySynthesizeHandler(ledger=ledger, clock=clock)
+    deploy_synth_job = _make_job(
+        project_id=project_id, phase=Phase.DEPLOY_DESIGN, kind="deploy.synthesize"
+    )
+    assert isinstance(await deploy_synthesize_handler.handle(deploy_synth_job), Success)
+
+    # Acceptance with explicit mutation consent
+    deploy_acceptance_handler = DeployAcceptanceHandler(
+        ledger=ledger,
+        gates=gates,
+        jobs=jobs,
+        projects=projects,
+        clock=clock,
+        spec_provider=lambda _pid: dep_spec,
+    )
+    deploy_accept_job = _make_job(
+        project_id=project_id, phase=Phase.DEPLOY_DESIGN, kind="deploy.accept"
+    )
+    assert isinstance(await deploy_acceptance_handler.handle(deploy_accept_job), Park)
+    acc_gate = await gates.latest_for_job(deploy_accept_job.id)
+    assert acc_gate is not None
+    await gates.answer(
+        acc_gate.gate_id,
+        answer={"verdict": "accept", "explicit_mutation_authorized": True},
+        answered_by="developer",
+    )
+    acc_outcome = await deploy_acceptance_handler.handle(deploy_accept_job)
+    assert isinstance(acc_outcome, Success)
+    assert acc_outcome.result.get("verdict") == "accepted"
+    assert projects.project.phase is Phase.DEPLOY_EXECUTE
+
+    # Build consent from the acceptance for execute/routing handlers
+    dep_consent = DeploymentConsent(
+        consent_id=str(deploy_accept_job.id),
+        target_scope_digest=dep_spec.scope_digest(),
+        granted_by="developer",
+        granted_at=NOW,
+        explicit_mutation_authorized=True,
+    )
+
+    # ── Phase ⑤ DEPLOY_EXECUTE ─────────────────────────────────────
+
+    deploy_execute_handler = DeployExecuteHandler(
+        ledger=ledger,
+        jobs=jobs,
+        projects=projects,
+        azure_client=azure_client,
+        clock=clock,
+        spec_provider=lambda _pid: dep_spec,
+        consent_provider=lambda _pid: dep_consent,
+    )
+    deploy_exec_job = _make_job(
+        project_id=project_id, phase=Phase.DEPLOY_EXECUTE, kind="deploy.execute"
+    )
+    exec_outcome = await deploy_execute_handler.handle(deploy_exec_job)
+    assert isinstance(exec_outcome, Success)
+    assert exec_outcome.result.get("status") == "verified"
+    assert "endpoint" in exec_outcome.result.get("outputs", {})
+    assert projects.project.phase is Phase.DEPLOY_REVIEW
+
+    # Verify Azure client ran discover → apply → verify
+    assert "discover" in azure_client.steps_run
+    assert "apply" in azure_client.steps_run
+    assert "verify" in azure_client.steps_run
+
+    # ── Phase ⑥ DEPLOY_REVIEW ──────────────────────────────────────
+
+    # Demo: presents live URL and verification evidence
+    deploy_demo_handler = DeployReviewDemoHandler(
+        ledger=ledger,
+        human_gates=gates,
+        spec_provider=lambda _pid: dep_spec,
+    )
+    deploy_demo_job = _make_job(
+        project_id=project_id, phase=Phase.DEPLOY_REVIEW, kind="deploy.demo"
+    )
+    assert isinstance(await deploy_demo_handler.handle(deploy_demo_job), Park)
+    demo_gate = await gates.latest_for_job(deploy_demo_job.id)
+    assert demo_gate is not None
+    assert "spec-sys.azurecontainerapps.io" in demo_gate.prompt
+    await gates.answer(demo_gate.gate_id, answer={"verdict": "approve"}, answered_by="developer")
+    demo_outcome = await deploy_demo_handler.handle(deploy_demo_job)
+    assert isinstance(demo_outcome, Success)
+    assert demo_outcome.result.get("status") == "demo_approved"
+
+    # Route: approve → DONE
+    deploy_routing_handler = DeployReviewRoutingHandler(
+        ledger=ledger,
+        jobs=jobs,
+        projects=projects,
+        azure_client=azure_client,
+        spec_provider=lambda _pid: dep_spec,
+        consent_provider=lambda _pid: dep_consent,
+    )
+    deploy_route_job = _make_job(
+        project_id=project_id, phase=Phase.DEPLOY_REVIEW, kind="deploy.route"
+    )
+    deploy_route_job = _replace(deploy_route_job, payload={"action": "approve"})
+    route_outcome = await deploy_routing_handler.handle(deploy_route_job)
+    assert isinstance(route_outcome, Success)
+    assert route_outcome.result.get("target_phase") == Phase.DONE.name
+
+    # ── Final Assertions ───────────────────────────────────────────
+
+    assert projects.project.phase is Phase.DONE
+
+    # Verify the full phase transition history
+    phase_history = [p for p, _ in projects.history]
+    assert Phase.DESIGN in phase_history
+    assert Phase.BUILD in phase_history
+    assert Phase.REVIEW in phase_history
+    assert Phase.DEPLOY in phase_history
+    assert Phase.DEPLOY_DESIGN in phase_history
+    assert Phase.DEPLOY_EXECUTE in phase_history
+    assert Phase.DEPLOY_REVIEW in phase_history
+    assert Phase.DONE in phase_history
+
+    # Zero network dependency: only FakeAzureClient was used
+    assert len(azure_client.steps_run) == 3

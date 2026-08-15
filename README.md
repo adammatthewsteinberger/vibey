@@ -83,12 +83,27 @@ three things those runners deliberately do not do:
 
 ## Status
 
-**M7 complete.** Milestones M0 through M7 are fully implemented and verified
-against the 7-gate CI sweep, including Phase ① DESIGN (with optional visual-design
-interstitial), Phase ② BUILD (with isolated git worktree integration, escalation ladder,
-and budget checks), and Phase ③ REVIEW (with `review.demo`, `review.collect`, automated findings
-pre-triage, `review.triage`, re-entrant design loop-backs, and explicit deployment-choice gates).
-See the [implementation plan](docs/plans/implementation-plan.md) for the milestone sequence.
+**M10 complete.** All milestones M0 through M10 are fully implemented and verified
+against the 7-gate CI sweep. The complete six-phase delivery-to-deployment pipeline is
+operational:
+
+- **Phase ① DESIGN** — interactive interview, research, synthesis, spec acceptance,
+  and optional visual-design interstitial
+- **Phase ② BUILD** — isolated git worktree integration, escalation ladder, budget
+  checks, and parallel work items
+- **Phase ③ REVIEW** — demo, collect, automated findings pre-triage, triage,
+  re-entrant design loop-backs, and explicit deployment-choice gate
+- **Phase ④ DEPLOY DESIGN** — deployment interview, synthesis, IaC plan evaluation,
+  and explicit mutation consent
+- **Phase ⑤ DEPLOY EXECUTE** — durable execution graph (discover → plan → validate →
+  apply → configure → migrate → release → verify), retry/escalation ladder, and
+  progressive exposure with policy-bound recovery
+- **Phase ⑥ DEPLOY REVIEW** — live endpoint demo, failure triage, and loop routing
+  (→ DONE, → ④, → ⑤, or → ①/②/③)
+
+Both optional paths (visual opt-in/opt-out and deployment opt-in/opt-out) are
+exercised in the offline system test suite. See the
+[implementation plan](docs/plans/implementation-plan.md) for the full milestone sequence.
 
 ## License
 
