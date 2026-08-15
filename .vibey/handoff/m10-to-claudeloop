@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "reason": "quota_switch",
+  "produced_at": "2026-08-15T07:22:00.000000+00:00",
+  "run_id": "20260815T062627Z-982b0b6b",
+  "meta": {
+    "run_id": "20260815T062627Z-982b0b6b",
+    "cwd": "/Users/adam/git/vibey",
+    "started_at": "2026-08-15T06:26:27.929015+00:00",
+    "plan_path": "/Users/adam/git/vibey/.vibey/plans/m8-m10-agyloop.md",
+    "status": "stopped",
+    "phase": "RUNNING",
+    "model": "gemini-2.5-flash",
+    "effort": "high",
+    "preset": "medium",
+    "capacity": "Available"
+  },
+  "status": {
+    "phase": "RUNNING",
+    "status": "stopped",
+    "turns_spent": 12,
+    "dollars_spent": 0.0,
+    "model": "gemini-2.5-flash",
+    "effort": "high",
+    "preset": "medium",
+    "capacity": "Available"
+  },
+  "summary": "Completed Milestone M8 (8.1-8.5), Milestone M9 (9.1-9.6), and Milestone M10 through Task 10.11 (Tasks 10.1-10.11 committed). Only tasks 10.12 (deployment CLI surfaces) and 10.13 (system test suite for deployment stages) remain to finalize M10.",
+  "savepoints": [
+    {
+      "sha": "30532194ff751859ae35c7e1fec69ef55ba45d16",
+      "label": "task-10.11",
+      "at": "2026-08-15T07:18:00+00:00"
+    }
+  ]
+}
