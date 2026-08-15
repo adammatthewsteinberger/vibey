@@ -36,6 +36,7 @@ def test_cli_commands_are_exposed() -> None:
     assert "engines" in result.stdout
     assert "cost" in result.stdout
     assert "ledger" in result.stdout
+    assert "deploy" in result.stdout
 
 
 def test_design_command_enqueues_interview(monkeypatch) -> None:  # type: ignore[no-untyped-def]
