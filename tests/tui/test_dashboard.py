@@ -288,3 +288,84 @@ async def test_dashboard_refresh_action() -> None:
         app.action_refresh()
         await pilot.pause()
         assert "DESIGN" in str(status_panel.render())
+
+
+@pytest.mark.asyncio
+async def test_build_replay_states_and_replay_app() -> None:
+    from vibey.application.dto import ProjectRecord
+    from vibey.tui.dashboard import VibeyReplayApp, build_replay_states
+
+    project_id = uuid4()
+    project = ProjectRecord(
+        project_id=project_id,
+        name="replay-test",
+        repo_path=Path("/tmp/repo"),
+        phase=Phase.BUILD,
+        cycle=2,
+        max_cycles=5,
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+        config={},
+    )
+
+    ev1 = LedgerEvent(
+        seq=1,
+        event_id=uuid4(),
+        project_id=project_id,
+        cycle=1,
+        phase=Phase.INTAKE,
+        kind=EventKind.QUESTION_ASKED,
+        engine_id=None,
+        job_id=None,
+        causation_id=None,
+        correlation_id=project_id,
+        provenance=Provenance.TRUSTED,
+        produced_at=datetime.now(UTC),
+        payload={"question_id": "q1"},
+        digest="d1",
+    )
+    ev2 = LedgerEvent(
+        seq=2,
+        event_id=uuid4(),
+        project_id=project_id,
+        cycle=1,
+        phase=Phase.DESIGN,
+        kind=EventKind.PHASE_TRANSITIONED,
+        engine_id=None,
+        job_id=None,
+        causation_id=None,
+        correlation_id=project_id,
+        provenance=Provenance.TRUSTED,
+        produced_at=datetime.now(UTC),
+        payload={"phase": "design"},
+        digest="d2",
+    )
+
+    states = build_replay_states(project, [ev1, ev2])
+    assert len(states) == 3
+    assert states[0].phase == Phase.INTAKE
+    assert states[1].phase == Phase.INTAKE
+    assert states[2].phase == Phase.DESIGN
+
+    app = VibeyReplayApp(states=states)
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        panel = app.query_one("#status-panel")
+        assert "REPLAY" in str(panel.render())
+        assert "Step 0/2" in str(panel.render())
+
+        # Step forward
+        app.action_next_step()
+        await pilot.pause()
+        assert "Step 1/2" in str(panel.render())
+
+        # Step forward to step 2 (DESIGN)
+        app.action_next_step()
+        await pilot.pause()
+        assert "Step 2/2" in str(panel.render())
+        assert "DESIGN" in str(panel.render())
+
+        # Step backward
+        app.action_prev_step()
+        await pilot.pause()
+        assert "Step 1/2" in str(panel.render())

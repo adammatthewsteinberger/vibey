@@ -295,10 +295,19 @@ def waive_visual(project_id: UUID) -> None:
 @app.command("watch")
 def watch_dashboard(
     project_id: Annotated[UUID | None, typer.Argument(help="Optional project ID")] = None,
+    replay: Annotated[
+        bool, typer.Option("--replay", help="Replay historical ledger events")
+    ] = False,
+    speed: Annotated[float, typer.Option("--speed", help="Playback speed multiplier")] = 1.0,
 ) -> None:
     """Live dashboard monitoring current phase, queue, circuits, worktrees, and ledger tail."""
     from vibey.infrastructure.db.engine_health_repository import PostgresEngineHealthRepository
-    from vibey.tui.dashboard import VibeyDashboardApp, fetch_dashboard_state
+    from vibey.tui.dashboard import (
+        VibeyDashboardApp,
+        VibeyReplayApp,
+        build_replay_states,
+        fetch_dashboard_state,
+    )
 
     async def run_dashboard() -> None:
         async with build_app() as resources:
@@ -308,22 +317,31 @@ def watch_dashboard(
                 if latest is None:
                     typer.echo("no projects found; create one with `vibey new` first")
                     raise typer.Exit(1)
-                target_id = latest.project_id
+                project = latest
+            else:
+                proj = await resources.projects.get(target_id)
+                if proj is None:
+                    typer.echo(f"unknown project {target_id}")
+                    raise typer.Exit(1)
+                project = proj
 
-            health_repo = PostgresEngineHealthRepository(resources.ledger._pool)
-            initial_state = await fetch_dashboard_state(
-                projects=resources.projects,
-                jobs=resources.jobs,
-                health=health_repo,
-                ledger=resources.ledger,
-                project_id=target_id,
-            )
+            if replay:
+                events = await resources.ledger.all_for_project(project.project_id)
+                states = build_replay_states(project, events)
+                replay_app = VibeyReplayApp(states=states, playback_speed_hz=speed)
+                await replay_app.run_async()
+            else:
+                health_repo = PostgresEngineHealthRepository(resources.ledger._pool)
+                initial_state = await fetch_dashboard_state(
+                    projects=resources.projects,
+                    jobs=resources.jobs,
+                    health=health_repo,
+                    ledger=resources.ledger,
+                    project_id=project.project_id,
+                )
 
-            def fetcher() -> None:
-                pass
-
-            tui_app = VibeyDashboardApp(initial_state=initial_state)
-            await tui_app.run_async()
+                tui_app = VibeyDashboardApp(initial_state=initial_state)
+                await tui_app.run_async()
 
     asyncio.run(run_dashboard())
 

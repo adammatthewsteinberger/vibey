@@ -4,8 +4,8 @@ from collections.abc import Callable, Mapping, Sequence
 from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
-from typing import ClassVar
-from uuid import UUID
+from typing import Any, ClassVar
+from uuid import UUID, uuid4
 
 from textual.app import App, ComposeResult
 from textual.binding import BindingType
@@ -289,3 +289,167 @@ class VibeyDashboardApp(App[None]):
             self.query_one("#circuits-panel", CircuitsPanel).state = state
             self.query_one("#worktrees-panel", WorktreesPanel).state = state
             self.query_one("#ledger-panel", LedgerPanel).state = state
+
+
+def build_replay_states(
+    project: Any,
+    events: Sequence[LedgerEvent],
+) -> list[DashboardState]:
+    """Reconstructs state history step-by-step from ledger events."""
+    states: list[DashboardState] = []
+
+    current_phase = Phase.INTAKE
+    current_cycle = 1
+    visual_decision: str | None = None
+    deployment_decision: str | None = None
+    queue_counts: dict[JobState, int] = {s: 0 for s in JobState}
+    circuits: list[EngineHealthRecord] = []
+    active_worktrees: list[str] = []
+    tail: list[LedgerEvent] = []
+
+    initial_state = DashboardState(
+        project_id=project.project_id,
+        project_name=project.name,
+        repo_path=project.repo_path,
+        phase=current_phase,
+        cycle=current_cycle,
+        max_cycles=project.max_cycles,
+        visual_decision=visual_decision,
+        deployment_decision=deployment_decision,
+        queue_depth=dict(queue_counts),
+        circuits=tuple(circuits),
+        active_worktrees=tuple(active_worktrees),
+        ledger_tail=(),
+    )
+    states.append(initial_state)
+
+    for ev in events:
+        tail.append(ev)
+        current_phase = ev.phase
+        current_cycle = ev.cycle
+
+        if ev.kind == EventKind.VISUAL_DESIGN_OPTED_IN:
+            visual_decision = "OPTED_IN"
+        elif ev.kind in {EventKind.VISUAL_DESIGN_WAIVED, EventKind.VISUAL_DESIGN_DECLINED}:
+            visual_decision = "WAIVED"
+        elif ev.kind == EventKind.DEPLOYMENT_OPTED_IN:
+            deployment_decision = "OPTED_IN"
+        elif ev.kind == EventKind.DEPLOYMENT_DECLINED:
+            deployment_decision = "DECLINED"
+
+        snap = DashboardState(
+            project_id=project.project_id,
+            project_name=project.name,
+            repo_path=project.repo_path,
+            phase=current_phase,
+            cycle=current_cycle,
+            max_cycles=project.max_cycles,
+            visual_decision=visual_decision,
+            deployment_decision=deployment_decision,
+            queue_depth=dict(queue_counts),
+            circuits=tuple(circuits),
+            active_worktrees=tuple(active_worktrees),
+            ledger_tail=tuple(tail[-20:]),
+        )
+        states.append(snap)
+
+    return states
+
+
+class VibeyReplayApp(App[None]):
+    CSS = VibeyDashboardApp.CSS
+
+    BINDINGS: ClassVar[list[BindingType]] = [
+        ("q", "quit", "Quit"),
+        ("space", "toggle_play", "Play/Pause"),
+        ("right", "next_step", "Next Step"),
+        ("n", "next_step", "Next Step"),
+        ("left", "prev_step", "Prev Step"),
+        ("p", "prev_step", "Prev Step"),
+    ]
+
+    current_step: reactive[int] = reactive(0)
+    is_playing: reactive[bool] = reactive(False)
+
+    def __init__(
+        self,
+        *,
+        states: Sequence[DashboardState],
+        playback_speed_hz: float = 1.0,
+    ) -> None:
+        super().__init__()
+        self._states = list(states) or [
+            DashboardState(
+                project_id=uuid4(),
+                project_name="unknown",
+                repo_path=Path("."),
+                phase=Phase.INTAKE,
+                cycle=1,
+                max_cycles=1,
+                visual_decision=None,
+                deployment_decision=None,
+                queue_depth={s: 0 for s in JobState},
+                circuits=(),
+                active_worktrees=(),
+                ledger_tail=(),
+            )
+        ]
+        self._playback_speed = playback_speed_hz
+
+    def compose(self) -> ComposeResult:
+        yield Header(show_clock=True)
+        with Horizontal():
+            with Vertical(id="left-pane"):
+                yield StatusPanel(id="status-panel")
+                yield QueuePanel(id="queue-panel")
+                yield CircuitsPanel(id="circuits-panel")
+                yield WorktreesPanel(id="worktrees-panel")
+            yield LedgerPanel(id="ledger-panel")
+        yield Footer()
+
+    def on_mount(self) -> None:
+        self._update_ui()
+        if self._playback_speed > 0:
+            interval = 1.0 / self._playback_speed
+            self.set_interval(interval, self._tick)
+
+    def _tick(self) -> None:
+        if self.is_playing and self.current_step < len(self._states) - 1:
+            self.current_step += 1
+
+    def watch_current_step(self, new_val: int) -> None:
+        self._update_ui()
+
+    def _update_ui(self) -> None:
+        if not self._states:
+            return
+        state = self._states[self.current_step]
+        max_step = len(self._states) - 1
+        with suppress(Exception):
+            status_panel = self.query_one("#status-panel", StatusPanel)
+            status_panel.state = state
+            vis = f" | Visual: {state.visual_decision}" if state.visual_decision else ""
+            dep = f" | Deploy: {state.deployment_decision}" if state.deployment_decision else ""
+            status_panel.update(
+                f"[bold cyan]vibey (REPLAY)[/bold cyan]  Step {self.current_step}/{max_step}\n"
+                f"Project: {state.project_name}  ({state.project_id})\n"
+                f"Phase:   [bold green]{state.phase.name}[/bold green]  | "
+                f"Cycle: {state.cycle}/{state.max_cycles}{vis}{dep}\n"
+                f"Repo:    {state.repo_path}"
+            )
+
+            self.query_one("#queue-panel", QueuePanel).state = state
+            self.query_one("#circuits-panel", CircuitsPanel).state = state
+            self.query_one("#worktrees-panel", WorktreesPanel).state = state
+            self.query_one("#ledger-panel", LedgerPanel).state = state
+
+    def action_next_step(self) -> None:
+        if self.current_step < len(self._states) - 1:
+            self.current_step += 1
+
+    def action_prev_step(self) -> None:
+        if self.current_step > 0:
+            self.current_step -= 1
+
+    def action_toggle_play(self) -> None:
+        self.is_playing = not self.is_playing
