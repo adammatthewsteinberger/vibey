@@ -14,6 +14,7 @@ from vibey.domain.review import Ambiguity, FindingRef, UserVerdict
 class Phase(StrEnum):
     INTAKE = "intake"
     DESIGN = "design"
+    VISUAL_DESIGN = "visual_design"  # optional, unnumbered interstitial
     BUILD = "build"
     REVIEW = "review"
     DEPLOY = "deploy"
@@ -21,13 +22,21 @@ class Phase(StrEnum):
     ABANDONED = "abandoned"
 
 
+class VisualDecision(StrEnum):
+    OPTED_IN = "opted_in"
+    DECLINED = "declined"
+    ACCEPTED = "accepted"
+    WAIVED = "waived"
+
+
 TERMINAL: frozenset[Phase] = frozenset({Phase.DONE, Phase.ABANDONED})
-INTERACTIVE: frozenset[Phase] = frozenset({Phase.DESIGN, Phase.REVIEW})
+INTERACTIVE: frozenset[Phase] = frozenset({Phase.DESIGN, Phase.VISUAL_DESIGN, Phase.REVIEW})
 
 # The legal edges of the phase machine, independent of guard evaluation.
 _EDGES: dict[Phase, frozenset[Phase]] = {
     Phase.INTAKE: frozenset({Phase.DESIGN}),
-    Phase.DESIGN: frozenset({Phase.BUILD, Phase.ABANDONED}),
+    Phase.DESIGN: frozenset({Phase.BUILD, Phase.VISUAL_DESIGN, Phase.ABANDONED}),
+    Phase.VISUAL_DESIGN: frozenset({Phase.BUILD, Phase.ABANDONED}),
     Phase.BUILD: frozenset({Phase.REVIEW, Phase.DESIGN, Phase.ABANDONED}),
     Phase.REVIEW: frozenset({Phase.DONE, Phase.DESIGN, Phase.BUILD, Phase.ABANDONED}),
     Phase.DONE: frozenset({Phase.DEPLOY}),
@@ -64,6 +73,7 @@ class TransitionEvidence:
     user_verdict: UserVerdict | None = None
     budget_exhausted: bool = False
     blocked_on_ambiguity: int = 0
+    visual_decision: VisualDecision | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -85,7 +95,7 @@ class Denied:
 TransitionOutcome = Allowed | Denied
 
 
-def _guard_design_to_build(evidence: TransitionEvidence) -> tuple[str, ...]:
+def _guard_design_common(evidence: TransitionEvidence) -> list[str]:
     violations = []
     if evidence.acceptance_criteria < 1:
         violations.append("at least one acceptance criterion is required")
@@ -97,7 +107,32 @@ def _guard_design_to_build(evidence: TransitionEvidence) -> tuple[str, ...]:
         )
     if evidence.user_verdict is not UserVerdict.ACCEPT:
         violations.append("design has not been accepted by the user")
+    return violations
+
+
+def _guard_design_to_build(evidence: TransitionEvidence) -> tuple[str, ...]:
+    violations = _guard_design_common(evidence)
+    if evidence.visual_decision is not VisualDecision.DECLINED:
+        violations.append(
+            "design -> build requires an explicit visual-design decline "
+            "(opt-in must route through visual_design first)"
+        )
     return tuple(violations)
+
+
+def _guard_design_to_visual_design(evidence: TransitionEvidence) -> tuple[str, ...]:
+    violations = _guard_design_common(evidence)
+    if evidence.visual_decision is not VisualDecision.OPTED_IN:
+        violations.append("design -> visual_design requires an explicit visual-design opt-in")
+    return tuple(violations)
+
+
+def _guard_visual_design_to_build(evidence: TransitionEvidence) -> tuple[str, ...]:
+    if evidence.visual_decision not in (VisualDecision.ACCEPTED, VisualDecision.WAIVED):
+        return (
+            "visual_design -> build requires the visual plan to be accepted or explicitly waived",
+        )
+    return ()
 
 
 def _guard_build_to_review(evidence: TransitionEvidence) -> tuple[str, ...]:
@@ -122,6 +157,8 @@ def _guard_review_to_done(evidence: TransitionEvidence) -> tuple[str, ...]:
 
 _GUARDS = {
     (Phase.DESIGN, Phase.BUILD): _guard_design_to_build,
+    (Phase.DESIGN, Phase.VISUAL_DESIGN): _guard_design_to_visual_design,
+    (Phase.VISUAL_DESIGN, Phase.BUILD): _guard_visual_design_to_build,
     (Phase.BUILD, Phase.REVIEW): _guard_build_to_review,
     (Phase.REVIEW, Phase.DONE): _guard_review_to_done,
 }
@@ -141,6 +178,19 @@ def evaluate_transition(state: PhaseState, request: TransitionRequest) -> Transi
             return Denied(violations)
 
     return ALLOWED
+
+
+def next_phase_after_design(*, visual_decision: VisualDecision, spec_is_buildable: bool) -> Phase:
+    """Choose the optional visual interstitial or the direct BUILD path.
+
+    Never defaults to VISUAL_DESIGN: only an explicit OPTED_IN decision enters it,
+    matching the "no default is treated as yes" rule from the design docs.
+    """
+    if not spec_is_buildable:
+        raise InvalidPhaseError("cannot route out of DESIGN with a non-buildable spec")
+    if visual_decision is VisualDecision.OPTED_IN:
+        return Phase.VISUAL_DESIGN
+    return Phase.BUILD
 
 
 def next_phase_after_review(findings: Sequence[FindingRef], *, strict_loopback: bool) -> Phase:

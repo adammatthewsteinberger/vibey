@@ -14,7 +14,9 @@ from vibey.domain.phase import (
     PhaseState,
     TransitionEvidence,
     TransitionRequest,
+    VisualDecision,
     evaluate_transition,
+    next_phase_after_design,
     next_phase_after_review,
 )
 from vibey.domain.review import Ambiguity, FindingRef, Severity, UserVerdict
@@ -38,7 +40,7 @@ def test_phase_state_rejects_max_cycles_below_one() -> None:
 
 def test_terminal_and_interactive_sets() -> None:
     assert {Phase.DONE, Phase.ABANDONED} == TERMINAL
-    assert {Phase.DESIGN, Phase.REVIEW} == INTERACTIVE
+    assert {Phase.DESIGN, Phase.VISUAL_DESIGN, Phase.REVIEW} == INTERACTIVE
 
 
 def test_design_to_build_denied_without_acceptance_criteria() -> None:
@@ -102,6 +104,7 @@ def test_design_to_build_allowed_when_all_guards_pass() -> None:
             open_blocking_questions=0,
             unmapped_criteria=(),
             user_verdict=UserVerdict.ACCEPT,
+            visual_decision=VisualDecision.DECLINED,
         ),
     )
 
@@ -117,6 +120,7 @@ def test_design_to_build_denied_on_unmapped_criteria() -> None:
             acceptance_criteria=2,
             unmapped_criteria=("c2",),
             user_verdict=UserVerdict.ACCEPT,
+            visual_decision=VisualDecision.DECLINED,
         ),
     )
 
@@ -124,6 +128,125 @@ def test_design_to_build_denied_on_unmapped_criteria() -> None:
 
     assert isinstance(outcome, Denied)
     assert any("unmapped" in v for v in outcome.violations)
+
+
+def test_design_to_build_denied_without_explicit_visual_decline() -> None:
+    """No default is treated as yes: an unset visual_decision cannot reach BUILD."""
+    state = _state(Phase.DESIGN)
+    request = TransitionRequest(
+        to=Phase.BUILD,
+        reason="spec accepted",
+        evidence=TransitionEvidence(
+            acceptance_criteria=1,
+            open_blocking_questions=0,
+            unmapped_criteria=(),
+            user_verdict=UserVerdict.ACCEPT,
+        ),
+    )
+
+    outcome = evaluate_transition(state, request)
+
+    assert isinstance(outcome, Denied)
+    assert any("visual-design decline" in v for v in outcome.violations)
+
+
+def test_design_to_build_denied_when_opted_into_visual_design() -> None:
+    """An opt-in must route through VISUAL_DESIGN, not straight to BUILD."""
+    state = _state(Phase.DESIGN)
+    request = TransitionRequest(
+        to=Phase.BUILD,
+        reason="spec accepted",
+        evidence=TransitionEvidence(
+            acceptance_criteria=1,
+            user_verdict=UserVerdict.ACCEPT,
+            visual_decision=VisualDecision.OPTED_IN,
+        ),
+    )
+
+    outcome = evaluate_transition(state, request)
+
+    assert isinstance(outcome, Denied)
+    assert any("visual-design decline" in v for v in outcome.violations)
+
+
+def test_design_to_visual_design_allowed_on_explicit_opt_in() -> None:
+    state = _state(Phase.DESIGN)
+    request = TransitionRequest(
+        to=Phase.VISUAL_DESIGN,
+        reason="spec accepted, visuals requested",
+        evidence=TransitionEvidence(
+            acceptance_criteria=1,
+            user_verdict=UserVerdict.ACCEPT,
+            visual_decision=VisualDecision.OPTED_IN,
+        ),
+    )
+
+    assert evaluate_transition(state, request) == ALLOWED
+
+
+def test_design_to_visual_design_denied_without_explicit_opt_in() -> None:
+    state = _state(Phase.DESIGN)
+    request = TransitionRequest(
+        to=Phase.VISUAL_DESIGN,
+        reason="spec accepted",
+        evidence=TransitionEvidence(
+            acceptance_criteria=1,
+            user_verdict=UserVerdict.ACCEPT,
+            visual_decision=VisualDecision.DECLINED,
+        ),
+    )
+
+    outcome = evaluate_transition(state, request)
+
+    assert isinstance(outcome, Denied)
+    assert any("visual-design opt-in" in v for v in outcome.violations)
+
+
+def test_visual_design_to_build_denied_without_confirmation() -> None:
+    state = _state(Phase.VISUAL_DESIGN)
+    request = TransitionRequest(
+        to=Phase.BUILD,
+        reason="visuals reviewed",
+        evidence=TransitionEvidence(visual_decision=VisualDecision.OPTED_IN),
+    )
+
+    outcome = evaluate_transition(state, request)
+
+    assert isinstance(outcome, Denied)
+    assert any("accepted or explicitly waived" in v for v in outcome.violations)
+
+
+@pytest.mark.parametrize("decision", [VisualDecision.ACCEPTED, VisualDecision.WAIVED])
+def test_visual_design_to_build_allowed_when_confirmed_or_waived(
+    decision: VisualDecision,
+) -> None:
+    state = _state(Phase.VISUAL_DESIGN)
+    request = TransitionRequest(
+        to=Phase.BUILD,
+        reason="visuals settled",
+        evidence=TransitionEvidence(visual_decision=decision),
+    )
+
+    assert evaluate_transition(state, request) == ALLOWED
+
+
+def test_next_phase_after_design_declined_goes_build() -> None:
+    assert (
+        next_phase_after_design(visual_decision=VisualDecision.DECLINED, spec_is_buildable=True)
+        is Phase.BUILD
+    )
+
+
+def test_next_phase_after_design_opted_in_goes_visual_design() -> None:
+    assert (
+        next_phase_after_design(visual_decision=VisualDecision.OPTED_IN, spec_is_buildable=True)
+        is Phase.VISUAL_DESIGN
+    )
+
+
+def test_next_phase_after_design_rejects_non_buildable_spec() -> None:
+    with pytest.raises(InvalidPhaseError):
+        next_phase_after_design(visual_decision=VisualDecision.DECLINED, spec_is_buildable=False)
 
 
 def test_build_to_review_denied_when_no_work_items() -> None:

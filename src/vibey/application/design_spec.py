@@ -4,18 +4,27 @@ from collections.abc import Sequence
 
 from vibey.application.design import DesignEvent
 from vibey.domain.ledger import EventKind, LedgerEvent
-from vibey.domain.phase import TransitionEvidence
+from vibey.domain.phase import TransitionEvidence, VisualDecision
 from vibey.domain.review import UserVerdict
 from vibey.domain.spec import DesignSpec
 
 
 def build_design_evidence(
-    spec: DesignSpec, *, open_blocking_questions: int, accepted: bool
+    spec: DesignSpec,
+    *,
+    open_blocking_questions: int,
+    accepted: bool,
+    # Defaults to DECLINED (never OPTED_IN) because the visual-design interstitial
+    # (tasks 5.7-5.13) isn't built yet -- there is nowhere for an opt-in to go.
+    # Callers get a real visual choice once that stage exists; this is not "yes
+    # by default," it is the only decision that's currently honest.
+    visual_decision: VisualDecision = VisualDecision.DECLINED,
 ) -> TransitionEvidence:
     return TransitionEvidence(
         acceptance_criteria=len(spec.criteria),
         open_blocking_questions=open_blocking_questions,
         user_verdict=UserVerdict.ACCEPT if accepted else None,
+        visual_decision=visual_decision,
     )
 
 
