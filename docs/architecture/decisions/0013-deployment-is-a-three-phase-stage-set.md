@@ -1,6 +1,11 @@
 # 0013 — Deployment is a three-phase stage set in the core lifecycle
 
-**Status:** accepted · **Date:** 2026-08-14 · **Supersedes:** ADR-0012
+**Status:** superseded in part by ADR-0014 · **Date:** 2026-08-14 · **Supersedes:** ADR-0012
+
+> Historical safety and execution design retained. ADR-0014 supersedes only
+> this record's automatic `③ → ④` entry rule; deployment now requires an
+> explicit user opt-in after Phase ③. The three deployment phases, consent
+> contract, retry taxonomy, and Azure safety controls remain the basis for M10.
 
 ## Context
 
@@ -19,10 +24,13 @@ the seven interview stages inside Phase ① DESIGN.
 
 ## Decision
 
-Deployment is part of vibey's core phase machine. Acceptance in Phase ③
-automatically enters Phase ④. Phase ④ is interactive and must gather enough
-trusted deployment detail and explicit authorization to define a safe,
-replayable deployment specification. It does not mutate Azure.
+Deployment is part of vibey's core phase machine. In the original version of
+this decision, acceptance in Phase ③ automatically entered Phase ④. ADR-0014
+supersedes that entry rule: current behavior first asks whether the user wants
+to work on deployment, and a decline completes the run locally. An explicit
+opt-in enters interactive Phase ④, which must gather enough trusted deployment
+detail and explicit authorization to define a safe, replayable deployment
+specification. It does not mutate Azure.
 
 Phase ⑤ executes that accepted deployment specification autonomously through the
 durable queue. It continues through retryable work and waitable capacity failures
@@ -37,11 +45,11 @@ asks only for the missing decision or authority. Phase ⑥ can route back to Pha
 ④ for changed details, Phase ⑤ for an unambiguous retry, or the delivery phases
 when the deployed artifact itself must change.
 
-Entering Phase ④ is automatic. Azure mutation is not: the `④ → ⑤` guard requires
-an accepted deployment specification containing the target tenant/subscription,
-scope, environment, identity, cost boundary, verification contract, recovery
-policy, and explicit deployment consent. Consent is ledger evidence, not a CLI
-flag or an ambient default.
+The current entry into Phase ④ is never automatic. Azure mutation is not either:
+the `④ → ⑤` guard requires an accepted deployment specification containing the
+target tenant/subscription, scope, environment, identity, cost boundary,
+verification contract, recovery policy, and explicit deployment consent. Consent
+is ledger evidence, not a CLI flag or an ambient default.
 
 ## Safety model
 
@@ -106,6 +114,6 @@ the user with runtime evidence.
 security surface become larger. M10 therefore requires offline adapter tests plus
 a tightly scoped real-Azure development-environment proof.
 
-**Bad.** Automatic entry can be mistaken for automatic authority. The `④ → ⑤`
-consent guard and immutable target scope are mandatory and must be visible in the
-CLI/TUI.
+**Bad.** An earlier automatic-entry rule could be mistaken for automatic
+authority. The explicit opt-in, `④ → ⑤` consent guard, and immutable target
+scope are mandatory and must be visible in the CLI/TUI.

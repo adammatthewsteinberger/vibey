@@ -23,14 +23,33 @@ them without a database.
 ```python
 class Phase(StrEnum):
     INTAKE = "intake"; DESIGN = "design"; BUILD = "build"
+    VISUAL_DESIGN = "visual_design"  # optional, unnumbered interstitial
     REVIEW = "review"; DEPLOY_DESIGN = "deploy_design"
     DEPLOY_EXECUTE = "deploy_execute"; DEPLOY_REVIEW = "deploy_review"
     DONE = "done"; ABANDONED = "abandoned"
 
 TERMINAL: frozenset[Phase] = frozenset({Phase.DONE, Phase.ABANDONED})
 INTERACTIVE: frozenset[Phase] = frozenset({
-    Phase.DESIGN, Phase.REVIEW, Phase.DEPLOY_DESIGN, Phase.DEPLOY_REVIEW,
+    Phase.DESIGN, Phase.VISUAL_DESIGN, Phase.REVIEW,
+    Phase.DEPLOY_DESIGN, Phase.DEPLOY_REVIEW,
 })
+
+
+class MediaModality(StrEnum):
+    IMAGE = "image"; AUDIO = "audio"; VIDEO = "video"
+
+
+class CompletionMode(StrEnum):
+    LOCAL = "local"; DEPLOYED = "deployed"
+
+
+class VisualDecision(StrEnum):
+    OPTED_IN = "opted_in"; DECLINED = "declined"; ACCEPTED = "accepted"
+    WAIVED = "waived"
+
+
+class DeploymentDecision(StrEnum):
+    OPTED_IN = "opted_in"; DECLINED = "declined"
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,6 +90,11 @@ class TransitionEvidence:
     deployment_outcome: DeploymentOutcome | None = None
     deployment_attempt: int = 0
     deployment_attempt_cap: int = 0
+    visual_decision: VisualDecision | None = None
+    visual_inventory_complete: bool = False
+    visual_artifacts_confirmed: bool = False
+    deployment_decision: DeploymentDecision | None = None
+    completion_mode: CompletionMode | None = None
 
 
 Allowed = Literal["allowed"]
@@ -87,12 +111,24 @@ def evaluate_transition(
 ) -> TransitionOutcome: ...
 
 
-def next_phase_after_review(
-    findings: Sequence[FindingRef], *, strict_loopback: bool
+def next_phase_after_design(
+    *, visual_decision: VisualDecision, spec_is_buildable: bool
 ) -> Phase:
-    """The routing decision from ADR-0010, isolated so it is trivially testable."""
+    """Choose the optional visual interstitial or direct BUILD path."""
+    ...
+
+
+def next_phase_after_review(
+    findings: Sequence[FindingRef], *, strict_loopback: bool,
+    deployment_decision: DeploymentDecision,
+) -> Phase:
+    """Route only after the explicit deployment choice gate has a decision."""
     if not findings:
-        return Phase.DEPLOY_DESIGN
+        return (
+            Phase.DEPLOY_DESIGN
+            if deployment_decision is DeploymentDecision.OPTED_IN
+            else Phase.DONE
+        )
     if strict_loopback:
         return Phase.DESIGN
     if any(f.ambiguity is Ambiguity.NEEDS_CLARIFICATION for f in findings):
@@ -109,11 +145,17 @@ def next_phase_after_deploy_review(
 
 ### Invariants (property-tested)
 
-- Every non-terminal phase reaches `DONE` by some path from `INTAKE`.
+- Every non-terminal phase reaches `DONE` by some path from `INTAKE`, including
+  direct visual and deployment opt-out paths.
 - `DONE` and `ABANDONED` have no outgoing edges.
 - No transition is legal when `cycle > max_cycles` except `→ ABANDONED`.
 - `DEPLOY_EXECUTE → DEPLOY_EXECUTE` is illegal at the attempt/time/cost cap.
 - No incomplete, unconsented deployment specification reaches `DEPLOY_EXECUTE`.
+- `DESIGN → BUILD` is legal only with an explicit visual opt-out.
+- `VISUAL_DESIGN → BUILD` is legal only after accepted/supplied/waived visual
+  artifacts and screen specs.
+- `REVIEW → DONE` is legal only with an explicit deployment opt-out and
+  `completion_mode = LOCAL`.
 - `evaluate_transition` is total: every `(state, request)` pair returns without raising.
 
 ---
@@ -127,6 +169,7 @@ class Effort(IntEnum):
 
 PHASE_BASE_EFFORT: Mapping[Phase, Effort] = {
     Phase.DESIGN: Effort.HIGH,     # the user's requirement
+    Phase.VISUAL_DESIGN: Effort.HIGH,
     Phase.BUILD:  Effort.LOW,      # the user's requirement
     Phase.REVIEW: Effort.HIGH,     # the user's requirement
     Phase.DEPLOY_DESIGN: Effort.HIGH,
@@ -155,6 +198,54 @@ def effort_for_attempt(base: Effort, attempt: int) -> Effort:
 def forces_rotation(previous: Effort, current: Effort) -> bool:
     return current > previous
 ```
+
+## 3.1 Media and visual-plan values
+
+```python
+@dataclass(frozen=True, slots=True)
+class ScreenSpec:
+    screen_id: str
+    route: str
+    states: tuple[str, ...]
+    viewport_variants: tuple[str, ...]
+    acceptance_ids: tuple[str, ...]
+    accessibility_requirements: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class MediaAssetSpec:
+    asset_id: str
+    modality: MediaModality
+    screen_id: str
+    state: str
+    prompt_digest: str
+    output_constraints: tuple[str, ...]
+    rights_constraints: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class MediaProviderCandidate:
+    provider_id: str
+    capabilities: frozenset[MediaModality]
+    region: str | None
+    external: bool
+    healthy: bool
+    eligible: bool
+    weight: int
+
+
+def select_media_provider(
+    candidates: Sequence[MediaProviderCandidate],
+    modality: MediaModality,
+    cursor: int,
+) -> tuple[MediaProviderCandidate, int]:
+    """Pure per-modality round robin; application persists the returned cursor."""
+    ...
+```
+
+The domain never imports an SDK or knows a provider/model name. It evaluates
+capability, policy, region, health, and budget facts supplied by `application/`;
+the infrastructure adapter performs the actual generation.
 
 ---
 

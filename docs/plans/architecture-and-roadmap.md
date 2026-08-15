@@ -82,7 +82,7 @@ They are enforced by CI, not by convention.
 ```mermaid
 graph TB
     User["👤 Developer<br/>(the person with the idea)"]
-    Vibey["<b>vibey</b><br/>six-phase conductor"]
+    Vibey["<b>vibey</b><br/>six-phase conductor<br/>+ optional visual stage"]
 
     subgraph Engines["Autonomous session runners (local CLIs)"]
         CL["claudeloop<br/>Anthropic"]
@@ -100,6 +100,7 @@ graph TB
     subgraph External["External"]
         Providers["Model providers<br/>Anthropic / OpenAI / Cursor / Google"]
         Market["vibe-engineering-skills<br/>plugin marketplace"]
+        Media["Media providers<br/>image / audio / video"]
         Azure["Azure<br/>(Phases ④–⑥)"]
     end
 
@@ -108,6 +109,7 @@ graph TB
     Vibey -->|"spawn + control"| Engines
     Engines -->|"run dirs, snapshots,<br/>events.jsonl"| Vibey
     Engines -->|API| Providers
+    Vibey -->|"capability discovery,<br/>generate, preview"| Media
     Vibey --> PG
     Vibey --> Git
     Vibey --> FS
@@ -116,8 +118,9 @@ graph TB
 ```
 
 **Trust boundary note.** Everything inside *Local* is on the developer's machine.
-Vibey never ships source or ledger content anywhere except to the model providers
-the engines are already configured to use. See §12.
+Vibey never ships source, prompts, reference assets, or ledger content to a media
+provider unless the user opted into the visual stage and accepted external-media
+egress. See §13.
 
 ---
 
@@ -141,6 +144,10 @@ graph TB
         Ad["EngineAdapter × 4<br/>argv build, run-dir tail,<br/>capacity map, effort map"]
     end
 
+    subgraph MediaAdapters["infrastructure/media/"]
+        Md["MediaProvider registry<br/>image / audio / video cursors"]
+    end
+
     subgraph Store["PostgreSQL"]
         Q[("job / job_dep")]
         E[("event")]
@@ -161,6 +168,7 @@ graph TB
     W1 --> Rot
     Rot --> HE
     W1 --> Ad
+    W1 --> Md
     Ad -->|"subprocess"| Ext["claudeloop / codexloop /<br/>cursorloop / agyloop"]
     Ad --> WT
     W1 --> Led
@@ -242,6 +250,7 @@ src/vibey/
 ├── infrastructure/
 │   ├── db/                   # asyncpg pool, migrations, repositories
 │   ├── engines/              # one adapter per *loop + the conformance suite
+│   ├── media/                # capability registry + media-provider adapters
 │   ├── git/                  # worktrees, savepoints, integration merges
 │   ├── ledger/               # append + projections
 │   ├── provision/            # agent-surface materialization (CLAUDE.md etc.)
@@ -263,6 +272,7 @@ src/vibey/
 |---|---|---|---|
 | `INTAKE` | — | — | Create project, detect repo, provision agent surfaces |
 | `DESIGN` (①) | **yes** | `HIGH` | Interview the user to a testable spec |
+| `VISUAL_DESIGN` | **yes, optional** | `HIGH` | Inventory screens and generate/confirm visual, audio, and video assets when opted in |
 | `BUILD` (②) | no | `LOW` (auto-escalating) | Decompose, implement, verify, integrate |
 | `REVIEW` (③) | **yes** | `HIGH` | Demo what was built, collect change requests |
 | `DEPLOY_DESIGN` (④) | **yes** | `HIGH` | Establish and accept the Azure deployment contract |
@@ -271,9 +281,11 @@ src/vibey/
 | `DONE` | — | — | Terminal success |
 | `ABANDONED` | — | — | Terminal failure / user cancel |
 
-The lifecycle contains two three-phase stage sets: delivery (①–③) and deployment
-(④–⑥). High-effort models conduct the four human conversations; low-effort models
-handle bulk autonomous build and deployment work. §9.3 covers escalation ladders.
+The lifecycle has six numbered phases plus one optional, unnumbered visual-design
+interstitial. Delivery is `① DESIGN → optional VISUAL_DESIGN → ② BUILD → ③ REVIEW`;
+deployment remains `④–⑥`. High-effort models conduct human conversations and
+visual review; low-effort models handle bulk build, media generation, and
+deployment execution. §9.3 covers escalation ladders.
 
 ### 6.2 Transitions
 
@@ -282,14 +294,21 @@ stateDiagram-v2
     [*] --> INTAKE
     INTAKE --> DESIGN: project created
 
-    DESIGN --> BUILD: spec accepted by user
+    DESIGN --> VISUAL_DESIGN: user opts into visual design
+    DESIGN --> BUILD: user declines visual design
     DESIGN --> ABANDONED: user cancels
+
+    VISUAL_DESIGN --> BUILD: all screen specs and media accepted
+    VISUAL_DESIGN --> BUILD: explicit visual-stage waiver
+    VISUAL_DESIGN --> DESIGN: visual inventory exposes missing requirements
+    VISUAL_DESIGN --> ABANDONED: user cancels
 
     BUILD --> REVIEW: all work items integrated
     BUILD --> DESIGN: blocked on ambiguity<br/>(spec insufficient)
     BUILD --> ABANDONED: budget exhausted<br/>+ user declines top-up
 
-    REVIEW --> DEPLOY_DESIGN: user accepts build
+    REVIEW --> DEPLOY_DESIGN: user accepts + opts into deployment
+    REVIEW --> DONE: user accepts + declines deployment
     REVIEW --> DESIGN: changes need clarification
     REVIEW --> BUILD: changes are unambiguous<br/>(fast path)
     REVIEW --> ABANDONED: user cancels
@@ -320,12 +339,14 @@ path taken only when *every* open finding is `unambiguous` and the user has not
 set `strict_loopback = true`. See
 [ADR-0010](../architecture/decisions/0010-review-loopback-routing.md).
 
-**Automatic does not mean ambient authority.** Acceptance in ③ automatically
-enters ④. Phase ④ is read-only discovery and conversation. The first Azure
-mutation is guarded by a trusted, accepted deployment specification and explicit
-consent naming the tenant, subscription, scope, environment, cost boundary,
-verification contract, and recovery policy. See
-[ADR-0013](../architecture/decisions/0013-deployment-is-a-three-phase-stage-set.md).
+**Opt-in means an explicit ledger decision, not a default.** Acceptance in ①
+always asks whether to enter the optional visual-design interstitial. Acceptance
+in ③ always asks whether to work on deployment. Declining deployment records a
+successful local completion and enqueues no Azure job. If deployment is accepted,
+Phase ④ remains read-only until a trusted, accepted deployment specification and
+explicit mutation consent name the tenant, subscription, scope, environment, cost
+boundary, verification contract, and recovery policy. See
+[ADR-0014](../architecture/decisions/0014-optional-visual-design-and-deployment-opt-in.md).
 
 ### 6.3 Cycle and deployment-attempt accounting
 
@@ -346,11 +367,15 @@ A transition fires only when its guard holds. Guards are pure functions in
 
 | Transition | Guard |
 |---|---|
-| `DESIGN → BUILD` | spec has ≥1 acceptance criterion, 0 open blocking questions, user issued `accept` |
+| `DESIGN → VISUAL_DESIGN` | buildable spec, user explicitly opted into visual design |
+| `DESIGN → BUILD` | buildable spec, user explicitly declined visual design |
+| `VISUAL_DESIGN → BUILD` | every planned screen has an accepted spec and every planned asset is accepted, supplied, or explicitly waived |
+| `VISUAL_DESIGN → DESIGN` | visual inventory exposes a missing requirement or contradiction |
 | `BUILD → REVIEW` | every work item is `integrated` or `waived`, integration branch is green |
 | `BUILD → DESIGN` | ≥1 work item is `blocked_on_ambiguity` and retries exhausted |
 | `REVIEW → *` | user issued a verdict and triage has classified every finding |
-| `REVIEW → DEPLOY_DESIGN` | build accepted and integration evidence remains green |
+| `REVIEW → DEPLOY_DESIGN` | build accepted, integration evidence remains green, and user explicitly opted into deployment |
+| `REVIEW → DONE` | build accepted, no open product findings, user explicitly declined deployment |
 | `DEPLOY_DESIGN → DEPLOY_EXECUTE` | complete trusted deployment spec, preflight/what-if accepted, explicit mutation consent |
 | `DEPLOY_EXECUTE → DEPLOY_EXECUTE` | failure is retryable or waitable and all attempt/time/cost caps remain |
 | `DEPLOY_EXECUTE → DEPLOY_REVIEW` | runtime verification succeeded, or failure requires human input |
@@ -436,6 +461,10 @@ Full DDL, indices, and the reaper query are in [data-model.md](data-model.md).
 | `design.research` | ① | yes | none | `STANDARD` |
 | `design.synthesize` | ① | no | none | `HIGH` |
 | `design.spec` | ① | no | none | `HIGH` |
+| `visual.inventory` / `visual.plan` | optional visual stage | no | none | `HIGH` |
+| `visual.prompt` | optional visual stage | no | none | `STANDARD` |
+| `media.generate.image` / `.audio` / `.video` | optional visual stage | async, dependency-ordered | media work dir | `STANDARD` ↑ |
+| `media.moderate` / `media.preview` / `visual.review` | optional visual stage | no | read-only artifacts | `HIGH` |
 | `build.decompose` | ② | no | none | `STANDARD` |
 | `build.implement` | ② | **yes** | worktree | `LOW` ↑ |
 | `build.verify` | ② | yes | worktree | `LOW` |
@@ -752,11 +781,15 @@ and `ai-security-practices` skills:
 | **Runaway cost** | An agent loops, burning tokens | Hard per-phase and per-project budget caps in `domain/budget.py`; the "AI cost snowball" is a documented incident class, so caps are mandatory, not optional |
 | **Destructive command** | `rm -rf`, `git push --force`, `DROP DATABASE` | Deny-list enforced at the engine adapter *and* in container mode at the mount level; `git push` requires explicit `allow_push = true` |
 | **Credential handling** | Provider keys | Vibey never reads provider keys. Each engine authenticates itself from its own env/keychain; vibey only observes `doctor` exit codes |
+| **Media egress / provider retention** | Visual stage sends source, prompts, or reference assets to a hosted generator | Visual opt-in shows provider, region, retention, cost, and egress; hosted generation requires `media.allow_external = true`; local-first is the default |
+| **Generated harmful or infringing media** | A model returns unsafe, deceptive, or unlicensed output | Provider/content-safety scan, provenance and rights metadata, human review, and an explicit reject/regenerate/waive decision before BUILD |
+| **AI voice misrepresentation** | Generated narration is presented as a human recording | Store voice/provider metadata and disclose AI-generated audio wherever the selected provider or policy requires it |
 
 Vibey does not run `git push`, open pull requests, or mutate Azure without
-explicit, scope-bound authorization. Entry into Phase ④ is automatic after the
-build is accepted; deployment authority is not. The default posture remains:
-local branches and read-only discovery until a human accepts the deployment spec.
+explicit, scope-bound authorization. Deployment entry is never automatic; it
+occurs only after the explicit deployment opt-in gate. The default posture
+remains local branches, opted-out media generation, and no Azure discovery or
+mutation until a human accepts each corresponding opt-in.
 
 ---
 
@@ -769,23 +802,160 @@ local branches and read-only discovery until a human accepts the deployment spec
   `effort` are span attributes so any of them can slice a latency or cost query.
 - **Metrics** — job queue depth by state, lease expiry rate, handoff gate failure
   rate by rule, per-engine selection counts (to prove rotation fairness in
-  production, not just in unit tests), tokens and dollars by phase/engine/cycle.
+  production, not just in unit tests), media-provider selection counts by
+  modality, media generation latency/failure/retention, tokens and dollars by
+  phase/engine/provider/cycle.
 - **Cost** — every `TurnCompleted` carries `cost_usd`; `domain/budget.py` maintains
   the ledger. `vibey cost` reports by phase, cycle, engine, and work item.
   The `azure-bootstrap` AI usage tracker's sliding-window/soft-cap model is the
   reference for the caps implementation.
 - **The TUI** (`vibey watch`) shows: current phase, cycle, per-engine circuit
-  state, live queue depth, active worktrees, and a streaming tail of the ledger.
+  state, per-modality media-provider cursor/circuit state, live queue depth,
+  active worktrees, opt-in decisions, and a streaming tail of the ledger.
 
 ---
 
-## 14. Deployment stage set (Phases ④–⑥)
+## 14. Optional pre-build visual design and media stage
 
-Deployment is the second three-phase stage set in the core lifecycle, governed by
+This is an optional, unnumbered interstitial between Phase ① DESIGN and Phase ②
+BUILD. The user is asked after the accepted product specification is produced.
+Declining it records a `VisualDesignDeclined` event and takes the normal
+`DESIGN → BUILD` edge. Opting in creates a durable visual stage; BUILD cannot
+start until the visual-ready guard passes or the user records an explicit waiver.
+
+### 14.1 Screen and state inventory
+
+`visual.inventory` reads the accepted spec, repository routes/components, design
+tokens, existing screenshots/prototypes, and acceptance criteria. It produces a
+matrix with one row per screen or surface and explicit states:
+
+| Field | Required evidence |
+|---|---|
+| Screen identity | route, platform, viewport, create/update decision, acceptance IDs |
+| Structure | hierarchy, primary action, navigation, responsive behavior, content density |
+| State coverage | loading, empty, error, success, permission, offline, retry, reduced motion |
+| Interaction | focus order, keyboard/touch targets, validation, transitions, recovery |
+| Accessibility | semantic roles, labels, alt text, captions/transcripts, contrast target, screen-reader intent |
+| Media | image/audio/video/icon/illustration IDs, placement, dimensions, format, rights/source constraints |
+
+If the inventory discovers a product requirement that Phase ① did not settle, the
+stage raises a scoped design gate and routes back to ①. It must not silently fill
+the gap with a generated screen.
+
+### 14.2 Generation plan and provider ports
+
+`visual.plan` derives a design-system contract and a media manifest from the
+inventory. A media manifest entry contains `asset_id`, modality, screen/state,
+purpose, prompt, reference digests, output constraints, accessibility metadata,
+rights/likeness constraints, provider policy, and an acceptance test.
+
+The application layer defines a provider-neutral port:
+
+```python
+class MediaProvider(Protocol):
+    provider_id: str
+    capabilities: frozenset[MediaModality]
+
+    async def generate(self, request: MediaGenerationRequest) -> MediaJob: ...
+    async def poll_or_resume(self, job: MediaJob) -> MediaJob: ...
+    async def download(self, job: MediaJob) -> MediaArtifact: ...
+    async def estimate_cost(self, request: MediaGenerationRequest) -> CostEstimate: ...
+    async def moderate(self, artifact: MediaArtifact) -> ModerationResult: ...
+```
+
+The exact interface is an application port; the domain sees only immutable
+modality, request, outcome, and routing values. Concrete providers live under
+`infrastructure/media/`. A provider may be local/self-hosted or hosted. The
+default is `local_first`; hosted fallback requires explicit external-media
+consent and records destination, region, retention, estimated cost, and policy.
+
+Provider capability discovery happens at the start of the visual stage and is
+repeated when a provider becomes unavailable. Model names are configuration and
+runtime metadata, never domain assumptions. A provider is eligible only if it
+supports the requested modality, dimensions/format/reference inputs, region and
+data policy, safety policy, budget, and current capacity.
+
+### 14.3 Per-modality round robin
+
+Image, audio, and video each have an independent persisted smooth round-robin
+cursor. Selection is capability-filtered before rotation:
+
+```text
+image candidates → image cursor → next eligible provider
+audio candidates → audio cursor → next eligible provider
+video candidates → video cursor → next eligible provider
+```
+
+This preserves fairness without selecting a provider that cannot satisfy the
+asset. Cursors advance transactionally only after selection; circuit-open,
+capacity-exhausted, policy-ineligible, and budget-ineligible providers are
+skipped. Cost/capability/quality/latency factors may affect eligibility and
+weights, but no provider is starved inside the eligible set. A provider may be
+used for more than one modality while retaining separate per-modality state.
+
+Generation is a dependency-ordered, asynchronous queue graph:
+
+```text
+inventory → plan → prompt → generate(modality) → moderate → preview
+                                                     ↓
+                                           review / regenerate / waive
+```
+
+Large video operations return an operation ID and release their worker lease;
+polling or webhook jobs resume them. Every job is idempotent by
+`(project, cycle, visual_revision, asset_id, provider, prompt_digest)`.
+
+### 14.4 User confirmation and visual-ready guard
+
+`visual.review` presents a screen gallery or prototype, design tokens, responsive
+variants, interaction states, image/contact sheets, audio previews plus
+transcripts, and video storyboards/clips. The user may accept an asset, request a
+regeneration with feedback, provide a replacement, or waive it explicitly. A
+regeneration creates a new immutable revision; it never overwrites a prior
+accepted asset or its evidence.
+
+The `VISUAL_DESIGN → BUILD` guard requires:
+
+- every inventory row has an accepted screen spec;
+- every required asset is accepted, user-supplied, or explicitly waived;
+- no blocking design question or unresolved rights/safety issue remains;
+- accessibility checks cover contrast, semantics, focus, labels, alt text,
+  transcripts/captions, touch/keyboard targets, and reduced motion;
+- prompt, provider/model, output, moderation, cost, and user-decision evidence is
+  persisted; and
+- the user issued `visual design accept` or an explicit visual-stage waiver.
+
+### 14.5 Artifacts
+
+```text
+.vibey/context/visual/
+├── screen-inventory.md
+├── design-system.md
+├── screen-specs/<screen-id>.md
+├── media-manifest.json
+├── prompts/<asset-id>.md
+├── assets/<asset-id>/<revision>/...
+├── previews/                         # gallery, audio, storyboard/video links
+└── visual-review.md                  # accepted/rejected/waived decisions
+```
+
+---
+
+## 15. Optional deployment stage set (Phases ④–⑥)
+
+Deployment is the optional second three-phase stage set in the core lifecycle,
+governed by [ADR-0014](../architecture/decisions/0014-optional-visual-design-and-deployment-opt-in.md)
+and the execution design in
 [ADR-0013](../architecture/decisions/0013-deployment-is-a-three-phase-stage-set.md)
 and specified turn-by-turn in [phase-protocols.md](phase-protocols.md). Azure
 implementations remain behind application ports and optional infrastructure
 dependencies so `domain/` stays provider-agnostic and stdlib-only.
+
+After Phase ③ has no open product findings and the user accepts the build, Vibey
+asks whether to work on deployment. A “no” answer records `DeploymentDeclined`,
+sets `completion_mode = "local"`, and transitions to `DONE` without enqueueing
+any Azure job. A “yes” answer records `DeploymentOptedIn` and enables the
+following stage set:
 
 1. **④ DEPLOY DESIGN (interactive)** discovers the target and authority, selects
    service topology from requirements, resolves secret *references*, defines IaC,
@@ -806,11 +976,13 @@ smoke/acceptance, and bake-window checks. A successful CLI exit or ARM operation
 alone is insufficient. Every mutation records redacted command intent, operation
 and resource IDs, artifact digests, verification evidence, and recovery actions.
 Secrets remain in Key Vault or another approved secret store and enter the ledger
-only as references.
+only as references. A successful deployment demo sets `completion_mode =
+"deployed"`; a later artifact or acceptance change invalidates the previous
+deployment choice and asks again.
 
 ---
 
-## 15. Testing strategy
+## 16. Testing strategy
 
 Following the marketplace's `test-strategy` and `python-quality-testing` skills.
 
@@ -821,7 +993,7 @@ Following the marketplace's `test-strategy` and `python-quality-testing` skills.
 | `infrastructure/db` | Integration tests against a real ephemeral Postgres (testcontainers) — never mocked, because `SKIP LOCKED` semantics are the thing under test | 90% |
 | `infrastructure/engines` | **Engine conformance suite** (below) + a `ScriptedEngine` for offline determinism | 90% |
 | `cli` | Typer runner smoke tests | 90% |
-| End-to-end | `pytest -m system`: scripted engine and Azure adapter drive `①→②→③→④→⑤→⑥`, including both stage-set loop-backs, on throwaway local resources with no network | — |
+| End-to-end | `pytest -m system`: scripted engine, media providers, and Azure adapter drive `①→(optional visual)→②→③→(optional deploy ④→⑤→⑥)`, including decline, accept, regenerate, and loop-back paths, on throwaway local resources with no network | — |
 
 ### The engine conformance suite
 
@@ -853,7 +1025,7 @@ Property tests worth calling out specifically:
 
 ---
 
-## 16. Configuration
+## 17. Configuration
 
 `vibey.toml` at the project root:
 
@@ -887,6 +1059,19 @@ agyloop    = 1
 effort   = "high"
 engines  = ["claudeloop", "codexloop"]     # optional per-phase allow-list
 
+[visual]
+available           = true
+default_opt_in      = false
+media_mode          = "local_first"          # local_first | hosted_only | disabled
+allow_external      = false                  # requires a fresh user opt-in
+max_dollars         = 20.0
+max_assets          = 100
+require_user_review = true
+
+[media.providers]
+# Provider IDs and models are discovered/configured at runtime per modality.
+# Keep credentials in the provider's environment/keychain, never this file.
+
 [phases.build]
 effort      = "low"
 parallelism = 4
@@ -898,6 +1083,9 @@ effort = "high"
 plugins = ["software-architecture", "quality-engineering", "security-first-dev", "engineering-process"]
 
 [deploy]
+enabled = true
+opt_in_required = true
+finish_if_declined = true
 target  = "azure"
 iac     = "bicep"
 environment = "dev"
@@ -909,7 +1097,7 @@ max_dollars = 20.00
 
 ---
 
-## 17. Milestones
+## 18. Milestones
 
 Detail, with test-first task breakdowns, in
 [implementation-plan.md](implementation-plan.md).
@@ -921,23 +1109,26 @@ Detail, with test-first task breakdowns, in
 | **M2** | Postgres schema, migrations, queue repo, worker loop | Integration test: 8 workers, 500 jobs, zero double-execution, zero lost jobs under random kills |
 | **M3** | Engine adapters + conformance suite + `ScriptedEngine` | `vibey doctor --conformance` passes against all four installed engines |
 | **M4** | Ledger, projections, handoff produce/verify/accept | Adversarial no-loss property suite passes; a forced mid-item rotation completes with zero dropped items |
-| **M5** | Phase ① DESIGN end to end | A real interview produces an accepted spec with acceptance criteria |
+| **M5** | Phase ① DESIGN + optional visual-design interstitial | A real interview can either enter BUILD directly or produce a confirmed screen/media plan before BUILD |
 | **M6** | Phase ② BUILD end to end | Parallel worktrees, integration, escalation ladder, budget caps |
-| **M7** | Phase ③ REVIEW + loop-backs | Full `③→①→②→③` cycle on a real project |
+| **M7** | Phase ③ REVIEW + loop-backs + deployment choice | Full delivery loop plus explicit local-complete versus deployment-opt-in routing |
 | **M8** | TUI, cost reporting, OTel, notifications | `vibey watch` usable for an overnight run |
 | **M9** | Isolation levels (container), security hardening, threat-model review | Container mode passes egress allow-list test |
-| **M10** | Phases ④–⑥: Azure deployment stage set | Accepted build enters ④, deploys durably in ⑤, and reaches a verified demo or actionable human gate in ⑥ |
+| **M10** | Optional Phases ④–⑥: Azure deployment stage set | An explicit opt-in can deploy durably in ⑤ and reach a verified demo or actionable human gate in ⑥; an opt-out finishes locally without cloud work |
 
 ---
 
-## 18. Risks and the honest unknowns
+## 19. Risks and the honest unknowns
 
 | Risk | Severity | Mitigation |
 |---|---|---|
-| **The four runners drift** — they are pre-1.0 and actively changing | high | Conformance suite (§15) run in CI and at `doctor`; descriptors are versioned and pinned; a failing engine is marked ineligible, not fatal |
+| **The four runners drift** — they are pre-1.0 and actively changing | high | Conformance suite (§16) run in CI and at `doctor`; descriptors are versioned and pinned; a failing engine is marked ineligible, not fatal |
 | **The no-loss gate is only as good as the ids** — if an agent records a decision without an id, the gate can't check it | high | Ids are assigned by *vibey* at append time, not by the agent; the agent's free text is the payload, the id is infrastructure |
-| **Interactive phases fight the runners' "never block" design** | medium | Vibey owns conversations and parks jobs; runners perform bounded research, synthesis, execution, and demo generation without holding a worker lease while awaiting a human |
+| **Interactive phases fight the runners' "never block" design** | medium | Vibey owns conversations and parks jobs; runners perform bounded research, visual generation, execution, and demo generation without holding a worker lease while awaiting a human |
 | **Round-robin across vendors produces inconsistent code style** | medium | Agent-surface provisioning (§10) gives every engine identical guidance; `build.verify` enforces the project's own lint/format gates regardless of author |
+| **Media providers drift, disappear, or differ by modality** | high | Capability discovery, per-modality cursors, circuit breakers, provider-neutral artifacts, and explicit configure/upload/waive gates; never pin one video model |
+| **Generated visuals look plausible but fail UX/accessibility or rights review** | high | Screen/state inventory, token contract, independent accessibility checks, moderation/provenance evidence, and user confirmation before BUILD |
+| **Media generation cost or retention surprises** | medium | Estimate before opt-in, hard media budgets, local-first mode, per-provider cost/retention records, and asynchronous cancellation/cleanup |
 | **Cost is unpredictable across four providers** | medium | Hard caps per cycle and per project; `cost_factor` in rotation weights biases toward cheaper engines at equal capability |
 | **Postgres is a dependency a "local tool" shouldn't need** | low | `vibey up` makes it a one-command concern with three fallbacks; the alternative (SQLite) is disqualified on `SKIP LOCKED` grounds |
 | **Effort saturation makes "MAX" meaningless on some engines** | low | `fidelity_penalty` lowers weight rather than hiding the fact; `vibey status` reports the effort actually achieved, not the one requested |
@@ -951,7 +1142,7 @@ Detail, with test-first task breakdowns, in
 
 ---
 
-## 19. Decision record index
+## 20. Decision record index
 
 | ADR | Decision |
 |---|---|
@@ -967,4 +1158,5 @@ Detail, with test-first task breakdowns, in
 | [0010](../architecture/decisions/0010-review-loopback-routing.md) | Review loops back to design by default, to build on the fast path |
 | [0011](../architecture/decisions/0011-agent-surface-provisioning.md) | One source of truth materialized into every engine's guidance files |
 | [0012](../architecture/decisions/0012-deploy-is-a-separate-cli.md) | Superseded: deployment as a separate CLI |
-| [0013](../architecture/decisions/0013-deployment-is-a-three-phase-stage-set.md) | Deployment is a three-phase stage set in the core lifecycle |
+| [0013](../architecture/decisions/0013-deployment-is-a-three-phase-stage-set.md) | Deployment execution and safety contract (entry rule superseded) |
+| [0014](../architecture/decisions/0014-optional-visual-design-and-deployment-opt-in.md) | Optional visual-design interstitial and explicit deployment opt-in |

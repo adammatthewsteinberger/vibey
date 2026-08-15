@@ -31,6 +31,15 @@ sequenceDiagram
         E->>U: "here is the spec — accept / revise?"
         U-->>S: accept
     end
+    E->>U: "generate and review visuals before BUILD?"
+    alt visual opt-in
+        S->>Q: enqueue visual.inventory
+        Q->>E: visual.plan + media.generate.image/audio/video
+        E->>U: screen gallery + audio previews + video storyboards
+        U-->>S: visual accept / regenerate / supply / waive
+    else visual opt-out
+        S->>L: VisualDesignDeclined
+    end
     S->>Q: enqueue build.decompose
     rect rgb(245, 245, 245)
         Note over Q,L: ② BUILD — autonomous, LOW effort
@@ -55,17 +64,23 @@ sequenceDiagram
     else any finding needs clarification
         S->>Q: → ① DESIGN (default loop-back)
     else no findings
-        S->>Q: → ④ DEPLOY DESIGN
-        Q->>E: deployment interview → accepted contract
-        S->>Q: → ⑤ DEPLOY EXECUTE
-        Q->>E: plan → validate → apply → release → verify
-        S->>Q: → ⑥ DEPLOY REVIEW
-        alt verified success
-            E->>U: live demo + deployment evidence
-            U-->>S: accept → DONE
-        else user input required
-            E->>U: failure evidence + one blocking question
-            U-->>S: revise ④ / retry ⑤ / repair ①–③
+        E->>U: "work on Azure deployment for this run?"
+        alt deployment opt-in
+            S->>Q: → ④ DEPLOY DESIGN
+            Q->>E: deployment interview → accepted contract
+            S->>Q: → ⑤ DEPLOY EXECUTE
+            Q->>E: plan → validate → apply → release → verify
+            S->>Q: → ⑥ DEPLOY REVIEW
+            alt verified success
+                E->>U: live demo + deployment evidence
+                U-->>S: accept → DONE (deployed)
+            else user input required
+                E->>U: failure evidence + one blocking question
+                U-->>S: revise ④ / retry ⑤ / repair ①–③
+            end
+        else deployment opt-out
+            S->>L: DeploymentDeclined
+            S->>U: DONE (local)
         end
     end
 ```
@@ -75,7 +90,7 @@ sequenceDiagram
 ## 1. Phase ① — DESIGN
 
 **Interactive. `HIGH` effort. Rotating engines. Goal: a spec that Phase ② can build
-without guessing.**
+without guessing, followed by an explicit choice about the optional visual stage.**
 
 ### 1.1 Why high effort here
 
@@ -140,7 +155,7 @@ rather than rely on its own memory of the conversation. That is a free
 cross-check on handoff fidelity, and a failed handoff shows up as a spec with
 holes rather than as a silent omission.
 
-### 1.5 Exit criteria (`DESIGN → BUILD` guard)
+### 1.5 Exit criteria (`DESIGN → VISUAL_DESIGN` / `DESIGN → BUILD` choice gate)
 
 All must hold:
 
@@ -160,12 +175,119 @@ decisions.md     ADR-shaped DecisionLog projection
 open-items.md    non-blocking questions carried forward as assumptions
 ```
 
+After `vibey design accept`, the supervisor raises a parked choice gate. The
+answer is ledgered as `VisualDesignOptedIn` or `VisualDesignDeclined`; silence is
+not consent. Opt-in enters the `VISUAL_DESIGN` interstitial above. Opt-out takes
+the normal `DESIGN → BUILD` edge and makes the absence of visual artifacts an
+explicit, reviewable assumption.
+
+---
+
+## Optional pre-build stage — VISUAL DESIGN
+
+**Interactive. `HIGH` effort. Opt-in only. Goal: confirm the complete screen and
+media direction before any autonomous code is written.**
+
+After `vibey design accept`, Vibey asks whether to run this stage. A “no” answer
+records `VisualDesignDeclined` and proceeds directly to Phase ② BUILD. A “yes”
+answer creates a durable visual-stage scope; no BUILD job is claimable until its
+ready guard passes or the user explicitly waives the stage.
+
+### Screen inventory and design contract
+
+`visual.inventory` combines the accepted spec, repository routes/components,
+existing screenshots or prototypes, and design tokens into a complete screen
+matrix. Each screen includes create/update status, platform and viewport,
+responsive variants, primary action, navigation, content density, and the
+loading, empty, error, success, permission, offline, retry, and reduced-motion
+states it must support. Missing product requirements route back to Phase ①.
+
+`visual.plan` produces:
+
+```text
+.vibey/context/visual/screen-inventory.md
+.vibey/context/visual/design-system.md
+.vibey/context/visual/screen-specs/<screen-id>.md
+.vibey/context/visual/media-manifest.json
+```
+
+The design-system contract includes semantic tokens, typography, spacing,
+component patterns, interaction states, content tone, contrast targets, focus and
+keyboard behavior, touch targets, alt text, captions/transcripts, and reduced
+motion. Generated work is an accelerator; it cannot override the product spec or
+the accessibility contract.
+
+### Media generation jobs
+
+The manifest has one immutable entry per required image, audio clip, video,
+illustration, icon, animation, transcript, caption, and source/rights constraint.
+The job graph is asynchronous and idempotent:
+
+```text
+visual.inventory → visual.plan → visual.prompt
+                                  ├→ media.generate.image
+                                  ├→ media.generate.audio
+                                  └→ media.generate.video
+                                         ↓
+                                  media.moderate → media.preview
+```
+
+The application port is capability-based rather than model-name-based. A media
+provider advertises image/audio/video support, reference-input limits, output
+formats, region/data policy, retention, safety, cost, and whether generation is
+long-running. Vibey tries local/self-hosted providers first when configured;
+hosted fallback requires `media.allow_external = true` and a fresh user consent
+that names the provider, region, retention, cost, and egress. If no eligible
+provider exists, the human gate offers retry, provider configuration, upload,
+regeneration, or explicit waiver. It never silently inserts a placeholder.
+
+Each modality has its own persisted smooth round-robin cursor. Candidates are
+filtered for capability, policy, region, cost, health, and capacity before the
+cursor selects the next eligible provider:
+
+```text
+image providers → image cursor → next eligible provider
+audio providers → audio cursor → next eligible provider
+video providers → video cursor → next eligible provider
+```
+
+An image provider can also serve video if it advertises both capabilities, but the
+cursors and fairness metrics remain independent. Cursors advance transactionally
+only when a provider is selected; circuit-open or ineligible providers are not
+counted as skipped fairness opportunities. Generation requests record the prompt
+digest, reference digests, provider/model/version, parameters, request/operation
+ID, cost estimate and actual cost, moderation result, retention, artifact digest,
+and provenance.
+
+Long-running audio/video jobs release the worker lease and resume through polling
+or a webhook job. Provider API keys never enter the ledger. Prompt and output
+content is redacted where needed, and external output is untrusted data rather
+than an instruction to the next engine.
+
+### Human review and exit criteria
+
+`visual.review` presents a gallery/prototype of every screen and state, generated
+images/contact sheets, audio previews with transcripts, and video storyboards or
+clips. For each entry the user may accept, request a regeneration with feedback,
+provide a replacement, or waive it explicitly. Regeneration creates a new
+revision; it never overwrites accepted evidence.
+
+`VISUAL_DESIGN → BUILD` requires:
+
+- every planned screen has an accepted screen specification;
+- every required asset is accepted, supplied, or explicitly waived;
+- no product, rights, safety, or accessibility question remains blocking;
+- contrast, semantics, focus, labels, alt text, captions/transcripts, touch or
+  keyboard targets, and reduced-motion checks are recorded; and
+- the user issued `vibey visual accept` or an explicit visual-stage waiver.
+
 ---
 
 ## 2. Phase ② — BUILD
 
 **Autonomous. `LOW` effort, escalating. Parallel worktrees. Goal: acceptance
-criteria satisfied, integration branch green.**
+criteria satisfied, integration branch green, using the optional confirmed visual
+contract when one exists.**
 
 This is where the `*loop` runners do what they were built for: run for hours
 without a human, across rate-limit windows and credit exhaustion.
@@ -283,8 +405,8 @@ building everything else, and carries the blocked item into the loop-back.
 
 ## 3. Phase ③ — REVIEW
 
-**Interactive. `HIGH` effort. Goal: the developer sees what was built and says what
-should change.**
+**Interactive. `HIGH` effort. Goal: the developer sees what was built, says what
+should change, and chooses whether deployment work belongs in this run.**
 
 ### 3.1 The demo
 
@@ -313,7 +435,7 @@ omitted by a model that would rather present a clean result.
 
 `review.collect` holds the conversation. The developer can:
 
-- accept (`vibey review accept`) → `④ DEPLOY DESIGN`
+- accept (`vibey review accept`) → deployment choice gate
 - request changes in free text → each becomes a `FindingRaised`
 - ask questions about what was built → answered from the ledger, not from a fresh
   reading of the code, so the answer includes *why* something was done
@@ -343,10 +465,23 @@ A finding is `clear` only if all hold:
 
 Anything else is `needs_clarification`.
 
+When there are no open product findings, `review.collect` raises a second parked
+choice gate:
+
+- `vibey deploy opt-in` → Phase ④ DEPLOY DESIGN;
+- `vibey deploy decline` → terminal `DONE` with `completion_mode = "local"` and
+  no deployment jobs; or
+- cancel → `ABANDONED`.
+
+The deployment question is asked again after any delivery loop that changes the
+artifact or its acceptance criteria. A previous deployment consent is never
+silently reused.
+
 ### 3.4 The loop-back
 
 ```
-if no open findings                       → ④ DEPLOY DESIGN
+if no open findings and deploy opted in   → ④ DEPLOY DESIGN
+if no open findings and deploy declined   → DONE (local)
 elif any finding is needs_clarification   → ① DESIGN     (the default)
 elif strict_loopback                      → ① DESIGN
 else                                      → ② BUILD      (fast path)
@@ -374,13 +509,16 @@ cycle 1 are still in front of the engine working cycle 3.
 
 ## 4. Phase ④ — DEPLOY DESIGN
 
-**Interactive. `HIGH` effort. Goal: turn deployment uncertainty into a trusted,
-accepted, replayable Azure deployment contract without mutating Azure.**
+**Interactive. `HIGH` effort. Opt-in only. Goal: turn deployment uncertainty into
+a trusted, accepted, replayable Azure deployment contract without mutating Azure.**
 
-Acceptance in Phase ③ enters Phase ④ automatically. The phase may use read-only
-Azure discovery, repository inspection, official documentation research, and
-installed skills/plugins, but a worker may not create, update, or delete an Azure
-resource. Questions are batched with proposed defaults just as in Phase ①.
+After Phase ③ has no open product findings, Vibey asks whether to work on
+deployment. A “no” answer records `DeploymentDeclined`, completes the run locally,
+and enqueues no Azure job. A “yes” answer records `DeploymentOptedIn` and enters
+Phase ④. The phase may use read-only Azure discovery, repository inspection,
+official documentation research, and installed skills/plugins, but a worker may
+not create, update, or delete an Azure resource. Questions are batched with
+proposed defaults just as in Phase ①.
 
 ### 4.1 Interview stages
 
@@ -420,8 +558,9 @@ deployment-plan.json      machine-readable immutable contract, with scope digest
 
 ### 4.3 Exit criteria (`DEPLOY_DESIGN → DEPLOY_EXECUTE` guard)
 
-All required fields above are resolved; discovery provenance is trusted or
-explicitly accepted; cost/attempt/time caps are set; static validation, provider
+The deployment opt-in event exists; all required fields above are resolved;
+discovery provenance is trusted or explicitly accepted; cost/attempt/time caps
+are set; static validation, provider
 preflight, and the proposed `what-if` policy are accepted; no secret value is in
 an artifact or ledger event; and the user records explicit consent for the named
 target and mutations. A change to target scope invalidates consent and stays in ④.
@@ -540,6 +679,10 @@ decision is visible and travels through handoffs.
 | ① | `design.research` | `STANDARD` | rotate per research question (parallel) |
 | ① | `design.synthesize` | `HIGH` | **must differ** from majority interviewer |
 | ① | `design.spec` | `HIGH` | rotate |
+| optional visual | `visual.inventory` / `visual.plan` | `HIGH` | rotate; preserve repository design context |
+| optional visual | `visual.prompt` | `STANDARD` | rotate; prompt digest is stable |
+| optional visual | `media.generate.image` / `.audio` / `.video` | `STANDARD` → ladder | independent round robin per modality |
+| optional visual | `media.moderate` / `media.preview` / `visual.review` | `HIGH` | rotate; review engine differs from generator where possible |
 | ② | `build.decompose` | `STANDARD` | rotate |
 | ② | `build.implement` | `LOW` → ladder | rotate per item; sticky on `WORK` retry |
 | ② | `build.verify` | `LOW` | **must differ** from implementer |

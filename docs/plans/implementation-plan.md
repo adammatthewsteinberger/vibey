@@ -127,7 +127,7 @@ whole design exists for.
 
 ---
 
-## M5 — Phase ① DESIGN
+## M5 — Phase ① DESIGN + optional visual-design interstitial
 
 | # | Task | Test | Done when |
 |---|---|---|---|
@@ -136,10 +136,20 @@ whole design exists for.
 | 5.3 | `design.research` — parallel, `untrusted` provenance, web + docs MCP | — | research output never enters as instruction |
 | 5.4 | `design.synthesize` with the **must-differ-from-interviewer** constraint | rotation exclusion test | — |
 | 5.5 | `design.spec` → `spec.md` / `acceptance.md` / `nfr.md` | `DesignSpec.is_buildable()` returns empty | Planguage fields present on every NFR |
-| 5.6 | `DESIGN → BUILD` guard wired to real evidence | guard rejection cases | a spec with a blocking question cannot advance |
-| 5.7 | CLI: `vibey new`, `vibey design`, `vibey answer`, `vibey design accept` | Typer runner tests | — |
+| 5.6 | `DESIGN` opt-in gate | explicit `VisualDesignDeclined` routes directly to BUILD; opt-in enters the visual interstitial; no default is treated as yes |
+| 5.7 | `visual.inventory` + `visual.plan` | screen/state matrix fixtures | every create/update surface, responsive state, accessibility requirement, and media manifest entry is represented |
+| 5.8 | Design-system and screen-spec artifacts | snapshot/contract tests | tokens, typography, spacing, interaction, content, and a11y constraints are content-addressed and reviewable |
+| 5.9 | `MediaProvider` port and capability discovery | fake-provider contract tests | image/audio/video capabilities, region, retention, safety, async, and format constraints are explicit |
+| 5.10 | Per-modality media-provider smooth round robin and persisted cursors | property tests for fairness, exclusion, circuit-open, and duplicate selection | image, audio, and video rotate independently over eligible providers |
+| 5.11 | `media.generate.*`, `media.moderate`, and `media.preview` durable jobs | idempotent replay tests; async-operation fixture | local-first generation, explicitly authorized hosted fallback, redacted provenance, cost, retention, and moderation evidence |
+| 5.12 | `visual.review` gallery/prototype and accept/regenerate/supply/waive decisions | scripted-user integration | no opted-in visual stage reaches BUILD without confirmation or an explicit waiver |
+| 5.13 | `VISUAL_DESIGN → BUILD` guard plus `visual design accept` CLI/TUI | rejection/waiver tests | build cannot consume an incomplete or unreviewed visual plan |
+| 5.14 | `DESIGN → BUILD` guard wired to real evidence | guard rejection cases | a spec with a blocking question cannot advance, even when visual design is declined |
+| 5.15 | CLI: `vibey new`, `vibey design`, `vibey visual`, `vibey answer`, `vibey design accept` | Typer runner tests | — |
 
-**Exit:** a real interview on a real idea produces an accepted, buildable spec.
+**Exit:** a real interview on a real idea either declines visual planning and
+enters BUILD, or produces a complete, user-confirmed screen/media plan before
+BUILD. Both paths are tested and lossless.
 
 ---
 
@@ -173,9 +183,12 @@ integration branch, having survived at least one capacity rejection.
 | 7.4 | `review.triage` — severity × ambiguity, `MAX` effort on critical | classification fixtures | the 4 `clear` conditions are all checked |
 | 7.5 | `next_phase_after_review` wired; cycle increment; cycle-scoped artifacts | — | cycle 2 never overwrites cycle 1's evidence |
 | 7.6 | Re-entrant DESIGN scoped to findings (not a fresh elicitation) | — | ≤5 question batches on a typical re-design |
-| 7.7 | **Delivery-stage-set system test**: `①→②→③→①→②→③→④`, scripted engines, throwaway repo | `pytest -m system` | no network, no provider account, deterministic |
+| 7.7 | Deployment-choice gate after accepted review | scripted-user integration | explicit opt-out reaches `DONE` with `completion_mode = "local"` and enqueues no Azure job |
+| 7.8 | Explicit deployment opt-in and handoff to Phase ④ | guard tests | only `DeploymentOptedIn` can enqueue deployment design |
+| 7.9 | **Delivery-stage-set system test**: `①→(visual opt-in/opt-out)→②→③→(deployment opt-in/opt-out)` | `pytest -m system` | no network, deterministic, and both optional branches are exercised |
 
-**Exit:** task 7.7 green. The product's core promise works end to end.
+**Exit:** task 7.9 green. The product's core promise and both opt-in decisions
+work end to end.
 
 ---
 
@@ -197,20 +210,20 @@ integration branch, having survived at least one capacity rejection.
 |---|---|---|
 | 9.1 | `container` isolation: Docker/Podman, bind mount, egress allow-list | an agent cannot reach a non-allow-listed host |
 | 9.2 | Destructive-command denies at adapter and mount level | `rm -rf /` and `git push --force` both blocked |
-| 9.3 | Scope-bound mutation gate — no push, PR, or Azure mutation without explicit authority | automatic `③→④` performs read-only work until the Phase ④ deployment contract is accepted |
+| 9.3 | Scope-bound mutation gate — no push, PR, or Azure mutation without explicit authority | deployment is never entered until the Phase ③ opt-in is recorded; no Azure job exists on “no” |
 | 9.4 | Untrusted-provenance handling in seed prompts | injection corpus test: planted instructions in fetched content are not obeyed |
 | 9.5 | Threat-model review against `threat-modeling-playbook` + `ai-security-practices` | documented, with residual risks accepted explicitly |
 | 9.6 | `bandit` + `pip-audit` clean; SECURITY.md | — |
 
 ---
 
-## M10 — Deployment stage set (Phases ④–⑥)
+## M10 — Optional deployment stage set (Phases ④–⑥)
 
 | # | Task | Done when |
 |---|---|---|
-| 10.1 | Test-first expansion of the pure phase machine to `DEPLOY_DESIGN`, `DEPLOY_EXECUTE`, and `DEPLOY_REVIEW` | property tests cover every legal/illegal edge, terminal reachability, and bounded deployment attempts; `domain/` remains 100% |
+| 10.1 | Test-first expansion of the pure phase machine to `DEPLOY_DESIGN`, `DEPLOY_EXECUTE`, and `DEPLOY_REVIEW` plus local/deployed completion modes | property tests cover every legal/illegal edge, terminal reachability, bounded deployment attempts, and explicit opt-out; `domain/` remains 100% |
 | 10.2 | Immutable `DeploymentSpec`, consent evidence, failure taxonomy, and routing policy | target/scope/identity/cost/health/recovery omissions block `④→⑤`; every classified outcome has one deterministic route |
-| 10.3 | Phase ④ interactive interview, read-only Azure discovery, synthesis, and acceptance | user can answer in batches until a complete `deployment-spec.md`, `deployment-runbook.md`, and consent record exist |
+| 10.3 | Phase ③ deployment-choice gate and Phase ④ interactive interview, read-only Azure discovery, synthesis, and acceptance | “no” reaches local `DONE` with zero Azure jobs; “yes” reaches a complete `deployment-spec.md`, `deployment-runbook.md`, and consent record |
 | 10.4 | Azure application port plus optional adapter using workload identity/OIDC or an approved CLI identity | domain/application tests use fakes; adapter contract tests redact credentials and reject scope expansion |
 | 10.5 | Bicep default and Terraform port; static checks, provider preflight, and ARM `what-if` | unexpected deletion, policy denial, destructive data change, or cost expansion parks before mutation |
 | 10.6 | Durable Phase ⑤ graph: discover → plan → validate → apply → configure → migrate → release → verify | replay is idempotent; leases, operation IDs, resource IDs, and artifact digests survive worker death |
@@ -219,10 +232,11 @@ integration branch, having survived at least one capacity rejection.
 | 10.9 | Runtime verification contract: convergence, health, smoke/acceptance, and bake window | provider success alone cannot satisfy `⑤→⑥` as a successful outcome |
 | 10.10 | Phase ⑥ success demo and failure-remediation conversation | user sees live endpoint and redacted evidence, or is asked only for the missing input |
 | 10.11 | Phase ⑥ loop routing | success can reach `DONE`; deployment changes route to ④; unambiguous retry to ⑤; application/spec defects to ①/②/③ |
-| 10.12 | CLI/TUI surfaces for deployment status, plan diff, consent, retry, evidence, and demo | automatic `③→④` is visible; no Azure mutation occurs before accepted consent |
-| 10.13 | Offline six-phase system test plus a tightly scoped real-Azure dev proof | `①→②→③→④→⑤→⑥→DONE`, internal loop-backs, worker crash replay, and one live deployment all pass |
+| 10.12 | CLI/TUI surfaces for deployment opt-in, status, plan diff, consent, retry, evidence, and demo | “no” is visibly a successful local completion; “yes” is visible before any Azure job; no mutation occurs before accepted consent |
+| 10.13 | Offline optional-path system test plus a tightly scoped real-Azure dev proof | visual opt-out and deployment opt-out pass offline; one explicit deployment opt-in reaches `①→②→③→④→⑤→⑥→DONE`; worker crash replay passes |
 
-M10 follows [ADR-0013](../architecture/decisions/0013-deployment-is-a-three-phase-stage-set.md).
+M10 follows [ADR-0014](../architecture/decisions/0014-optional-visual-design-and-deployment-opt-in.md)
+and the execution controls in [ADR-0013](../architecture/decisions/0013-deployment-is-a-three-phase-stage-set.md).
 Azure resources are chosen from Phase ④ requirements rather than a fixed service.
 Production promotion is not implied by a successful dev deployment; each
 environment needs its own accepted scope and recovery contract.
@@ -243,13 +257,13 @@ gantt
     M3 engine adapters   :m3, after m1, 3
     M4 ledger + handoff  :crit, m4, after m2, 3
     section Phases
-    M5 DESIGN            :m5, after m4, 2
+    M5 DESIGN + VISUAL   :m5, after m4, 3
     M6 BUILD             :crit, m6, after m4, 3
-    M7 REVIEW + loops    :m7, after m6, 2
+    M7 REVIEW + choices  :m7, after m6, 2
     section Hardening
     M8 operability       :m8, after m7, 2
     M9 isolation/security:m9, after m7, 2
-    M10 DEPLOY ④–⑥      :m10, after m8, 3
+    M10 DEPLOY OPT-IN    :m10, after m8, 3
 ```
 
 M2 and M3 are independent and can run in parallel once M1 lands. **M4 is the
@@ -275,7 +289,7 @@ Two guardrails, because a tool that edits itself while running is a footgun:
 - Vibey never modifies its own **running** checkout. It builds in a worktree and
   the human merges.
 - The chaos test (2.8), the no-loss property suite (1.10), and the full-cycle
-  system test (7.7) are **protected**: a build that touches them requires explicit
+  system test (7.9) are **protected**: a build that touches them requires explicit
   human approval, so vibey cannot weaken the tests that prove it works.
 
 ---
@@ -283,11 +297,12 @@ Two guardrails, because a tool that edits itself while running is a footgun:
 ## Definition of done for v1
 
 - [ ] `pytest` green, `domain/`+`application/` at 100%
-- [ ] `pytest -m system` runs the full `①→②→③→④→⑤→⑥` lifecycle and both stage-set loop-backs offline
+- [ ] `pytest -m system` covers `①→(visual opt-in/opt-out)→②→③→(deployment opt-in/opt-out)→DONE`, media regeneration, and deployment loop-backs offline
 - [ ] Chaos test green at 8 workers with random kills
 - [ ] No-loss property suite green over 10,000 adversarial examples
 - [ ] `vibey doctor --conformance` passes on all four installed runners
-- [ ] One real project taken from idea to deployed Azure dev slot
-- [ ] All 13 ADRs written and accurate; superseded decisions are clearly marked
+- [ ] One real project takes the explicit deployment-opt-in path to a deployed Azure dev slot
+- [ ] One real project takes the visual-opt-out and deployment-opt-out paths to successful local `DONE`
+- [ ] All 14 ADRs written and accurate; superseded decisions are clearly marked
 - [ ] Threat model reviewed; residual risks documented
 - [ ] `mkdocs build --strict` clean

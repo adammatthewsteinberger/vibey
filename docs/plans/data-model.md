@@ -31,6 +31,9 @@ erDiagram
     project ||--o{ job : has
     project ||--o{ event : has
     project ||--o{ engine_health : tracks
+    project ||--o{ visual_revision : reviews
+    visual_revision ||--o{ visual_asset : contains
+    project ||--o{ media_provider_cursor : rotates
     project ||--|| rotation_cursor : has
     job ||--o{ job_dependency : "depends on"
     job ||--o{ human_gate : raises
@@ -50,7 +53,7 @@ erDiagram
 
 ```sql
 CREATE TYPE phase AS ENUM (
-    'intake','design','build','review',
+    'intake','design','visual_design','build','review',
     'deploy_design','deploy_execute','deploy_review',
     'done','abandoned'
 );
@@ -60,6 +63,7 @@ CREATE TABLE project (
     name            text NOT NULL,
     repo_path       text NOT NULL,
     phase           phase NOT NULL DEFAULT 'intake',
+    completion_mode text CHECK (completion_mode IN ('local','deployed')),
     cycle           integer NOT NULL DEFAULT 1,
     max_cycles      integer NOT NULL DEFAULT 10,
     config          jsonb NOT NULL,           -- the resolved vibey.toml
@@ -71,12 +75,68 @@ CREATE TABLE project (
 CREATE UNIQUE INDEX project_repo_uniq ON project (repo_path);
 ```
 
-The M10 forward migration replaces the legacy single `deploy` enum value with
+The M5/M10 forward migration adds the optional `visual_design` phase and replaces
+the legacy single `deploy` enum value with
 `deploy_design`, `deploy_execute`, and `deploy_review`; it never rewrites an
 already-applied migration. Existing projects in legacy `deploy` are migrated to
 `deploy_design` so target scope and consent are re-established safely.
 
-### 3.1.1 Deployment contracts and attempts
+### 3.1.1 Visual plans and generated assets
+
+```sql
+CREATE TYPE media_modality AS ENUM ('image','audio','video');
+CREATE TYPE visual_asset_decision AS ENUM ('pending','accepted','rejected','supplied','waived');
+
+CREATE TABLE visual_revision (
+    id                  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id          uuid NOT NULL REFERENCES project(id) ON DELETE CASCADE,
+    cycle               integer NOT NULL,
+    revision            integer NOT NULL,
+    opt_in_event_id     uuid NOT NULL,
+    inventory           jsonb NOT NULL,
+    design_system       jsonb NOT NULL,
+    accepted_at         timestamptz,
+    UNIQUE (project_id, cycle, revision)
+);
+
+CREATE TABLE visual_asset (
+    id                  uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    visual_revision_id  uuid NOT NULL REFERENCES visual_revision(id) ON DELETE CASCADE,
+    asset_key           text NOT NULL,
+    screen_id           text NOT NULL,
+    state               text NOT NULL,
+    modality            media_modality NOT NULL,
+    prompt              text NOT NULL,
+    prompt_digest       text NOT NULL,
+    provider_id         text,
+    model_version       text,
+    request_id          text,
+    artifact_digest     text,
+    artifact_uri        text,
+    moderation          jsonb NOT NULL DEFAULT '{}',
+    rights_metadata     jsonb NOT NULL DEFAULT '{}',
+    retention_policy    text,
+    cost_usd            numeric(12,6) NOT NULL DEFAULT 0 CHECK (cost_usd >= 0),
+    decision            visual_asset_decision NOT NULL DEFAULT 'pending',
+    created_at          timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (visual_revision_id, asset_key, prompt_digest)
+);
+
+CREATE TABLE media_provider_cursor (
+    project_id          uuid NOT NULL REFERENCES project(id) ON DELETE CASCADE,
+    modality            media_modality NOT NULL,
+    cursor              bigint NOT NULL DEFAULT 0 CHECK (cursor >= 0),
+    updated_at          timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (project_id, modality)
+);
+```
+
+The prompt is retained for reproducibility, but secrets and sensitive source
+content are redacted before ledger or artifact persistence. Accepted assets are
+immutable revisions; regeneration creates a new `visual_asset` row and never
+mutates accepted evidence.
+
+### 3.1.2 Deployment contracts and attempts
 
 ```sql
 CREATE TYPE deployment_outcome AS ENUM (

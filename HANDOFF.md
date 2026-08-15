@@ -1,8 +1,9 @@
 # Session Handoff — vibey, after M0–M4
 
 > **You are picking up an in-progress, test-first implementation of vibey**, a
-> queue-based six-phase conductor for autonomous software delivery. It has two
-> three-phase stage sets: delivery (①–③) and Azure deployment (④–⑥). This
+> queue-based six-phase conductor for autonomous software delivery. It has an
+> optional visual-design interstitial between ① DESIGN and ② BUILD, plus an
+> explicit opt-in Azure deployment stage set (④–⑥). This
 > document is written so you can continue the work with zero prior context.
 > Read it fully before touching code. It is long on purpose — the previous
 > session spent its entire budget building a foundation that a rushed
@@ -13,7 +14,7 @@
 `docs/plans/implementation-plan.md` (the milestone table is the spec for
 "what to build next") → `docs/plans/domain-model.md` → whichever of
 `data-model.md` / `handoff-protocol.md` / `rotation-and-engines.md` /
-`phase-protocols.md` covers the milestone you're starting. The 13 ADRs in
+`phase-protocols.md` covers the milestone you're starting. The 14 ADRs in
 `docs/architecture/decisions/` explain *why* the hard calls were made — read
 the ones relevant to what you're touching before you touch it.
 
@@ -54,7 +55,7 @@ vibey/
 ├── .importlinter                 # onion contract: domain / application / infrastructure / cli+tui
 ├── .pre-commit-config.yaml       # ruff, ruff-format, mypy, lint-imports, full test suite, conventional-commit
 ├── docs/                         # the design docs — READ THESE, do not skim
-│   ├── architecture/decisions/   # 13 ADRs, 0001-0013 (0012 superseded)
+│   ├── architecture/decisions/   # 14 ADRs, 0001-0014 (0012/0013 superseded in part)
 │   └── plans/                    # architecture-and-roadmap, domain-model, data-model,
 │                                 # handoff-protocol, rotation-and-engines, phase-protocols,
 │                                 # implementation-plan  <- the milestone table lives here
@@ -379,10 +380,12 @@ write more Hypothesis tests:
 
 Per `docs/plans/implementation-plan.md`, in order:
 
-- **M5 — Phase ① DESIGN.** The 7-stage structured interview protocol
+- **M5 — Phase ① DESIGN + optional VISUAL DESIGN.** The 7-stage structured interview protocol
   (`docs/plans/phase-protocols.md`), consuming `domain/spec.py` (currently
-  unused) and producing an accepted `DesignSpec`. This is also where a real
-  CLI command (`vibey design`) and the first actual use of `bootstrap.py`
+  unused) and producing an accepted `DesignSpec`. The user can explicitly skip
+  the visual interstitial or opt in to a complete screen/state/media inventory,
+  generated image/audio/video candidates, and user confirmation before BUILD.
+  This is also where a real CLI command (`vibey design`) and the first actual use of `bootstrap.py`
   (wiring `PostgresJobRepository` etc. into a running process) needs to
   happen — nothing has been wired into an executable command yet.
 - **M6 — Phase ② BUILD.** Parallel worktrees, the escalation ladder (needs
@@ -395,11 +398,15 @@ Per `docs/plans/implementation-plan.md`, in order:
   reporting, OTel, notifications.
 - **M9 — Isolation and security.** Container/VM isolation levels beyond the
   `worktree` default; threat-model review.
-- **M10 — Phases ④–⑥, the Azure deployment stage set.** Phase ④ interactively
+- **M10 — Optional Phases ④–⑥, the Azure deployment stage set.** After Phase ③,
+  the system explicitly asks whether to work on deployment. A “no” records a
+  successful local completion and enqueues no Azure work. A “yes” enters Phase
+  ④, which interactively
   establishes an accepted deployment contract, Phase ⑤ deploys autonomously
   until verified success or a failure needs user input, and Phase ⑥ demos the
   result or routes the failure back to ④, ⑤, or the appropriate delivery phase.
-  ADR-0013 supersedes ADR-0012's separate-CLI lifecycle decision.
+  ADR-0014 supersedes the automatic-entry rule in ADR-0013; ADR-0013's execution
+  safety contract remains authoritative.
 
 The implementation plan explicitly notes M5 onward is "the bootstrap: the
 tool builds its own remaining phases" — i.e., once DESIGN/BUILD/REVIEW work
