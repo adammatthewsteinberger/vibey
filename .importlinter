@@ -7,12 +7,14 @@ include_external_packages = True
 name = Onion architecture layering
 type = layers
 layers =
-    cli | tui
+    cli
+    tui
     infrastructure
     application
     domain
 containers =
     vibey
+
 
 [importlinter:contract:domain-independence]
 name = domain imports nothing but stdlib and itself

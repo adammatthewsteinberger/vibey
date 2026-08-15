@@ -290,5 +290,41 @@ def waive_visual(project_id: UUID) -> None:
     typer.echo(f"waived visual design for {project_id}; entered {phase.value}")
 
 
+@app.command("watch")
+def watch_dashboard(
+    project_id: Annotated[UUID | None, typer.Argument(help="Optional project ID")] = None,
+) -> None:
+    """Live dashboard monitoring current phase, queue, circuits, worktrees, and ledger tail."""
+    from vibey.infrastructure.db.engine_health_repository import PostgresEngineHealthRepository
+    from vibey.tui.dashboard import VibeyDashboardApp, fetch_dashboard_state
+
+    async def run_dashboard() -> None:
+        async with build_app() as resources:
+            target_id = project_id
+            if target_id is None:
+                latest = await resources.projects.get_latest()
+                if latest is None:
+                    typer.echo("no projects found; create one with `vibey new` first")
+                    raise typer.Exit(1)
+                target_id = latest.project_id
+
+            health_repo = PostgresEngineHealthRepository(resources.ledger._pool)
+            initial_state = await fetch_dashboard_state(
+                projects=resources.projects,
+                jobs=resources.jobs,
+                health=health_repo,
+                ledger=resources.ledger,
+                project_id=target_id,
+            )
+
+            def fetcher() -> None:
+                pass
+
+            tui_app = VibeyDashboardApp(initial_state=initial_state)
+            await tui_app.run_async()
+
+    asyncio.run(run_dashboard())
+
+
 if __name__ == "__main__":
     app()

@@ -232,6 +232,17 @@ class PostgresJobRepository:
             )
             return _rowcount(result)
 
+    async def queue_depth(self, project_id: UUID) -> dict[JobState, int]:
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT state, count(*) as count FROM job WHERE project_id = $1 GROUP BY state",
+                project_id,
+            )
+            counts: dict[JobState, int] = {s: 0 for s in JobState}
+            for row in rows:
+                counts[JobState(row["state"])] = row["count"]
+            return counts
+
     async def get(self, job_id: UUID) -> JobRecord | None:
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow("SELECT * FROM job WHERE id = $1", job_id)

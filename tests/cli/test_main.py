@@ -24,13 +24,14 @@ def test_no_args_shows_help() -> None:
     assert "vibey" in result.stdout
 
 
-def test_m5_commands_are_exposed() -> None:
+def test_cli_commands_are_exposed() -> None:
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
     assert "new" in result.stdout
     assert "design" in result.stdout
     assert "answer" in result.stdout
     assert "work" in result.stdout
+    assert "watch" in result.stdout
 
 
 def test_design_command_enqueues_interview(monkeypatch) -> None:  # type: ignore[no-untyped-def]

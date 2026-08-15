@@ -58,6 +58,11 @@ class PostgresProjectRepository:
             row = await conn.fetchrow("SELECT * FROM project WHERE id = $1", project_id)
             return _row_to_project(row) if row is not None else None
 
+    async def get_latest(self) -> ProjectRecord | None:
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow("SELECT * FROM project ORDER BY created_at DESC LIMIT 1")
+            return _row_to_project(row) if row is not None else None
+
     async def transition(
         self,
         project_id: UUID,

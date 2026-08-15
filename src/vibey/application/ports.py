@@ -22,7 +22,7 @@ from vibey.application.dto import (
 from vibey.domain.capacity import CapacityState
 from vibey.domain.engine import EngineDescriptor
 from vibey.domain.handoff import GateMode, HandoffBrief, Violation
-from vibey.domain.job import FailureClass
+from vibey.domain.job import FailureClass, JobState
 
 
 @runtime_checkable
@@ -68,6 +68,10 @@ class JobRepository(Protocol):
     async def reap(self) -> int:
         """Reclaims jobs whose lease has expired. Returns the count
         reclaimed."""
+        ...
+
+    async def queue_depth(self, project_id: UUID) -> Mapping[JobState, int]:
+        """Returns the number of jobs by JobState for the given project."""
         ...
 
     async def get(self, job_id: UUID) -> JobRecord | None: ...
