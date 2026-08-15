@@ -48,6 +48,9 @@ from vibey.application.interfaces.ledger import (
     DesignLedger,
     PhaseLedger,
 )
+from vibey.application.interfaces.observability import (
+    Logger,
+)
 from vibey.application.interfaces.projects import (
     ProjectStore,
     ProjectTransitioner,
@@ -76,6 +79,7 @@ from vibey.application.interfaces.visual import (
 )
 
 __all__ = [
+    "Logger",
     "AutomatedFinding",
     "AutomatedReviewRunner",
     "AzureClientPort",

@@ -2,11 +2,13 @@ import json
 from pathlib import Path
 from uuid import uuid4
 
+import pytest
 from typer.testing import CliRunner
 
 from vibey import __version__
 from vibey.cli import main as cli_main
 from vibey.cli.main import app
+from vibey.domain.errors import InvalidAnswer
 
 runner = CliRunner()
 
@@ -102,9 +104,7 @@ def test_parse_question_answers_builds_the_handler_payload() -> None:
 
 
 def test_parse_question_answers_rejects_unkeyed_text() -> None:
-    try:
+    """A VibeyError, not a bare ValueError, so the CLI guard can render it as
+    a sentence instead of an asyncio traceback."""
+    with pytest.raises(InvalidAnswer, match="QUESTION_ID=ANSWER"):
         cli_main._parse_question_answers(("Ship it",))
-    except ValueError as exc:
-        assert "QUESTION_ID=ANSWER" in str(exc)
-    else:
-        raise AssertionError("unkeyed answers must be rejected")
