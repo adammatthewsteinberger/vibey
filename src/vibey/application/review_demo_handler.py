@@ -1,4 +1,4 @@
-"""Durable ``review.demo`` handler (M7 task 7.1).
+"""Durable ``review.demo`` handler (M7 tasks 7.1 & 7.3).
 
 Produces the review demo artifacts under ``.vibey/runs/<cycle>/review/``:
 - ``DEMO.md``: what was built, per acceptance criterion, with evidence
@@ -8,13 +8,17 @@ Produces the review demo artifacts under ``.vibey/runs/<cycle>/review/``:
 - ``deltas.md``: what changed vs the spec, and why, generated directly from
   projections so assumptions and findings cannot be silently omitted.
 
+Task 7.3: Runs automated reviews (code review, security review) and raises pre-triaged
+findings on the ledger before the human developer sees them.
+
 On success, records an ARTIFACT_PRODUCED ledger event and enqueues ``review.collect``.
 """
 
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from vibey.application.dto import EnqueueRequest, JobRecord
 from vibey.application.ports import Clock, JobRepository
@@ -25,6 +29,8 @@ from vibey.domain.ledger import EventKind, LedgerEvent
 from vibey.domain.phase import Phase
 from vibey.domain.projections import build_deltas
 from vibey.domain.review import (
+    Ambiguity,
+    Severity,
     render_deltas_markdown,
     render_demo_markdown,
     render_run_it_script,
@@ -33,6 +39,21 @@ from vibey.domain.review import (
 from vibey.domain.spec import DesignSpec
 
 DEFAULT_TEST_REPORT = "<testsuites><testsuite name='gates' tests='1' failures='0'/></testsuites>"
+
+
+@dataclass(frozen=True, slots=True)
+class AutomatedFinding:
+    category: str
+    text: str
+    severity: Severity = Severity.MEDIUM
+    ambiguity: Ambiguity = Ambiguity.CLEAR
+    finding_id: str | None = None
+
+
+class AutomatedReviewRunner(Protocol):
+    async def run_automated_reviews(
+        self, project_id: UUID, cycle: int
+    ) -> tuple[AutomatedFinding, ...]: ...
 
 
 class ReviewSpecRepository(Protocol):
@@ -72,12 +93,14 @@ class ReviewDemoHandler:
         artifacts: ReviewArtifactWriter,
         jobs: JobRepository,
         clock: Clock,
+        automated_reviewer: AutomatedReviewRunner | None = None,
     ) -> None:
         self._specs = specs
         self._ledger = ledger
         self._artifacts = artifacts
         self._jobs = jobs
         self._clock = clock
+        self._automated_reviewer = automated_reviewer
 
     async def handle(self, job: JobRecord) -> Outcome:
         if job.kind != "review.demo":
@@ -86,6 +109,29 @@ class ReviewDemoHandler:
         spec = await self._specs.load(job.project_id, job.cycle)
         if spec is None:
             return Failure(FailureClass.WORK, "no accepted design spec exists")
+
+        if self._automated_reviewer is not None:
+            automated_findings = await self._automated_reviewer.run_automated_reviews(
+                job.project_id, job.cycle
+            )
+            for finding in automated_findings:
+                fid = (
+                    finding.finding_id or f"f_{finding.category[:4]}_{job.cycle}_{uuid4().hex[:8]}"
+                )
+                await self._ledger.append_event(
+                    project_id=job.project_id,
+                    cycle=job.cycle,
+                    job_id=job.id,
+                    kind=EventKind.FINDING_RAISED,
+                    payload={
+                        "finding_id": fid,
+                        "text": finding.text,
+                        "severity": finding.severity.value,
+                        "ambiguity": finding.ambiguity.value,
+                        "category": finding.category,
+                        "automated": True,
+                    },
+                )
 
         events = await self._ledger.all_for_project(job.project_id)
         deltas = build_deltas(events)
