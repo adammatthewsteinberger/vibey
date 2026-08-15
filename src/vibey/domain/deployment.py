@@ -1,0 +1,193 @@
+"""Immutable DeploymentSpec, consent verification, and failure routing policy.
+
+Milestone 10 task 10.2.
+"""
+
+import hashlib
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import StrEnum
+
+
+@dataclass(slots=True, frozen=True)
+class AzureTargetScope:
+    tenant_id: str
+    subscription_id: str
+    resource_group: str
+    environment: str
+    region: str
+    tags: Mapping[str, str] = field(default_factory=dict)
+
+
+@dataclass(slots=True, frozen=True)
+class IdentityAuthority:
+    identity_type: str
+    principal_id: str
+    approved_roles: Sequence[str] = ()
+
+
+@dataclass(slots=True, frozen=True)
+class TopologyConfig:
+    service_type: str
+    iac_provider: str
+    sku: str
+    instances: int = 1
+    ingress_enabled: bool = True
+    tls_enabled: bool = True
+
+
+@dataclass(slots=True, frozen=True)
+class RecoveryPolicy:
+    progressive_exposure: str
+    auto_rollback_on_health_failure: bool = True
+    max_rollback_attempts: int = 2
+
+
+@dataclass(slots=True, frozen=True)
+class VerificationContract:
+    health_endpoint: str = "/health"
+    smoke_tests: Sequence[str] = ()
+    bake_window_seconds: int = 60
+
+
+@dataclass(slots=True, frozen=True)
+class CostBoundary:
+    max_monthly_budget_usd: float
+    max_deployment_cost_usd: float
+
+
+@dataclass(slots=True, frozen=True)
+class DeploymentSpec:
+    spec_id: str
+    version: str
+    target_scope: AzureTargetScope
+    identity: IdentityAuthority
+    topology: TopologyConfig
+    recovery_policy: RecoveryPolicy
+    verification: VerificationContract
+    cost_boundary: CostBoundary
+    secret_references: Sequence[str] = ()
+
+    def scope_digest(self) -> str:
+        """Returns deterministic SHA256 hex digest of the target deployment scope."""
+        target = self.target_scope
+        payload = (
+            f"{target.tenant_id}:{target.subscription_id}:{target.resource_group}:"
+            f"{target.environment}:{target.region}"
+        )
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+    def validate(self) -> list[str]:
+        """Validates that all mandatory fields are present and safe."""
+        errors: list[str] = []
+
+        if not self.spec_id.strip():
+            errors.append("spec_id is required")
+        if not self.version.strip():
+            errors.append("version is required")
+
+        t = self.target_scope
+        if not t.tenant_id.strip():
+            errors.append("tenant_id is required")
+        if not t.subscription_id.strip():
+            errors.append("subscription_id is required")
+        if not t.resource_group.strip():
+            errors.append("resource_group is required")
+        if not t.environment.strip():
+            errors.append("environment is required")
+        if not t.region.strip():
+            errors.append("region is required")
+
+        ident = self.identity
+        if not ident.identity_type.strip():
+            errors.append("identity_type is required")
+        if not ident.principal_id.strip():
+            errors.append("principal_id is required")
+
+        top = self.topology
+        if not top.service_type.strip():
+            errors.append("service_type is required")
+        if not top.iac_provider.strip():
+            errors.append("iac_provider is required")
+        if not top.sku.strip():
+            errors.append("sku is required")
+
+        rec = self.recovery_policy
+        if not rec.progressive_exposure.strip():
+            errors.append("progressive_exposure is required")
+
+        ver = self.verification
+        if not ver.health_endpoint.strip():
+            errors.append("health_endpoint is required")
+        if ver.bake_window_seconds < 0:
+            errors.append("bake_window_seconds must be >= 0")
+
+        cost = self.cost_boundary
+        if cost.max_monthly_budget_usd < 0:
+            errors.append("max_monthly_budget_usd must be >= 0")
+        if cost.max_deployment_cost_usd < 0:
+            errors.append("max_deployment_cost_usd must be >= 0")
+
+        for ref in self.secret_references:
+            ref_lower = ref.lower().strip()
+            # Allowed secret reference schemes
+            valid_prefixes = (
+                "@microsoft.keyvault",
+                "keyvault:",
+                "vault:",
+                "ref:",
+                "kv:",
+            )
+            if not any(ref_lower.startswith(prefix) for prefix in valid_prefixes):
+                errors.append(
+                    f"Secret reference '{ref}' appears to be a raw secret value or invalid scheme. "
+                    "Must be an approved Key Vault reference URI."
+                )
+
+        return errors
+
+    def is_valid(self) -> bool:
+        return len(self.validate()) == 0
+
+
+@dataclass(slots=True, frozen=True)
+class DeploymentConsent:
+    consent_id: str
+    target_scope_digest: str
+    granted_by: str
+    granted_at: datetime
+    explicit_mutation_authorized: bool = True
+
+    def matches_spec(self, spec: DeploymentSpec) -> bool:
+        return self.explicit_mutation_authorized and self.target_scope_digest == spec.scope_digest()
+
+
+class DeploymentFailureClass(StrEnum):
+    TRANSIENT_CAPACITY = "transient_capacity"
+    IDEMPOTENT_CONFLICT = "idempotent_conflict"
+    CAP_EXHAUSTED = "cap_exhausted"
+    MISSING_AUTHORITY = "missing_authority"
+    POLICY_DENIAL = "policy_denial"
+    AMBIGUOUS_CONFIGURATION = "ambiguous_configuration"
+    DESTRUCTIVE_DATA_MIGRATION = "destructive_data_migration"
+    RECOVERY_OUTSIDE_RUNBOOK = "recovery_outside_runbook"
+    APPLICATION_DEFECT = "application_defect"
+
+
+class DeploymentRoute(StrEnum):
+    STAY_IN_EXECUTE = "stay_in_execute"
+    ENTER_REVIEW = "enter_review"
+    ROUTE_TO_DESIGN = "route_to_design"
+    ROUTE_TO_DEPLOY_DESIGN = "route_to_deploy_design"
+
+
+def classify_deployment_failure(failure_class: DeploymentFailureClass) -> DeploymentRoute:
+    """Classifies deployment failures into deterministic routing decisions according to ADR-0013."""
+    match failure_class:
+        case DeploymentFailureClass.TRANSIENT_CAPACITY | DeploymentFailureClass.IDEMPOTENT_CONFLICT:
+            return DeploymentRoute.STAY_IN_EXECUTE
+        case DeploymentFailureClass.APPLICATION_DEFECT:
+            return DeploymentRoute.ROUTE_TO_DESIGN
+        case _:
+            return DeploymentRoute.ENTER_REVIEW
