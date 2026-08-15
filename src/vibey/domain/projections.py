@@ -1,5 +1,5 @@
 """Pure projections over a replayed event range (architecture-and-roadmap.md
-§4): OpenItems, DecisionLog, and CostReport. Projections are derived and
+§4): OpenItems, DecisionLog, CostReport, and Deltas. Projections are derived and
 disposable -- any of them can be rebuilt by replaying the log, which is
 exactly what makes them safe to materialize for query speed without ever
 becoming a second source of truth."""
@@ -10,6 +10,13 @@ from dataclasses import dataclass
 from vibey.domain.engine import EngineId
 from vibey.domain.ledger import EventKind, LedgerEvent, open_items
 from vibey.domain.phase import Phase
+from vibey.domain.review import (
+    Ambiguity,
+    AssumptionDelta,
+    DeltasReport,
+    FindingDelta,
+    Severity,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -136,6 +143,66 @@ def build_work_ledger(events: Sequence[LedgerEvent]) -> tuple[WorkLedgerEntry, .
             last_seq=event.seq,
         )
         for cid, event in sorted(latest.items(), key=lambda kv: kv[1].seq)
+    )
+
+
+def build_deltas(events: Sequence[LedgerEvent]) -> DeltasReport:
+    """Builds a DeltasReport from ledger events.
+
+    Assumptions and findings cannot be silently omitted from the review:
+    every AssumptionStated and FindingRaised event recorded during the run
+    is surfaced here.
+    """
+    assumptions_map: dict[str, AssumptionDelta] = {}
+    findings_map: dict[str, FindingDelta] = {}
+    resolved_findings: set[str] = set()
+
+    for event in sorted(events, key=lambda e: e.seq):
+        if event.kind is EventKind.ASSUMPTION_STATED:
+            aid = str(event.payload.get("assumption_id", ""))
+            text = str(event.payload.get("text", ""))
+            if aid:
+                assumptions_map[aid] = AssumptionDelta(assumption_id=aid, text=text, seq=event.seq)
+        elif event.kind is EventKind.FINDING_RAISED:
+            fid = str(event.payload.get("finding_id", ""))
+            sev_str = str(event.payload.get("severity", "low")).lower()
+            amb_str = str(event.payload.get("ambiguity", "needs_clarification")).lower()
+            text = str(event.payload.get("text", ""))
+            try:
+                severity = Severity(sev_str)
+            except ValueError:
+                severity = Severity.LOW
+            try:
+                ambiguity = Ambiguity(amb_str)
+            except ValueError:
+                ambiguity = Ambiguity.NEEDS_CLARIFICATION
+            if fid:
+                findings_map[fid] = FindingDelta(
+                    finding_id=fid,
+                    severity=severity,
+                    ambiguity=ambiguity,
+                    text=text,
+                    seq=event.seq,
+                    resolved=fid in resolved_findings,
+                )
+        elif event.kind is EventKind.FINDING_RESOLVED:
+            fid = str(event.payload.get("finding_id", ""))
+            if fid:
+                resolved_findings.add(fid)
+                if fid in findings_map:
+                    prior = findings_map[fid]
+                    findings_map[fid] = FindingDelta(
+                        finding_id=prior.finding_id,
+                        severity=prior.severity,
+                        ambiguity=prior.ambiguity,
+                        text=prior.text,
+                        seq=prior.seq,
+                        resolved=True,
+                    )
+
+    return DeltasReport(
+        assumptions=tuple(sorted(assumptions_map.values(), key=lambda a: a.seq)),
+        findings=tuple(sorted(findings_map.values(), key=lambda f: f.seq)),
     )
 
 
