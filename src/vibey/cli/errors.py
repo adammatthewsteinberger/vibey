@@ -13,7 +13,6 @@ one.
 
 from __future__ import annotations
 
-import sys
 from collections.abc import Iterator
 from contextlib import contextmanager
 from typing import NoReturn
@@ -87,6 +86,12 @@ def guard() -> Iterator[None]:
         typer.echo("Interrupted.", err=True)
         raise typer.Exit(code=130) from None
     except BrokenPipeError:
-        # `vibey ledger | head` closes the pipe early; that is not an error.
-        sys.stderr.close()
+        # `vibey ledger | head` closes the pipe early; that is the reader being
+        # done, not a failure, so exit 0.
+        #
+        # Deliberately no stream surgery here. Redirecting or closing stdout to
+        # suppress Python's "Exception ignored in: <_io.TextIOWrapper ...>"
+        # shutdown message is a process-global side effect, and this context
+        # manager wraps individual commands. If that message ever becomes worth
+        # silencing, it belongs at the process entry point.
         raise typer.Exit(code=0) from None

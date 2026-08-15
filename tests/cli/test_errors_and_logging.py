@@ -19,7 +19,12 @@ from vibey.domain.errors import (
     UnknownProject,
 )
 from vibey.domain.verbosity import resolve_log_plan
-from vibey.infrastructure.logging import configure_logging, get_logger
+from vibey.infrastructure.logging import (
+    NullAppLogger,
+    StructlogAppLogger,
+    configure_logging,
+    get_logger,
+)
 
 runner = CliRunner()
 
@@ -111,3 +116,40 @@ def test_third_party_loggers_stay_quiet_until_the_net_is_widened(tmp_path: Path)
     configure_logging(resolve_log_plan(verbose=2), log_file=tmp_path / "b.jsonl")
     assert logging.getLogger("asyncpg").level == logging.DEBUG
     logging.getLogger().handlers.clear()
+
+
+def test_guard_treats_a_closed_pipe_as_success() -> None:
+    """`vibey ledger | head` closes the pipe early. That is the reader being
+    done, not the command failing."""
+    with pytest.raises(typer.Exit) as excinfo, guard():
+        raise BrokenPipeError
+    assert excinfo.value.exit_code == 0
+
+
+def test_the_structlog_adapter_forwards_every_level(tmp_path: Path) -> None:
+    log_file = tmp_path / "levels.jsonl"
+    configure_logging(resolve_log_plan(verbose=1), log_file=log_file, human_console=False)
+    try:
+        logger = StructlogAppLogger(component="unit")
+        bound = logger.bind(run_id="r1")
+        logger.debug("d.event")
+        logger.info("i.event")
+        logger.warning("w.event")
+        logger.error("e.event")
+        bound.info("bound.event")
+    finally:
+        logging.getLogger().handlers.clear()
+
+    text = log_file.read_text()
+    for event in ("d.event", "i.event", "w.event", "e.event", "bound.event"):
+        assert event in text
+    assert '"run_id": "r1"' in text
+
+
+def test_the_null_logger_absorbs_everything() -> None:
+    """The default, so nothing is obliged to configure logging in order to run
+    -- and so a library consumer never gets output it did not ask for."""
+    null = NullAppLogger()
+    assert null.bind(run_id="r1") is null
+    for level in ("debug", "info", "warning", "error"):
+        getattr(null, level)("event", key="value")
