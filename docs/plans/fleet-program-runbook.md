@@ -23,8 +23,11 @@
 > - If a required check cannot be made to pass, stop and leave the PR open with
 >   an explanation. Do not weaken a gate, delete a test, or add a coverage
 >   exclusion to get to green.
-> - End your final message with `CLAUDELOOP_TASK_FULLY_COMPLETE` only when the
->   definition of done above is met in full.
+> - End your final message with **your runner's done marker** — and only when the
+>   definition of done above is met in full. The marker differs per runner:
+>   `CLAUDELOOP_TASK_FULLY_COMPLETE`, `AGYLOOP_TASK_FULLY_COMPLETE`,
+>   `CURSORLOOP_TASK_FULLY_COMPLETE`, `CODEXLOOP_TASK_FULLY_COMPLETE`. Each
+>   runner injects its own instruction into the seed prompt; follow that one.
 
 ## Context
 
@@ -432,6 +435,68 @@ claudeloop run ~/git/vibey/docs/plans/fleet-program-runbook.md \
   --done-marker CLAUDELOOP_TASK_FULLY_COMPLETE \
   --log-level INFO --log-file "$WT/.claudeloop/run.log" \
   --stream-ui
+```
+
+### Running it with agyloop instead
+
+agyloop 0.1.0 has a different surface. The differences are not cosmetic — three
+of them are gaps this very runbook exists to close, so a run driven by agyloop
+is working with fewer inputs than one driven by claudeloop:
+
+| claudeloop | agyloop | note |
+|---|---|---|
+| `--add-folder` | `--add-dir` | same idea, different spelling |
+| `--permission-mode` | `--safe` / `--scoped` / `--yolo` / `--strict-autonomy` | posture is a set of flags, not one enum |
+| `--done-marker` | *(none)* | fixed at `AGYLOOP_TASK_FULLY_COMPLETE` |
+| `--stream-ui` | *(none)* | use `agyloop watch --stream`; the TUI is one pane with no hotkeys until §1.3 |
+| `--skill` / `--plugin` | *(none)* | **§2.3 gap** — no vibe-engineering-skills injection |
+| `--web-search` / `--deep-research` | *(none)* | **§2.6 gap** — no research inputs |
+| `--attach` / `--from-github` / `--import-issue` | *(none)* | **§2.6 gap** — no attachments or repo intake |
+| `wind-down` | *(none)* | **§1.4d gap.** `agyloop unwind` is unrelated — it rolls back git save points |
+| — | `--gateway sdk\|cli` | transport choice; `sdk` is the default |
+| — | `--no-probe` | skip the preflight capacity probe |
+| — | `--ramp N` | pace the first N turns against acceleration 429s |
+| — | `--max-tokens` | agyloop meters tokens as well as dollars |
+
+```bash
+REPO=agyloop
+PHASE=a-coverage
+WT=$HOME/.cache/fleet-worktrees/$REPO-$PHASE
+
+cd ~/git/$REPO
+git fetch -q origin
+git worktree add -B "chore/$PHASE" "$WT" origin/develop
+
+agyloop -v --log-file "$WT/.agyloop/run.log" \
+  run ~/git/vibey/docs/plans/fleet-program-runbook.md \
+  --cwd "$WT" \
+  --run-id "$REPO-$PHASE" \
+  --add-dir ~/git/vibey/docs/plans \
+  --gateway sdk \
+  --preset high \
+  --scoped \
+  --ramp 3 \
+  --max-turns 400 --max-dollars 40 --max-wait 21600
+```
+
+Verbosity is a **root** flag on agyloop, so `-v` comes before `run`, not after.
+`--scoped` keeps workspace and destructive denies in place without `allow_all`;
+prefer it to `--yolo` for an unattended run. `--ramp 3` paces the opening turns,
+which is what the acceleration 429s want.
+
+If the Antigravity SDK harness misbehaves, `--gateway cli` now selects a CLI
+transport **and** a matching CLI capacity probe — before that fix the probe
+booted the SDK harness regardless and died with
+`Failed to read length from stdout`. `--no-probe` skips the preflight entirely.
+
+Steering agyloop:
+
+```bash
+agyloop watch  --run-id "$REPO-$PHASE" --cwd "$WT" --stream
+agyloop logs   --run-id "$REPO-$PHASE" --cwd "$WT" --follow --chatter
+agyloop status --run-id "$REPO-$PHASE" --cwd "$WT"
+agyloop prompt "finish the CLI layer first" --at-break --run-id "$REPO-$PHASE" --cwd "$WT"
+agyloop stop   --run-id "$REPO-$PHASE" --cwd "$WT"        # no soft stop until §1.4d
 ```
 
 Watch a run already in flight, or replay one:
