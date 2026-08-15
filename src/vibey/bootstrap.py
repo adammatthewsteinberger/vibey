@@ -2,26 +2,26 @@
 
 import getpass
 import os
-from collections.abc import AsyncIterator, Sequence
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Protocol
 
 import asyncpg
 
-from vibey.application.design import DesignEvent, DesignStage, QuestionBatch, ResearchResult
 from vibey.application.design_handler import DesignInterviewHandler
 from vibey.application.design_research_handler import DesignResearchHandler
 from vibey.application.design_synthesis_handler import DesignSpecHandler, DesignSynthesizeHandler
 from vibey.application.dto import ProjectRecord
+from vibey.application.interfaces import (
+    DesignProvider,
+    VisualInventoryProducer,
+)
 from vibey.application.job_dispatcher import JobDispatcher
 from vibey.application.visual_handler import VisualInventoryHandler, VisualPlanHandler
 from vibey.application.worker import WorkerLoop
 from vibey.domain.engine import EngineId
-from vibey.domain.spec import DesignSpec
-from vibey.domain.visual import VisualInventory
 from vibey.infrastructure.db.design_ledger import PostgresDesignLedger
 from vibey.infrastructure.db.design_spec_repository import FileDesignSpecRepository
 from vibey.infrastructure.db.human_gate_repository import PostgresHumanGateRepository
@@ -41,20 +41,6 @@ class AppResources:
     design_ledger: PostgresDesignLedger
     design_specs: FileDesignSpecRepository
     visual_inventories: FileVisualInventoryRepository
-
-
-class DesignProvider(Protocol):
-    async def batch(
-        self, stage: DesignStage, prior_events: Sequence[DesignEvent]
-    ) -> QuestionBatch: ...
-
-    async def research(self, topic: str) -> ResearchResult: ...
-
-    async def synthesize(self, events: Sequence[DesignEvent]) -> DesignSpec: ...
-
-
-class VisualProvider(Protocol):
-    async def inventory(self, events: Sequence[DesignEvent]) -> VisualInventory: ...
 
 
 class SystemClock:
@@ -99,7 +85,7 @@ def build_design_worker(
 
 
 def build_visual_worker(
-    *, resources: AppResources, provider: VisualProvider, owner: str
+    *, resources: AppResources, provider: VisualInventoryProducer, owner: str
 ) -> WorkerLoop:
     dispatcher = JobDispatcher(
         {
@@ -146,3 +132,11 @@ async def build_app(*, url: str | None = None) -> AsyncIterator[AppResources]:
         )
     finally:
         await pool.close()
+
+
+# Re-exported for the same reason `application/ports.py` re-exports the
+# interfaces package: the seam moved, the import path should not break.
+__all__ = [
+    "DesignProvider",
+    "VisualInventoryProducer",
+]

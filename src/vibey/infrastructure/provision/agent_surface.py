@@ -29,8 +29,8 @@ from vibey.domain.provision import (
     needs_write,
     render_block,
 )
-from vibey.infrastructure.engines.claudeloop_process import CommandExecutor
 from vibey.infrastructure.git.clean_env import CleanGitEnvSubprocessExecutor
+from vibey.infrastructure.interfaces import CommandExecutor
 
 
 class ProvisionError(VibeyError):

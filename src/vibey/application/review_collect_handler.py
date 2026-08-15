@@ -8,39 +8,27 @@ Holds the review conversation:
 - On accept or changes, enqueues ``review.triage`` to classify open findings.
 """
 
-from collections.abc import Mapping, Sequence
-from typing import Protocol
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 from vibey.application.dto import EnqueueRequest, HumanGateRequest, JobRecord
+from vibey.application.interfaces import (
+    PhaseLedger,
+)
 from vibey.application.ports import Clock, HumanGateRepository, JobRepository
 from vibey.application.worker import Failure, Outcome, Park, Success
 from vibey.domain.effort import Effort
 from vibey.domain.job import FailureClass, idempotency_key
-from vibey.domain.ledger import EventKind, LedgerEvent
+from vibey.domain.ledger import EventKind
 from vibey.domain.phase import Phase
 from vibey.domain.projections import answer_why_question
 from vibey.domain.review import Ambiguity, Severity, UserVerdict
-
-
-class ReviewCollectLedger(Protocol):
-    async def all_for_project(self, project_id: UUID) -> Sequence[LedgerEvent]: ...
-
-    async def append_event(
-        self,
-        project_id: UUID,
-        cycle: int,
-        job_id: UUID,
-        kind: EventKind,
-        payload: Mapping[str, object],
-    ) -> None: ...
 
 
 class ReviewCollectHandler:
     def __init__(
         self,
         *,
-        ledger: ReviewCollectLedger,
+        ledger: PhaseLedger,
         gates: HumanGateRepository,
         jobs: JobRepository,
         clock: Clock,

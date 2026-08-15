@@ -15,8 +15,8 @@ from pathlib import Path
 
 from vibey.domain.errors import VibeyError
 from vibey.domain.worktree import branch_name, worktree_subpath
-from vibey.infrastructure.engines.claudeloop_process import CommandExecutor
 from vibey.infrastructure.git.clean_env import CleanGitEnvSubprocessExecutor
+from vibey.infrastructure.interfaces import CommandExecutor
 
 
 class WorktreeError(VibeyError):

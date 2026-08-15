@@ -14,7 +14,7 @@ from vibey.application.visual_acceptance import VisualAcceptanceService
 from vibey.bootstrap import (
     DesignProvider,
     SystemClock,
-    VisualProvider,
+    VisualInventoryProducer,
     build_app,
     build_design_worker,
     build_visual_worker,
@@ -156,12 +156,12 @@ async def _work_once(project_id: UUID, provider: str, max_turns: int, max_dollar
             raise ValueError(f"unknown project {project_id}")
         owner = f"cli-{os.getpid()}"
         if project.phase is Phase.VISUAL_DESIGN:
-            visual_provider: VisualProvider
+            visual_provider: VisualInventoryProducer
             if provider == "scripted":
                 visual_provider = ScriptedVisualProvider()
             else:
                 raise ValueError(
-                    "no live VisualProvider is implemented yet; use --provider scripted"
+                    "no live VisualInventoryProducer is implemented yet; use --provider scripted"
                 )
             worker = build_visual_worker(resources=resources, provider=visual_provider, owner=owner)
             return await worker.run_once(project_id)
