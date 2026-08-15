@@ -5,13 +5,13 @@ from typing import Protocol
 from uuid import UUID
 
 from vibey.application.design import (
-    DESIGN_STAGES,
     DesignEvent,
     DesignQuestion,
     DesignStage,
     QuestionBatch,
     answer_questions,
     finalize_questions,
+    stages_for_cycle,
 )
 from vibey.application.dto import EnqueueRequest, HumanGateRequest, JobRecord
 from vibey.application.ports import Clock, HumanGateRepository, JobRepository
@@ -62,11 +62,12 @@ class DesignInterviewHandler:
 
     async def handle(self, job: JobRecord) -> Outcome:
         events = list(await self._ledger.all_for_project(job.project_id))
-        for stage in DESIGN_STAGES:
-            questions = _questions_for_stage(events, stage)
+        stages = stages_for_cycle(job.cycle)
+        for stage in stages:
+            questions = _questions_for_stage(events, stage, cycle=job.cycle)
             if not questions:
                 batch = await self._questions.batch(stage, events)
-                for event in batch.events(now=self._clock.now()):
+                for event in batch.events(now=self._clock.now(), cycle=job.cycle):
                     await self._append(job, event)
                     events.append(event)
                 return Park(_gate_for(batch))
@@ -94,7 +95,7 @@ class DesignInterviewHandler:
                         events.append(event)
 
         await self._enqueue_followups(job)
-        return Success({"stages": len(DESIGN_STAGES)})
+        return Success({"stages": len(stages)})
 
     async def _append(self, job: JobRecord, event: DesignEvent) -> None:
         await self._ledger.append(job.project_id, job.cycle, job.id, self._interviewer, event)
@@ -147,7 +148,7 @@ class DesignInterviewHandler:
 
 
 def _questions_for_stage(
-    events: Sequence[DesignEvent], stage: DesignStage
+    events: Sequence[DesignEvent], stage: DesignStage, *, cycle: int | None = None
 ) -> tuple[DesignQuestion, ...]:
     return tuple(
         DesignQuestion(
@@ -157,7 +158,9 @@ def _questions_for_stage(
             blocking=bool(event.payload["blocking"]),
         )
         for event in events
-        if event.kind is EventKind.QUESTION_ASKED and event.payload.get("stage") == stage.value
+        if event.kind is EventKind.QUESTION_ASKED
+        and event.payload.get("stage") == stage.value
+        and (cycle is None or event.payload.get("cycle", cycle) == cycle)
     )
 
 

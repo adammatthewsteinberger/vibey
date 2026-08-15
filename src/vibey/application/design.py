@@ -29,6 +29,21 @@ class DesignStage(StrEnum):
 
 DESIGN_STAGES = tuple(DesignStage)
 
+REENTRANT_DESIGN_STAGES: tuple[DesignStage, ...] = (
+    DesignStage.EXAMPLE_MAPPING,
+    DesignStage.WALKING_SKELETON,
+    DesignStage.NFR_PLANGUAGE,
+    DesignStage.PREMORTEM,
+)
+
+
+def stages_for_cycle(cycle: int) -> tuple[DesignStage, ...]:
+    """Cycle 1 runs the full 7-stage elicitation. Cycle > 1 is a re-entrant
+    design scoped to specific findings driving loop-back (<= 5 question batches)."""
+    if cycle <= 1:
+        return DESIGN_STAGES
+    return REENTRANT_DESIGN_STAGES
+
 
 @dataclass(frozen=True, slots=True)
 class DesignQuestion:
@@ -51,7 +66,7 @@ class QuestionBatch:
     stage: DesignStage
     questions: tuple[DesignQuestion, ...]
 
-    def events(self, *, now: datetime) -> tuple[DesignEvent, ...]:
+    def events(self, *, now: datetime, cycle: int = 1) -> tuple[DesignEvent, ...]:
         return tuple(
             DesignEvent(
                 kind=EventKind.QUESTION_ASKED,
@@ -63,6 +78,7 @@ class QuestionBatch:
                     "default": question.default,
                     "blocking": question.blocking,
                     "stage": self.stage.value,
+                    "cycle": cycle,
                 },
             )
             for question in self.questions
