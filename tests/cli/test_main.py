@@ -10,7 +10,11 @@ from vibey.cli import main as cli_main
 from vibey.cli.main import app
 from vibey.domain.errors import InvalidAnswer
 
-runner = CliRunner()
+# Typer force-enables rich ANSI styling whenever GITHUB_ACTIONS is set
+# (typer/rich_utils.py), which CI always has and a local shell never does.
+# That embeds escape codes inside option names, breaking plain substring
+# checks against --help output -- disable it the way Typer itself exposes.
+runner = CliRunner(env={"_TYPER_FORCE_DISABLE_TERMINAL": "1"})
 
 
 def test_version_flag_prints_version_and_exits() -> None:

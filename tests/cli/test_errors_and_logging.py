@@ -26,7 +26,11 @@ from vibey.infrastructure.logging import (
     get_logger,
 )
 
-runner = CliRunner()
+# Typer force-enables rich ANSI styling whenever GITHUB_ACTIONS is set
+# (typer/rich_utils.py), which CI always has and a local shell never does.
+# That embeds escape codes inside option names, breaking plain substring
+# checks against --help output -- disable it the way Typer itself exposes.
+runner = CliRunner(env={"_TYPER_FORCE_DISABLE_TERMINAL": "1"})
 
 
 def test_known_error_renders_as_a_sentence_not_a_traceback() -> None:

@@ -23,7 +23,11 @@ from vibey.domain.ledger import EventKind, Provenance, digest_event
 from vibey.domain.phase import Phase
 from vibey.infrastructure.engines.tailer import LedgerEventDraft
 
-runner = CliRunner()
+# Typer force-enables rich ANSI styling whenever GITHUB_ACTIONS is set
+# (typer/rich_utils.py), which CI always has and a local shell never does.
+# That embeds escape codes inside option names, breaking plain substring
+# checks against --help output -- disable it the way Typer itself exposes.
+runner = CliRunner(env={"_TYPER_FORCE_DISABLE_TERMINAL": "1"})
 
 
 def test_deploy_help_shows_subcommands() -> None:
