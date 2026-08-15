@@ -1,10 +1,11 @@
 from dataclasses import replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import UUID, uuid4
 
 import pytest
 
+from tests.application.fakes import FakeJobRepository
 from vibey.application.design import DesignEvent
 from vibey.application.dto import ProjectRecord
 from vibey.application.visual_acceptance import VisualAcceptanceService
@@ -84,23 +85,35 @@ def project() -> ProjectRecord:
 
 
 def _service(
-    *, projects: Projects, ledger: Ledger, inventories: Inventories
+    *,
+    projects: Projects,
+    ledger: Ledger,
+    inventories: Inventories,
+    jobs: FakeJobRepository | None = None,
 ) -> VisualAcceptanceService:
     return VisualAcceptanceService(
-        projects=projects, ledger=ledger, inventories=inventories, clock=FixedClock()
+        projects=projects,
+        ledger=ledger,
+        inventories=inventories,
+        jobs=jobs or FakeJobRepository(),
+        clock=FixedClock(),
     )
 
 
 async def test_accept_transitions_to_build_with_a_complete_inventory() -> None:
     projects = Projects(project())
     ledger = Ledger()
+    jobs = FakeJobRepository()
     settled = await _service(
-        projects=projects, ledger=ledger, inventories=Inventories(complete_inventory())
+        projects=projects, ledger=ledger, inventories=Inventories(complete_inventory()), jobs=jobs
     ).settle(projects.project.project_id, decision=VisualDecision.ACCEPTED)  # type: ignore[union-attr]
 
     assert settled.phase is Phase.BUILD
     assert [e.kind for e in ledger.appended] == [EventKind.VISUAL_DESIGN_ACCEPTED]
     assert ledger.appended[0].provenance is Provenance.TRUSTED
+    enqueued = await jobs.claim(settled.project_id, owner="test", lease=timedelta(seconds=5))
+    assert enqueued is not None
+    assert enqueued.kind == "build.decompose"
 
 
 async def test_waive_transitions_to_build_with_a_complete_inventory() -> None:

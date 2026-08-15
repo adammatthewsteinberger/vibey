@@ -270,6 +270,7 @@ async def _settle_visual(project_id: UUID, decision: VisualDecision) -> Phase:
             projects=resources.projects,
             ledger=resources.design_ledger,
             inventories=resources.visual_inventories,
+            jobs=resources.jobs,
             clock=SystemClock(),
         ).settle(project_id, decision=decision)
         return settled.phase

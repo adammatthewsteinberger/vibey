@@ -1,0 +1,125 @@
+from dataclasses import replace
+from datetime import timedelta
+from uuid import uuid4
+
+from tests.application.fakes import FakeJobRepository, make_job
+from vibey.application.build_decompose_handler import BuildDecomposeHandler
+from vibey.application.worker import Failure, Success
+from vibey.domain.effort import Effort
+from vibey.domain.job import FailureClass
+from vibey.domain.plan import VerificationSpec, WorkItem
+from vibey.domain.spec import AcceptanceCriterion, DesignSpec
+
+
+def spec() -> DesignSpec:
+    return DesignSpec(
+        "Ship",
+        (),
+        (),
+        (
+            AcceptanceCriterion("AC-1", "given", "when", "then", "fit"),
+            AcceptanceCriterion("AC-2", "given", "when", "then", "fit"),
+        ),
+        (),
+        "one path",
+    )
+
+
+def _item(item_id: str, **overrides: object) -> WorkItem:
+    defaults: dict[str, object] = {
+        "item_id": item_id,
+        "title": f"do {item_id}",
+        "acceptance_ids": (),
+        "depends_on": (),
+        "est_effort": Effort.LOW,
+        "files_touched_hint": (),
+        "verification": VerificationSpec(commands=("pytest",), criteria_checked=()),
+    }
+    defaults.update(overrides)
+    return WorkItem(**defaults)  # type: ignore[arg-type]
+
+
+class Specs:
+    def __init__(self, value: DesignSpec | None) -> None:
+        self.value = value
+
+    async def load(self, project_id, cycle):  # type: ignore[no-untyped-def]
+        return self.value
+
+
+class Decomposer:
+    def __init__(self, items: tuple[WorkItem, ...]) -> None:
+        self.items = items
+
+    async def decompose(self, spec):  # type: ignore[no-untyped-def]
+        return self.items
+
+
+async def test_decompose_fans_out_build_implement_jobs_in_dependency_order() -> None:
+    job = replace(make_job(uuid4()), kind="build.decompose")
+    items = (
+        _item("skeleton", acceptance_ids=("AC-1",)),
+        _item("item-2", acceptance_ids=("AC-2",), depends_on=("skeleton",)),
+    )
+    jobs = FakeJobRepository()
+    handler = BuildDecomposeHandler(specs=Specs(spec()), decomposer=Decomposer(items), jobs=jobs)
+
+    outcome = await handler.handle(job)
+
+    assert isinstance(outcome, Success)
+    skeleton_job = await jobs.claim(job.project_id, owner="w", lease=timedelta(seconds=5))
+    assert skeleton_job is not None
+    assert skeleton_job.work_item_id == "skeleton"
+    assert skeleton_job.kind == "build.implement"
+    await jobs.ack(skeleton_job.id, owner="w")
+    item_2_job = await jobs.claim(job.project_id, owner="w", lease=timedelta(seconds=5))
+    assert item_2_job is not None
+    assert item_2_job.work_item_id == "item-2"
+
+
+async def test_decompose_rejects_wrong_kind_and_missing_spec() -> None:
+    handler = BuildDecomposeHandler(
+        specs=Specs(None), decomposer=Decomposer(()), jobs=FakeJobRepository()
+    )
+    assert await handler.handle(make_job(uuid4())) == Failure(
+        FailureClass.VIBEY, "expected build.decompose job"
+    )
+    job = replace(make_job(uuid4()), kind="build.decompose")
+    outcome = await handler.handle(job)
+    assert outcome == Failure(FailureClass.WORK, "no accepted design spec exists")
+
+
+async def test_decompose_rejects_empty_and_unmapped_decompositions() -> None:
+    job = replace(make_job(uuid4()), kind="build.decompose")
+
+    empty = BuildDecomposeHandler(
+        specs=Specs(spec()), decomposer=Decomposer(()), jobs=FakeJobRepository()
+    )
+    assert await empty.handle(job) == Failure(
+        FailureClass.WORK, "decomposition produced no work items"
+    )
+
+    unmapped_items = (_item("skeleton", acceptance_ids=("AC-1",)),)
+    unmapped = BuildDecomposeHandler(
+        specs=Specs(spec()), decomposer=Decomposer(unmapped_items), jobs=FakeJobRepository()
+    )
+    outcome = await unmapped.handle(job)
+    assert isinstance(outcome, Failure)
+    assert outcome.failure_class is FailureClass.WORK
+    assert "AC-2" in outcome.detail
+
+
+async def test_decompose_rejects_a_topologically_invalid_item_order() -> None:
+    job = replace(make_job(uuid4()), kind="build.decompose")
+    items = (
+        _item("skeleton", acceptance_ids=("AC-1",)),
+        _item("item-2", acceptance_ids=("AC-2",), depends_on=("item-3",)),
+        _item("item-3", acceptance_ids=()),
+    )
+    handler = BuildDecomposeHandler(
+        specs=Specs(spec()), decomposer=Decomposer(items), jobs=FakeJobRepository()
+    )
+    outcome = await handler.handle(job)
+    assert isinstance(outcome, Failure)
+    assert outcome.failure_class is FailureClass.VIBEY
+    assert "topologically" in outcome.detail

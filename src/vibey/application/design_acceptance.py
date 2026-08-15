@@ -13,6 +13,7 @@ from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
+from vibey.application.build_kickoff import enqueue_build_decompose
 from vibey.application.design import DesignEvent
 from vibey.application.design_handler import DesignLedger
 from vibey.application.design_spec import (
@@ -89,6 +90,8 @@ class DesignAcceptanceService:
         accepted = await self._projects.transition(project_id, expected=Phase.DESIGN, to=target)
         if visual_choice is VisualDecision.OPTED_IN:
             await self._enqueue_visual_inventory(accepted)
+        else:
+            await enqueue_build_decompose(self._jobs, accepted)
         return accepted
 
     async def _enqueue_visual_inventory(self, project: ProjectRecord) -> JobRecord:

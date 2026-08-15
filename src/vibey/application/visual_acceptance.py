@@ -11,10 +11,11 @@ from datetime import datetime
 from typing import Protocol
 from uuid import UUID
 
+from vibey.application.build_kickoff import enqueue_build_decompose
 from vibey.application.design import DesignEvent
 from vibey.application.design_handler import DesignLedger
 from vibey.application.dto import ProjectRecord
-from vibey.application.ports import Clock
+from vibey.application.ports import Clock, JobRepository
 from vibey.application.visual_handler import VisualInventoryRepository
 from vibey.domain.ledger import EventKind, Provenance
 from vibey.domain.phase import (
@@ -43,11 +44,13 @@ class VisualAcceptanceService:
         projects: ProjectStore,
         ledger: DesignLedger,
         inventories: VisualInventoryRepository,
+        jobs: JobRepository,
         clock: Clock,
     ) -> None:
         self._projects = projects
         self._ledger = ledger
         self._inventories = inventories
+        self._jobs = jobs
         self._clock = clock
 
     async def settle(self, project_id: UUID, *, decision: VisualDecision) -> ProjectRecord:
@@ -74,9 +77,11 @@ class VisualAcceptanceService:
         now = self._clock.now()
         event = _settle_event(decision, now)
         await self._ledger.append(project_id, project.cycle, None, None, event)
-        return await self._projects.transition(
+        settled = await self._projects.transition(
             project_id, expected=Phase.VISUAL_DESIGN, to=Phase.BUILD
         )
+        await enqueue_build_decompose(self._jobs, settled)
+        return settled
 
 
 def _settle_event(decision: VisualDecision, now: datetime) -> DesignEvent:
