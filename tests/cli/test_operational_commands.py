@@ -20,7 +20,11 @@ from vibey.infrastructure.db.engine_health_repository import PostgresEngineHealt
 from vibey.infrastructure.engines.tailer import LedgerEventDraft
 
 pytestmark = pytest.mark.integration
-runner = CliRunner()
+# Typer force-enables rich ANSI styling whenever GITHUB_ACTIONS is set
+# (typer/rich_utils.py), which CI always has and a local shell never does.
+# That embeds escape codes inside option names, breaking plain substring
+# checks against --help output -- disable it the way Typer itself exposes.
+runner = CliRunner(env={"_TYPER_FORCE_DISABLE_TERMINAL": "1"})
 
 
 @pytest.fixture(autouse=True)
