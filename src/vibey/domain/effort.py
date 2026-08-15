@@ -1,8 +1,9 @@
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from enum import IntEnum
 
 from vibey.domain.errors import EscalationExhausted
 from vibey.domain.phase import Phase
+from vibey.domain.review import FindingRef, Severity
 
 
 class Effort(IntEnum):
@@ -43,3 +44,17 @@ def effort_for_attempt(base: Effort, attempt: int) -> Effort:
 
 def forces_rotation(previous: Effort, current: Effort) -> bool:
     return current > previous
+
+
+def triage_required_effort(findings: Sequence[FindingRef]) -> Effort:
+    """Calculates required execution effort for a set of triaged findings.
+
+    Critical findings unconditionally demand MAX effort.
+    """
+    if any(f.severity is Severity.CRITICAL for f in findings):
+        return Effort.MAX
+    if any(f.severity is Severity.HIGH for f in findings):
+        return Effort.HIGH
+    if any(f.severity is Severity.MEDIUM for f in findings):
+        return Effort.STANDARD
+    return Effort.LOW
