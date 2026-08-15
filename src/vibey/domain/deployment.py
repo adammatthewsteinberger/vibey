@@ -192,3 +192,58 @@ def classify_deployment_failure(failure_class: DeploymentFailureClass) -> Deploy
             return DeploymentRoute.ROUTE_TO_DESIGN
         case _:
             return DeploymentRoute.ENTER_REVIEW
+
+
+class ChangeAction(StrEnum):
+    CREATE = "create"
+    MODIFY = "modify"
+    DELETE = "delete"
+    NO_CHANGE = "no_change"
+
+
+@dataclass(slots=True, frozen=True)
+class NormalizedResourceChange:
+    resource_id: str
+    resource_type: str
+    action: ChangeAction
+    estimated_monthly_cost_usd: float = 0.0
+    details: Mapping[str, object] = field(default_factory=dict)
+
+
+@dataclass(slots=True, frozen=True)
+class PlanEvaluation:
+    changes: Sequence[NormalizedResourceChange]
+    total_estimated_monthly_cost_usd: float
+    has_destructive_deletions: bool
+    exceeds_budget: bool
+    is_safe_for_automated_apply: bool
+    blocking_reasons: Sequence[str]
+
+
+def evaluate_iac_plan(
+    changes: Sequence[NormalizedResourceChange], cost_boundary: CostBoundary
+) -> PlanEvaluation:
+    """Evaluates an IaC changeset against safety invariants and cost boundaries."""
+    total_cost = sum(c.estimated_monthly_cost_usd for c in changes)
+    destructive = any(c.action == ChangeAction.DELETE for c in changes)
+    over_budget = total_cost > cost_boundary.max_monthly_budget_usd
+
+    reasons: list[str] = []
+    if destructive:
+        reasons.append("Plan includes destructive resource deletions.")
+    if over_budget:
+        reasons.append(
+            f"Estimated monthly cost (${total_cost:.2f}) exceeds monthly budget "
+            f"(${cost_boundary.max_monthly_budget_usd:.2f})."
+        )
+
+    safe = (not destructive) and (not over_budget)
+
+    return PlanEvaluation(
+        changes=tuple(changes),
+        total_estimated_monthly_cost_usd=total_cost,
+        has_destructive_deletions=destructive,
+        exceeds_budget=over_budget,
+        is_safe_for_automated_apply=safe,
+        blocking_reasons=tuple(reasons),
+    )
