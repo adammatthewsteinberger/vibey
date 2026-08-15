@@ -1,9 +1,9 @@
 from dataclasses import replace
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
 
-from tests.application.fakes import make_job
+from tests.application.fakes import FakeJobRepository, make_job
 from vibey.application.build_verify_handler import BuildVerifyHandler, GateResult
 from vibey.application.dto import EngineEvent
 from vibey.application.worker import Failure, Success
@@ -50,21 +50,34 @@ def _job(**overrides: object):  # type: ignore[no-untyped-def]
     return replace(job, **overrides) if overrides else job
 
 
-async def test_successful_verify_runs_gates_and_reviews_the_diff(tmp_path: Path) -> None:
+async def test_successful_verify_runs_gates_reviews_the_diff_and_enqueues_integrate(
+    tmp_path: Path,
+) -> None:
     reviewer = ScriptedEngine(descriptor=CLAUDELOOP, base_dir=tmp_path / "engine")
     gates = FakeGateRunner()
     ledger = FakeLedger()
+    jobs = FakeJobRepository()
     handler = BuildVerifyHandler(
-        worktrees=FakeWorktrees(tmp_path), gates=gates, reviewer=reviewer, ledger=ledger
+        worktrees=FakeWorktrees(tmp_path),
+        gates=gates,
+        reviewer=reviewer,
+        ledger=ledger,
+        jobs=jobs,
     )
 
-    outcome = await handler.handle(_job())
+    job = _job()
+    outcome = await handler.handle(job)
 
     assert isinstance(outcome, Success)
     assert outcome.result == {"work_item_id": "item-1", "gates_run": 1}
     assert gates.calls[0] == ("pytest",)
     assert gates.calls[-1] == ("git", "diff", "HEAD")
     assert any(event.kind == "VerdictRendered" for event in ledger.recorded)
+
+    enqueued = await jobs.claim(job.project_id, owner="t", lease=timedelta(seconds=5))
+    assert enqueued is not None
+    assert enqueued.kind == "build.integrate"
+    assert enqueued.work_item_id == "item-1"
 
 
 async def test_rejects_wrong_kind_and_missing_work_item_id(tmp_path: Path) -> None:
@@ -74,6 +87,7 @@ async def test_rejects_wrong_kind_and_missing_work_item_id(tmp_path: Path) -> No
         gates=FakeGateRunner(),
         reviewer=reviewer,
         ledger=FakeLedger(),
+        jobs=FakeJobRepository(),
     )
 
     wrong_kind = replace(make_job(uuid4()), kind="build.implement")
@@ -93,6 +107,7 @@ async def test_rejects_a_reviewer_that_matches_the_implementer(tmp_path: Path) -
         gates=FakeGateRunner(),
         reviewer=reviewer,
         ledger=FakeLedger(),
+        jobs=FakeJobRepository(),
     )
 
     job = _job(requirement={"implementer_engine_id": "claudeloop"})
@@ -105,7 +120,11 @@ async def test_a_failing_gate_command_fails_as_work(tmp_path: Path) -> None:
     reviewer = ScriptedEngine(descriptor=CLAUDELOOP, base_dir=tmp_path / "engine")
     gates = FakeGateRunner(returncode=1, stderr="assertion failed")
     handler = BuildVerifyHandler(
-        worktrees=FakeWorktrees(tmp_path), gates=gates, reviewer=reviewer, ledger=FakeLedger()
+        worktrees=FakeWorktrees(tmp_path),
+        gates=gates,
+        reviewer=reviewer,
+        ledger=FakeLedger(),
+        jobs=FakeJobRepository(),
     )
 
     outcome = await handler.handle(_job())
@@ -124,6 +143,7 @@ async def test_no_criteria_checked_fails_as_work(tmp_path: Path) -> None:
         gates=FakeGateRunner(),
         reviewer=reviewer,
         ledger=FakeLedger(),
+        jobs=FakeJobRepository(),
     )
 
     job = _job(payload={"verification": {"commands": (), "criteria_checked": ()}})
@@ -146,6 +166,7 @@ async def test_reviewer_rejection_fails_as_work(tmp_path: Path) -> None:
         gates=FakeGateRunner(),
         reviewer=reviewer,
         ledger=FakeLedger(),
+        jobs=FakeJobRepository(),
     )
 
     job = _job(requirement={"implementer_engine_id": "claudeloop"})

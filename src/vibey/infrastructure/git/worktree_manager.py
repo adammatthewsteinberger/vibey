@@ -59,6 +59,18 @@ class GitWorktreeManager:
             await self._git("worktree", "add", "-b", branch, str(path), base_ref)
         return path
 
+    async def ensure(self, item_id: str, *, base_ref: str = "HEAD") -> Path:
+        """Like create(), but never wipes an already-registered worktree --
+        for callers (the integration branch) that accumulate state across
+        many calls and must not have create()'s self-healing wipe undo a
+        prior successful merge."""
+        path = self._repo_root / worktree_subpath(self._cycle, item_id)
+        if path.exists() and path.resolve() in {
+            Path(p).resolve() for p in await self._list_worktree_paths()
+        }:
+            return path
+        return await self.create(item_id, base_ref=base_ref)
+
     async def remove(self, item_id: str) -> None:
         path = self._repo_root / worktree_subpath(self._cycle, item_id)
         if path.exists():

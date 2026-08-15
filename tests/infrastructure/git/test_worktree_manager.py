@@ -178,3 +178,23 @@ async def test_git_failure_raises_worktree_error_with_argv_and_stderr(repo: Path
 
     assert "worktree" in excinfo.value.argv
     assert excinfo.value.stderr
+
+
+async def test_ensure_creates_a_worktree_that_does_not_exist_yet(repo: Path) -> None:
+    manager = GitWorktreeManager(repo, cycle=1)
+
+    path = await manager.ensure("integration")
+
+    assert path.exists()
+    assert (path / "README.md").exists()
+
+
+async def test_ensure_does_not_wipe_an_already_registered_worktree(repo: Path) -> None:
+    manager = GitWorktreeManager(repo, cycle=1)
+    first = await manager.create("integration")
+    (first / "accumulated-state.txt").write_text("a prior merge's result")
+
+    second = await manager.ensure("integration")
+
+    assert second == first
+    assert (second / "accumulated-state.txt").exists()

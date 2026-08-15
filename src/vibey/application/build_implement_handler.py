@@ -84,7 +84,8 @@ class BuildImplementHandler:
                 )
             )
 
-        worktree_path = await self._worktrees.create(job.work_item_id)
+        base_ref = str(job.payload.get("base_ref", "HEAD"))
+        worktree_path = await self._worktrees.create(job.work_item_id, base_ref=base_ref)
         await self._provisioner.provision(worktree_path, self._provision_spec)
 
         run_id = uuid4()
@@ -115,7 +116,7 @@ class BuildImplementHandler:
                 phase=Phase.BUILD,
                 kind="build.verify",
                 idempotency_key=idempotency_key(
-                    job.project_id, job.cycle, "build.verify", job.work_item_id
+                    job.project_id, job.cycle, "build.verify", str(job.id)
                 ),
                 work_item_id=job.work_item_id,
                 payload=job.payload,

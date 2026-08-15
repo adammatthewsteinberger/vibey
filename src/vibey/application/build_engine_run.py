@@ -20,7 +20,7 @@ class BuildLedger(Protocol):
         project_id: UUID,
         cycle: int,
         job_id: UUID,
-        engine_id: EngineId,
+        engine_id: EngineId | None,
         correlation_id: UUID,
         event: EngineEvent,
     ) -> None: ...

@@ -1,7 +1,8 @@
-"""Real-Postgres, real-git, real-worktree end-to-end for build.implement and
-build.verify: decompose -> worktree -> provision -> implement -> gates ->
-diff review -> ledger, driven entirely through the actual queue (WorkerLoop),
-same shape as test_design_interview_end_to_end.py."""
+"""Real-Postgres, real-git, real-worktree end-to-end covering M6's whole
+implement->verify->integrate loop: decompose -> worktree -> provision ->
+implement -> gates -> diff review -> merge into the integration branch ->
+post-merge gates -> ledger, driven entirely through the actual queue
+(WorkerLoop), same shape as test_design_interview_end_to_end.py."""
 
 from datetime import UTC, datetime
 from pathlib import Path
@@ -10,6 +11,7 @@ import asyncpg
 
 from vibey.application.build_decompose_handler import BuildDecomposeHandler
 from vibey.application.build_implement_handler import BuildImplementHandler
+from vibey.application.build_integrate_handler import BuildIntegrateHandler
 from vibey.application.build_verify_handler import BuildVerifyHandler
 from vibey.application.dto import EnqueueRequest
 from vibey.application.job_dispatcher import JobDispatcher
@@ -29,6 +31,7 @@ from vibey.infrastructure.db.project_repository import PostgresProjectRepository
 from vibey.infrastructure.engines.descriptors import CLAUDELOOP, CODEXLOOP
 from vibey.infrastructure.engines.scripted import ScriptedEngine
 from vibey.infrastructure.git.clean_env import CleanGitEnvSubprocessExecutor
+from vibey.infrastructure.git.integration_branch import IntegrationBranch
 from vibey.infrastructure.git.worktree_manager import GitWorktreeManager
 from vibey.infrastructure.provision.agent_surface import AgentSurfaceProvisioner
 
@@ -58,7 +61,7 @@ async def _run(*argv: str) -> None:
     assert result.returncode == 0, result.stderr
 
 
-async def test_decompose_implement_verify_run_end_to_end_through_the_queue(
+async def test_decompose_implement_verify_integrate_run_end_to_end_through_the_queue(
     migrated_pool: asyncpg.Pool, tmp_path: Path
 ) -> None:
     repo_path = tmp_path / "repo"
@@ -116,6 +119,14 @@ async def test_decompose_implement_verify_run_end_to_end_through_the_queue(
                 gates=SubprocessGateRunner(),
                 reviewer=ScriptedEngine(descriptor=CODEXLOOP, base_dir=tmp_path / "engine"),
                 ledger=PostgresBuildLedger(ledger_repo),
+                jobs=jobs,
+            ),
+            "build.integrate": BuildIntegrateHandler(
+                integration=IntegrationBranch(repo_path, cycle=1),
+                gates=SubprocessGateRunner(),
+                ledger=PostgresBuildLedger(ledger_repo),
+                jobs=jobs,
+                clock=FixedClock(),
             ),
         }
     )
@@ -124,6 +135,7 @@ async def test_decompose_implement_verify_run_end_to_end_through_the_queue(
     assert await worker.run_once(project_id)  # build.decompose
     assert await worker.run_once(project_id)  # build.implement
     assert await worker.run_once(project_id)  # build.verify
+    assert await worker.run_once(project_id)  # build.integrate
 
     async with migrated_pool.acquire() as conn:
         rows = await conn.fetch("SELECT kind, state FROM job WHERE project_id = $1", project_id)
@@ -132,7 +144,11 @@ async def test_decompose_implement_verify_run_end_to_end_through_the_queue(
         "build.decompose": JobState.SUCCEEDED.value,
         "build.implement": JobState.SUCCEEDED.value,
         "build.verify": JobState.SUCCEEDED.value,
+        "build.integrate": JobState.SUCCEEDED.value,
     }
+
+    integration_path = repo_path / ".vibey" / "worktrees" / "1" / "integration"
+    assert integration_path.exists()
 
     worktree = repo_path / ".vibey" / "worktrees" / "1" / "skeleton"
     assert worktree.exists()

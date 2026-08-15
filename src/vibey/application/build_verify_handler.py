@@ -13,6 +13,11 @@ Verification is not "the model says it's fine." In order:
    silently passes.
 3. Only then, a diff review by a rotated engine at LOW effort, judged by
    the same VerdictRendered.complete convention build.implement uses.
+
+On success, enqueues build.integrate (task 6.8), keyed to this verify job's
+own id so a repair verify job (a fresh row, not a retry of this one) always
+gets its own integrate job rather than colliding with a prior attempt's
+idempotency key.
 """
 
 import shlex
@@ -23,12 +28,13 @@ from typing import Protocol
 from uuid import uuid4
 
 from vibey.application.build_engine_run import BuildLedger, run_and_record
-from vibey.application.dto import JobRecord, RunSpec
-from vibey.application.ports import EngineAdapter
+from vibey.application.dto import EnqueueRequest, JobRecord, RunSpec
+from vibey.application.ports import EngineAdapter, JobRepository
 from vibey.application.worker import Failure, Outcome, Success
 from vibey.domain.effort import Effort
 from vibey.domain.engine import IsolationLevel
-from vibey.domain.job import FailureClass
+from vibey.domain.job import FailureClass, idempotency_key
+from vibey.domain.phase import Phase
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,11 +60,13 @@ class BuildVerifyHandler:
         gates: GateRunner,
         reviewer: EngineAdapter,
         ledger: BuildLedger,
+        jobs: JobRepository,
     ) -> None:
         self._worktrees = worktrees
         self._gates = gates
         self._reviewer = reviewer
         self._ledger = ledger
+        self._jobs = jobs
 
     async def handle(self, job: JobRecord) -> Outcome:
         if job.kind != "build.verify":
@@ -106,6 +114,21 @@ class BuildVerifyHandler:
 
         if not run_outcome.complete:
             return Failure(FailureClass.WORK, "diff review did not approve this work item")
+
+        await self._jobs.enqueue(
+            EnqueueRequest(
+                project_id=job.project_id,
+                cycle=job.cycle,
+                phase=Phase.BUILD,
+                kind="build.integrate",
+                idempotency_key=idempotency_key(
+                    job.project_id, job.cycle, "build.integrate", str(job.id)
+                ),
+                work_item_id=job.work_item_id,
+                payload=job.payload,
+                depends_on=(job.id,),
+            )
+        )
         return Success({"work_item_id": job.work_item_id, "gates_run": len(commands)})
 
 
