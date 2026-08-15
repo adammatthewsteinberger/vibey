@@ -16,10 +16,15 @@ class Effort(IntEnum):
 
 PHASE_BASE_EFFORT: Mapping[Phase, Effort] = {
     Phase.DESIGN: Effort.HIGH,
+    Phase.VISUAL_DESIGN: Effort.HIGH,
     Phase.BUILD: Effort.LOW,
     Phase.REVIEW: Effort.HIGH,
+    Phase.DEPLOY_DESIGN: Effort.HIGH,
+    Phase.DEPLOY_EXECUTE: Effort.LOW,
+    Phase.DEPLOY_REVIEW: Effort.HIGH,
     Phase.DEPLOY: Effort.LOW,
 }
+
 
 # attempt -> effort, for Phase 2's per-item escalation ladder (1-based attempts)
 BUILD_LADDER: tuple[Effort, ...] = (

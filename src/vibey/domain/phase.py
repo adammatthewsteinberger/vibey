@@ -1,5 +1,5 @@
 """The phase machine: legal transitions, guards, and the review loop-back
-routing decision from ADR-0010."""
+routing decision from ADR-0010 and ADR-0013/ADR-0014."""
 
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -17,9 +17,17 @@ class Phase(StrEnum):
     VISUAL_DESIGN = "visual_design"  # optional, unnumbered interstitial
     BUILD = "build"
     REVIEW = "review"
-    DEPLOY = "deploy"
+    DEPLOY_DESIGN = "deploy_design"  # Phase ④
+    DEPLOY_EXECUTE = "deploy_execute"  # Phase ⑤
+    DEPLOY_REVIEW = "deploy_review"  # Phase ⑥
+    DEPLOY = "deploy"  # legacy single-phase bridge
     DONE = "done"
     ABANDONED = "abandoned"
+
+
+class CompletionMode(StrEnum):
+    LOCAL = "local"
+    DEPLOYED = "deployed"
 
 
 class VisualDecision(StrEnum):
@@ -35,7 +43,15 @@ class DeploymentDecision(StrEnum):
 
 
 TERMINAL: frozenset[Phase] = frozenset({Phase.DONE, Phase.ABANDONED})
-INTERACTIVE: frozenset[Phase] = frozenset({Phase.DESIGN, Phase.VISUAL_DESIGN, Phase.REVIEW})
+INTERACTIVE: frozenset[Phase] = frozenset(
+    {
+        Phase.DESIGN,
+        Phase.VISUAL_DESIGN,
+        Phase.REVIEW,
+        Phase.DEPLOY_DESIGN,
+        Phase.DEPLOY_REVIEW,
+    }
+)
 
 # The legal edges of the phase machine, independent of guard evaluation.
 _EDGES: dict[Phase, frozenset[Phase]] = {
@@ -43,9 +59,31 @@ _EDGES: dict[Phase, frozenset[Phase]] = {
     Phase.DESIGN: frozenset({Phase.BUILD, Phase.VISUAL_DESIGN, Phase.ABANDONED}),
     Phase.VISUAL_DESIGN: frozenset({Phase.BUILD, Phase.ABANDONED}),
     Phase.BUILD: frozenset({Phase.REVIEW, Phase.DESIGN, Phase.ABANDONED}),
-    Phase.REVIEW: frozenset({Phase.DONE, Phase.DESIGN, Phase.BUILD, Phase.ABANDONED}),
-    Phase.DONE: frozenset({Phase.DEPLOY}),
-    Phase.DEPLOY: frozenset({Phase.DONE, Phase.REVIEW}),
+    Phase.REVIEW: frozenset(
+        {
+            Phase.DONE,
+            Phase.DESIGN,
+            Phase.BUILD,
+            Phase.DEPLOY_DESIGN,
+            Phase.DEPLOY,
+            Phase.ABANDONED,
+        }
+    ),
+    Phase.DEPLOY: frozenset({Phase.DONE, Phase.REVIEW, Phase.DEPLOY_DESIGN, Phase.ABANDONED}),
+    Phase.DEPLOY_DESIGN: frozenset({Phase.DEPLOY_EXECUTE, Phase.DEPLOY_DESIGN, Phase.ABANDONED}),
+    Phase.DEPLOY_EXECUTE: frozenset({Phase.DEPLOY_REVIEW, Phase.DEPLOY_EXECUTE, Phase.ABANDONED}),
+    Phase.DEPLOY_REVIEW: frozenset(
+        {
+            Phase.DONE,
+            Phase.DEPLOY_DESIGN,
+            Phase.DEPLOY_EXECUTE,
+            Phase.DESIGN,
+            Phase.BUILD,
+            Phase.REVIEW,
+            Phase.ABANDONED,
+        }
+    ),
+    Phase.DONE: frozenset({Phase.DEPLOY, Phase.DEPLOY_DESIGN}),
     Phase.ABANDONED: frozenset(),
 }
 
@@ -83,6 +121,14 @@ class TransitionEvidence:
     visual_decision: VisualDecision | None = None
     visual_inventory_complete: bool = False
     deployment_decision: DeploymentDecision | None = None
+    completion_mode: CompletionMode | None = None
+    deployment_spec_accepted: bool = False
+    deployment_consent_recorded: bool = False
+    deployment_verified: bool = False
+    deployment_requires_user_input: bool = False
+    deployment_demo_accepted: bool = False
+    deployment_attempts: int = 0
+    max_deployment_attempts: int = 5
 
 
 @dataclass(frozen=True, slots=True)
@@ -187,6 +233,42 @@ def _guard_done_to_deploy(evidence: TransitionEvidence) -> tuple[str, ...]:
     return ()
 
 
+def _guard_done_to_deploy_design(evidence: TransitionEvidence) -> tuple[str, ...]:
+    if evidence.deployment_decision is not DeploymentDecision.OPTED_IN:
+        return ("DEPLOY_DESIGN requires explicit deployment opt-in",)
+    return ()
+
+
+def _guard_review_to_deploy_design(evidence: TransitionEvidence) -> tuple[str, ...]:
+    if evidence.deployment_decision is not DeploymentDecision.OPTED_IN:
+        return ("DEPLOY_DESIGN requires explicit deployment opt-in",)
+    return ()
+
+
+def _guard_deploy_design_to_deploy_execute(evidence: TransitionEvidence) -> tuple[str, ...]:
+    violations = []
+    if not evidence.deployment_spec_accepted:
+        violations.append("deployment specification has not been accepted")
+    if not evidence.deployment_consent_recorded:
+        violations.append("deployment consent has not been recorded")
+    return tuple(violations)
+
+
+def _guard_deploy_execute_to_deploy_review(evidence: TransitionEvidence) -> tuple[str, ...]:
+    if not (evidence.deployment_verified or evidence.deployment_requires_user_input):
+        return (
+            "DEPLOY_EXECUTE -> DEPLOY_REVIEW requires verified deployment or "
+            "classified user-input needed",
+        )
+    return ()
+
+
+def _guard_deploy_review_to_done(evidence: TransitionEvidence) -> tuple[str, ...]:
+    if not evidence.deployment_demo_accepted:
+        return ("DEPLOY_REVIEW -> DONE requires deployment demo to be accepted",)
+    return ()
+
+
 _GUARDS = {
     (Phase.DESIGN, Phase.BUILD): _guard_design_to_build,
     (Phase.DESIGN, Phase.VISUAL_DESIGN): _guard_design_to_visual_design,
@@ -194,7 +276,12 @@ _GUARDS = {
     (Phase.BUILD, Phase.REVIEW): _guard_build_to_review,
     (Phase.BUILD, Phase.DESIGN): _guard_build_to_design,
     (Phase.REVIEW, Phase.DONE): _guard_review_to_done,
+    (Phase.REVIEW, Phase.DEPLOY_DESIGN): _guard_review_to_deploy_design,
     (Phase.DONE, Phase.DEPLOY): _guard_done_to_deploy,
+    (Phase.DONE, Phase.DEPLOY_DESIGN): _guard_done_to_deploy_design,
+    (Phase.DEPLOY_DESIGN, Phase.DEPLOY_EXECUTE): _guard_deploy_design_to_deploy_execute,
+    (Phase.DEPLOY_EXECUTE, Phase.DEPLOY_REVIEW): _guard_deploy_execute_to_deploy_review,
+    (Phase.DEPLOY_REVIEW, Phase.DONE): _guard_deploy_review_to_done,
 }
 
 
@@ -215,11 +302,7 @@ def evaluate_transition(state: PhaseState, request: TransitionRequest) -> Transi
 
 
 def next_phase_after_design(*, visual_decision: VisualDecision, spec_is_buildable: bool) -> Phase:
-    """Choose the optional visual interstitial or the direct BUILD path.
-
-    Never defaults to VISUAL_DESIGN: only an explicit OPTED_IN decision enters it,
-    matching the "no default is treated as yes" rule from the design docs.
-    """
+    """Choose the optional visual interstitial or the direct BUILD path."""
     if not spec_is_buildable:
         raise InvalidPhaseError("cannot route out of DESIGN with a non-buildable spec")
     if visual_decision is VisualDecision.OPTED_IN:
@@ -236,3 +319,25 @@ def next_phase_after_review(findings: Sequence[FindingRef], *, strict_loopback: 
     if any(f.ambiguity is Ambiguity.NEEDS_CLARIFICATION for f in findings):
         return Phase.DESIGN
     return Phase.BUILD
+
+
+def next_phase_after_deploy_review(
+    findings: Sequence[FindingRef] = (),
+    *,
+    demo_accepted: bool = False,
+    target_changed: bool = False,
+    retry_unambiguous: bool = False,
+    code_defect: bool = False,
+) -> Phase:
+    """The routing decision from ADR-0013 for Phase ⑥ DEPLOY REVIEW."""
+    if demo_accepted or (
+        not findings and not target_changed and not retry_unambiguous and not code_defect
+    ):
+        return Phase.DONE
+    if code_defect:
+        return Phase.DESIGN
+    if target_changed:
+        return Phase.DEPLOY_DESIGN
+    if retry_unambiguous:
+        return Phase.DEPLOY_EXECUTE
+    return Phase.DONE

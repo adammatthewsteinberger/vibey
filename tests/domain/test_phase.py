@@ -40,7 +40,13 @@ def test_phase_state_rejects_max_cycles_below_one() -> None:
 
 def test_terminal_and_interactive_sets() -> None:
     assert {Phase.DONE, Phase.ABANDONED} == TERMINAL
-    assert {Phase.DESIGN, Phase.VISUAL_DESIGN, Phase.REVIEW} == INTERACTIVE
+    assert {
+        Phase.DESIGN,
+        Phase.VISUAL_DESIGN,
+        Phase.REVIEW,
+        Phase.DEPLOY_DESIGN,
+        Phase.DEPLOY_REVIEW,
+    } == INTERACTIVE
 
 
 def test_design_to_build_denied_without_acceptance_criteria() -> None:
