@@ -4,10 +4,18 @@ same position design.interview's "interviewer" was in after M5), worktree
 creation, agent-surface provisioning, run, tail, and ledger persistence.
 
 Effort escalates by attempt using the same pure ladder domain/effort.py
-built in M1 (task 6.6's mechanism, wired in now because it was already
-sitting there unused) -- an exhausted ladder parks for a human gate rather
-than failing outright, since attempt 7 means autonomous escalation has
-nothing left to try.
+built in M1 -- an exhausted ladder parks for a human gate rather than
+failing outright, since attempt 7 means autonomous escalation has nothing
+left to try.
+
+Forced rotation (task 6.6): when an attempt's effort crosses a tier
+boundary (attempts 3 and 5 per BUILD_LADDER), ``forces_rotation`` returns
+True and the handler enforces that the injected engine differs from the
+previous attempt's engine.  The constraint is checked, not performed --
+``BuildImplementHandler`` receives a single ``EngineAdapter``, so real
+rotation (selecting from a pool) is a caller responsibility not yet built
+in BUILD.  This is the same "documented, not faked" approach
+``build.verify``'s must-differ-from-implementer constraint uses.
 
 On success, enqueues build.verify (task 6.5) against the same worktree, so
 implement never leaves a completed item with no next step queued -- the same
@@ -25,7 +33,7 @@ from vibey.application.build_engine_run import BuildLedger, run_and_record
 from vibey.application.dto import EnqueueRequest, HumanGateRequest, JobRecord, RunSpec
 from vibey.application.ports import Clock, EngineAdapter, JobRepository
 from vibey.application.worker import Defer, Failure, Outcome, Park, Success
-from vibey.domain.effort import PHASE_BASE_EFFORT, effort_for_attempt
+from vibey.domain.effort import PHASE_BASE_EFFORT, effort_for_attempt, forces_rotation
 from vibey.domain.engine import IsolationLevel
 from vibey.domain.errors import EscalationExhausted
 from vibey.domain.job import FailureClass, idempotency_key
@@ -71,8 +79,9 @@ class BuildImplementHandler:
         if job.work_item_id is None:
             return Failure(FailureClass.VIBEY, "build.implement job is missing work_item_id")
 
+        base_effort = PHASE_BASE_EFFORT[Phase.BUILD]
         try:
-            effort = effort_for_attempt(PHASE_BASE_EFFORT[Phase.BUILD], job.attempts)
+            effort = effort_for_attempt(base_effort, job.attempts)
         except EscalationExhausted:
             return Park(
                 HumanGateRequest(
@@ -83,6 +92,18 @@ class BuildImplementHandler:
                     ),
                 )
             )
+
+        previous_engine_id = job.payload.get("previous_engine_id")
+        if previous_engine_id is not None and job.attempts > 1:
+            previous_effort = effort_for_attempt(base_effort, job.attempts - 1)
+            if forces_rotation(previous_effort, effort):
+                current_id = self._engine.descriptor.engine_id.value
+                if current_id == previous_engine_id:
+                    return Failure(
+                        FailureClass.VIBEY,
+                        f"forced rotation required at attempt {job.attempts} "
+                        f"but engine {current_id!r} matches the previous attempt",
+                    )
 
         base_ref = str(job.payload.get("base_ref", "HEAD"))
         worktree_path = await self._worktrees.create(job.work_item_id, base_ref=base_ref)

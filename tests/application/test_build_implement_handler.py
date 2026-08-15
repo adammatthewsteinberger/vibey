@@ -3,6 +3,8 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from uuid import uuid4
 
+import pytest
+
 from tests.application.fakes import FakeJobRepository, make_job
 from vibey.application.build_implement_handler import BuildImplementHandler
 from vibey.application.dto import EngineEvent
@@ -147,6 +149,62 @@ async def test_capacity_rejected_event_defers_the_job(tmp_path: Path) -> None:
     assert outcome.retry_at == FixedClock().now() + timedelta(minutes=5)
     assert "capacity rejection" in outcome.detail
     assert any(event.kind == "CapacityRejected" for event in ledger.recorded)
+
+
+@pytest.mark.parametrize("attempt", [3, 5])
+async def test_forced_rotation_rejects_same_engine(tmp_path: Path, attempt: int) -> None:
+    """At attempts 3 and 5 the effort tier crosses a boundary, so forces_rotation
+    is True.  The handler must reject execution if the injected engine matches the
+    previous attempt's engine."""
+    engine = ScriptedEngine(descriptor=CLAUDELOOP, base_dir=tmp_path / "engine")
+    handler, _, _ = _handler(tmp_path, engine=engine, ledger=FakeLedger())
+
+    job = _job(
+        attempts=attempt,
+        payload={"title": "t", "previous_engine_id": "claudeloop"},
+    )
+    outcome = await handler.handle(job)
+
+    assert isinstance(outcome, Failure)
+    assert outcome.failure_class is FailureClass.VIBEY
+    assert "rotation" in outcome.detail.lower()
+
+
+@pytest.mark.parametrize("attempt", [3, 5])
+async def test_forced_rotation_allows_different_engine(tmp_path: Path, attempt: int) -> None:
+    """At rotation-forcing attempts, a *different* engine proceeds normally."""
+    engine = ScriptedEngine(descriptor=CLAUDELOOP, base_dir=tmp_path / "engine")
+    ledger = FakeLedger()
+    handler, _, _ = _handler(tmp_path, engine=engine, ledger=ledger)
+
+    job = _job(
+        attempts=attempt,
+        payload={"title": "t", "previous_engine_id": "codexloop"},
+    )
+    outcome = await handler.handle(job)
+
+    assert isinstance(outcome, Success)
+
+
+@pytest.mark.parametrize("attempt", [1, 2, 4, 6])
+async def test_no_forced_rotation_at_non_crossing_attempts(tmp_path: Path, attempt: int) -> None:
+    """At attempts where effort does NOT cross a tier, same engine is fine."""
+    engine = ScriptedEngine(descriptor=CLAUDELOOP, base_dir=tmp_path / "engine")
+    ledger = FakeLedger()
+    handler, _, _ = _handler(tmp_path, engine=engine, ledger=ledger)
+
+    job = _job(
+        attempts=attempt,
+        payload={"title": "t", "previous_engine_id": "claudeloop"},
+    )
+    outcome = await handler.handle(job)
+
+    is_rotation_failure = (
+        isinstance(outcome, Failure)
+        and outcome.failure_class is FailureClass.VIBEY
+        and "rotation" in outcome.detail.lower()
+    )
+    assert not is_rotation_failure
 
 
 async def test_run_without_a_completion_verdict_fails_as_work(tmp_path: Path) -> None:
