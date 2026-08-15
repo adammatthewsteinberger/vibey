@@ -119,13 +119,19 @@ def configure_logging(
         )
         root.addHandler(file_handler)
 
-    # Third-party loggers stay quiet until -vv. Raising their floor rather
-    # than removing their handlers keeps a genuine library error visible.
-    third_party_level = (
-        level_value if plan.include_third_party else max(level_value, logging.WARNING)
-    )
+    apply_third_party_level(plan)
+
+
+def apply_third_party_level(plan: LogPlan) -> None:
+    """Raise third-party loggers' floor unless -vv asked for them.
+
+    Raising the floor rather than removing their handlers keeps a genuine
+    library error visible at any verbosity.
+    """
+    level_value = getattr(logging, plan.level, logging.INFO)
+    target = level_value if plan.include_third_party else max(level_value, logging.WARNING)
     for name in _THIRD_PARTY_LOGGERS:
-        logging.getLogger(name).setLevel(third_party_level)
+        logging.getLogger(name).setLevel(target)
 
 
 def get_logger(**initial_context: Any) -> BoundLogger:
