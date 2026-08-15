@@ -9,15 +9,12 @@ from pathlib import Path
 import pytest
 
 from vibey.infrastructure.engines.claudeloop_process import CommandResult
-from vibey.infrastructure.git.worktree_manager import (
-    GitWorktreeManager,
-    WorktreeError,
-    _CleanEnvSubprocessExecutor,
-)
+from vibey.infrastructure.git.clean_env import CleanGitEnvSubprocessExecutor
+from vibey.infrastructure.git.worktree_manager import GitWorktreeManager, WorktreeError
 
 
 async def _run(*argv: str) -> CommandResult:
-    return await _CleanEnvSubprocessExecutor().execute(argv)
+    return await CleanGitEnvSubprocessExecutor().execute(argv)
 
 
 def _clean_env() -> dict[str, str]:

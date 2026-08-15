@@ -10,14 +10,13 @@ best-effort cleanup step someone has to remember to call, but every create
 healing whatever it finds first.
 """
 
-import asyncio
-import os
 import shutil
 from pathlib import Path
 
 from vibey.domain.errors import VibeyError
 from vibey.domain.worktree import branch_name, worktree_subpath
-from vibey.infrastructure.engines.claudeloop_process import CommandExecutor, CommandResult
+from vibey.infrastructure.engines.claudeloop_process import CommandExecutor
+from vibey.infrastructure.git.clean_env import CleanGitEnvSubprocessExecutor
 
 
 class WorktreeError(VibeyError):
@@ -25,37 +24,6 @@ class WorktreeError(VibeyError):
         self.argv = argv
         self.stderr = stderr
         super().__init__(f"{' '.join(argv)} failed: {stderr.strip()}")
-
-
-class _CleanEnvSubprocessExecutor:
-    """Like AsyncSubprocessExecutor, but strips GIT_* environment variables.
-
-    A caller running inside a git hook (pre-commit, itself invoked from
-    `git commit`) has GIT_DIR/GIT_INDEX_FILE/GIT_WORK_TREE etc. set in its
-    own environment, pointing at *that* repository's plumbing. Subprocesses
-    inherit the parent environment by default, so an unfiltered `git -C
-    <other repo> ...` call silently operates against the wrong repository
-    instead of the one -C names -- GIT_DIR overrides discovery outright.
-    Only this manager's own git invocations need this; the shared
-    AsyncSubprocessExecutor (used for ClaudeLoop, which is never itself a
-    nested git invocation) is left untouched.
-    """
-
-    async def execute(self, argv: tuple[str, ...]) -> CommandResult:
-        env = {key: value for key, value in os.environ.items() if not key.startswith("GIT_")}
-        process = await asyncio.create_subprocess_exec(
-            *argv,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-            env=env,
-        )
-        try:
-            stdout, stderr = await process.communicate()
-        except asyncio.CancelledError:
-            process.terminate()
-            await process.wait()
-            raise
-        return CommandResult(process.returncode or 0, stdout.decode(), stderr.decode())
 
 
 class GitWorktreeManager:
@@ -68,7 +36,7 @@ class GitWorktreeManager:
     ) -> None:
         self._repo_root = repo_root
         self._cycle = cycle
-        self._executor = executor or _CleanEnvSubprocessExecutor()
+        self._executor = executor or CleanGitEnvSubprocessExecutor()
 
     async def create(self, item_id: str, *, base_ref: str = "HEAD") -> Path:
         path = self._repo_root / worktree_subpath(self._cycle, item_id)
