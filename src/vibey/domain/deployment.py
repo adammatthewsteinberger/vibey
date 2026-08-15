@@ -19,6 +19,12 @@ class AzureTargetScope:
     region: str
     tags: Mapping[str, str] = field(default_factory=dict)
 
+    def digest(self) -> str:
+        raw = (
+            f"{self.tenant_id}:{self.subscription_id}:{self.resource_group}:{self.environment}"
+        ).encode()
+        return hashlib.sha256(raw).hexdigest()
+
 
 @dataclass(slots=True, frozen=True)
 class IdentityAuthority:
@@ -71,12 +77,7 @@ class DeploymentSpec:
 
     def scope_digest(self) -> str:
         """Returns deterministic SHA256 hex digest of the target deployment scope."""
-        target = self.target_scope
-        payload = (
-            f"{target.tenant_id}:{target.subscription_id}:{target.resource_group}:"
-            f"{target.environment}:{target.region}"
-        )
-        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+        return self.target_scope.digest()
 
     def validate(self) -> list[str]:
         """Validates that all mandatory fields are present and safe."""
