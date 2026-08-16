@@ -251,7 +251,7 @@ def test_watch_command_with_no_projects() -> None:
     from unittest.mock import AsyncMock, patch
 
     # Mock the TUI app so it doesn't actually start
-    with patch("vibey.cli.main.VibeyDashboardApp") as mock_app:
+    with patch("vibey.tui.dashboard.VibeyDashboardApp") as mock_app:
         mock_app.return_value.run_async = AsyncMock()
         res = runner.invoke(app, ["watch"])
         assert res.exit_code == 1, res.output
@@ -264,7 +264,7 @@ def test_watch_command_with_unknown_project_id() -> None:
     from unittest.mock import AsyncMock, patch
 
     unknown_id = uuid4()
-    with patch("vibey.cli.main.VibeyDashboardApp") as mock_app:
+    with patch("vibey.tui.dashboard.VibeyDashboardApp") as mock_app:
         mock_app.return_value.run_async = AsyncMock()
         res = runner.invoke(app, ["watch", str(unknown_id)])
         assert res.exit_code == 1, res.output
