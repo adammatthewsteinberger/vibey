@@ -14,5 +14,9 @@ jobs:
     steps:
       - uses: googleapis/release-please-action@v4
         with:
+          # Repo default branch is develop (gitflow), but releases must
+          # target main only — without this, release-please opens its
+          # release PR against develop and nothing ever gets tagged.
+          target-branch: main
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
