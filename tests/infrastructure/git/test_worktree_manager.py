@@ -189,6 +189,22 @@ async def test_ensure_creates_a_worktree_that_does_not_exist_yet(repo: Path) -> 
     assert (path / "README.md").exists()
 
 
+async def test_list_worktree_paths_failure_raises_worktree_error(repo: Path) -> None:
+    manager = GitWorktreeManager(repo, cycle=1)
+    path = await manager.create("item-1")
+    assert path.exists()
+
+    class FailingListExecutor:
+        async def execute(self, argv: tuple[str, ...]) -> CommandResult:
+            if "list" in argv and "--porcelain" in argv:
+                return CommandResult(128, "", "fatal: unable to list worktrees\n")
+            return await CleanGitEnvSubprocessExecutor().execute(argv)
+
+    manager._executor = FailingListExecutor()
+    with pytest.raises(WorktreeError, match="worktree"):
+        await manager.ensure("item-1")
+
+
 async def test_ensure_does_not_wipe_an_already_registered_worktree(repo: Path) -> None:
     manager = GitWorktreeManager(repo, cycle=1)
     first = await manager.create("integration")

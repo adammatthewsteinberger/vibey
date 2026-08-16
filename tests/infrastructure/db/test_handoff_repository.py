@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 import asyncpg
+import pytest
 
 from vibey.domain.engine import EngineId
 from vibey.domain.handoff import (
@@ -129,6 +130,31 @@ async def test_list_for_pair_is_queryable_and_ordered(
 
     assert len(records) == 2
     assert [r["envelope"]["reason"] for r in records] == ["rotation", "escalation"]
+
+
+async def test_get_returns_none_for_nonexistent_handoff(
+    migrated_pool: asyncpg.Pool, project_id: UUID
+) -> None:
+    repo = PostgresHandoffRepository(migrated_pool)
+    assert await repo.get(uuid4()) is None
+
+
+def test_json_default_handles_enum_values() -> None:
+    from enum import StrEnum
+
+    from vibey.infrastructure.db.handoff_repository import _json_default
+
+    class Color(StrEnum):
+        RED = "red"
+
+    assert _json_default(Color.RED) == "red"
+
+
+def test_json_default_raises_for_unserializable_type() -> None:
+    from vibey.infrastructure.db.handoff_repository import _json_default
+
+    with pytest.raises(TypeError, match="not JSON serializable"):
+        _json_default(object())
 
 
 async def test_list_for_pair_handles_synthesized_from_engine_none(

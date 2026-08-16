@@ -272,3 +272,225 @@ def test_constructor_rejects_missing_or_excessive_safety_caps(turns: int, dollar
             max_turns=turns,
             max_dollars=dollars,
         )
+
+
+# --- AsyncSubprocessExecutor normal path ------------------------------------
+
+
+async def test_async_subprocess_executor_normal_path(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    class FakeProc:
+        returncode = 0
+
+        async def communicate(self) -> tuple[bytes, bytes]:
+            return b"output\n", b"err\n"
+
+    async def fake_create(*args, **kwargs):  # type: ignore[no-untyped-def]
+        return FakeProc()
+
+    monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create)
+    result = await AsyncSubprocessExecutor().execute(("echo", "hi"))
+    assert result.returncode == 0
+    assert result.stdout == "output\n"
+    assert result.stderr == "err\n"
+
+
+# --- _capacity_deferred edge cases ------------------------------------------
+
+
+async def test_capacity_deferred_returns_none_without_run_id(tmp_path: Path) -> None:
+    process = ClaudeLoopProcess(
+        executor=FakeExecutor(CommandResult(1, "", "no run id here\n")),
+        max_turns=1,
+        max_dollars=0.1,
+    )
+    with pytest.raises(RuntimeError, match="no run id here"):
+        await process.run(spec(tmp_path))
+
+
+async def test_capacity_deferred_returns_none_when_events_file_missing(tmp_path: Path) -> None:
+    run_id = "20260814T120000Z-abcd1234"
+    process = ClaudeLoopProcess(
+        executor=FakeExecutor(CommandResult(1, "", f"Run id: {run_id}\nfailed")),
+        max_turns=1,
+        max_dollars=0.1,
+    )
+    with pytest.raises(RuntimeError, match="failed"):
+        await process.run(spec(tmp_path))
+
+
+async def test_capacity_deferred_skips_non_rate_limit_events(tmp_path: Path) -> None:
+    run_id = "20260814T120000Z-abcd1234"
+    run_dir = tmp_path / ".claudeloop" / "runs" / run_id
+    run_dir.mkdir(parents=True)
+    (run_dir / "events.jsonl").write_text(
+        json.dumps({"event_type": "sdk.message", "payload": {"type": "Other"}})
+        + "\n"
+        + "not-json-line\n"
+    )
+    process = ClaudeLoopProcess(
+        executor=FakeExecutor(CommandResult(1, "", f"Run id: {run_id}\nerror")),
+        max_turns=1,
+        max_dollars=0.1,
+    )
+    with pytest.raises(RuntimeError, match="error"):
+        await process.run(spec(tmp_path))
+
+
+async def test_capacity_deferred_skips_non_rejected_rate_limit(tmp_path: Path) -> None:
+    run_id = "20260814T120000Z-abcd1234"
+    run_dir = tmp_path / ".claudeloop" / "runs" / run_id
+    run_dir.mkdir(parents=True)
+    (run_dir / "events.jsonl").write_text(
+        json.dumps(
+            {
+                "event_type": "sdk.message",
+                "payload": {
+                    "type": "RateLimitEvent",
+                    "status": "accepted",
+                    "resets_at": 1786738200,
+                },
+            }
+        )
+    )
+    process = ClaudeLoopProcess(
+        executor=FakeExecutor(CommandResult(1, "", f"Run id: {run_id}\nerror")),
+        max_turns=1,
+        max_dollars=0.1,
+    )
+    with pytest.raises(RuntimeError, match="error"):
+        await process.run(spec(tmp_path))
+
+
+# --- _last_response edge cases -----------------------------------------------
+
+
+async def test_last_response_returns_empty_when_events_file_missing(tmp_path: Path) -> None:
+    from vibey.infrastructure.engines.claudeloop_process import _last_response
+
+    assert _last_response(tmp_path / "nonexistent.jsonl") == ""
+
+
+async def test_last_response_skips_non_dict_payloads(tmp_path: Path) -> None:
+    from vibey.infrastructure.engines.claudeloop_process import _last_response
+
+    events_file = tmp_path / "events.jsonl"
+    events_file.write_text(
+        json.dumps({"event_type": "chatter.assistant", "payload": "string-not-dict"}) + "\n"
+    )
+    assert _last_response(events_file) == ""
+
+
+async def test_last_response_returns_result_message(tmp_path: Path) -> None:
+    from vibey.infrastructure.engines.claudeloop_process import _last_response
+
+    events_file = tmp_path / "events.jsonl"
+    events_file.write_text(
+        json.dumps(
+            {
+                "event_type": "sdk.message",
+                "payload": {"type": "ResultMessage", "result": "answer"},
+            }
+        )
+    )
+    assert _last_response(events_file) == "answer"
+
+
+# --- _find_reusable_result edge cases ----------------------------------------
+
+
+async def test_find_reusable_skips_non_dir_entries(tmp_path: Path) -> None:
+    runs_root = tmp_path / ".claudeloop" / "runs"
+    runs_root.mkdir(parents=True)
+    (runs_root / "not-a-dir.txt").write_text("file not dir")
+    executor = FakeExecutor(CommandResult(0, "", "Run id: new-run\n"))
+    process = ClaudeLoopProcess(executor=executor, max_turns=1, max_dollars=0.1)
+    new_run = tmp_path / ".claudeloop" / "runs" / "new-run"
+    new_run.mkdir()
+    (new_run / "events.jsonl").write_text(
+        json.dumps({"event_type": "chatter.assistant", "payload": {"text": "{}"}})
+    )
+    await process.run(spec(tmp_path))
+    assert len(executor.calls) == 1
+
+
+async def test_find_reusable_skips_invalid_run_id_names(tmp_path: Path) -> None:
+    runs_root = tmp_path / ".claudeloop" / "runs"
+    runs_root.mkdir(parents=True)
+    (runs_root / "!!!invalid").mkdir()
+    executor = FakeExecutor(CommandResult(0, "", "Run id: new-run\n"))
+    process = ClaudeLoopProcess(executor=executor, max_turns=1, max_dollars=0.1)
+    new_run = runs_root / "new-run"
+    new_run.mkdir()
+    (new_run / "events.jsonl").write_text(
+        json.dumps({"event_type": "chatter.assistant", "payload": {"text": "{}"}})
+    )
+    await process.run(spec(tmp_path))
+    assert len(executor.calls) == 1
+
+
+async def test_find_reusable_skips_missing_meta_json(tmp_path: Path) -> None:
+    runs_root = tmp_path / ".claudeloop" / "runs"
+    old_run = runs_root / "20260814T120000Z-abcd1234"
+    old_run.mkdir(parents=True)
+    (old_run / "events.jsonl").write_text(
+        json.dumps({"event_type": "chatter.assistant", "payload": {"text": "{}"}})
+    )
+    executor = FakeExecutor(CommandResult(0, "", "Run id: 20260814T130000Z-abcd1234\n"))
+    process = ClaudeLoopProcess(executor=executor, max_turns=1, max_dollars=0.1)
+    new_run = runs_root / "20260814T130000Z-abcd1234"
+    new_run.mkdir()
+    (new_run / "events.jsonl").write_text(
+        json.dumps({"event_type": "chatter.assistant", "payload": {"text": "{}"}})
+    )
+    await process.run(spec(tmp_path))
+    assert len(executor.calls) == 1
+
+
+# --- _looks_structured edge cases -------------------------------------------
+
+
+def test_looks_structured_rejects_unclosed_fence() -> None:
+    from vibey.infrastructure.engines.claudeloop_process import _looks_structured
+
+    assert _looks_structured('```json\n{"a":1}') is False
+
+
+def test_looks_structured_rejects_non_dict() -> None:
+    from vibey.infrastructure.engines.claudeloop_process import _looks_structured
+
+    assert _looks_structured("[1, 2, 3]") is False
+
+
+def test_looks_structured_rejects_invalid_json() -> None:
+    from vibey.infrastructure.engines.claudeloop_process import _looks_structured
+
+    assert _looks_structured("not json at all") is False
+
+
+def test_reported_run_id_skips_invalid_format() -> None:
+    from vibey.infrastructure.engines.claudeloop_process import _reported_run_id
+
+    stderr = "Run id: !!!invalid\nRun id: valid-20260814T120000Z\n"
+    assert _reported_run_id(stderr) == "valid-20260814T120000Z"
+
+
+async def test_find_reusable_skips_plan_outside_plans_root(tmp_path: Path) -> None:
+    runs_root = tmp_path / ".claudeloop" / "runs"
+    old_run = runs_root / "20260814T120000Z-abcd1234"
+    old_run.mkdir(parents=True)
+    outside_plan = tmp_path / "outside" / "plan.md"
+    outside_plan.parent.mkdir(parents=True)
+    outside_plan.write_text("# Bounded DESIGN research\n")
+    (old_run / "meta.json").write_text(json.dumps({"plan_path": str(outside_plan)}))
+    (old_run / "events.jsonl").write_text(
+        json.dumps({"event_type": "chatter.assistant", "payload": {"text": "{}"}})
+    )
+    executor = FakeExecutor(CommandResult(0, "", "Run id: 20260814T130000Z-abcd1234\n"))
+    process = ClaudeLoopProcess(executor=executor, max_turns=1, max_dollars=0.1)
+    new_run = runs_root / "20260814T130000Z-abcd1234"
+    new_run.mkdir()
+    (new_run / "events.jsonl").write_text(
+        json.dumps({"event_type": "chatter.assistant", "payload": {"text": "{}"}})
+    )
+    await process.run(spec(tmp_path))
+    assert len(executor.calls) == 1

@@ -309,3 +309,76 @@ async def test_deploy_execute_edge_cases() -> None:
     )
     outcome_vf = await handler_verify_fail.handle(job)
     assert isinstance(outcome_vf, Failure)
+
+
+@pytest.mark.asyncio
+async def test_deploy_execute_skips_transition_without_transition_method() -> None:
+    """Success path with projects=object() covers hasattr False at line 107."""
+    ledger = FakeDeployLedger()
+    jobs = FakeJobRepository()
+    client = FakeAzureClient()
+    spec = _sample_spec()
+    consent = DeploymentConsent("c-1", spec.scope_digest(), "user", NOW, True)
+
+    handler = DeployExecuteHandler(
+        ledger=ledger,
+        jobs=jobs,
+        projects=object(),
+        azure_client=client,
+        clock=FakeClock(),
+        spec_provider=lambda _pid: spec,
+        consent_provider=lambda _pid: consent,
+    )
+
+    base_job = make_job(uuid4())
+    job = base_job.__class__(
+        **{
+            k: getattr(base_job, k)
+            for k in base_job.__dataclass_fields__
+            if k not in {"phase", "kind"}
+        },
+        phase=Phase.DEPLOY_EXECUTE,
+        kind="deploy.execute",
+    )
+
+    outcome = await handler.handle(job)
+    assert isinstance(outcome, Success)
+    assert outcome.result.get("status") == "verified"
+    enqueued = list(jobs._jobs.values())
+    assert any(j.kind == "deploy.demo" for j in enqueued)
+
+
+@pytest.mark.asyncio
+async def test_deploy_execute_failure_skips_transition_without_transition_method() -> None:
+    """Failure path with projects=object() covers hasattr False at line 150."""
+    ledger = FakeDeployLedger()
+    jobs = FakeJobRepository()
+    client = FakeAzureClient(fail_at_step=DeployStep.APPLY, failure_type="policy_denial")
+    spec = _sample_spec()
+    consent = DeploymentConsent("c-1", spec.scope_digest(), "user", NOW, True)
+
+    handler = DeployExecuteHandler(
+        ledger=ledger,
+        jobs=jobs,
+        projects=object(),
+        azure_client=client,
+        clock=FakeClock(),
+        spec_provider=lambda _pid: spec,
+        consent_provider=lambda _pid: consent,
+    )
+
+    base_job = make_job(uuid4())
+    job = base_job.__class__(
+        **{
+            k: getattr(base_job, k)
+            for k in base_job.__dataclass_fields__
+            if k not in {"phase", "kind"}
+        },
+        phase=Phase.DEPLOY_EXECUTE,
+        kind="deploy.execute",
+    )
+
+    outcome = await handler.handle(job)
+    assert isinstance(outcome, Failure)
+    enqueued = list(jobs._jobs.values())
+    assert any(j.kind == "deploy.triage" for j in enqueued)

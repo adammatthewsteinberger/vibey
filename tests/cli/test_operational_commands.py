@@ -244,3 +244,461 @@ def test_ledger_show_command(tmp_path: Path) -> None:
     assert "AnswerGiven" in res.stdout
     assert "#1" in res.stdout
     assert "#2" in res.stdout
+
+
+def test_watch_command_with_no_projects() -> None:
+    """Watch command exits gracefully when no projects exist."""
+    from unittest.mock import AsyncMock, patch
+
+    # Mock the TUI app so it doesn't actually start
+    with patch("vibey.tui.dashboard.VibeyDashboardApp") as mock_app:
+        mock_app.return_value.run_async = AsyncMock()
+        res = runner.invoke(app, ["watch"])
+        assert res.exit_code == 1, res.output
+        assert "no projects found" in res.output
+
+
+def test_watch_command_with_unknown_project_id() -> None:
+    """Watch command exits gracefully for unknown project ID."""
+    from unittest.mock import AsyncMock, patch
+    from uuid import uuid4
+
+    unknown_id = uuid4()
+    with patch("vibey.tui.dashboard.VibeyDashboardApp") as mock_app:
+        mock_app.return_value.run_async = AsyncMock()
+        res = runner.invoke(app, ["watch", str(unknown_id)])
+        assert res.exit_code == 1, res.output
+        assert "unknown project" in res.output
+
+
+# ── "use latest" paths ──────────────────────────────────────────────────────
+
+
+def test_status_uses_latest_project_when_no_id_given(tmp_path: Path) -> None:
+    asyncio.run(_seed_status_project(tmp_path))
+    res = runner.invoke(app, ["status"])
+    assert res.exit_code == 0, res.output
+    assert "ops-status-proj" in res.stdout
+
+
+def test_status_no_projects_exits_with_error() -> None:
+    res = runner.invoke(app, ["status"])
+    assert res.exit_code == 1
+    assert "no projects found" in res.output
+
+
+def test_engines_uses_latest_project_when_no_id_given(tmp_path: Path) -> None:
+    asyncio.run(_seed_engines_project(tmp_path))
+    res = runner.invoke(app, ["engines"])
+    assert res.exit_code == 0, res.output
+    assert "claudeloop" in res.stdout
+
+
+def test_engines_no_projects_exits_with_error() -> None:
+    res = runner.invoke(app, ["engines"])
+    assert res.exit_code == 1
+    assert "no projects found" in res.output
+
+
+def test_engines_with_no_engines_recorded(tmp_path: Path) -> None:
+    async def seed() -> UUID:
+        async with build_app() as resources:
+            p = await resources.projects.create("empty-eng", tmp_path, max_cycles=1, config={})
+            return p.project_id
+
+    pid = asyncio.run(seed())
+    res = runner.invoke(app, ["engines", str(pid)])
+    assert res.exit_code == 0, res.output
+    assert "no engines recorded" in res.output
+
+
+def test_cost_uses_latest_project_when_no_id_given(tmp_path: Path) -> None:
+    asyncio.run(_seed_cost_project(tmp_path))
+    res = runner.invoke(app, ["cost"])
+    assert res.exit_code == 0, res.output
+    assert "Cycle Budget" in res.stdout
+
+
+def test_cost_no_projects_exits_with_error() -> None:
+    res = runner.invoke(app, ["cost"])
+    assert res.exit_code == 1
+    assert "no projects found" in res.output
+
+
+def test_cost_unknown_project_exits_with_error() -> None:
+    from uuid import uuid4
+
+    res = runner.invoke(app, ["cost", str(uuid4())])
+    assert res.exit_code == 1
+    assert "unknown project" in res.output
+
+
+def test_ledger_no_subcommand_shows_help() -> None:
+    res = runner.invoke(app, ["ledger"])
+    assert res.exit_code == 0
+    assert "show" in res.output.lower()
+
+
+def test_ledger_show_uses_latest_project_when_no_id_given(tmp_path: Path) -> None:
+    asyncio.run(_seed_ledger_project(tmp_path))
+    res = runner.invoke(app, ["ledger", "show"])
+    assert res.exit_code == 0, res.output
+    assert "QuestionAsked" in res.stdout
+
+
+def test_ledger_show_no_projects_exits_with_error() -> None:
+    res = runner.invoke(app, ["ledger", "show"])
+    assert res.exit_code == 1
+    assert "no projects found" in res.output
+
+
+def test_ledger_show_with_phase_filter(tmp_path: Path) -> None:
+    pid = asyncio.run(_seed_ledger_project(tmp_path))
+    res = runner.invoke(app, ["ledger", "show", str(pid), "--phase", "intake"])
+    assert res.exit_code == 0, res.output
+    assert "INTAKE" in res.stdout
+
+
+def test_ledger_show_with_kind_filter(tmp_path: Path) -> None:
+    pid = asyncio.run(_seed_ledger_project(tmp_path))
+    res = runner.invoke(app, ["ledger", "show", str(pid), "--kind", "QuestionAsked"])
+    assert res.exit_code == 0, res.output
+    assert "QuestionAsked" in res.stdout
+
+
+def test_status_with_no_engines_shows_no_engines_message(tmp_path: Path) -> None:
+    async def seed() -> UUID:
+        async with build_app() as resources:
+            p = await resources.projects.create("no-eng-proj", tmp_path, max_cycles=1, config={})
+            return p.project_id
+
+    pid = asyncio.run(seed())
+    res = runner.invoke(app, ["status", str(pid)])
+    assert res.exit_code == 0, res.output
+    assert "no engines recorded" in res.output
+
+
+# ── deploy commands without project_id and with unknown project ─────────────
+
+
+def test_deploy_status_uses_latest_project(tmp_path: Path) -> None:
+    from tests.cli.test_deploy_cli import _seed_deploy_project
+
+    asyncio.run(_seed_deploy_project(tmp_path))
+    res = runner.invoke(app, ["deploy", "status"])
+    assert res.exit_code == 0, res.output
+    assert "deploy-cli-proj" in res.stdout
+
+
+def test_deploy_status_no_projects_exits_with_error() -> None:
+    res = runner.invoke(app, ["deploy", "status"])
+    assert res.exit_code == 1
+    assert "no projects found" in res.output
+
+
+def test_deploy_status_unknown_project() -> None:
+    from uuid import uuid4
+
+    res = runner.invoke(app, ["deploy", "status", str(uuid4())])
+    assert res.exit_code == 1
+    assert "unknown project" in res.output
+
+
+def test_deploy_inspect_uses_latest_project(tmp_path: Path) -> None:
+    from tests.cli.test_deploy_cli import _seed_deploy_project
+
+    asyncio.run(_seed_deploy_project(tmp_path))
+    res = runner.invoke(app, ["deploy", "inspect"])
+    assert res.exit_code == 0, res.output
+    assert "spec_id" in res.output
+
+
+def test_deploy_inspect_no_projects_exits_with_error() -> None:
+    res = runner.invoke(app, ["deploy", "inspect"])
+    assert res.exit_code == 1
+    assert "no projects found" in res.output
+
+
+def test_deploy_inspect_unknown_project() -> None:
+    from uuid import uuid4
+
+    res = runner.invoke(app, ["deploy", "inspect", str(uuid4())])
+    assert res.exit_code == 1
+    assert "unknown project" in res.output
+
+
+def test_deploy_plan_uses_latest_project(tmp_path: Path) -> None:
+    from tests.cli.test_deploy_cli import _seed_deploy_project
+
+    asyncio.run(_seed_deploy_project(tmp_path))
+    res = runner.invoke(app, ["deploy", "plan"])
+    assert res.exit_code == 0, res.output
+    assert "Plan Evaluation" in res.output
+
+
+def test_deploy_plan_no_projects_exits_with_error() -> None:
+    res = runner.invoke(app, ["deploy", "plan"])
+    assert res.exit_code == 1
+    assert "no projects found" in res.output
+
+
+def test_deploy_plan_unknown_project() -> None:
+    from uuid import uuid4
+
+    res = runner.invoke(app, ["deploy", "plan", str(uuid4())])
+    assert res.exit_code == 1
+    assert "unknown project" in res.output
+
+
+def test_deploy_cancel_uses_latest_project(tmp_path: Path) -> None:
+    from tests.cli.test_deploy_cli import _seed_deploy_project
+
+    asyncio.run(_seed_deploy_project(tmp_path))
+    res = runner.invoke(app, ["deploy", "cancel"])
+    assert res.exit_code == 0, res.output
+    assert "cancelled" in res.output.lower()
+
+
+def test_deploy_cancel_no_projects_exits_with_error() -> None:
+    res = runner.invoke(app, ["deploy", "cancel"])
+    assert res.exit_code == 1
+    assert "no projects found" in res.output
+
+
+def test_deploy_cancel_unknown_project() -> None:
+    from uuid import uuid4
+
+    res = runner.invoke(app, ["deploy", "cancel", str(uuid4())])
+    assert res.exit_code == 1
+    assert "unknown project" in res.output
+
+
+def test_deploy_rollback_uses_latest_project(tmp_path: Path) -> None:
+    from tests.cli.test_deploy_cli import _seed_deploy_project
+
+    asyncio.run(_seed_deploy_project(tmp_path))
+    res = runner.invoke(app, ["deploy", "rollback"])
+    assert res.exit_code == 0, res.output
+    assert "rollback" in res.output.lower()
+
+
+def test_deploy_rollback_no_projects_exits_with_error() -> None:
+    res = runner.invoke(app, ["deploy", "rollback"])
+    assert res.exit_code == 1
+    assert "no projects found" in res.output
+
+
+def test_deploy_rollback_unknown_project() -> None:
+    from uuid import uuid4
+
+    res = runner.invoke(app, ["deploy", "rollback", str(uuid4())])
+    assert res.exit_code == 1
+    assert "unknown project" in res.output
+
+
+# ── _work_once and _enqueue_design error paths ──────────────────────────────
+
+
+def test_work_once_unknown_project() -> None:
+    from uuid import uuid4
+
+    res = runner.invoke(app, ["work", str(uuid4())])
+    assert res.exit_code != 0
+
+
+def test_work_once_unknown_provider(tmp_path: Path) -> None:
+    async def seed() -> UUID:
+        async with build_app() as resources:
+            p = await resources.projects.create("prov-test", tmp_path, max_cycles=1, config={})
+            return p.project_id
+
+    pid = asyncio.run(seed())
+    res = runner.invoke(app, ["work", str(pid), "--provider", "nonexistent"])
+    assert res.exit_code != 0
+
+
+def test_work_once_visual_phase_rejects_non_scripted_provider(tmp_path: Path) -> None:
+    async def seed() -> UUID:
+        async with build_app() as resources:
+            p = await resources.projects.create("vis-test", tmp_path, max_cycles=1, config={})
+            await resources.projects.transition(
+                p.project_id, expected=Phase.INTAKE, to=Phase.VISUAL_DESIGN
+            )
+            return p.project_id
+
+    pid = asyncio.run(seed())
+    res = runner.invoke(app, ["work", str(pid), "--provider", "claudeloop"])
+    assert res.exit_code != 0
+
+
+def test_work_once_claudeloop_provider(tmp_path: Path) -> None:
+    async def seed() -> UUID:
+        async with build_app() as resources:
+            p = await resources.projects.create("cl-test", tmp_path, max_cycles=1, config={})
+            await resources.projects.transition(
+                p.project_id, expected=Phase.INTAKE, to=Phase.DESIGN
+            )
+            return p.project_id
+
+    pid = asyncio.run(seed())
+    res = runner.invoke(app, ["work", str(pid), "--provider", "claudeloop"])
+    assert res.exit_code == 0, res.output
+    assert "no ready job" in res.output
+
+
+def test_enqueue_design_unknown_project() -> None:
+    from uuid import uuid4
+
+    res = runner.invoke(app, ["design", "resume", str(uuid4())])
+    assert res.exit_code != 0
+
+
+def test_enqueue_design_wrong_phase(tmp_path: Path) -> None:
+    async def seed() -> UUID:
+        async with build_app() as resources:
+            p = await resources.projects.create("phase-test", tmp_path, max_cycles=1, config={})
+            await resources.projects.transition(p.project_id, expected=Phase.INTAKE, to=Phase.BUILD)
+            return p.project_id
+
+    pid = asyncio.run(seed())
+    res = runner.invoke(app, ["design", "resume", str(pid)])
+    assert res.exit_code != 0
+
+
+def test_accept_design_unknown_project() -> None:
+    from uuid import uuid4
+
+    res = runner.invoke(app, ["design", "accept", str(uuid4())])
+    assert res.exit_code != 0
+
+
+def test_accept_design_with_spec_json(tmp_path: Path) -> None:
+    import json as _json
+
+    spec_json = tmp_path / "spec.json"
+    spec_data = {
+        "objective": "Ship",
+        "constraints": [{"text": "Offline", "kind": "hard"}],
+        "non_goals": [],
+        "criteria": [
+            {
+                "criterion_id": "AC-1",
+                "given": "input",
+                "when": "run",
+                "then": "output",
+                "fit": "passes",
+            }
+        ],
+        "nfrs": [],
+        "walking_skeleton": "path",
+    }
+    spec_json.write_text(_json.dumps(spec_data))
+
+    async def seed() -> UUID:
+        async with build_app() as resources:
+            p = await resources.projects.create(
+                "spec-accept", tmp_path / "repo", max_cycles=1, config={}
+            )
+            await resources.projects.transition(
+                p.project_id, expected=Phase.INTAKE, to=Phase.DESIGN
+            )
+            return p.project_id
+
+    pid = asyncio.run(seed())
+    res = runner.invoke(app, ["design", "accept", str(pid), "--spec-json", str(spec_json)])
+    assert res.exit_code == 0, res.output
+    assert "accepted design" in res.output
+
+
+# ── watch command with real project ──────────────────────────────────────────
+
+
+def test_watch_with_replay(tmp_path: Path) -> None:
+    from unittest.mock import AsyncMock, patch
+
+    pid = asyncio.run(_seed_ledger_project(tmp_path))
+    with patch("vibey.tui.dashboard.VibeyReplayApp") as mock_replay:
+        mock_replay.return_value.run_async = AsyncMock()
+        res = runner.invoke(app, ["watch", str(pid), "--replay"])
+        assert res.exit_code == 0, res.output
+        mock_replay.assert_called_once()
+
+
+def test_watch_with_latest_project(tmp_path: Path) -> None:
+    from unittest.mock import AsyncMock, patch
+
+    asyncio.run(_seed_status_project(tmp_path))
+    with patch("vibey.tui.dashboard.VibeyDashboardApp") as mock_app_cls:
+        mock_app_cls.return_value.run_async = AsyncMock()
+        res = runner.invoke(app, ["watch"])
+        assert res.exit_code == 0, res.output
+        mock_app_cls.assert_called_once()
+
+
+def test_watch_with_explicit_project(tmp_path: Path) -> None:
+    from unittest.mock import AsyncMock, patch
+
+    pid = asyncio.run(_seed_status_project(tmp_path))
+    with patch("vibey.tui.dashboard.VibeyDashboardApp") as mock_app_cls:
+        mock_app_cls.return_value.run_async = AsyncMock()
+        res = runner.invoke(app, ["watch", str(pid)])
+        assert res.exit_code == 0, res.output
+        mock_app_cls.assert_called_once()
+
+
+# ── deploy status/inspect branch coverage ────────────────────────────────────
+
+
+def test_deploy_status_no_deployment_events(tmp_path: Path) -> None:
+    async def seed() -> UUID:
+        async with build_app() as resources:
+            p = await resources.projects.create("no-dep-ev", tmp_path, max_cycles=1, config={})
+            return p.project_id
+
+    pid = asyncio.run(seed())
+    res = runner.invoke(app, ["deploy", "status", str(pid)])
+    assert res.exit_code == 0, res.output
+    assert "(none)" in res.output
+
+
+def test_deploy_status_event_without_endpoint(tmp_path: Path) -> None:
+    async def seed() -> UUID:
+        async with build_app() as resources:
+            p = await resources.projects.create("no-endpoint", tmp_path, max_cycles=1, config={})
+            await resources.ledger.append(
+                LedgerEventDraft(
+                    project_id=p.project_id,
+                    cycle=p.cycle,
+                    phase=Phase.INTAKE,
+                    kind=EventKind.ARTIFACT_PRODUCED,
+                    engine_id=None,
+                    job_id=None,
+                    causation_id=None,
+                    correlation_id=p.project_id,
+                    provenance=Provenance.TRUSTED,
+                    produced_at=datetime.now(UTC),
+                    payload={
+                        "artifact_type": "deployment_verification",
+                        "outputs": {"status": "ok"},
+                    },
+                    digest="test",
+                )
+            )
+            return p.project_id
+
+    pid = asyncio.run(seed())
+    res = runner.invoke(app, ["deploy", "status", str(pid)])
+    assert res.exit_code == 0, res.output
+    assert "(none)" in res.output
+
+
+def test_deploy_inspect_no_spec_events(tmp_path: Path) -> None:
+    async def seed() -> UUID:
+        async with build_app() as resources:
+            p = await resources.projects.create("no-spec-ev", tmp_path, max_cycles=1, config={})
+            return p.project_id
+
+    pid = asyncio.run(seed())
+    res = runner.invoke(app, ["deploy", "inspect", str(pid)])
+    assert res.exit_code == 0, res.output
+    assert "default" in res.output

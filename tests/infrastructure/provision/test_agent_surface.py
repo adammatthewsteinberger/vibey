@@ -87,6 +87,47 @@ async def test_reprovisioning_with_a_changed_spec_rewrites_only_the_vibey_block(
         assert "no secrets in the repo" not in content
 
 
+async def test_provision_error_raised_when_git_common_dir_fails(repo: Path) -> None:
+    from vibey.infrastructure.engines.claudeloop_process import CommandResult
+    from vibey.infrastructure.provision.agent_surface import ProvisionError
+
+    class FailingExecutor:
+        async def execute(self, argv: tuple[str, ...]) -> CommandResult:
+            return CommandResult(128, "", "fatal: not a git repo\n")
+
+    worktree = await GitWorktreeManager(repo, cycle=1).create("item-1")
+    provisioner = AgentSurfaceProvisioner(executor=FailingExecutor())
+
+    with pytest.raises(ProvisionError) as exc_info:
+        await provisioner.provision(worktree, spec())
+
+    assert exc_info.value.stderr == "fatal: not a git repo\n"
+    assert "git" in exc_info.value.argv
+
+
+async def test_provision_handles_relative_git_common_dir(repo: Path) -> None:
+    from vibey.infrastructure.engines.claudeloop_process import CommandResult
+
+    worktree = await GitWorktreeManager(repo, cycle=1).create("item-1")
+    real_executor = CleanGitEnvSubprocessExecutor()
+
+    class RelativePathExecutor:
+        async def execute(self, argv: tuple[str, ...]) -> CommandResult:
+            result = await real_executor.execute(argv)
+            if "--git-common-dir" in argv:
+                abs_path = Path(result.stdout.strip())
+                try:
+                    rel = abs_path.relative_to(worktree)
+                    return CommandResult(0, str(rel) + "\n", "")
+                except ValueError:
+                    pass
+            return result
+
+    provisioner = AgentSurfaceProvisioner(executor=RelativePathExecutor())
+    written = await provisioner.provision(worktree, spec())
+    assert len(written) == len(RouterFile)
+
+
 async def test_provision_preserves_hand_written_content_outside_the_vibey_block(
     repo: Path,
 ) -> None:

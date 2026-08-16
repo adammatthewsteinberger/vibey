@@ -144,6 +144,23 @@ def test_an_injected_executor_is_used_instead_of_spawning() -> None:
     assert seen and seen[0][0] == "notify-send"
 
 
+def test_desktop_notifier_real_subprocess_path(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Covers lines 35-36: the real subprocess path when no executor is injected."""
+
+    class FakeProcess:
+        returncode = 0
+
+        async def communicate(self) -> tuple[bytes, bytes]:
+            return b"", b""
+
+    async def fake_create(*args: object, **kwargs: object) -> FakeProcess:
+        return FakeProcess()
+
+    monkeypatch.setattr("asyncio.create_subprocess_exec", fake_create)
+    notifier = DesktopNotifier(platform_override="linux")
+    assert asyncio.run(notifier.notify(_event())) is True
+
+
 def test_a_failing_notifier_binary_does_not_take_the_run_with_it() -> None:
     notifier = DesktopNotifier(platform_override="linux")
     # notify-send is absent on macOS CI, and absent binaries raise on spawn.

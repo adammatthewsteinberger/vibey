@@ -42,6 +42,20 @@ async def test_all_four_scripted_descriptors_pass_conformance(descriptor, tmp_pa
     assert report.ok, [c for c in report.checks if not c.ok]
 
 
+async def test_explicit_trivial_worktree_is_used(tmp_path: Path) -> None:
+    """Passing an explicit trivial_worktree covers the False branch at line 38."""
+    engine = ScriptedEngine(descriptor=CLAUDELOOP, base_dir=tmp_path)
+    custom_worktree = str(tmp_path / "custom-conformance")
+
+    report = await run_conformance(
+        engine,
+        capacity_fixtures=_fixtures_for(CLAUDELOOP.engine_id),
+        trivial_worktree=custom_worktree,
+    )
+
+    assert report.ok, [c for c in report.checks if not c.ok]
+
+
 async def test_not_installed_fails_binary_check_without_crashing(tmp_path: Path) -> None:
     engine = ScriptedEngine(descriptor=CLAUDELOOP, base_dir=tmp_path, installed=False)
 
