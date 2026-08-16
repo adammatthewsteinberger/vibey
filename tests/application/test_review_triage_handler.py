@@ -150,6 +150,9 @@ async def test_review_triage_handler_no_findings_routes_to_done_and_deployment_g
     enqueued = list(jobs._jobs.values())
     gate_job = next((j for j in enqueued if j.kind == "review.deployment_choice"), None)
     assert gate_job is not None
+    # A completed review (no findings, next_phase DONE) must not also queue a
+    # build -- that would restart work the review just closed out.
+    assert not any(j.kind == "build.plan" for j in enqueued)
 
 
 async def test_review_triage_handler_clear_findings_routes_to_build_fast_loop() -> None:
