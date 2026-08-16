@@ -786,7 +786,3 @@ def deploy_rollback(
             typer.echo(f"Initiated rollback for {project.name} to previous stable revision.")
 
     asyncio.run(run_rollback())
-
-
-if __name__ == "__main__":
-    app()

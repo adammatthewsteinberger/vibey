@@ -235,8 +235,5 @@ def calculate_rotation_fairness(selections: Mapping[str, int], weights: Mapping[
 
     sum_sq = sum(r * r for r in ratios)
     n = len(ratios)
-    if sum_sq == 0 or n == 0:
-        return 1.0
-
     fairness = (total_ratio * total_ratio) / (n * sum_sq)
     return min(max(fairness, 0.0), 1.0)

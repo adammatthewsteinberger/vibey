@@ -313,3 +313,41 @@ async def test_deploy_review_routing_edge_cases() -> None:
     outcome_abort = await handler.handle(abort_job)
     assert isinstance(outcome_abort, Success)
     assert outcome_abort.result.get("target_phase") == Phase.DONE.name
+
+
+@pytest.mark.asyncio
+async def test_review_routing_skips_transition_when_projects_lacks_method() -> None:
+    """When projects is a plain object without a transition method,
+    hasattr checks are False and the handler still succeeds."""
+    ledger = FakeDeployLedger()
+    jobs = FakeJobRepository()
+    client = FakeAzureClient()
+
+    handler = DeployReviewRoutingHandler(
+        ledger=ledger,
+        jobs=jobs,
+        projects=object(),
+        azure_client=client,
+    )
+
+    base_job = make_job(uuid4())
+
+    for action, expected_status in [
+        (DeployReviewAction.APPROVE.value, "approved"),
+        (DeployReviewAction.LOOP_DESIGN.value, "loop_design"),
+        (DeployReviewAction.RETRY_EXECUTE.value, "retry_execute"),
+        (DeployReviewAction.ABORT.value, DeployReviewAction.ABORT.value),
+    ]:
+        job = base_job.__class__(
+            **{
+                k: getattr(base_job, k)
+                for k in base_job.__dataclass_fields__
+                if k not in {"phase", "kind", "payload"}
+            },
+            phase=Phase.DEPLOY_REVIEW,
+            kind="deploy.route",
+            payload={"action": action},
+        )
+        outcome = await handler.handle(job)
+        assert isinstance(outcome, Success)
+        assert outcome.result.get("status") == expected_status

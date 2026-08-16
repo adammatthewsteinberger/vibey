@@ -116,7 +116,11 @@ class ReviewTriageHandler:
                     requirement={"effort": effort.name.lower()},
                 )
             )
-        elif next_phase is Phase.BUILD:
+        else:
+            # The earlier `if not open_findings:` branch already returns for
+            # Phase.DONE, so by this point next_phase can only be DESIGN or
+            # BUILD -- next_phase_after_review's DONE case is unreachable
+            # here (findings is guaranteed non-empty).
             await self._jobs.enqueue(
                 EnqueueRequest(
                     project_id=job.project_id,
