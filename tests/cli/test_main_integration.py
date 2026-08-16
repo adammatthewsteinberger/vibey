@@ -22,11 +22,7 @@ from vibey.cli.main import app
 
 pytestmark = pytest.mark.integration
 
-# Typer force-enables rich ANSI styling whenever GITHUB_ACTIONS is set
-# (typer/rich_utils.py), which CI always has and a local shell never does.
-# That embeds escape codes inside option names, breaking plain substring
-# checks against --help output -- disable it the way Typer itself exposes.
-runner = CliRunner(env={"_TYPER_FORCE_DISABLE_TERMINAL": "1"})
+runner = CliRunner()
 
 
 @pytest.fixture(autouse=True)

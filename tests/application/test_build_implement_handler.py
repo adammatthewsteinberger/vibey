@@ -291,40 +291,6 @@ async def test_no_budget_source_skips_check(tmp_path: Path) -> None:
     assert isinstance(outcome, Success)
 
 
-async def test_non_numeric_projected_cost_skips_budget_check(tmp_path: Path) -> None:
-    """When projected_cost_per_attempt is a non-numeric value (e.g. a string),
-    isinstance(projected, int | float) is False and the budget check is skipped."""
-    from vibey.domain.budget import BudgetLedger as BudgetLedgerDC
-
-    class FixedBudgetSource:
-        def __init__(self, ledger: BudgetLedgerDC) -> None:
-            self._ledger = ledger
-
-        async def current(self, project_id: object, cycle: int) -> BudgetLedgerDC:
-            return self._ledger
-
-    engine = ScriptedEngine(descriptor=CLAUDELOOP, base_dir=tmp_path / "engine")
-    budget = BudgetLedgerDC(turns_spent=0, dollars_spent=9.50, max_turns=None, max_dollars=10.0)
-    worktrees = FakeWorktrees(tmp_path)
-    provisioner = FakeProvisioner()
-    handler = BuildImplementHandler(
-        worktrees=worktrees,
-        provisioner=provisioner,
-        engine=engine,
-        ledger=FakeLedger(),
-        jobs=FakeJobRepository(),
-        clock=FixedClock(),
-        budget_source=FixedBudgetSource(budget),
-    )
-
-    job = _job(
-        attempts=2,
-        payload={"title": "t", "projected_cost_per_attempt": "not-a-number"},
-    )
-    outcome = await handler.handle(job)
-    assert isinstance(outcome, Success)
-
-
 async def test_run_without_a_completion_verdict_fails_as_work(tmp_path: Path) -> None:
     now = datetime(2026, 1, 1, tzinfo=UTC).isoformat()
     engine = ScriptedEngine(

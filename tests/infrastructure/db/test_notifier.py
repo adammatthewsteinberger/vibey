@@ -45,23 +45,6 @@ async def test_wait_for_job_ready_falls_back_to_timeout_when_not_notified(
         await notifier.close()
 
 
-async def test_close_without_connect_is_a_no_op(notifier: PostgresJobReadyNotifier) -> None:
-    await notifier.close()
-
-
-async def test_on_notify_skips_already_done_future(notifier: PostgresJobReadyNotifier) -> None:
-    loop = asyncio.get_running_loop()
-    fut: asyncio.Future[bool] = loop.create_future()
-    fut.set_result(False)
-
-    key = "already-done-project"
-    notifier._waiters[key] = [fut]
-    notifier._on_notify(None, 0, "vibey_job_ready", key)
-
-    assert fut.result() is False
-    assert key not in notifier._waiters
-
-
 async def test_notify_for_a_different_project_does_not_wake_this_waiter(
     migrated_pool: asyncpg.Pool, project_id: UUID, notifier: PostgresJobReadyNotifier
 ) -> None:

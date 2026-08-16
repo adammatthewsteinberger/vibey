@@ -2,11 +2,12 @@
 
 from collections.abc import Mapping, Sequence
 from pathlib import Path
+from typing import Any, Protocol
 from uuid import UUID
 
-from vibey.application.interfaces import (
-    ProjectStore,
-)
+
+class ProjectStore(Protocol):
+    async def get(self, project_id: UUID) -> Any: ...
 
 
 class FileReviewArtifactWriter:

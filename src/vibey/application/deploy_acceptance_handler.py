@@ -1,27 +1,48 @@
 """Phase ④ DEPLOY DESIGN acceptance handler and consent guard (Milestone 10 task 10.3)."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping, Sequence
+from typing import Any, Protocol
 from uuid import UUID
 
 from vibey.application.dto import EnqueueRequest, HumanGateRequest, JobRecord
-from vibey.application.interfaces import (
-    PhaseLedger,
-    ProjectTransitioner,
-)
 from vibey.application.ports import Clock, HumanGateRepository, JobRepository
 from vibey.application.worker import Failure, Outcome, Park, Success
 from vibey.domain.deployment import DeploymentConsent, DeploymentSpec
 from vibey.domain.effort import Effort
 from vibey.domain.job import FailureClass, idempotency_key
-from vibey.domain.ledger import EventKind
+from vibey.domain.ledger import EventKind, LedgerEvent
 from vibey.domain.phase import Phase
+
+
+class DeployAcceptanceLedger(Protocol):
+    async def all_for_project(self, project_id: UUID) -> Sequence[LedgerEvent]: ...
+
+    async def append_event(
+        self,
+        project_id: UUID,
+        cycle: int,
+        job_id: UUID,
+        kind: EventKind,
+        payload: Mapping[str, object],
+    ) -> None: ...
+
+
+class ProjectTransitioner(Protocol):
+    async def transition(
+        self,
+        project_id: UUID,
+        *,
+        expected: Phase,
+        to: Phase,
+        cycle: int | None = None,
+    ) -> Any: ...
 
 
 class DeployAcceptanceHandler:
     def __init__(
         self,
         *,
-        ledger: PhaseLedger,
+        ledger: DeployAcceptanceLedger,
         gates: HumanGateRepository,
         jobs: JobRepository,
         projects: ProjectTransitioner | object,

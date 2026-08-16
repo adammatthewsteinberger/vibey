@@ -8,15 +8,13 @@ DesignAcceptanceService ledgers the DESIGN choice gate.
 """
 
 from datetime import datetime
+from typing import Protocol
 from uuid import UUID
 
 from vibey.application.build_kickoff import enqueue_build_decompose
 from vibey.application.design import DesignEvent
 from vibey.application.design_handler import DesignLedger
 from vibey.application.dto import ProjectRecord
-from vibey.application.interfaces import (
-    ProjectStore,
-)
 from vibey.application.ports import Clock, JobRepository
 from vibey.application.visual_handler import VisualInventoryRepository
 from vibey.domain.ledger import EventKind, Provenance
@@ -29,6 +27,14 @@ from vibey.domain.phase import (
     VisualDecision,
     evaluate_transition,
 )
+
+
+class ProjectStore(Protocol):
+    async def get(self, project_id: UUID) -> ProjectRecord | None: ...
+
+    async def transition(
+        self, project_id: UUID, *, expected: Phase, to: Phase
+    ) -> ProjectRecord: ...
 
 
 class VisualAcceptanceService:

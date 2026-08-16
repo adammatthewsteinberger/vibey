@@ -5,7 +5,7 @@ from uuid import UUID, uuid4
 from tests.application.fakes import FakeJobRepository
 from vibey.application.dto import HumanGateRecord, HumanGateRequest, JobRecord
 from vibey.application.ports import Clock, HumanGateRepository
-from vibey.application.review_collect_handler import PhaseLedger, ReviewCollectHandler
+from vibey.application.review_collect_handler import ReviewCollectHandler, ReviewCollectLedger
 from vibey.application.worker import Failure, Park, Success
 from vibey.domain.effort import Effort
 from vibey.domain.engine import EngineId
@@ -21,7 +21,7 @@ class FixedClock(Clock):
         return NOW
 
 
-class FakeReviewCollectLedger(PhaseLedger):
+class FakeReviewCollectLedger(ReviewCollectLedger):
     def __init__(self, events: Sequence[LedgerEvent] = ()) -> None:
         self._events: list[LedgerEvent] = list(events)
         self.appended: list[tuple[EventKind, Mapping[str, object]]] = []

@@ -11,25 +11,31 @@ rather than trusting the producer.
 
 from collections.abc import Sequence
 from dataclasses import asdict
+from typing import Protocol
 from uuid import UUID
 
 from vibey.application.dto import EnqueueRequest, JobRecord
-from vibey.application.interfaces import (
-    DesignSpecReader,
-    WorkPlanProducer,
-)
 from vibey.application.ports import JobRepository
 from vibey.application.worker import Failure, Outcome, Success
 from vibey.domain.job import FailureClass, idempotency_key
 from vibey.domain.phase import Phase
 from vibey.domain.plan import WorkItem, validate_decomposition
+from vibey.domain.spec import DesignSpec
+
+
+class WorkPlanProducer(Protocol):
+    async def decompose(self, spec: DesignSpec) -> tuple[WorkItem, ...]: ...
+
+
+class DecomposedSpecRepository(Protocol):
+    async def load(self, project_id: UUID, cycle: int) -> DesignSpec | None: ...
 
 
 class BuildDecomposeHandler:
     def __init__(
         self,
         *,
-        specs: DesignSpecReader,
+        specs: DecomposedSpecRepository,
         decomposer: WorkPlanProducer,
         jobs: JobRepository,
     ) -> None:
@@ -89,11 +95,3 @@ class BuildDecomposeHandler:
                 )
             )
         return job_by_item
-
-
-# Re-exported for the same reason `application/ports.py` re-exports the
-# interfaces package: the seam moved, the import path should not break.
-__all__ = [
-    "DesignSpecReader",
-    "WorkPlanProducer",
-]

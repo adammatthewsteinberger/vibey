@@ -25,17 +25,15 @@ inventory->plan chaining use.
 
 from collections.abc import Mapping
 from datetime import timedelta
-from uuid import uuid4
+from pathlib import Path
+from typing import Protocol
+from uuid import UUID, uuid4
 
 from vibey.application.build_engine_run import BuildLedger, run_and_record
 from vibey.application.dto import EnqueueRequest, HumanGateRequest, JobRecord, RunSpec
-from vibey.application.interfaces import (
-    BudgetSource,
-    BuildProvisioner,
-    BuildWorktrees,
-)
 from vibey.application.ports import Clock, EngineAdapter, JobRepository
 from vibey.application.worker import Defer, Failure, Outcome, Park, Success
+from vibey.domain.budget import BudgetLedger
 from vibey.domain.effort import PHASE_BASE_EFFORT, effort_for_attempt, forces_rotation
 from vibey.domain.engine import IsolationLevel
 from vibey.domain.errors import EscalationExhausted
@@ -44,6 +42,18 @@ from vibey.domain.phase import Phase
 from vibey.domain.provision import ProvisionSpec
 
 _EMPTY_PROVISION_SPEC = ProvisionSpec((), ())
+
+
+class BuildWorktrees(Protocol):
+    async def create(self, item_id: str, *, base_ref: str = "HEAD") -> Path: ...
+
+
+class BuildProvisioner(Protocol):
+    async def provision(self, worktree_path: Path, spec: ProvisionSpec) -> tuple[Path, ...]: ...
+
+
+class BudgetSource(Protocol):
+    async def current(self, project_id: UUID, cycle: int) -> BudgetLedger: ...
 
 
 class BuildImplementHandler:
@@ -169,12 +179,3 @@ def _render_prompt(item_id: str, payload: Mapping[str, object]) -> str:
     commands = verification.get("commands", ()) if isinstance(verification, Mapping) else ()
     checklist = "\n".join(f"- {command}" for command in commands) or "- (none specified)"
     return f"Implement work item {item_id}: {title}\n\nVerify your work with:\n{checklist}\n"
-
-
-# Re-exported for the same reason `application/ports.py` re-exports the
-# interfaces package: the seam moved, the import path should not break.
-__all__ = [
-    "BudgetSource",
-    "BuildProvisioner",
-    "BuildWorktrees",
-]

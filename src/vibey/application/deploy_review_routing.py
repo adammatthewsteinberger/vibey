@@ -1,21 +1,18 @@
 """Phase ⑥ DEPLOY REVIEW loop routing handler (Milestone 10 task 10.11)."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping, Sequence
 from enum import StrEnum
+from typing import Any, Protocol
 from uuid import UUID
 
 from vibey.application.azure_port import AzureClientPort
 from vibey.application.dto import EnqueueRequest, JobRecord
-from vibey.application.interfaces import (
-    PhaseLedger,
-    ProjectTransitioner,
-)
 from vibey.application.ports import JobRepository
 from vibey.application.worker import Failure, Outcome, Success
 from vibey.domain.deployment import DeploymentConsent, DeploymentSpec
 from vibey.domain.effort import Effort
 from vibey.domain.job import FailureClass, idempotency_key
-from vibey.domain.ledger import EventKind
+from vibey.domain.ledger import EventKind, LedgerEvent
 from vibey.domain.phase import Phase
 
 
@@ -27,13 +24,37 @@ class DeployReviewAction(StrEnum):
     ABORT = "abort"
 
 
+class DeployRoutingLedger(Protocol):
+    async def all_for_project(self, project_id: UUID) -> Sequence[LedgerEvent]: ...
+
+    async def append_event(
+        self,
+        project_id: UUID,
+        cycle: int,
+        job_id: UUID,
+        kind: EventKind,
+        payload: Mapping[str, object],
+    ) -> None: ...
+
+
+class ProjectTransitioner(Protocol):
+    async def transition(
+        self,
+        project_id: UUID,
+        *,
+        expected: Phase,
+        to: Phase,
+        cycle: int | None = None,
+    ) -> Any: ...
+
+
 class DeployReviewRoutingHandler:
     """Routes Phase ⑥ review outcomes to DONE, DEPLOY_DESIGN, DEPLOY_EXECUTE, or PLAN."""
 
     def __init__(
         self,
         *,
-        ledger: PhaseLedger,
+        ledger: DeployRoutingLedger,
         jobs: JobRepository,
         projects: ProjectTransitioner | object,
         azure_client: AzureClientPort,

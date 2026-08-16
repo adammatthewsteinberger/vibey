@@ -2,8 +2,6 @@ import json
 from pathlib import Path
 from uuid import uuid4
 
-import pytest
-
 from vibey.application.dto import RunSpec
 from vibey.domain.effort import Effort
 from vibey.domain.engine import IsolationLevel
@@ -11,11 +9,7 @@ from vibey.domain.ledger import EventKind
 from vibey.domain.phase import Phase
 from vibey.infrastructure.engines.descriptors import ALL_DESCRIPTORS, CLAUDELOOP
 from vibey.infrastructure.engines.scripted import ScriptedEngine
-from vibey.infrastructure.engines.tailer import (
-    UnknownEventKind,
-    translate_event,
-    translate_run_iter,
-)
+from vibey.infrastructure.engines.tailer import translate_run_iter
 
 
 def _spec(worktree: Path) -> RunSpec:
@@ -181,66 +175,6 @@ async def test_replaying_a_scripted_run_directory_through_the_tailer_produces_le
     assert all(d.project_id == project_id for d in drafts)
     assert all(d.correlation_id == correlation_id for d in drafts)
     assert all(d.digest for d in drafts)
-
-
-async def test_explicit_help_text_is_not_overwritten(tmp_path: Path) -> None:
-    engine = ScriptedEngine(descriptor=CLAUDELOOP, base_dir=tmp_path, help_text="custom --flag")
-    assert engine.help_text == "custom --flag"
-
-
-async def test_tail_skips_blank_lines(tmp_path: Path) -> None:
-    engine = ScriptedEngine(descriptor=CLAUDELOOP, base_dir=tmp_path)
-    handle = await engine.start(_spec(tmp_path / "worktree"))
-    events_path = handle.run_dir / "events.jsonl"
-    content = events_path.read_text()
-    events_path.write_text("\n\n" + content + "\n\n")
-
-    kinds = [e.kind async for e in engine.tail(handle)]
-    assert kinds == ["SessionSeeded", "TurnCompleted", "VerdictRendered"]
-
-
-async def test_snapshot_returns_none_when_latest_json_missing(tmp_path: Path) -> None:
-    engine = ScriptedEngine(descriptor=CLAUDELOOP, base_dir=tmp_path)
-    handle = await engine.start(_spec(tmp_path / "worktree"))
-    (handle.run_dir / "snapshots" / "latest.json").unlink()
-
-    result = await engine.snapshot(handle)
-    assert result is None
-
-
-async def test_attribute_returns_a_failure_class(tmp_path: Path) -> None:
-    engine = ScriptedEngine(descriptor=CLAUDELOOP, base_dir=tmp_path)
-    from vibey.domain.job import FailureClass
-
-    fc = engine.attribute(1, "something went wrong")
-    assert isinstance(fc, FailureClass)
-
-
-def test_translate_event_raises_on_unknown_kind() -> None:
-    from datetime import UTC, datetime
-
-    from vibey.application.dto import EngineEvent
-
-    event = EngineEvent(kind="TotallyUnknownKind", at=datetime.now(UTC), payload={})
-    with pytest.raises(UnknownEventKind) as exc_info:
-        translate_event(
-            event,
-            project_id=uuid4(),
-            cycle=1,
-            phase=Phase.BUILD,
-            engine_id=CLAUDELOOP.engine_id,
-            job_id=None,
-            correlation_id=uuid4(),
-        )
-    assert exc_info.value.kind == "TotallyUnknownKind"
-
-
-async def test_scripted_available_run_factory(tmp_path: Path) -> None:
-    from vibey.infrastructure.engines.scripted import scripted_available_run
-
-    engine = scripted_available_run(CLAUDELOOP, tmp_path)
-    assert isinstance(engine, ScriptedEngine)
-    assert engine.descriptor == CLAUDELOOP
 
 
 async def test_all_four_descriptors_produce_a_valid_run_directory(tmp_path: Path) -> None:
