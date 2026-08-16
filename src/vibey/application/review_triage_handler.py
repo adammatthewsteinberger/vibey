@@ -11,17 +11,16 @@ Performs severity x ambiguity classification on open findings:
 - Critical findings unconditionally require Effort.MAX.
 """
 
-from collections.abc import Mapping, Sequence
-from typing import Any, Protocol
-from uuid import UUID
-
 from vibey.application.dto import EnqueueRequest, JobRecord
+from vibey.application.interfaces import (
+    PhaseLedger,
+    ProjectTransitioner,
+)
 from vibey.application.ports import Clock, JobRepository
-from vibey.application.review_demo_handler import ReviewSpecRepository
+from vibey.application.review_demo_handler import DesignSpecReader
 from vibey.application.worker import Failure, Outcome, Success
 from vibey.domain.effort import Effort, triage_required_effort
 from vibey.domain.job import FailureClass, idempotency_key
-from vibey.domain.ledger import EventKind, LedgerEvent
 from vibey.domain.phase import Phase, next_phase_after_review
 from vibey.domain.projections import build_decision_log, build_deltas
 from vibey.domain.review import (
@@ -31,36 +30,12 @@ from vibey.domain.review import (
 )
 
 
-class ReviewTriageLedger(Protocol):
-    async def all_for_project(self, project_id: UUID) -> Sequence[LedgerEvent]: ...
-
-    async def append_event(
-        self,
-        project_id: UUID,
-        cycle: int,
-        job_id: UUID,
-        kind: EventKind,
-        payload: Mapping[str, object],
-    ) -> None: ...
-
-
-class ProjectTransitioner(Protocol):
-    async def transition(
-        self,
-        project_id: UUID,
-        *,
-        expected: Phase,
-        to: Phase,
-        cycle: int | None = None,
-    ) -> Any: ...
-
-
 class ReviewTriageHandler:
     def __init__(
         self,
         *,
-        ledger: ReviewTriageLedger,
-        specs: ReviewSpecRepository,
+        ledger: PhaseLedger,
+        specs: DesignSpecReader,
         jobs: JobRepository,
         clock: Clock,
         projects: ProjectTransitioner | object = None,
@@ -141,7 +116,11 @@ class ReviewTriageHandler:
                     requirement={"effort": effort.name.lower()},
                 )
             )
-        elif next_phase is Phase.BUILD:
+        else:
+            # The earlier `if not open_findings:` branch already returns for
+            # Phase.DONE, so by this point next_phase can only be DESIGN or
+            # BUILD -- next_phase_after_review's DONE case is unreachable
+            # here (findings is guaranteed non-empty).
             await self._jobs.enqueue(
                 EnqueueRequest(
                     project_id=job.project_id,

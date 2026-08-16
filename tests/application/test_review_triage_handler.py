@@ -5,8 +5,8 @@ from uuid import UUID, uuid4
 from tests.application.fakes import FakeJobRepository
 from vibey.application.dto import JobRecord
 from vibey.application.ports import Clock
-from vibey.application.review_demo_handler import ReviewSpecRepository
-from vibey.application.review_triage_handler import ReviewTriageHandler, ReviewTriageLedger
+from vibey.application.review_demo_handler import DesignSpecReader
+from vibey.application.review_triage_handler import PhaseLedger, ReviewTriageHandler
 from vibey.application.worker import Failure, Success
 from vibey.domain.effort import Effort
 from vibey.domain.engine import EngineId
@@ -23,7 +23,7 @@ class FixedClock(Clock):
         return NOW
 
 
-class FakeReviewTriageLedger(ReviewTriageLedger):
+class FakeReviewTriageLedger(PhaseLedger):
     def __init__(self, events: Sequence[LedgerEvent] = ()) -> None:
         self._events: list[LedgerEvent] = list(events)
         self.appended: list[tuple[EventKind, Mapping[str, object]]] = []
@@ -42,7 +42,7 @@ class FakeReviewTriageLedger(ReviewTriageLedger):
         self.appended.append((kind, payload))
 
 
-class FakeSpecRepo(ReviewSpecRepository):
+class FakeSpecRepo(DesignSpecReader):
     def __init__(self, spec: DesignSpec | None = None) -> None:
         self.spec = spec
 
@@ -150,6 +150,9 @@ async def test_review_triage_handler_no_findings_routes_to_done_and_deployment_g
     enqueued = list(jobs._jobs.values())
     gate_job = next((j for j in enqueued if j.kind == "review.deployment_choice"), None)
     assert gate_job is not None
+    # A completed review (no findings, next_phase DONE) must not also queue a
+    # build -- that would restart work the review just closed out.
+    assert not any(j.kind == "build.plan" for j in enqueued)
 
 
 async def test_review_triage_handler_clear_findings_routes_to_build_fast_loop() -> None:
@@ -211,3 +214,63 @@ async def test_review_triage_handler_unclear_or_critical_sets_max_effort() -> No
     design_job = next((j for j in enqueued if j.kind == "design.interview"), None)
     assert design_job is not None
     assert design_job.requirement.get("effort") == Effort.MAX.name.lower()
+
+
+class FakeProjectTransitioner:
+    def __init__(self) -> None:
+        self.transitions: list[tuple[UUID, Phase, Phase, int]] = []
+
+    async def transition(self, project_id: UUID, *, expected: Phase, to: Phase, cycle: int) -> None:
+        self.transitions.append((project_id, expected, to, cycle))
+
+
+async def test_review_triage_handler_transitions_project_when_projects_provided() -> None:
+    """When a projects transitioner is passed, the handler calls transition."""
+    events = (
+        _make_event(
+            EventKind.FINDING_RAISED,
+            {
+                "finding_id": "f-1",
+                "text": "Trim leading and trailing whitespace on note title during save.",
+            },
+            seq=1,
+        ),
+    )
+    jobs = FakeJobRepository()
+    ledger = FakeReviewTriageLedger(events=events)
+    projects = FakeProjectTransitioner()
+    handler = ReviewTriageHandler(
+        ledger=ledger,
+        specs=FakeSpecRepo(spec=_make_spec()),
+        jobs=jobs,
+        clock=FixedClock(),
+        projects=projects,
+    )
+    job = _make_job()
+    outcome = await handler.handle(job)
+    assert isinstance(outcome, Success)
+    assert outcome.result.get("next_phase") == Phase.BUILD.value
+    assert len(projects.transitions) == 1
+    assert projects.transitions[0][2] is Phase.BUILD
+    assert projects.transitions[0][3] == 2
+
+
+async def test_review_triage_handler_skips_transition_without_transition_method() -> None:
+    """When projects is a plain object without transition, no error occurs."""
+    events = (
+        _make_event(
+            EventKind.FINDING_RAISED,
+            {"finding_id": "f-1", "text": "Minor issue."},
+            seq=1,
+        ),
+    )
+    jobs = FakeJobRepository()
+    handler = ReviewTriageHandler(
+        ledger=FakeReviewTriageLedger(events=events),
+        specs=FakeSpecRepo(spec=_make_spec()),
+        jobs=jobs,
+        clock=FixedClock(),
+        projects=object(),
+    )
+    outcome = await handler.handle(_make_job())
+    assert isinstance(outcome, Success)

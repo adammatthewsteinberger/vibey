@@ -171,3 +171,31 @@ async def test_heartbeat_task_is_cancelled_cleanly_after_settling() -> None:
 
     # Should return promptly rather than waiting out the (long) heartbeat interval.
     await asyncio.wait_for(loop.run_once(PROJECT_ID), timeout=1.0)
+
+
+async def test_unknown_outcome_type_is_silently_ignored() -> None:
+    """When _settle receives an outcome not matching any known type, the elif
+    chain falls through without taking any action on the job."""
+
+    class _UnknownOutcome:
+        pass
+
+    class _UnknownHandler:
+        async def handle(self, job: JobRecord) -> object:
+            return _UnknownOutcome()
+
+    job = make_job(PROJECT_ID)
+    jobs = FakeJobRepository([job])
+    gates = FakeHumanGateRepository()
+    loop = WorkerLoop(
+        jobs=jobs,
+        gates=gates,
+        handler=_UnknownHandler(),  # type: ignore[arg-type]
+        owner="w1",
+    )
+
+    await loop.run_once(PROJECT_ID)
+
+    record = await jobs.get(job.id)
+    assert record is not None
+    assert record.state is JobState.LEASED

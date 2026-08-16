@@ -328,25 +328,26 @@ async def test_deploy_handlers_edge_cases() -> None:
     assert isinstance(await synthesize_handler.handle(wrong_job), Failure)
     assert isinstance(await acceptance_handler.handle(wrong_job), Failure)
 
-    # Gate raised but answer is None (re-parks)
-    interview_job = base_job.__class__(
-        **{
-            k: getattr(base_job, k)
-            for k in base_job.__dataclass_fields__
-            if k not in {"phase", "kind"}
-        },
-        phase=Phase.DEPLOY_DESIGN,
-        kind="deploy.interview",
-    )
-    # First call raises gate
-    outcome_park1 = await interview_handler.handle(interview_job)
-    assert isinstance(outcome_park1, Park)
-    # Second call without answering still parks
-    outcome_park2 = await interview_handler.handle(interview_job)
-    assert isinstance(outcome_park2, Park)
 
-    # Acceptance handler with gate raised and answer is None
-    spec_job = base_job.__class__(
+@pytest.mark.asyncio
+async def test_deploy_acceptance_skips_transition_without_transition_method() -> None:
+    """When projects is a plain object without transition, the handler still succeeds."""
+    ledger = FakeDeployLedger()
+    gates = FakeHumanGateRepository()
+    jobs = FakeJobRepository()
+    clock = FakeClock()
+
+    spec = _valid_spec()
+    handler = DeployAcceptanceHandler(
+        ledger=ledger,
+        gates=gates,
+        jobs=jobs,
+        projects=object(),
+        clock=clock,
+        spec_provider=lambda _pid: spec,
+    )
+    base_job = make_job(uuid4())
+    job = base_job.__class__(
         **{
             k: getattr(base_job, k)
             for k in base_job.__dataclass_fields__
@@ -355,17 +356,128 @@ async def test_deploy_handlers_edge_cases() -> None:
         phase=Phase.DEPLOY_DESIGN,
         kind="deploy.spec",
     )
-    await acceptance_handler.handle(spec_job)
-    outcome_acc_park2 = await acceptance_handler.handle(spec_job)
-    assert isinstance(outcome_acc_park2, Park)
 
-    # Spec validation failure
-    gate = await gates.latest_for_job(spec_job.id)
+    outcome = await handler.handle(job)
+    assert isinstance(outcome, Park)
+
+    gate = await gates.latest_for_job(job.id)
     assert gate is not None
     await gates.answer(
         gate.gate_id,
         answer={"verdict": "accept", "explicit_mutation_authorized": True},
         answered_by="user",
     )
-    outcome_invalid_spec = await acceptance_handler.handle(spec_job)
-    assert isinstance(outcome_invalid_spec, Failure)
+
+    outcome2 = await handler.handle(job)
+    assert isinstance(outcome2, Success)
+    assert outcome2.result.get("verdict") == "accepted"
+    assert len(jobs._jobs) >= 1
+
+
+@pytest.mark.asyncio
+async def test_deploy_interview_reparks_when_gate_unanswered() -> None:
+    """Covers deploy_design_handler.py line 45: gate.answer is None re-parks."""
+    ledger = FakeDeployLedger()
+    gates = FakeHumanGateRepository()
+    clock = FakeClock()
+
+    handler = DeployInterviewHandler(ledger=ledger, gates=gates, clock=clock)
+    base_job = make_job(uuid4())
+    job = base_job.__class__(
+        **{
+            k: getattr(base_job, k)
+            for k in base_job.__dataclass_fields__
+            if k not in {"phase", "kind"}
+        },
+        phase=Phase.DEPLOY_DESIGN,
+        kind="deploy.interview",
+    )
+
+    outcome1 = await handler.handle(job)
+    assert isinstance(outcome1, Park)
+    outcome2 = await handler.handle(job)
+    assert isinstance(outcome2, Park)
+
+
+@pytest.mark.asyncio
+async def test_deploy_acceptance_reparks_when_gate_unanswered() -> None:
+    """Covers deploy_acceptance_handler.py line 58: gate.answer is None re-parks."""
+    ledger = FakeDeployLedger()
+    gates = FakeHumanGateRepository()
+    jobs = FakeJobRepository()
+    projects = FakeProjectTransitioner()
+    clock = FakeClock()
+
+    handler = DeployAcceptanceHandler(
+        ledger=ledger,
+        gates=gates,
+        jobs=jobs,
+        projects=projects,
+        clock=clock,
+        spec_provider=lambda _pid: _valid_spec(),
+    )
+    base_job = make_job(uuid4())
+    job = base_job.__class__(
+        **{
+            k: getattr(base_job, k)
+            for k in base_job.__dataclass_fields__
+            if k not in {"phase", "kind"}
+        },
+        phase=Phase.DEPLOY_DESIGN,
+        kind="deploy.spec",
+    )
+
+    outcome1 = await handler.handle(job)
+    assert isinstance(outcome1, Park)
+    outcome2 = await handler.handle(job)
+    assert isinstance(outcome2, Park)
+
+
+@pytest.mark.asyncio
+async def test_deploy_acceptance_invalid_spec_returns_failure() -> None:
+    """Covers deploy_acceptance_handler.py line 83: invalid spec validation."""
+    ledger = FakeDeployLedger()
+    gates = FakeHumanGateRepository()
+    jobs = FakeJobRepository()
+    projects = FakeProjectTransitioner()
+    clock = FakeClock()
+
+    invalid_spec = DeploymentSpec(
+        spec_id="",
+        version="",
+        target_scope=AzureTargetScope("", "", "", "", ""),
+        identity=IdentityAuthority("", "", ()),
+        topology=TopologyConfig("", "", ""),
+        recovery_policy=RecoveryPolicy("", False),
+        verification=VerificationContract("", (), -1),
+        cost_boundary=CostBoundary(-1, -1),
+    )
+    handler = DeployAcceptanceHandler(
+        ledger=ledger,
+        gates=gates,
+        jobs=jobs,
+        projects=projects,
+        clock=clock,
+        spec_provider=lambda _pid: invalid_spec,
+    )
+    base_job = make_job(uuid4())
+    job = base_job.__class__(
+        **{
+            k: getattr(base_job, k)
+            for k in base_job.__dataclass_fields__
+            if k not in {"phase", "kind"}
+        },
+        phase=Phase.DEPLOY_DESIGN,
+        kind="deploy.spec",
+    )
+
+    await handler.handle(job)
+    gate = await gates.latest_for_job(job.id)
+    assert gate is not None
+    await gates.answer(
+        gate.gate_id,
+        answer={"verdict": "accept", "explicit_mutation_authorized": True},
+        answered_by="user",
+    )
+    outcome = await handler.handle(job)
+    assert isinstance(outcome, Failure)

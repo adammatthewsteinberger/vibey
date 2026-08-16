@@ -200,3 +200,40 @@ def test_agyloop_style_turn_extracts_cleanly() -> None:
     result = extract_events(AGYLOOP_TURN, open_items=(), now=NOW)
     kinds = [e.kind for e in result.events]
     assert kinds == ["ArtifactProduced", "VerdictRendered"]
+
+
+def test_an_already_open_decision_is_reused_rather_than_minted_again() -> None:
+    """Re-minting on every turn would fill the ledger with duplicates of the
+    same decision and leave the handoff gate unable to tell what is still open."""
+    title = "outbox over two-phase commit"
+    existing = OpenItemRef(
+        item_id="dec-existing",
+        kind=OpenItemKind.DECISION,
+        normalized=normalize_text(title),
+    )
+
+    result = extract_events(
+        {"complete": False, "decisions": [{"title": title, "rationale": "simpler"}]},
+        now=NOW,
+        open_items=[existing],
+    )
+
+    assert result.reused_ids[title] == "dec-existing"
+    assert not [e for e in result.events if str(e.kind).startswith("Decision")]
+
+
+def test_an_already_open_assumption_is_reused_rather_than_minted_again() -> None:
+    text = "postgres is the only write database"
+    existing = OpenItemRef(
+        item_id="asm-existing",
+        kind=OpenItemKind.ASSUMPTION,
+        normalized=normalize_text(text),
+    )
+
+    result = extract_events(
+        {"complete": False, "assumptions": [{"text": text, "confidence": "high"}]},
+        now=NOW,
+        open_items=[existing],
+    )
+
+    assert result.reused_ids[text] == "asm-existing"

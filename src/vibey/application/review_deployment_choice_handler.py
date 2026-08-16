@@ -7,11 +7,13 @@ Presents the explicit deployment opt-in / opt-out choice gate:
 - If opted in: records ``DeploymentOptedIn`` and hands off to Phase 4 (``deploy.design``).
 """
 
-from collections.abc import Mapping, Sequence
-from typing import Any, Protocol
-from uuid import UUID
+from collections.abc import Sequence
 
 from vibey.application.dto import EnqueueRequest, HumanGateRequest, JobRecord
+from vibey.application.interfaces import (
+    PhaseLedger,
+    ProjectTransitioner,
+)
 from vibey.application.ports import Clock, HumanGateRepository, JobRepository
 from vibey.application.worker import Failure, Outcome, Park, Success
 from vibey.domain.effort import Effort
@@ -30,35 +32,11 @@ def can_enqueue_deployment_design(events: Sequence[LedgerEvent]) -> bool:
     return latest_decision is EventKind.DEPLOYMENT_OPTED_IN
 
 
-class ReviewDeploymentLedger(Protocol):
-    async def all_for_project(self, project_id: UUID) -> Sequence[LedgerEvent]: ...
-
-    async def append_event(
-        self,
-        project_id: UUID,
-        cycle: int,
-        job_id: UUID,
-        kind: EventKind,
-        payload: Mapping[str, object],
-    ) -> None: ...
-
-
-class ProjectTransitioner(Protocol):
-    async def transition(
-        self,
-        project_id: UUID,
-        *,
-        expected: Phase,
-        to: Phase,
-        cycle: int | None = None,
-    ) -> Any: ...
-
-
 class ReviewDeploymentChoiceHandler:
     def __init__(
         self,
         *,
-        ledger: ReviewDeploymentLedger,
+        ledger: PhaseLedger,
         gates: HumanGateRepository,
         jobs: JobRepository,
         projects: ProjectTransitioner | object,

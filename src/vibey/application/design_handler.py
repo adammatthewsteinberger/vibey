@@ -1,8 +1,6 @@
 """Durable ``design.interview`` handler for the seven-stage protocol."""
 
 from collections.abc import Mapping, Sequence
-from typing import Protocol
-from uuid import UUID
 
 from vibey.application.design import (
     DesignEvent,
@@ -14,6 +12,10 @@ from vibey.application.design import (
     stages_for_cycle,
 )
 from vibey.application.dto import EnqueueRequest, HumanGateRequest, JobRecord
+from vibey.application.interfaces import (
+    DesignLedger,
+    DesignQuestionProvider,
+)
 from vibey.application.ports import Clock, HumanGateRepository, JobRepository
 from vibey.application.worker import Outcome, Park, Success
 from vibey.domain.effort import Effort
@@ -21,25 +23,6 @@ from vibey.domain.engine import EngineId
 from vibey.domain.job import idempotency_key
 from vibey.domain.ledger import EventKind
 from vibey.domain.phase import Phase
-
-
-class DesignLedger(Protocol):
-    async def append(
-        self,
-        project_id: UUID,
-        cycle: int,
-        job_id: UUID | None,
-        engine_id: EngineId | None,
-        event: DesignEvent,
-    ) -> None: ...
-
-    async def all_for_project(self, project_id: UUID) -> tuple[DesignEvent, ...]: ...
-
-
-class DesignQuestionProvider(Protocol):
-    async def batch(
-        self, stage: DesignStage, prior_events: Sequence[DesignEvent]
-    ) -> QuestionBatch: ...
 
 
 class DesignInterviewHandler:
@@ -195,3 +178,11 @@ def _gate_for(batch: QuestionBatch) -> HumanGateRequest:
         prompt=prompt,
         options=tuple(question.default for question in batch.questions),
     )
+
+
+# Re-exported for the same reason `application/ports.py` re-exports the
+# interfaces package: the seam moved, the import path should not break.
+__all__ = [
+    "DesignLedger",
+    "DesignQuestionProvider",
+]

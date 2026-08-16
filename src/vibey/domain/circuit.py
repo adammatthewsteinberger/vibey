@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 from enum import StrEnum
 
 from vibey.domain.capacity import (
-    AuthenticationFailed,
     Available,
     CapacityState,
     CreditsExhausted,
@@ -89,5 +88,5 @@ def schedule_probe(capacity: CapacityState, *, now: datetime, attempt: int) -> P
         case CreditsExhausted():
             delay = _backoff(attempt, floor=timedelta(minutes=5), cap=timedelta(minutes=30))
             return BackoffProbe(next_at=now + delay, attempt=attempt)
-        case AuthenticationFailed():
-            return None  # waiting cannot fix credentials
+        case _:
+            return None  # AuthenticationFailed or unknown -- waiting cannot fix credentials

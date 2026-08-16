@@ -7,8 +7,8 @@ from tests.application.fakes import FakeJobRepository
 from vibey.application.dto import HumanGateRecord, HumanGateRequest, JobRecord, ProjectRecord
 from vibey.application.ports import Clock, HumanGateRepository
 from vibey.application.review_deployment_choice_handler import (
+    PhaseLedger,
     ReviewDeploymentChoiceHandler,
-    ReviewDeploymentLedger,
 )
 from vibey.application.worker import Failure, Park, Success
 from vibey.domain.effort import Effort
@@ -25,7 +25,7 @@ class FixedClock(Clock):
         return NOW
 
 
-class FakeReviewDeploymentLedger(ReviewDeploymentLedger):
+class FakeReviewDeploymentLedger(PhaseLedger):
     def __init__(self, events: Sequence[LedgerEvent] = ()) -> None:
         self._events: list[LedgerEvent] = list(events)
         self.appended: list[tuple[EventKind, Mapping[str, object]]] = []
@@ -327,3 +327,66 @@ async def test_review_deployment_choice_opt_in_records_event() -> None:
     events = [k for k, p in ledger.appended]
     assert EventKind.DEPLOYMENT_OPTED_IN in events
     assert EventKind.DEPLOYMENT_DECLINED not in events
+
+
+async def test_review_deployment_choice_opt_in_skips_transition_without_transition_method() -> None:
+    project_id = uuid4()
+    gates = FakeGateRepo(answer={"choice": "deploy"})
+    jobs = FakeJobRepository()
+    ledger = FakeReviewDeploymentLedger(
+        events=(
+            LedgerEvent(
+                event_id=uuid4(),
+                project_id=project_id,
+                cycle=1,
+                phase=Phase.REVIEW,
+                seq=1,
+                kind=EventKind.VERDICT_RENDERED,
+                engine_id=EngineId.CLAUDELOOP,
+                job_id=uuid4(),
+                causation_id=None,
+                correlation_id=uuid4(),
+                provenance=Provenance.TRUSTED,
+                produced_at=NOW,
+                payload={"complete": False},
+                digest="abc",
+            ),
+        )
+    )
+
+    handler = ReviewDeploymentChoiceHandler(
+        ledger=ledger,
+        gates=gates,
+        jobs=jobs,
+        projects=object(),
+        clock=FixedClock(),
+    )
+    job = _make_job(project_id=project_id)
+    assert isinstance(await handler.handle(job), Park)
+    outcome = await handler.handle(job)
+    assert isinstance(outcome, Success)
+    assert outcome.result.get("decision") == "opted_in"
+
+    enqueued = list(jobs._jobs.values())
+    assert any(j.kind == "deploy.design" for j in enqueued)
+
+
+async def test_review_deployment_choice_opt_out_skips_transition_no_method() -> None:
+    project_id = uuid4()
+    gates = FakeGateRepo(answer={"choice": "local_only"})
+    jobs = FakeJobRepository()
+    ledger = FakeReviewDeploymentLedger()
+
+    handler = ReviewDeploymentChoiceHandler(
+        ledger=ledger,
+        gates=gates,
+        jobs=jobs,
+        projects=object(),
+        clock=FixedClock(),
+    )
+    job = _make_job(project_id=project_id)
+    assert isinstance(await handler.handle(job), Park)
+    outcome = await handler.handle(job)
+    assert isinstance(outcome, Success)
+    assert outcome.result.get("decision") == "declined"
+    assert outcome.result.get("completion_mode") == "local"

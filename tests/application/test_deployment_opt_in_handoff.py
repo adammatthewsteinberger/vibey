@@ -7,8 +7,8 @@ from tests.application.fakes import FakeJobRepository
 from vibey.application.dto import HumanGateRecord, HumanGateRequest, JobRecord, ProjectRecord
 from vibey.application.ports import Clock, HumanGateRepository
 from vibey.application.review_deployment_choice_handler import (
+    PhaseLedger,
     ReviewDeploymentChoiceHandler,
-    ReviewDeploymentLedger,
     can_enqueue_deployment_design,
 )
 from vibey.application.worker import Failure, Success
@@ -26,7 +26,7 @@ class FixedClock(Clock):
         return NOW
 
 
-class FakeReviewDeploymentLedger(ReviewDeploymentLedger):
+class FakeReviewDeploymentLedger(PhaseLedger):
     def __init__(self, events: Sequence[LedgerEvent] = ()) -> None:
         self._events: list[LedgerEvent] = list(events)
         self.appended: list[tuple[EventKind, Mapping[str, object]]] = []
@@ -63,7 +63,7 @@ class FakeReviewDeploymentLedger(ReviewDeploymentLedger):
         )
 
 
-class CorruptedDeploymentLedger(ReviewDeploymentLedger):
+class CorruptedDeploymentLedger(PhaseLedger):
     """Fails to append or returns empty events to simulate ledger write failure."""
 
     async def all_for_project(self, project_id: UUID) -> tuple[LedgerEvent, ...]:

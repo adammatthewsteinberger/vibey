@@ -1,5 +1,12 @@
 from vibey.application.seed_prompt import closable_ids_in_brief, render_seed_prompt
-from vibey.domain.handoff import AssumptionRef, DecisionRef, HandoffBrief, QuestionRef
+from vibey.domain.handoff import (
+    ArtifactRef,
+    AssumptionRef,
+    DecisionRef,
+    HandoffBrief,
+    QuestionRef,
+    RemainingItem,
+)
 from vibey.domain.review import Ambiguity, FindingRef, Severity
 
 
@@ -56,3 +63,43 @@ def test_closable_ids_in_brief_covers_all_four_kinds() -> None:
     brief = _brief()
     ids = closable_ids_in_brief(brief)
     assert ids == {"d1", "a1", "q1", "f1"}
+
+
+def test_remaining_work_and_artifacts_are_rendered_when_present() -> None:
+    """Both sections are omitted entirely when empty, so the populated arms
+    need their own case -- a successor that cannot see remaining work has no
+    idea what it was handed."""
+    prompt = render_seed_prompt(
+        _brief(
+            remaining=(RemainingItem("cap the retry queue", item_id="r1"),),
+            artifacts=(ArtifactRef("art1", ".vibey/context/spec.md"),),
+        )
+    )
+
+    assert "Remaining work:" in prompt
+    assert "cap the retry queue" in prompt
+    assert "Artifacts you may need:" in prompt
+    assert ".vibey/context/spec.md" in prompt
+
+
+def test_an_empty_brief_still_renders_the_notice_and_objective() -> None:
+    """Every optional section absent at once -- the floor a deterministic brief
+    can degrade to without producing an unusable prompt."""
+    prompt = render_seed_prompt(
+        _brief(
+            constraints=(),
+            decisions=(),
+            assumptions=(),
+            done=(),
+            remaining=(),
+            open_questions=(),
+            open_findings=(),
+            artifacts=(),
+            invariants=(),
+            style_rules=(),
+        )
+    )
+
+    assert "ship the outbox relay" in prompt
+    assert ".vibey/handoff/ledger.jsonl" in prompt
+    assert "Remaining work:" not in prompt

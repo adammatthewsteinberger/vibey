@@ -192,9 +192,9 @@ class InMemoryProjects:
         to: Phase,
         cycle: int | None = None,
     ) -> ProjectRecord:
-        assert (
-            self.project.phase == expected
-        ), f"Expected phase {expected}, got {self.project.phase}"
+        assert self.project.phase == expected, (
+            f"Expected phase {expected}, got {self.project.phase}"
+        )
         self.project = replace(
             self.project,
             phase=to,

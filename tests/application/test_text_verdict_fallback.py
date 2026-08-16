@@ -94,3 +94,21 @@ def test_fallback_output_feeds_directly_into_extract_events() -> None:
 
     kinds = [e.kind for e in result.events]
     assert kinds == ["QuestionAsked", "DecisionRecorded", "AssumptionStated", "VerdictRendered"]
+
+
+def test_a_blocked_line_becomes_blocked_on() -> None:
+    """The one label that changes the verdict rather than adding to a list: a
+    blocked turn must not be read as merely incomplete."""
+    verdict = extract_verdict_from_text(
+        "Summary of what happened.\nBlocked: waiting on the staging credentials\n"
+    )
+
+    assert verdict["blocked_on"] == "waiting on the staging credentials"
+    assert verdict["complete"] is False
+
+
+def test_a_remaining_line_is_collected_without_blocking() -> None:
+    verdict = extract_verdict_from_text("Remaining: wire the retry cap\n")
+
+    assert verdict["remaining_work"] == ["wire the retry cap"]
+    assert verdict["blocked_on"] is None
