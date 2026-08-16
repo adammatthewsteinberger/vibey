@@ -211,3 +211,63 @@ async def test_review_triage_handler_unclear_or_critical_sets_max_effort() -> No
     design_job = next((j for j in enqueued if j.kind == "design.interview"), None)
     assert design_job is not None
     assert design_job.requirement.get("effort") == Effort.MAX.name.lower()
+
+
+class FakeProjectTransitioner:
+    def __init__(self) -> None:
+        self.transitions: list[tuple[UUID, Phase, Phase, int]] = []
+
+    async def transition(self, project_id: UUID, *, expected: Phase, to: Phase, cycle: int) -> None:
+        self.transitions.append((project_id, expected, to, cycle))
+
+
+async def test_review_triage_handler_transitions_project_when_projects_provided() -> None:
+    """When a projects transitioner is passed, the handler calls transition."""
+    events = (
+        _make_event(
+            EventKind.FINDING_RAISED,
+            {
+                "finding_id": "f-1",
+                "text": "Trim leading and trailing whitespace on note title during save.",
+            },
+            seq=1,
+        ),
+    )
+    jobs = FakeJobRepository()
+    ledger = FakeReviewTriageLedger(events=events)
+    projects = FakeProjectTransitioner()
+    handler = ReviewTriageHandler(
+        ledger=ledger,
+        specs=FakeSpecRepo(spec=_make_spec()),
+        jobs=jobs,
+        clock=FixedClock(),
+        projects=projects,
+    )
+    job = _make_job()
+    outcome = await handler.handle(job)
+    assert isinstance(outcome, Success)
+    assert outcome.result.get("next_phase") == Phase.BUILD.value
+    assert len(projects.transitions) == 1
+    assert projects.transitions[0][2] is Phase.BUILD
+    assert projects.transitions[0][3] == 2
+
+
+async def test_review_triage_handler_skips_transition_without_transition_method() -> None:
+    """When projects is a plain object without transition, no error occurs."""
+    events = (
+        _make_event(
+            EventKind.FINDING_RAISED,
+            {"finding_id": "f-1", "text": "Minor issue."},
+            seq=1,
+        ),
+    )
+    jobs = FakeJobRepository()
+    handler = ReviewTriageHandler(
+        ledger=FakeReviewTriageLedger(events=events),
+        specs=FakeSpecRepo(spec=_make_spec()),
+        jobs=jobs,
+        clock=FixedClock(),
+        projects=object(),
+    )
+    outcome = await handler.handle(_make_job())
+    assert isinstance(outcome, Success)

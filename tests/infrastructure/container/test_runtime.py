@@ -87,3 +87,89 @@ async def test_container_executor_run_mocked() -> None:
 def test_container_is_available() -> None:
     executor = OciContainerExecutor(runtime_binary="nonexistent_binary_xyz_123")
     assert executor.is_available() is False
+
+
+# --- _detect_runtime coverage ------------------------------------------------
+
+
+def test_detect_runtime_finds_docker(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("shutil.which", lambda c: "/usr/bin/docker" if c == "docker" else None)
+    executor = OciContainerExecutor()
+    assert executor._runtime_binary == "docker"
+
+
+def test_detect_runtime_finds_podman_when_docker_is_absent(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("shutil.which", lambda c: "/usr/bin/podman" if c == "podman" else None)
+    executor = OciContainerExecutor()
+    assert executor._runtime_binary == "podman"
+
+
+def test_detect_runtime_falls_back_to_docker_when_neither_found(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("shutil.which", lambda c: None)
+    executor = OciContainerExecutor()
+    assert executor._runtime_binary == "docker"
+
+
+# --- build_argv falsy config branches ----------------------------------------
+
+
+def test_build_argv_omits_flags_when_config_values_are_falsy() -> None:
+    config = ContainerConfig(
+        image="test:latest",
+        worktree_path=Path("/tmp/w"),
+        read_only_root=False,
+        network_mode="",
+        memory_limit="",
+        cpu_limit="",
+        drop_capabilities=(),
+        security_options=(),
+        tmpfs_mounts=(),
+    )
+    executor = OciContainerExecutor(runtime_binary="docker")
+    argv = executor.build_argv(config, ["echo", "hi"])
+
+    assert "--read-only" not in argv
+    assert not any(a.startswith("--network=") for a in argv)
+    assert not any(a.startswith("--memory=") for a in argv)
+    assert not any(a.startswith("--cpus=") for a in argv)
+
+
+# --- run() real subprocess path -----------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_run_real_subprocess_happy_path(monkeypatch: pytest.MonkeyPatch) -> None:
+    import asyncio
+
+    class FakeProc:
+        returncode = 0
+
+        async def communicate(self) -> tuple[bytes, bytes]:
+            return b"hello\n", b""
+
+    async def fake_create(*args: object, **kwargs: object) -> FakeProc:
+        return FakeProc()
+
+    monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create)
+    executor = OciContainerExecutor(runtime_binary="echo")
+    config = ContainerConfig(image="test:latest", worktree_path=Path("/tmp/w"))
+    result = await executor.run(config, ["hi"])
+    assert result.exit_code == 0
+    assert result.stdout == "hello\n"
+
+
+@pytest.mark.asyncio
+async def test_run_real_subprocess_error_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
+    import asyncio
+
+    async def fake_create(*args: object, **kwargs: object) -> None:
+        raise OSError("no such binary")
+
+    monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create)
+    executor = OciContainerExecutor(runtime_binary="nonexistent")
+    config = ContainerConfig(image="test:latest", worktree_path=Path("/tmp/w"))
+    result = await executor.run(config, ["hi"])
+    assert result.exit_code == 1
+    assert result.stderr == "Container execution failed"

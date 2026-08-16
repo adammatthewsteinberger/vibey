@@ -116,7 +116,7 @@ class ReviewTriageHandler:
                     requirement={"effort": effort.name.lower()},
                 )
             )
-        elif next_phase is Phase.BUILD:
+        else:
             await self._jobs.enqueue(
                 EnqueueRequest(
                     project_id=job.project_id,

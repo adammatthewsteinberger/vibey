@@ -248,6 +248,15 @@ def test_rebuild_from_replay_is_idempotent_and_deterministic() -> None:
     assert build_work_ledger(events) == build_work_ledger(list(reversed(events)))
 
 
+def test_build_deltas_skips_unrelated_event_kinds() -> None:
+    events = [
+        _event(1, EventKind.TURN_REQUESTED, {"prompt_digest": "x"}),
+        _event(2, EventKind.ASSUMPTION_STATED, {"assumption_id": "a1", "text": "recorded"}),
+    ]
+    deltas = build_deltas(events)
+    assert len(deltas.assumptions) == 1
+
+
 def test_build_deltas_ignores_assumptions_with_empty_id() -> None:
     """When assumption_id is empty, the assumption is not recorded."""
     events = [
@@ -321,6 +330,7 @@ def test_answer_why_question_includes_assumptions_in_search() -> None:
             EventKind.ASSUMPTION_STATED,
             {"assumption_id": "a1", "text": "Traffic will be under 1000 requests per second"},
         ),
+        _event(3, EventKind.TURN_REQUESTED, {"prompt_digest": "x"}),
     ]
 
     # Question matching the decision
