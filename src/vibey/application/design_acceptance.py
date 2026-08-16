@@ -10,6 +10,7 @@ OPTED_IN.
 """
 
 from datetime import datetime
+from typing import Protocol
 from uuid import UUID
 
 from vibey.application.build_kickoff import enqueue_build_decompose
@@ -21,9 +22,6 @@ from vibey.application.design_spec import (
 )
 from vibey.application.design_synthesis_handler import DesignSpecRepository
 from vibey.application.dto import EnqueueRequest, JobRecord, ProjectRecord
-from vibey.application.interfaces import (
-    ProjectStore,
-)
 from vibey.application.ports import Clock, JobRepository
 from vibey.domain.effort import Effort
 from vibey.domain.job import idempotency_key
@@ -36,6 +34,14 @@ from vibey.domain.phase import (
     VisualDecision,
     evaluate_transition,
 )
+
+
+class ProjectStore(Protocol):
+    async def get(self, project_id: UUID) -> ProjectRecord | None: ...
+
+    async def transition(
+        self, project_id: UUID, *, expected: Phase, to: Phase
+    ) -> ProjectRecord: ...
 
 
 class DesignAcceptanceService:

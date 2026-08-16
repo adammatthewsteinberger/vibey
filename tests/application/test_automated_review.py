@@ -9,10 +9,10 @@ from vibey.application.ports import Clock
 from vibey.application.review_demo_handler import (
     AutomatedFinding,
     AutomatedReviewRunner,
-    DesignSpecReader,
-    PhaseLedger,
     ReviewArtifactWriter,
     ReviewDemoHandler,
+    ReviewLedger,
+    ReviewSpecRepository,
 )
 from vibey.application.worker import Success
 from vibey.domain.effort import Effort
@@ -30,7 +30,7 @@ class FixedClock(Clock):
         return NOW
 
 
-class FakeSpecRepo(DesignSpecReader):
+class FakeSpecRepo(ReviewSpecRepository):
     def __init__(self, spec: DesignSpec | None = None) -> None:
         self.spec = spec
 
@@ -38,7 +38,7 @@ class FakeSpecRepo(DesignSpecReader):
         return self.spec
 
 
-class FakeReviewLedger(PhaseLedger):
+class FakeReviewLedger(ReviewLedger):
     def __init__(self, events: Sequence[LedgerEvent] = ()) -> None:
         self._events: list[LedgerEvent] = list(events)
         self.appended: list[tuple[EventKind, Mapping[str, object]]] = []

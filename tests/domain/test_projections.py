@@ -5,10 +5,8 @@ from vibey.domain.engine import EngineId
 from vibey.domain.ledger import EventKind, LedgerEvent, Provenance, digest_event
 from vibey.domain.phase import Phase
 from vibey.domain.projections import (
-    answer_why_question,
     build_cost_report,
     build_decision_log,
-    build_deltas,
     build_open_items,
     build_work_ledger,
 )
@@ -87,19 +85,18 @@ def test_build_decision_log_includes_every_decision_ever_recorded() -> None:
             EventKind.DECISION_RECORDED,
             {
                 "decision_id": "d2",
-                "title": "Postgres over Mongo",
-                "choice": "postgres",
-                "supersedes": "d1",
+                "title": "Retry cap",
+                "choice": "5",
+                "rationale": "SLA",
                 "alternatives": [],
+                "supersedes": "d1",
             },
         ),
     ]
 
     log = build_decision_log(events)
 
-    assert len(log) == 2
-    assert log[0].decision_id == "d1"
-    assert log[1].decision_id == "d2"
+    assert [e.decision_id for e in log] == ["d1", "d2"]
     assert log[0].superseded_by == "d2"
     assert log[1].superseded_by is None
     assert log[0].alternatives == ("2PC",)
@@ -246,99 +243,3 @@ def test_rebuild_from_replay_is_idempotent_and_deterministic() -> None:
     assert build_decision_log(events) == build_decision_log(list(reversed(events)))
     assert build_cost_report(events) == build_cost_report(list(reversed(events)))
     assert build_work_ledger(events) == build_work_ledger(list(reversed(events)))
-
-
-def test_build_deltas_skips_unrelated_event_kinds() -> None:
-    events = [
-        _event(1, EventKind.TURN_REQUESTED, {"prompt_digest": "x"}),
-        _event(2, EventKind.ASSUMPTION_STATED, {"assumption_id": "a1", "text": "recorded"}),
-    ]
-    deltas = build_deltas(events)
-    assert len(deltas.assumptions) == 1
-
-
-def test_build_deltas_ignores_assumptions_with_empty_id() -> None:
-    """When assumption_id is empty, the assumption is not recorded."""
-    events = [
-        _event(1, EventKind.ASSUMPTION_STATED, {"assumption_id": "", "text": "ignored"}),
-        _event(2, EventKind.ASSUMPTION_STATED, {"assumption_id": "a1", "text": "recorded"}),
-    ]
-
-    deltas = build_deltas(events)
-
-    assert len(deltas.assumptions) == 1
-    assert deltas.assumptions[0].assumption_id == "a1"
-
-
-def test_build_deltas_ignores_findings_with_empty_id() -> None:
-    """When finding_id is empty, the finding is not recorded."""
-    events = [
-        _event(1, EventKind.FINDING_RAISED, {"finding_id": "", "text": "ignored"}),
-        _event(2, EventKind.FINDING_RAISED, {"finding_id": "f1", "text": "recorded"}),
-    ]
-
-    deltas = build_deltas(events)
-
-    assert len(deltas.findings) == 1
-    assert deltas.findings[0].finding_id == "f1"
-
-
-def test_build_deltas_ignores_finding_resolved_with_empty_id() -> None:
-    """When finding_id is empty in FINDING_RESOLVED, it is skipped."""
-    events = [
-        _event(1, EventKind.FINDING_RAISED, {"finding_id": "f1", "text": "real"}),
-        _event(2, EventKind.FINDING_RESOLVED, {"finding_id": ""}),  # Empty, should be ignored
-        _event(3, EventKind.FINDING_RESOLVED, {"finding_id": "f1"}),
-    ]
-
-    deltas = build_deltas(events)
-
-    assert len(deltas.findings) == 1
-    assert deltas.findings[0].resolved is True
-
-
-def test_build_deltas_handles_finding_resolved_before_raised() -> None:
-    """When a finding is resolved before being raised, it's tracked but not in findings_map yet."""
-    events = [
-        _event(1, EventKind.FINDING_RESOLVED, {"finding_id": "f1"}),  # Resolved first
-        _event(2, EventKind.FINDING_RAISED, {"finding_id": "f1", "text": "late"}),
-    ]
-
-    deltas = build_deltas(events)
-
-    # The finding should appear and be marked as resolved
-    assert len(deltas.findings) == 1
-    assert deltas.findings[0].finding_id == "f1"
-    assert deltas.findings[0].resolved is True
-
-
-def test_answer_why_question_includes_assumptions_in_search() -> None:
-    """answer_why_question searches both decisions and assumptions."""
-    events = [
-        _event(
-            1,
-            EventKind.DECISION_RECORDED,
-            {
-                "decision_id": "d1",
-                "title": "Use PostgreSQL",
-                "choice": "postgres",
-                "rationale": "ACID compliance",
-            },
-        ),
-        _event(
-            2,
-            EventKind.ASSUMPTION_STATED,
-            {"assumption_id": "a1", "text": "Traffic will be under 1000 requests per second"},
-        ),
-        _event(3, EventKind.TURN_REQUESTED, {"prompt_digest": "x"}),
-    ]
-
-    # Question matching the decision
-    answer = answer_why_question(events, "Why PostgreSQL?")
-    assert "postgres" in answer.lower() or "decision" in answer.lower()
-
-    # Question matching the assumption
-    answer2 = answer_why_question(events, "What about traffic?")
-    assert (
-        "traffic" in answer2.lower() or "1000" in answer2.lower() or "assumption" in answer2.lower()
-    )

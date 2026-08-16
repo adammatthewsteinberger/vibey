@@ -74,30 +74,15 @@ def eligible(
 
 
 def health_factor(circuit: Circuit) -> float:
-    """1.0 closed, 0.25 half-open, 0.0 open; closed decays on recent failures.
-
-    Half-open is deliberately a quarter, not a half (ADR-0005): the circuit is
-    being *tested*, so it should win a round only when the alternatives are
-    genuinely worse -- not on even footing with a healthy engine.
-    """
     if circuit.state is CircuitState.OPEN:
         return 0.0
     if circuit.state is CircuitState.HALF_OPEN:
-        return 0.25
+        return 0.5
     return max(0.0, 1.0 - circuit.ewma_failure)
 
 
 def fidelity_factor(descriptor: EngineDescriptor, requested: Effort) -> float:
-    """1.0 at the requested tier, 0.7 one tier below, 0.5 two or more below.
-
-    An engine that saturates far below what was asked for is a worse answer
-    than one that just misses, so the penalty has to have more than one step.
-    """
-    achieved = descriptor.invoke(requested).achieved
-    shortfall = int(requested) - int(achieved)
-    if shortfall <= 0:
-        return 1.0
-    return 0.7 if shortfall == 1 else 0.5
+    return 0.7 if descriptor.saturates_at(requested) else 1.0
 
 
 def cost_factor(descriptor: EngineDescriptor, *, median_cost: float, enabled: bool) -> float:
@@ -109,16 +94,9 @@ def cost_factor(descriptor: EngineDescriptor, *, median_cost: float, enabled: bo
 
 
 def affinity_factor(*, holds_warm_session: bool, rotation_forced: bool) -> float:
-    """2.0 for a warm session, unless rotation is forced (ADR-0005).
-
-    This is what makes an ordinary retry stay put. Rotating on every retry
-    means a handoff on every retry: maximum cost, maximum chance the no-loss
-    gate has to work, zero benefit. It has to outweigh normal health and cost
-    variation to actually hold the session, which a 1.2 nudge does not.
-    """
     if rotation_forced:
         return 1.0
-    return 2.0 if holds_warm_session else 1.0
+    return 1.2 if holds_warm_session else 1.0
 
 
 def select(candidates: Sequence[Candidate]) -> Selection:

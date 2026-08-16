@@ -1,20 +1,34 @@
 """Phase ④ DEPLOY DESIGN interview and synthesis handlers (Milestone 10 task 10.3)."""
 
+from collections.abc import Mapping, Sequence
+from typing import Protocol
+from uuid import UUID
+
 from vibey.application.dto import HumanGateRequest, JobRecord
-from vibey.application.interfaces import (
-    PhaseLedger,
-)
 from vibey.application.ports import Clock, HumanGateRepository
 from vibey.application.worker import Failure, Outcome, Park, Success
 from vibey.domain.job import FailureClass
-from vibey.domain.ledger import EventKind
+from vibey.domain.ledger import EventKind, LedgerEvent
+
+
+class DeployDesignLedger(Protocol):
+    async def all_for_project(self, project_id: UUID) -> Sequence[LedgerEvent]: ...
+
+    async def append_event(
+        self,
+        project_id: UUID,
+        cycle: int,
+        job_id: UUID,
+        kind: EventKind,
+        payload: Mapping[str, object],
+    ) -> None: ...
 
 
 class DeployInterviewHandler:
     def __init__(
         self,
         *,
-        ledger: PhaseLedger,
+        ledger: DeployDesignLedger,
         gates: HumanGateRepository,
         clock: Clock,
     ) -> None:
@@ -74,7 +88,7 @@ class DeploySynthesizeHandler:
     def __init__(
         self,
         *,
-        ledger: PhaseLedger,
+        ledger: DeployDesignLedger,
         clock: Clock,
     ) -> None:
         self._ledger = ledger

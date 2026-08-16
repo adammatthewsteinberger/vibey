@@ -9,9 +9,9 @@ from pathlib import Path
 
 from vibey.application.build_integrate_handler import MergeOutcome
 from vibey.domain.worktree import branch_name
+from vibey.infrastructure.engines.claudeloop_process import CommandExecutor
 from vibey.infrastructure.git.clean_env import CleanGitEnvSubprocessExecutor
 from vibey.infrastructure.git.worktree_manager import GitWorktreeManager
-from vibey.infrastructure.interfaces import CommandExecutor
 
 INTEGRATION_ITEM_ID = "integration"
 

@@ -7,6 +7,7 @@ is still forced to untrusted provenance by the application handler.
 import json
 from collections.abc import Sequence
 from pathlib import Path
+from typing import Protocol
 from uuid import uuid4
 
 from vibey.application.design import (
@@ -27,7 +28,11 @@ from vibey.domain.spec import (
     DesignSpec,
     NonFunctionalRequirement,
 )
-from vibey.infrastructure.interfaces import BoundedClaudeLoop
+from vibey.infrastructure.engines.claudeloop_process import ClaudeLoopResult
+
+
+class BoundedClaudeLoop(Protocol):
+    async def run(self, spec: RunSpec, *, web_search: bool = False) -> ClaudeLoopResult: ...
 
 
 class ClaudeLoopDesignProvider:

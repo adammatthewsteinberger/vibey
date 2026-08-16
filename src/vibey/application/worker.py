@@ -5,20 +5,37 @@ be idempotent under replay)."""
 
 import asyncio
 import contextlib
+from collections.abc import Mapping
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from typing import Protocol, runtime_checkable
 from uuid import UUID
 
-from vibey.application.dto import JobRecord
-from vibey.application.interfaces import (
-    Defer,
-    Failure,
-    JobHandler,
-    Outcome,
-    Park,
-    Success,
-)
+from vibey.application.dto import HumanGateRequest, JobRecord
 from vibey.application.ports import HumanGateRepository, JobRepository
 from vibey.domain.job import FailureClass
+
+
+@dataclass(frozen=True, slots=True)
+class Success:
+    result: Mapping[str, object] = field(default_factory=dict)
+
+
+@dataclass(frozen=True, slots=True)
+class Failure:
+    failure_class: FailureClass
+    detail: str
+
+
+@dataclass(frozen=True, slots=True)
+class Park:
+    request: HumanGateRequest
+
+
+@dataclass(frozen=True, slots=True)
+class Defer:
+    retry_at: datetime
+    detail: str
 
 
 class CapacityDeferred(Exception):
@@ -26,6 +43,14 @@ class CapacityDeferred(Exception):
         super().__init__(detail)
         self.retry_at = retry_at
         self.detail = detail
+
+
+Outcome = Success | Failure | Park | Defer
+
+
+@runtime_checkable
+class JobHandler(Protocol):
+    async def handle(self, job: JobRecord) -> Outcome: ...
 
 
 class WorkerLoop:
@@ -98,15 +123,3 @@ class WorkerLoop:
                 await self._jobs.heartbeat(job_id, owner=self._owner, lease=self._lease)
         except asyncio.CancelledError:
             pass
-
-
-# Re-exported for the same reason `application/ports.py` re-exports the
-# interfaces package: the seam moved, the import path should not break.
-__all__ = [
-    "Defer",
-    "Failure",
-    "JobHandler",
-    "Outcome",
-    "Park",
-    "Success",
-]

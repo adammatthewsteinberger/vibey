@@ -42,19 +42,3 @@ class InvalidSpecError(VibeyError):
 
 class BudgetExceeded(VibeyError):
     """A spend would exceed the project's budget caps."""
-
-
-class UnknownProject(VibeyError):
-    """No project exists with the given id."""
-
-
-class WrongPhase(VibeyError):
-    """The project is not in a phase the requested command applies to."""
-
-
-class InvalidAnswer(VibeyError):
-    """A human-gate answer was not in the expected QUESTION_ID=ANSWER form."""
-
-
-class UnknownProvider(VibeyError):
-    """The requested engine provider is not one vibey knows how to build."""

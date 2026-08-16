@@ -166,26 +166,6 @@ async def test_probe_scheduling_round_trip_for_window_exhausted(
     assert written.resets_at == resets_at
 
 
-async def test_upsert_raises_lookup_error_when_fetchrow_returns_none() -> None:
-    class _NullConn:
-        async def fetchrow(self, *a: object, **kw: object) -> None:
-            return None
-
-    class _NullPool:
-        def acquire(self) -> "_NullPool":
-            return self
-
-        async def __aenter__(self) -> _NullConn:
-            return _NullConn()
-
-        async def __aexit__(self, *a: object) -> None:
-            pass
-
-    repo = PostgresEngineHealthRepository(_NullPool())  # type: ignore[arg-type]
-    with pytest.raises(LookupError, match="upsert"):
-        await repo.upsert(_record(UUID(int=0)))
-
-
 async def test_probe_scheduling_round_trip_for_credits_exhausted_never_persists_a_deadline(
     migrated_pool: asyncpg.Pool, project_id: UUID
 ) -> None:

@@ -61,7 +61,7 @@ def extract_verdict_from_text(text: str) -> dict[str, object]:
                 assumptions.append({"text": body, "confidence": "medium"})
             elif label == "remaining":
                 remaining_work.append(body)
-            else:
+            elif label == "blocked":
                 blocked_on = body
             break
         if not matched:

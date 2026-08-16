@@ -6,8 +6,8 @@ from uuid import UUID, uuid4
 from tests.application.fakes import FakeJobRepository
 from vibey.application.dto import JobRecord, ProjectRecord
 from vibey.application.ports import Clock
-from vibey.application.review_demo_handler import DesignSpecReader
-from vibey.application.review_triage_handler import PhaseLedger, ReviewTriageHandler
+from vibey.application.review_demo_handler import ReviewSpecRepository
+from vibey.application.review_triage_handler import ReviewTriageHandler, ReviewTriageLedger
 from vibey.application.worker import Success
 from vibey.domain.effort import Effort
 from vibey.domain.engine import EngineId
@@ -24,7 +24,7 @@ class FixedClock(Clock):
         return NOW
 
 
-class FakeReviewTriageLedger(PhaseLedger):
+class FakeReviewTriageLedger(ReviewTriageLedger):
     def __init__(self, events: Sequence[LedgerEvent] = ()) -> None:
         self._events: list[LedgerEvent] = list(events)
         self.appended: list[tuple[EventKind, Mapping[str, object]]] = []
@@ -43,7 +43,7 @@ class FakeReviewTriageLedger(PhaseLedger):
         self.appended.append((kind, payload))
 
 
-class FakeSpecRepo(DesignSpecReader):
+class FakeSpecRepo(ReviewSpecRepository):
     def __init__(self, spec: DesignSpec | None = None) -> None:
         self.spec = spec
 

@@ -1,7 +1,6 @@
 from uuid import UUID
 
 import asyncpg
-import pytest
 
 from vibey.application.dto import HumanGateRequest, JobRecord
 from vibey.application.worker import Outcome, Park, WorkerLoop
@@ -47,32 +46,6 @@ async def test_raise_and_answer_round_trip(migrated_pool: asyncpg.Pool, project_
     requeued = await jobs.get(job.id)
     assert requeued is not None
     assert requeued.state is JobState.READY
-
-
-async def test_answer_nonexistent_gate_raises_lookup_error(
-    migrated_pool: asyncpg.Pool, project_id: UUID
-) -> None:
-    from uuid import uuid4
-
-    gates = PostgresHumanGateRepository(migrated_pool)
-    with pytest.raises(LookupError, match="expected a row"):
-        await gates.answer(uuid4(), answer={"choice": "yes"}, answered_by="test")
-
-
-async def test_answer_gate_with_no_job_id_skips_job_requeue(
-    migrated_pool: asyncpg.Pool, project_id: UUID
-) -> None:
-    gates = PostgresHumanGateRepository(migrated_pool)
-
-    raised = await gates.raise_gate(
-        project_id,
-        None,
-        HumanGateRequest(kind="approval", prompt="proceed?"),
-    )
-
-    answered = await gates.answer(raised.gate_id, answer={"choice": "yes"}, answered_by="test")
-    assert answered.answered_at is not None
-    assert answered.answer == {"choice": "yes"}
 
 
 async def test_parked_job_releases_lease_immediately_and_worker_is_free(

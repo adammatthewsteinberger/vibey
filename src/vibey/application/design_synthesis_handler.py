@@ -1,13 +1,27 @@
 """Synthesis and final publication handlers for DESIGN."""
 
+from collections.abc import Sequence
+from typing import Protocol
+from uuid import UUID
+
+from vibey.application.design import DesignEvent
 from vibey.application.design_handler import DesignLedger
 from vibey.application.dto import JobRecord
-from vibey.application.interfaces import (
-    DesignSpecRepository,
-    SpecSynthesizer,
-)
 from vibey.application.worker import Failure, Outcome, Success
 from vibey.domain.job import FailureClass
+from vibey.domain.spec import DesignSpec
+
+
+class SpecSynthesizer(Protocol):
+    async def synthesize(self, events: Sequence[DesignEvent]) -> DesignSpec: ...
+
+
+class DesignSpecRepository(Protocol):
+    async def save(self, project_id: UUID, cycle: int, spec: DesignSpec) -> None: ...
+
+    async def load(self, project_id: UUID, cycle: int) -> DesignSpec | None: ...
+
+    async def publish(self, project_id: UUID, cycle: int, spec: DesignSpec) -> None: ...
 
 
 class DesignSynthesizeHandler:
@@ -46,11 +60,3 @@ class DesignSpecHandler:
             return Failure(FailureClass.WORK, "no synthesized design spec exists")
         await self._specs.publish(job.project_id, job.cycle, spec)
         return Success({"acceptance_criteria": len(spec.criteria)})
-
-
-# Re-exported for the same reason `application/ports.py` re-exports the
-# interfaces package: the seam moved, the import path should not break.
-__all__ = [
-    "DesignSpecRepository",
-    "SpecSynthesizer",
-]

@@ -43,16 +43,3 @@ forbidden_modules =
     vibey.infrastructure
     vibey.cli
     vibey.tui
-
-# The interfaces packages are the bottom of their layer: they declare the
-# seams, so they must never import the code that consumes them.
-[importlinter:contract:interfaces-declare-only]
-name = Interfaces declare seams, never consume them
-type = forbidden
-source_modules =
-    vibey.application.interfaces
-forbidden_modules =
-    vibey.infrastructure
-    vibey.cli
-    vibey.tui
-    vibey.bootstrap

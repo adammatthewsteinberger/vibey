@@ -72,7 +72,6 @@ three things those runners deliberately do not do:
 
 | Document | What's in it |
 |---|---|
-| [Fleet program runbook](docs/plans/fleet-program-runbook.md) | The cross-repo program: current state, coverage gates, seven surfaces, and the claudeloop invocation that executes it |
 | [Architecture & roadmap](docs/plans/architecture-and-roadmap.md) | The master design: context, containers, layers, phases, risks, milestones |
 | [Domain model](docs/plans/domain-model.md) | Every value object, ADT, and invariant in `domain/` |
 | [Data model](docs/plans/data-model.md) | Full PostgreSQL DDL, queue semantics, indices |
