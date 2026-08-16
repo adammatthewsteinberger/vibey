@@ -96,3 +96,20 @@ def test_merge_router_round_trips_to_an_identical_string() -> None:
     block = render_block(spec())
     assert merge_router(block, block) == block
     assert needs_write(block, merge_router(block, block)) is False
+
+
+def test_merge_router_handles_tail_without_leading_newline() -> None:
+    """When the tail after END_MARKER doesn't start with a newline,
+    or the block doesn't end with one, the tail is preserved as-is."""
+    old_block = render_block(ProvisionSpec(("old",), ()))
+    # Create existing content where the tail doesn't start with newline
+    # by manually constructing it without the typical newline after END_MARKER
+    existing = f"prefix\n{old_block.rstrip()}\nTail content"
+
+    new_block = render_block(spec())
+    merged = merge_router(existing, new_block)
+
+    # The tail should still be there
+    assert "Tail content" in merged
+    # The new block's content should be present
+    assert "no secrets in the repo" in merged
