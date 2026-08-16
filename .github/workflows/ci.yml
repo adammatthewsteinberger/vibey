@@ -7,6 +7,16 @@ on:
     branches: [main, develop]
 
 jobs:
+  uv-lock:
+    name: uv.lock is in sync with pyproject.toml
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - run: uv lock --check
+
   gates:
     runs-on: ubuntu-latest
     services:
