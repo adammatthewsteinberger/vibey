@@ -244,3 +244,28 @@ def test_ledger_show_command(tmp_path: Path) -> None:
     assert "AnswerGiven" in res.stdout
     assert "#1" in res.stdout
     assert "#2" in res.stdout
+
+
+def test_watch_command_with_no_projects() -> None:
+    """Watch command exits gracefully when no projects exist."""
+    from unittest.mock import AsyncMock, patch
+
+    # Mock the TUI app so it doesn't actually start
+    with patch("vibey.cli.main.VibeyDashboardApp") as mock_app:
+        mock_app.return_value.run_async = AsyncMock()
+        res = runner.invoke(app, ["watch"])
+        assert res.exit_code == 1, res.output
+        assert "no projects found" in res.output
+
+
+def test_watch_command_with_unknown_project_id() -> None:
+    """Watch command exits gracefully for unknown project ID."""
+    from uuid import uuid4
+    from unittest.mock import AsyncMock, patch
+
+    unknown_id = uuid4()
+    with patch("vibey.cli.main.VibeyDashboardApp") as mock_app:
+        mock_app.return_value.run_async = AsyncMock()
+        res = runner.invoke(app, ["watch", str(unknown_id)])
+        assert res.exit_code == 1, res.output
+        assert "unknown project" in res.output

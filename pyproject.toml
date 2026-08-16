@@ -66,6 +66,7 @@ ignore_missing_imports = true
 
 [tool.coverage.run]
 source = ["src/vibey"]
+branch = true
 
 [tool.coverage.report]
-fail_under = 90
+fail_under = 100
