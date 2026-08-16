@@ -18,6 +18,7 @@ jobs:
       - run: uv lock --check
 
   gates:
+    needs: [uv-lock]
     runs-on: ubuntu-latest
     services:
       postgres:
