@@ -22,34 +22,21 @@ idempotency key.
 
 import shlex
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Protocol
 from uuid import uuid4
 
 from vibey.application.build_engine_run import BuildLedger, run_and_record
 from vibey.application.dto import EnqueueRequest, JobRecord, RunSpec
+from vibey.application.interfaces import (
+    GateResult,
+    GateRunner,
+    VerifyWorktrees,
+)
 from vibey.application.ports import EngineAdapter, JobRepository
 from vibey.application.worker import Failure, Outcome, Success
 from vibey.domain.effort import Effort
 from vibey.domain.engine import IsolationLevel
 from vibey.domain.job import FailureClass, idempotency_key
 from vibey.domain.phase import Phase
-
-
-@dataclass(frozen=True, slots=True)
-class GateResult:
-    returncode: int
-    stdout: str
-    stderr: str
-
-
-class GateRunner(Protocol):
-    async def run(self, argv: tuple[str, ...], *, cwd: Path) -> GateResult: ...
-
-
-class VerifyWorktrees(Protocol):
-    def path_for(self, item_id: str) -> Path: ...
 
 
 class BuildVerifyHandler:
@@ -139,3 +126,12 @@ def _render_review_prompt(item_id: str, criteria_checked: Iterable[object], diff
         f"Review work item {item_id} against acceptance criteria: {criteria}\n\n"
         f"Diff:\n{diff or '(no diff)'}\n"
     )
+
+
+# Re-exported for the same reason `application/ports.py` re-exports the
+# interfaces package: the seam moved, the import path should not break.
+__all__ = [
+    "GateResult",
+    "GateRunner",
+    "VerifyWorktrees",
+]

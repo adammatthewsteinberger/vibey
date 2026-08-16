@@ -14,10 +14,17 @@ from vibey.application.visual_acceptance import VisualAcceptanceService
 from vibey.bootstrap import (
     DesignProvider,
     SystemClock,
-    VisualProvider,
+    VisualInventoryProducer,
     build_app,
     build_design_worker,
     build_visual_worker,
+)
+from vibey.cli.errors import guard
+from vibey.domain.errors import (
+    InvalidAnswer,
+    UnknownProject,
+    UnknownProvider,
+    WrongPhase,
 )
 from vibey.domain.job import idempotency_key
 from vibey.domain.ledger import EventKind
@@ -29,6 +36,7 @@ from vibey.domain.spec import (
     DesignSpec,
     NonFunctionalRequirement,
 )
+from vibey.domain.verbosity import resolve_log_plan
 from vibey.infrastructure.engines.claudeloop_design import ClaudeLoopDesignProvider
 from vibey.infrastructure.engines.claudeloop_process import (
     AsyncSubprocessExecutor,
@@ -36,6 +44,7 @@ from vibey.infrastructure.engines.claudeloop_process import (
 )
 from vibey.infrastructure.engines.scripted_design import ScriptedDesignProvider
 from vibey.infrastructure.engines.scripted_visual import ScriptedVisualProvider
+from vibey.infrastructure.logging import configure_logging
 
 app = typer.Typer(name="vibey", no_args_is_help=True)
 design_app = typer.Typer(name="design", invoke_without_command=True)
@@ -57,21 +66,43 @@ def _version_callback(value: bool) -> None:
 @app.callback()
 def main(
     version: bool = typer.Option(False, "--version", callback=_version_callback, is_eager=True),
+    verbose: int = typer.Option(
+        0,
+        "--verbose",
+        "-v",
+        count=True,
+        help="More detail: -v debug, -vv also third-party libraries, -vvv full payloads.",
+    ),
+    quiet: bool = typer.Option(False, "--quiet", "-q", help="Warnings and errors only."),
+    log_level: str | None = typer.Option(
+        None, "--log-level", help="DEBUG, INFO, WARNING, ERROR or CRITICAL. Overrides -v."
+    ),
+    log_file: Annotated[
+        Path | None,
+        typer.Option("--log-file", help="Also write redacted JSON lines to this file."),
+    ] = None,
 ) -> None:
-    """vibey: a queue-based, three-phase conductor for autonomous software delivery."""
+    """vibey: a queue-based, six-phase conductor for autonomous software delivery."""
+    del version
+    try:
+        plan = resolve_log_plan(verbose=verbose, quiet=quiet, log_level=log_level)
+    except ValueError as exc:
+        typer.echo(f"Error: {exc}", err=True)
+        raise typer.Exit(code=2) from exc
+    configure_logging(plan, log_file=log_file)
 
 
 async def _enqueue_design(project_id: UUID) -> str:
     async with build_app() as resources:
         project = await resources.projects.get(project_id)
         if project is None:
-            raise ValueError(f"unknown project {project_id}")
+            raise UnknownProject(f"unknown project {project_id}")
         if project.phase is Phase.INTAKE:
             project = await resources.projects.transition(
                 project_id, expected=Phase.INTAKE, to=Phase.DESIGN
             )
         if project.phase is not Phase.DESIGN:
-            raise ValueError(f"project is in {project.phase.value}, not design")
+            raise WrongPhase(f"project is in {project.phase.value}, not design")
         job = await resources.jobs.enqueue(
             EnqueueRequest(
                 project_id=project_id,
@@ -105,7 +136,8 @@ def new_project(
             )
         return str(project.project_id), await _enqueue_design(project.project_id)
 
-    project_id, job_id = asyncio.run(create())
+    with guard():
+        project_id, job_id = asyncio.run(create())
     typer.echo(f"project {project_id}\ndesign job {job_id}")
 
 
@@ -120,7 +152,8 @@ def design(ctx: typer.Context) -> None:
 @design_app.command("resume")
 def resume_design(project_id: UUID) -> None:
     """Enqueue or resume the project's DESIGN interview."""
-    typer.echo(f"design job {asyncio.run(_enqueue_design(project_id))}")
+    with guard():
+        typer.echo(f"design job {asyncio.run(_enqueue_design(project_id))}")
 
 
 def _parse_question_answers(items: tuple[str, ...]) -> dict[str, object]:
@@ -128,7 +161,7 @@ def _parse_question_answers(items: tuple[str, ...]) -> dict[str, object]:
     for item in items:
         question_id, separator, answer = item.partition("=")
         if not separator or not question_id.strip():
-            raise ValueError("each answer must use QUESTION_ID=ANSWER")
+            raise InvalidAnswer("each answer must use QUESTION_ID=ANSWER")
         answers[question_id.strip()] = answer
     return {"answers": answers}
 
@@ -153,15 +186,15 @@ async def _work_once(project_id: UUID, provider: str, max_turns: int, max_dollar
     async with build_app() as resources:
         project = await resources.projects.get(project_id)
         if project is None:
-            raise ValueError(f"unknown project {project_id}")
+            raise UnknownProject(f"unknown project {project_id}")
         owner = f"cli-{os.getpid()}"
         if project.phase is Phase.VISUAL_DESIGN:
-            visual_provider: VisualProvider
+            visual_provider: VisualInventoryProducer
             if provider == "scripted":
                 visual_provider = ScriptedVisualProvider()
             else:
-                raise ValueError(
-                    "no live VisualProvider is implemented yet; use --provider scripted"
+                raise WrongPhase(
+                    "no live VisualInventoryProducer is implemented yet; use --provider scripted"
                 )
             worker = build_visual_worker(resources=resources, provider=visual_provider, owner=owner)
             return await worker.run_once(project_id)
@@ -180,7 +213,7 @@ async def _work_once(project_id: UUID, provider: str, max_turns: int, max_dollar
                 worktree_path=project.repo_path,
             )
         else:
-            raise ValueError("provider must be 'scripted' or 'claudeloop'")
+            raise UnknownProvider("provider must be 'scripted' or 'claudeloop'")
         worker = build_design_worker(
             resources=resources,
             project=project,
@@ -198,7 +231,8 @@ def work_once(
     max_dollars: Annotated[float, typer.Option("--max-dollars", min=0.01, max=10)] = 0.25,
 ) -> None:
     """Process one ready DESIGN job; live ClaudeLoop use is explicit and capped."""
-    processed = asyncio.run(_work_once(project_id, provider, max_turns, max_dollars))
+    with guard():
+        processed = asyncio.run(_work_once(project_id, provider, max_turns, max_dollars))
     typer.echo("processed one job" if processed else "no ready job")
 
 
@@ -240,7 +274,7 @@ def accept_design(
         async with build_app() as resources:
             project = await resources.projects.get(project_id)
             if project is None:
-                raise ValueError(f"unknown project {project_id}")
+                raise UnknownProject(f"unknown project {project_id}")
             if spec_json is not None:
                 await resources.design_specs.save(project_id, project.cycle, _load_spec(spec_json))
             accepted = await DesignAcceptanceService(
@@ -255,7 +289,8 @@ def accept_design(
             )
             return accepted.repo_path, accepted.phase
 
-    repo_path, phase = asyncio.run(accept())
+    with guard():
+        repo_path, phase = asyncio.run(accept())
     typer.echo(
         f"accepted design for {project_id}; entered {phase.value}; context under {repo_path}"
     )
@@ -284,14 +319,16 @@ async def _settle_visual(project_id: UUID, decision: VisualDecision) -> Phase:
 @visual_app.command("accept")
 def accept_visual(project_id: UUID) -> None:
     """Accept the reviewed visual plan and enter BUILD."""
-    phase = asyncio.run(_settle_visual(project_id, VisualDecision.ACCEPTED))
+    with guard():
+        phase = asyncio.run(_settle_visual(project_id, VisualDecision.ACCEPTED))
     typer.echo(f"accepted visual design for {project_id}; entered {phase.value}")
 
 
 @visual_app.command("waive")
 def waive_visual(project_id: UUID) -> None:
     """Explicitly waive the visual plan (inventory must still be complete) and enter BUILD."""
-    phase = asyncio.run(_settle_visual(project_id, VisualDecision.WAIVED))
+    with guard():
+        phase = asyncio.run(_settle_visual(project_id, VisualDecision.WAIVED))
     typer.echo(f"waived visual design for {project_id}; entered {phase.value}")
 
 
@@ -749,7 +786,3 @@ def deploy_rollback(
             typer.echo(f"Initiated rollback for {project.name} to previous stable revision.")
 
     asyncio.run(run_rollback())
-
-
-if __name__ == "__main__":
-    app()

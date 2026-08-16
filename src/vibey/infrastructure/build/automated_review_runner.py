@@ -2,16 +2,14 @@
 
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Protocol
 from uuid import UUID
 
 from vibey.application.build_verify_handler import GateRunner
+from vibey.application.interfaces import (
+    ProjectStore,
+)
 from vibey.application.review_demo_handler import AutomatedFinding
 from vibey.domain.review import Ambiguity, Severity
-
-
-class ProjectStore(Protocol):
-    async def get(self, project_id: UUID) -> Any: ...
 
 
 class SubprocessAutomatedReviewRunner:

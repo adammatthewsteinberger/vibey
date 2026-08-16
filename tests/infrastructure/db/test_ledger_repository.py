@@ -146,6 +146,59 @@ async def test_delete_event_is_a_silent_no_op(
     assert count == 1
 
 
+async def test_to_drafts_round_trips_persisted_events(
+    migrated_pool: asyncpg.Pool, project_id: UUID
+) -> None:
+    from vibey.infrastructure.db.ledger_repository import to_drafts
+
+    repo = PostgresLedgerRepository(migrated_pool)
+    await repo.append(_draft(project_id))
+    await repo.append(_draft(project_id, kind=EventKind.SESSION_SEEDED))
+
+    events = await repo.all_for_project(project_id)
+    drafts = to_drafts(events)
+
+    assert len(drafts) == 2
+    assert drafts[0].project_id == project_id
+    assert drafts[0].kind == EventKind.TURN_REQUESTED
+    assert drafts[1].kind == EventKind.SESSION_SEEDED
+
+
+async def test_append_raises_lookup_error_when_fetchrow_returns_none() -> None:
+    class _NullConn:
+        async def fetchval(self, *a: object, **kw: object) -> int:
+            return 42
+
+        async def fetchrow(self, *a: object, **kw: object) -> None:
+            return None
+
+        def transaction(self) -> "_NullTx":
+            return _NullTx()
+
+    class _NullTx:
+        async def __aenter__(self) -> "_NullTx":
+            return self
+
+        async def __aexit__(self, *a: object) -> None:
+            pass
+
+    class _NullPool:
+        def acquire(self) -> "_NullPool":
+            return self
+
+        async def __aenter__(self) -> _NullConn:
+            return _NullConn()
+
+        async def __aexit__(self, *a: object) -> None:
+            pass
+
+    from vibey.infrastructure.db.ledger_repository import PostgresLedgerRepository
+
+    repo = PostgresLedgerRepository(_NullPool())  # type: ignore[arg-type]
+    with pytest.raises(LookupError, match="append_event returned seq 42"):
+        await repo.append(_draft(uuid4()))
+
+
 @pytest.mark.slow
 async def test_concurrent_appends_are_gapless_and_have_no_duplicates(
     migrated_pool: asyncpg.Pool, project_id: UUID

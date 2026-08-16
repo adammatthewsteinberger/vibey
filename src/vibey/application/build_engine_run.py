@@ -4,26 +4,14 @@ in what they ask an engine to do and what a completing verdict means, not
 in how a run is driven or persisted."""
 
 from dataclasses import dataclass
-from typing import Protocol
-from uuid import UUID, uuid4
+from uuid import uuid4
 
-from vibey.application.dto import EngineEvent, JobRecord, RunHandle
+from vibey.application.dto import JobRecord, RunHandle
+from vibey.application.interfaces import (
+    BuildLedger,
+)
 from vibey.application.ports import EngineAdapter
-from vibey.domain.engine import EngineId
 from vibey.domain.ledger import EventKind
-
-
-class BuildLedger(Protocol):
-    async def record(
-        self,
-        *,
-        project_id: UUID,
-        cycle: int,
-        job_id: UUID,
-        engine_id: EngineId | None,
-        correlation_id: UUID,
-        event: EngineEvent,
-    ) -> None: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,3 +40,10 @@ async def run_and_record(
         if event.kind == EventKind.CAPACITY_REJECTED.value:
             capacity_rejected = True
     return RunOutcome(complete=complete, capacity_rejected=capacity_rejected)
+
+
+# Re-exported for the same reason `application/ports.py` re-exports the
+# interfaces package: the seam moved, the import path should not break.
+__all__ = [
+    "BuildLedger",
+]

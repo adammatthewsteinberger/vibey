@@ -17,14 +17,15 @@ that changes.
 
 import shlex
 from collections.abc import Mapping
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Protocol
 from uuid import uuid4
 
 from vibey.application.build_engine_run import BuildLedger
 from vibey.application.build_verify_handler import GateRunner
 from vibey.application.dto import EngineEvent, EnqueueRequest, JobRecord
+from vibey.application.interfaces import (
+    IntegrationBranch,
+    MergeOutcome,
+)
 from vibey.application.ports import Clock, JobRepository
 from vibey.application.worker import Failure, Outcome, Success
 from vibey.domain.effort import Effort
@@ -33,18 +34,6 @@ from vibey.domain.ledger import EventKind
 from vibey.domain.phase import Phase
 from vibey.domain.review import Severity
 from vibey.domain.worktree import branch_name
-
-
-@dataclass(frozen=True, slots=True)
-class MergeOutcome:
-    ok: bool
-    detail: str
-
-
-class IntegrationBranch(Protocol):
-    async def ensure(self) -> Path: ...
-
-    async def merge_item(self, item_id: str) -> MergeOutcome: ...
 
 
 class BuildIntegrateHandler:
@@ -126,3 +115,11 @@ class BuildIntegrateHandler:
                 requirement={"effort": Effort.LOW.name.lower()},
             )
         )
+
+
+# Re-exported for the same reason `application/ports.py` re-exports the
+# interfaces package: the seam moved, the import path should not break.
+__all__ = [
+    "MergeOutcome",
+    "IntegrationBranch",
+]

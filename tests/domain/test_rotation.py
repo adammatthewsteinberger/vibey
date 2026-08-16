@@ -49,6 +49,27 @@ def _descriptor(
     )
 
 
+def _saturating_descriptor(engine_id: EngineId, *, ceiling: Effort) -> EngineDescriptor:
+    """A descriptor whose projection tops out at ``ceiling``, so a request above
+    it lands short by a measurable number of tiers."""
+    projection = {effort: EngineInvocation((), achieved=min(effort, ceiling)) for effort in Effort}
+    return EngineDescriptor(
+        engine_id=engine_id,
+        binary=str(engine_id),
+        min_version="1.0.0",
+        state_dir=f".{engine_id}",
+        done_marker="DONE",
+        auth_env=(),
+        capabilities=frozenset(),
+        effort_projection=projection,
+        session_verb="resume",
+        isolation_flags={IsolationLevel.WORKTREE: ()},
+        cost_per_mtok_in=1.0,
+        cost_per_mtok_out=1.0,
+        context_window=100_000,
+    )
+
+
 def _closed_circuit() -> Circuit:
     from vibey.domain.capacity import Available
 
@@ -135,11 +156,11 @@ def test_health_factor_zero_when_open() -> None:
     assert health_factor(circuit) == 0.0
 
 
-def test_health_factor_half_when_half_open() -> None:
+def test_health_factor_quarter_when_half_open() -> None:
     from vibey.domain.capacity import Available
 
     circuit = Circuit(state=CircuitState.HALF_OPEN, capacity=Available(), probe=None)
-    assert health_factor(circuit) == 0.5
+    assert health_factor(circuit) == 0.25
 
 
 def test_health_factor_full_when_closed_with_no_failures() -> None:
@@ -150,6 +171,15 @@ def test_fidelity_factor_penalizes_saturation() -> None:
     descriptor = _descriptor(EngineId.CODEXLOOP)
     assert fidelity_factor(descriptor, Effort.HIGH) == 1.0
     assert fidelity_factor(descriptor, Effort.MAX) == 0.7
+
+
+def test_fidelity_factor_penalizes_a_two_tier_shortfall_harder() -> None:
+    """An engine that saturates far below the request is a worse answer than
+    one that just misses, so the penalty needs more than a single step."""
+    descriptor = _saturating_descriptor(EngineId.AGYLOOP, ceiling=Effort.STANDARD)
+    assert fidelity_factor(descriptor, Effort.STANDARD) == 1.0
+    assert fidelity_factor(descriptor, Effort.HIGH) == 0.7
+    assert fidelity_factor(descriptor, Effort.MAX) == 0.5
 
 
 def test_cost_factor_disabled_returns_one() -> None:
@@ -168,7 +198,7 @@ def test_affinity_factor_forced_rotation_ignores_warm_session() -> None:
 
 
 def test_affinity_factor_warm_session_boosts_when_not_forced() -> None:
-    assert affinity_factor(holds_warm_session=True, rotation_forced=False) == 1.2
+    assert affinity_factor(holds_warm_session=True, rotation_forced=False) == 2.0
     assert affinity_factor(holds_warm_session=False, rotation_forced=False) == 1.0
 
 

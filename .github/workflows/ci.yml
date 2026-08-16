@@ -2,8 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
+    branches: [main, develop]
 
 jobs:
   gates:
@@ -47,11 +48,17 @@ jobs:
       - name: Gate 3 - mypy --strict
         run: uv run mypy --strict src/vibey
 
-      - name: Gate 4 - pytest (domain coverage floor 100%)
-        run: uv run pytest tests/domain --cov=vibey.domain --cov-report=term-missing --cov-fail-under=100
+      - name: Gate 4a - pytest domain layer (100% coverage)
+        run: uv run pytest -q -p no:cacheprovider --cov=vibey.domain --cov-branch --cov-report=term-missing --cov-fail-under=100
 
-      - name: Gate 4b - pytest (full suite, project coverage floor 90%)
-        run: uv run pytest --cov=vibey --cov-report=term-missing --cov-fail-under=90
+      - name: Gate 4b - pytest application layer (100% coverage)
+        run: uv run pytest -q -p no:cacheprovider --cov=vibey.application --cov-branch --cov-report=term-missing --cov-fail-under=100
+
+      - name: Gate 4c - pytest infrastructure layer (100% coverage)
+        run: uv run pytest -q -p no:cacheprovider --cov=vibey.infrastructure --cov-branch --cov-report=term-missing --cov-fail-under=100
+
+      - name: Gate 4d - pytest CLI layer (100% coverage)
+        run: uv run pytest -q -p no:cacheprovider --cov=vibey.cli --cov-branch --cov-report=term-missing --cov-fail-under=100
 
       - name: Gate 5 - lint-imports (onion contract)
         run: uv run lint-imports

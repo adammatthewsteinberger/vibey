@@ -8,31 +8,17 @@ covers the inventory itself, mirroring how design/spec.py started in M1
 before anything consumed it.
 """
 
-from collections.abc import Sequence
-from typing import Protocol
-from uuid import UUID
-
-from vibey.application.design import DesignEvent
 from vibey.application.design_handler import DesignLedger
 from vibey.application.dto import EnqueueRequest, JobRecord
+from vibey.application.interfaces import (
+    VisualInventoryProducer,
+    VisualInventoryRepository,
+)
 from vibey.application.ports import JobRepository
 from vibey.application.worker import Failure, Outcome, Success
 from vibey.domain.effort import Effort
 from vibey.domain.job import FailureClass, idempotency_key
 from vibey.domain.phase import Phase
-from vibey.domain.visual import VisualInventory
-
-
-class VisualInventoryProducer(Protocol):
-    async def inventory(self, events: Sequence[DesignEvent]) -> VisualInventory: ...
-
-
-class VisualInventoryRepository(Protocol):
-    async def save(self, project_id: UUID, cycle: int, inventory: VisualInventory) -> None: ...
-
-    async def load(self, project_id: UUID, cycle: int) -> VisualInventory | None: ...
-
-    async def publish(self, project_id: UUID, cycle: int, inventory: VisualInventory) -> None: ...
 
 
 class VisualInventoryHandler:
@@ -83,3 +69,11 @@ class VisualPlanHandler:
             return Failure(FailureClass.WORK, "no visual inventory exists")
         await self._inventories.publish(job.project_id, job.cycle, inventory)
         return Success({"surfaces": len(inventory.surfaces)})
+
+
+# Re-exported for the same reason `application/ports.py` re-exports the
+# interfaces package: the seam moved, the import path should not break.
+__all__ = [
+    "VisualInventoryProducer",
+    "VisualInventoryRepository",
+]

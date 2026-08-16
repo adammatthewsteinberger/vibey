@@ -3,6 +3,7 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 import asyncpg
+import pytest
 
 from vibey.application.dto import EnqueueRequest
 from vibey.domain.job import JobState
@@ -245,3 +246,65 @@ async def test_dependency_gating_blocks_claim_until_dependency_succeeds(
 async def test_get_returns_none_for_unknown_job(migrated_pool: asyncpg.Pool) -> None:
     repo = PostgresJobRepository(migrated_pool)
     assert await repo.get(uuid4()) is None
+
+
+async def test_queue_depth_counts_jobs_by_state(
+    migrated_pool: asyncpg.Pool, project_id: UUID
+) -> None:
+    repo = PostgresJobRepository(migrated_pool)
+    j1 = await repo.enqueue(_request(project_id, subject="a"))
+    j2 = await repo.enqueue(_request(project_id, subject="b"))
+    await repo.enqueue(_request(project_id, subject="c", max_attempts=1))
+
+    await repo.claim(project_id, owner="w1", lease=LEASE)
+    await repo.ack(j1.id, owner="w1")
+
+    await repo.claim(project_id, owner="w1", lease=LEASE)
+    await repo.nack(j2.id, owner="w1", error={"msg": "fail"})
+
+    depths = await repo.queue_depth(project_id)
+    assert depths[JobState.SUCCEEDED] == 1
+    assert depths[JobState.READY] >= 1
+    assert all(isinstance(v, int) for v in depths.values())
+
+
+async def test_queue_depth_returns_all_zeros_for_empty_project(
+    migrated_pool: asyncpg.Pool,
+) -> None:
+    repo = PostgresJobRepository(migrated_pool)
+    depths = await repo.queue_depth(uuid4())
+    assert all(v == 0 for v in depths.values())
+    assert set(depths.keys()) == set(JobState)
+
+
+async def test_enqueue_raises_lookup_error_when_both_fetchrows_return_none() -> None:
+    class _NullConn:
+        async def fetchrow(self, *a: object, **kw: object) -> None:
+            return None
+
+        async def execute(self, *a: object, **kw: object) -> None:
+            pass
+
+        def transaction(self) -> "_NullTx":
+            return _NullTx()
+
+    class _NullTx:
+        async def __aenter__(self) -> "_NullTx":
+            return self
+
+        async def __aexit__(self, *a: object) -> None:
+            pass
+
+    class _NullPool:
+        def acquire(self) -> "_NullPool":
+            return self
+
+        async def __aenter__(self) -> _NullConn:
+            return _NullConn()
+
+        async def __aexit__(self, *a: object) -> None:
+            pass
+
+    repo = PostgresJobRepository(_NullPool())  # type: ignore[arg-type]
+    with pytest.raises(LookupError, match="conflicting idempotency key"):
+        await repo.enqueue(_request(uuid4()))

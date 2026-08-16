@@ -2,6 +2,7 @@ from pathlib import Path
 from uuid import UUID
 
 import asyncpg
+import pytest
 
 from vibey.domain.phase import Phase
 from vibey.infrastructure.db.project_repository import PostgresProjectRepository
@@ -49,3 +50,42 @@ async def test_transition_rejects_stale_expected_phase(
 async def test_get_missing_project_returns_none(migrated_pool: asyncpg.Pool) -> None:
     repo = PostgresProjectRepository(migrated_pool)
     assert await repo.get(UUID(int=0)) is None
+
+
+async def test_get_latest_returns_none_when_no_projects_exist(
+    migrated_pool: asyncpg.Pool,
+) -> None:
+    repo = PostgresProjectRepository(migrated_pool)
+    assert await repo.get_latest() is None
+
+
+async def test_get_latest_returns_most_recent_project(
+    migrated_pool: asyncpg.Pool, tmp_path: Path
+) -> None:
+    repo = PostgresProjectRepository(migrated_pool)
+    _first = await repo.create("first", tmp_path / "a", max_cycles=1, config={})
+    second = await repo.create("second", tmp_path / "b", max_cycles=1, config={})
+
+    latest = await repo.get_latest()
+    assert latest is not None
+    assert latest.project_id == second.project_id
+
+
+async def test_create_raises_lookup_error_when_fetchrow_returns_none() -> None:
+    class _NullConn:
+        async def fetchrow(self, *a: object, **kw: object) -> None:
+            return None
+
+    class _NullPool:
+        def acquire(self) -> "_NullPool":
+            return self
+
+        async def __aenter__(self) -> _NullConn:
+            return _NullConn()
+
+        async def __aexit__(self, *a: object) -> None:
+            pass
+
+    repo = PostgresProjectRepository(_NullPool())  # type: ignore[arg-type]
+    with pytest.raises(LookupError, match="project insert returned no row"):
+        await repo.create("test", Path("/tmp/test"), max_cycles=1, config={})
