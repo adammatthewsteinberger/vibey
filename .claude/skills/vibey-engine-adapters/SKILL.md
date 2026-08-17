@@ -1,0 +1,142 @@
+---
+name: vibey-engine-adapters
+description: How vibey drives claudeloop, codexloop, cursorloop, and agyloop — the engine adapter pattern, argv building, and the conformance suite.
+allowed-tools: Read Grep
+---
+
+# vibey engine adapters
+
+Vibey drives four autonomous session runners: `claudeloop`, `codexloop`,
+`cursorloop`, `agyloop`. Each has its own CLI surface, effort vocabulary,
+state directory, and done marker. Vibey abstracts these differences via
+`EngineAdapter`, a `Protocol` defined in `application/interfaces/engines.py`
+and re-exported from `application/ports.py`.
+
+## The adapter pattern
+
+`EngineAdapter` (read the real definition before relying on this summary —
+it's short):
+- `descriptor: EngineDescriptor` — a property, the engine's static facts
+- `async def preflight() -> PreflightResult` — runs `<engine> doctor`;
+  classifies auth + availability
+- `async def start(spec: RunSpec) -> RunHandle` — builds argv from
+  `descriptor.effort_projection` + isolation flags, spawns the runner,
+  returns a handle over its run directory
+- `def tail(handle: RunHandle) -> AsyncIterator[EngineEvent]` — streams the
+  runner's `events.jsonl`, translated into vibey's own event vocabulary
+- `async def send_prompt(handle, text, *, now: bool) -> None` — writes the
+  runner's control-plane inbox
+- `async def stop(handle: RunHandle) -> StopSummary` — soft-stops the run;
+  collects `stop-summary.md` and the final snapshot
+- `async def snapshot(handle: RunHandle) -> SnapshotRef | None`
+
+`start()` internally calls `infrastructure/engines/argv.py::build_argv()` —
+that's a plain function, not an adapter method; it takes both the descriptor
+and the `RunSpec` (`build_argv(descriptor, spec)`), not just the spec.
+
+See `application/interfaces/engines.py::EngineAdapter` and
+`infrastructure/engines/scripted.py::ScriptedEngine` (the fake runner used in
+tests). If `infrastructure/engines/loop_process_adapter.py` exists, that's
+the real (non-scripted) implementation — check its docstring for how far
+production wiring has progressed before assuming rotation is live.
+
+## Engine descriptors
+
+`infrastructure/engines/descriptors.py` defines `CLAUDELOOP`, `CODEXLOOP`,
+`CURSORLOOP`, `AGYLOOP` — one `EngineDescriptor` per engine.
+
+Each descriptor declares:
+- `binary` — the executable name (e.g., `"claudeloop"`)
+- `state_dir` — where runs are stored (e.g., `".claudeloop/"`)
+- `done_marker` — the text signaling completion (e.g., `"CLAUDELOOP_TASK_FULLY_COMPLETE"`)
+- `capabilities` — which features it supports (`savepoints`, `unwind`, etc.)
+- `effort_projection` — how vibey's 5-level ladder (`TRIVIAL, LOW, STANDARD, HIGH, MAX`)
+  maps to the engine's native flags
+
+**Effort projection example:**
+
+```python
+effort_projection={
+    Effort.TRIVIAL: EngineInvocation(argv=("--preset", "low", "--effort", "low"), achieved=Effort.TRIVIAL),
+    Effort.LOW: EngineInvocation(argv=("--preset", "standard", "--effort", "low"), achieved=Effort.LOW),
+    Effort.STANDARD: EngineInvocation(argv=("--preset", "standard", "--effort", "standard"), achieved=Effort.STANDARD),
+    Effort.HIGH: EngineInvocation(argv=("--preset", "high", "--effort", "high"), achieved=Effort.HIGH),
+    Effort.MAX: EngineInvocation(argv=("--preset", "high", "--effort", "max"), achieved=Effort.MAX),
+}
+```
+
+If an engine **saturates** (e.g., codexloop has no `MAX` tier), the descriptor
+sets `achieved` to the highest tier it can actually deliver. The rotator
+applies a `fidelity_penalty` to engines that saturate below the requested
+effort.
+
+See ADR-0006 (normalized effort ladder).
+
+## argv building
+
+`infrastructure/engines/argv.py::build_argv(descriptor, spec)` takes an
+`EngineDescriptor` and a `RunSpec` (fields: `run_id`, `worktree_path`,
+`prompt`, `effort`, `isolation`, optional `session_id` to resume) and
+produces the command line — read the real function, it's short and worth
+reading in full rather than trusting a paraphrase, since exactly how it
+assembles the plan path, effort flags, isolation flags, and `--cwd` is the
+kind of thing that changes as the adapter work progresses. As of this
+writing it emits the plan file as a **positional path argument** (not a
+`--prompt` flag) followed by `descriptor.invoke(effort).argv`, then
+`descriptor.isolation_flags[...]`, then `--cwd <worktree_path>` — verify
+this is still accurate, and check whether a `--run-id` flag has been added
+(it corrects a real bug where the adapter couldn't find the run directory
+the spawned process actually wrote to).
+
+20 golden files under `tests/infrastructure/engines/golden/` (4 engines × 5
+efforts) capture the expected argv for each combination — the source of
+truth for the exact current shape.
+
+## Capacity classification
+
+`infrastructure/engines/classify.py::classify_capacity()` maps vendor-specific
+error shapes to vibey's `CapacityState`:
+
+```python
+Available | WindowExhausted | CreditsExhausted | AuthenticationFailed
+```
+
+**The critical distinction:** `WindowExhausted` has a `resets_at` deadline;
+`CreditsExhausted` does not. A window exhaustion is waitable; credits
+exhaustion requires a human top-up.
+
+Each engine's classifier pattern is versioned in `CREDITS_FIXTURES`,
+`WINDOW_FIXTURES`, `AUTH_FIXTURES`, and `AVAILABLE_FIXTURES` — shared between
+the classifier's own tests and the conformance suite.
+
+**Note:** these are synthesized fixture payloads, not captured real vendor
+errors. If you get access to real `*loop` binaries or real captured error
+payloads, this is the first thing to replace.
+
+## The conformance suite
+
+`application/conformance.py::run_conformance()` runs 9 named checks per
+engine (grep the file for the check-name strings if this list drifts):
+`binary` (installed + version), `flags` (`run --help` exposes what the
+descriptor claims), `state_dir`, `run_dir_shape` (a real run produces
+`meta.json`/`events.jsonl`/`snapshots/latest.json` — this one races a real
+subprocess's own startup time, not just an instant file check; read the
+function if you're touching it), `snapshot_schema`, `capacity_map`,
+`done_marker`, `control_plane`, `structured_verdict`.
+
+A failing conformance check marks that engine **ineligible** rather than
+letting it fail mid-cycle.
+
+```bash
+vibey doctor --conformance
+```
+
+See ADR-0001 (orchestrate, do not reimplement).
+
+## When to read this skill
+
+Before:
+- Adding a new engine.
+- Changing effort mappings.
+- Debugging why rotation is skipping an engine.
+- Updating capacity classification patterns after a vendor API change.
