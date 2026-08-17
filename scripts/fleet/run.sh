@@ -61,12 +61,20 @@ mkdir -p "$LOG_DIR"
 
 case "$DRIVER" in
   claudeloop)
+    # Deliberately not passing --permission-mode: claudeloop's own default
+    # is bypassPermissions (required for real autonomy — see
+    # infrastructure/agent/options.py's docstring), and it's safe here
+    # because worktree isolation + the repo's own scope guard are the
+    # actual safety boundary, not per-command approval. Overriding it to
+    # acceptEdits (an earlier version of this script did) leaves Bash
+    # commands unapproved, so any run that needs to execute its own gate
+    # sweep (ruff/mypy/pytest) blocks immediately with "User approval
+    # needed" and reports failure having done nothing.
     exec claudeloop run "$PLAN_FILE" \
       --cwd "$WT" \
       --run-id "$RUN_ID" \
       --add-folder "$VIBEY_ROOT/docs/plans" \
       --max-turns 800 --max-dollars 80 --max-wait 21600 \
-      --permission-mode acceptEdits \
       --done-marker CLAUDELOOP_TASK_FULLY_COMPLETE \
       --log-level INFO --log-file "$LOG_DIR/run.log" \
       --stream-ui
