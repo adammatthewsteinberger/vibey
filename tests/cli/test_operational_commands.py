@@ -761,7 +761,7 @@ def test_doctor_shows_detail_when_present() -> None:
 def test_doctor_with_conformance() -> None:
     from unittest.mock import AsyncMock, patch
 
-    from vibey.application.dto import ConformanceCheckResult, ConformanceReport
+    from vibey.application.dto import ConformanceCheckResult, ConformanceReport, PreflightResult
     from vibey.domain.engine import EngineId
 
     fake_report = ConformanceReport(
@@ -771,9 +771,21 @@ def test_doctor_with_conformance() -> None:
             ConformanceCheckResult(name="start_stop", ok=True),
         ),
     )
-    with patch(
-        "vibey.application.conformance.run_conformance",
-        new=AsyncMock(return_value=fake_report),
+    # preflight() must also be mocked: the CLI only calls run_conformance
+    # when preflight.installed is True, and a CI runner has no engine
+    # binaries on PATH -- leaving this real makes the test pass only on a
+    # machine that happens to have claudeloop installed.
+    with (
+        patch(
+            "vibey.infrastructure.engines.loop_process_adapter.LoopProcessAdapter.preflight",
+            new=AsyncMock(
+                return_value=PreflightResult(installed=True, version="0.5.5", auth_ok=True)
+            ),
+        ),
+        patch(
+            "vibey.application.conformance.run_conformance",
+            new=AsyncMock(return_value=fake_report),
+        ),
     ):
         res = runner.invoke(app, ["doctor", "--conformance", "--engine", "claudeloop"])
     assert res.exit_code == 0, res.output
@@ -783,7 +795,7 @@ def test_doctor_with_conformance() -> None:
 def test_doctor_with_conformance_failure() -> None:
     from unittest.mock import AsyncMock, patch
 
-    from vibey.application.dto import ConformanceCheckResult, ConformanceReport
+    from vibey.application.dto import ConformanceCheckResult, ConformanceReport, PreflightResult
     from vibey.domain.engine import EngineId
 
     fake_report = ConformanceReport(
@@ -793,9 +805,17 @@ def test_doctor_with_conformance_failure() -> None:
             ConformanceCheckResult(name="start_stop", ok=False, detail="timed out"),
         ),
     )
-    with patch(
-        "vibey.application.conformance.run_conformance",
-        new=AsyncMock(return_value=fake_report),
+    with (
+        patch(
+            "vibey.infrastructure.engines.loop_process_adapter.LoopProcessAdapter.preflight",
+            new=AsyncMock(
+                return_value=PreflightResult(installed=True, version="0.5.5", auth_ok=True)
+            ),
+        ),
+        patch(
+            "vibey.application.conformance.run_conformance",
+            new=AsyncMock(return_value=fake_report),
+        ),
     ):
         res = runner.invoke(app, ["doctor", "--conformance", "--engine", "claudeloop"])
     assert res.exit_code == 1
