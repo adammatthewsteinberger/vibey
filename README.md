@@ -20,7 +20,7 @@ set. Every choice and loop is durable and lossless.
 | Engines | `claudeloop`, `codexloop`, `cursorloop`, `agyloop` |
 | State dir | `.vibey/` |
 | Env prefix | `VIBEY_` |
-| Done marker | `VIBEY_TASK_FULLY_COMPLETE` |
+| Done marker | Each loop's own marker (CLAUDELOOP_TASK_FULLY_COMPLETE, etc.) |
 
 ## The shape of it
 
