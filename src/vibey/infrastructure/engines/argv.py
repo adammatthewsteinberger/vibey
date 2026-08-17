@@ -15,6 +15,7 @@ def build_argv(descriptor: EngineDescriptor, spec: RunSpec) -> tuple[str, ...]:
     else:
         plan_path = spec.worktree_path / ".vibey" / "plans" / f"{spec.run_id}.md"
         argv.append(str(plan_path))
+        argv.extend(["--run-id", str(spec.run_id)])
 
     argv.extend(descriptor.invoke(spec.effort).argv)
     argv.extend(descriptor.isolation_flags.get(spec.isolation, ()))

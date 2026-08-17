@@ -92,6 +92,8 @@ async def test_run_materializes_plan_enforces_caps_and_reads_latest_response(
             "claudeloop",
             "run",
             str(plan),
+            "--run-id",
+            "00000000-0000-0000-0000-000000000123",
             "--preset",
             "medium",
             "--effort",
