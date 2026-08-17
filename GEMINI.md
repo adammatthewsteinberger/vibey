@@ -1,0 +1,77 @@
+# GEMINI.md
+
+`vibey`: a queue-based, six-phase conductor for autonomous software delivery.
+Orchestrates claudeloop, codexloop, cursorloop, and agyloop via PostgreSQL
+queue with lossless handoff. Facts only — procedures live in `.agent/rules/`
+(mirrors of `.claude/skills/` and `.cursor/rules/`).
+
+## Non-negotiables
+
+- Never block on a human. `ask_question` equivalent is a parked job, not
+  stdin.
+- Credits ≠ rate-limit window. `CreditsExhausted` has no `resets_at` —
+  enforced by type, property test, and DB CHECK constraint.
+- `domain/` is stdlib only. Vendor types stay in `infrastructure/`.
+- Capacity rejection outranks a completion claim.
+- No-loss handoff gate is not negotiable. Failed gate → retry or human gate,
+  never silent partial.
+- Every job is idempotent under replay.
+- Ledger is append-only.
+- Conventional Commits enforced by pre-commit hook.
+- Never implement on `main`. PRs squash into `develop`; `develop`
+  merge-commits into `main`.
+
+## Layer map
+
+```
+domain → application → infrastructure → cli, tui
+                                  ▲
+                          bootstrap.py
+```
+
+Dependencies point inward. `import-linter` enforces. All four layers carry
+100% branch coverage floor — separate CI gates for domain, application,
+infrastructure, cli.
+
+## Queue and engines
+
+- **Queue:** PostgreSQL 17+, never SQLite (`FOR UPDATE SKIP LOCKED`).
+- **Engines:** claudeloop, codexloop, cursorloop, agyloop — rotated via smooth
+  weighted round robin.
+- **Handoff:** when `CreditsExhausted`, vibey verifies brief against no-loss
+  gate (10 rules: R1–R10), writes full ledger to receiving worktree, seeds
+  next engine.
+
+## Phases
+
+Six phases plus optional visual interstitial: INTAKE → ① DESIGN → [VISUAL_DESIGN] →
+② BUILD ⇄ ③ REVIEW. After ③: deployment opt-in → ④ DEPLOY_DESIGN → ⑤ DEPLOY_EXECUTE →
+⑥ DEPLOY_REVIEW → DONE(deployed); or deployment opt-out → DONE(local).
+Interactive: ①, ③, ④, ⑥, VISUAL_DESIGN. Autonomous: ②, ⑤.
+
+## Commands
+
+```bash
+# 7-gate sweep
+uv run ruff check .
+uv run ruff format --check .
+uv run mypy --strict src/vibey
+uv run pytest -q -p no:cacheprovider --cov=vibey.domain --cov-branch --cov-fail-under=100
+uv run pytest -q -p no:cacheprovider --cov=vibey.application --cov-branch --cov-fail-under=100
+uv run pytest -q -p no:cacheprovider --cov=vibey.infrastructure --cov-branch --cov-fail-under=100
+uv run pytest -q -p no:cacheprovider --cov=vibey.cli --cov-branch --cov-fail-under=100
+uv run lint-imports
+uv run bandit -q -r src/vibey
+uv run pip-audit
+```
+
+## Surfaces
+
+| Need | Go to |
+|---|---|
+| Procedures | `.agent/rules/`, `.claude/skills/`, `.cursor/rules/`, `.agents/skills/` |
+| Architecture | `docs/plans/architecture-and-roadmap.md` |
+| Domain model | `docs/plans/domain-model.md` |
+| Handoff protocol | `docs/plans/handoff-protocol.md` |
+| Rotation & engines | `docs/plans/rotation-and-engines.md` |
+| ADRs | `docs/architecture/decisions/` (14 ADRs: 0001–0014) |

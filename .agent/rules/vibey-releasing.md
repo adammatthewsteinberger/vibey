@@ -1,0 +1,117 @@
+# vibey-releasing (Antigravity mirror of `.claude/skills/vibey-releasing/SKILL.md`)
+
+description: Release-please workflow, Conventional Commits, and publishing to PyPI. Read before cutting a release.
+alwaysApply: false
+
+# vibey releasing
+
+Vibey uses **release-please** for automated semantic versioning and changelog
+generation, triggered by Conventional Commits.
+
+## Conventional Commits (enforced)
+
+Every commit message must follow Conventional Commits format. A pre-commit
+hook rejects anything else:
+
+```
+feat: add support for GitHub Actions deployment
+fix: prevent race condition in lease renewal
+docs: update handoff protocol spec
+chore: bump dependencies
+test: add property test for rotation fairness
+```
+
+**Scopes are optional** but recommended for large changes:
+
+```
+feat(domain): add media provider round-robin cursor
+fix(cli): correct --cwd handling in run command
+```
+
+**Breaking changes** carry a `!` or a `BREAKING CHANGE:` footer:
+
+```
+feat!: require Python 3.12+
+
+BREAKING CHANGE: Python 3.11 is no longer supported.
+```
+
+**Why this matters:** release-please parses commit messages to determine
+version bumps (`fix` → patch, `feat` → minor, `BREAKING CHANGE` → major) and
+generate changelogs. A malformed commit breaks the release automation.
+
+## Release workflow
+
+1. **Merge to `develop`** — feature PRs squash into `develop`.
+2. **`develop` → `main`** — when ready to release, merge `develop` into `main`
+   via a merge commit (never squash).
+3. **Release-please PR** — on push to `main`, the `release-please.yml` workflow
+   creates or updates a release PR. It:
+   - Bumps version in `pyproject.toml`
+   - Updates `CHANGELOG.md`
+   - Tags the release
+4. **Merge the release PR** — merging it creates a GitHub release and triggers
+   the `publish-to-pypi.yml` workflow.
+5. **PyPI publish** — `publish-to-pypi.yml` builds the wheel and uploads to
+   PyPI.
+
+## Checking the release state
+
+```bash
+# See what the next version will be
+gh pr list --label "autorelease: pending"
+
+# See the changelog draft
+gh pr view <PR_NUMBER>
+```
+
+## Manual version bump (escape hatch)
+
+If release-please is stuck or miscalculated, you can force a version:
+
+1. Edit `pyproject.toml` and bump `version = "x.y.z"`
+2. Update `CHANGELOG.md` manually
+3. Commit with `chore: release x.y.z`
+4. Tag and push:
+
+```bash
+git tag -a vx.y.z -m "Release x.y.z"
+git push origin vx.y.z
+```
+
+This bypasses release-please but still triggers PyPI publish.
+
+## Verifying the publish
+
+After the release PR merges:
+
+1. Check the GitHub release: https://github.com/YOUR_ORG/vibey/releases
+2. Verify PyPI: https://pypi.org/project/vibey/
+3. Install and test:
+
+```bash
+uv venv --python 3.12
+source .venv/bin/activate
+pip install vibey==x.y.z
+vibey --version
+```
+
+## Common issues
+
+**Release PR not created:** check that commits on `main` since the last
+release follow Conventional Commits.
+
+**Version didn't bump:** `fix` and `feat` are the only types that trigger a
+bump. `docs`, `chore`, `test` do not.
+
+**PyPI publish failed:** check the `publish-to-pypi.yml` run in GitHub
+Actions. Common causes: PyPI token expired, wheel build failed, version
+already published.
+
+## The workflows
+
+- `.github/workflows/release-please.yml` — creates/updates the release PR
+- `.github/workflows/publish-to-pypi.yml` — publishes to PyPI when a release
+  is tagged
+
+Both are triggered automatically. Do not run them manually unless debugging.
