@@ -1,0 +1,177 @@
+diff --git a/src/cursorloop/bootstrap.py b/src/cursorloop/bootstrap.py
+index 2372ef2..77a42af 100644
+--- a/src/cursorloop/bootstrap.py
++++ b/src/cursorloop/bootstrap.py
+@@ -186,6 +186,7 @@ def build_runner(
+         budget=budget,
+         wait_policy=wait_policy,
+         run_id=run_id,
++        handoff_marker_writer=run_dir.write_handoff_marker,
+     )
+     return BuiltRunner(
+         runner=AutonomousRunner(ctx),
+diff --git a/src/cursorloop/cli/app.py b/src/cursorloop/cli/app.py
+index 2df45d6..83f95aa 100644
+--- a/src/cursorloop/cli/app.py
++++ b/src/cursorloop/cli/app.py
+@@ -20,6 +20,7 @@ from cursorloop.cli.commands.control_cmds import (
+     stop,
+     unwind,
+     watch,
++    wind_down,
+ )
+ from cursorloop.cli.commands.doctor import doctor
+ from cursorloop.cli.commands.resume import resume
+@@ -41,6 +42,8 @@ app = typer.Typer(
+ app.command(name="run")(run)
+ app.command(name="resume")(resume)
+ app.command(name="stop")(stop)
++app.command(name="wind-down")(wind_down)
++
+ app.command(name="prompt")(prompt)
+ app.command(name="status")(status)
+ app.command(name="logs")(logs)
+diff --git a/src/cursorloop/cli/commands/control_cmds.py b/src/cursorloop/cli/commands/control_cmds.py
+index 12fbe2a..e6e023f 100644
+--- a/src/cursorloop/cli/commands/control_cmds.py
++++ b/src/cursorloop/cli/commands/control_cmds.py
+@@ -27,6 +27,22 @@ def stop(
+     typer.echo(f"Stop requested for run {result.run_id}")
+ 
+ 
++def wind_down(
++    reason: str = typer.Option("operator wind-down", "--reason"),
++    run_id: str | None = typer.Option(None, "--run-id"),
++    cwd_dir: Path | None = typer.Option(None, "--cwd", exists=True, file_okay=False),
++) -> None:
++    """Request a clean wind-down of the active (or specified) run."""
++    cwd = cwd_dir.resolve() if cwd_dir is not None else Path.cwd()
++    try:
++        result = run_control.enqueue_wind_down(cwd, reason, run_id)
++    except FileNotFoundError as exc:
++        typer.echo(str(exc), err=True)
++        raise typer.Exit(code=1) from exc
++    typer.echo(f"Wind-down requested for run {result.run_id}")
++
++
++
+ def prompt(
+     text: str = typer.Argument(..., help="Prompt text for the next turn"),
+     run_id: str | None = typer.Option(None, "--run-id"),
+diff --git a/src/cursorloop/domain/control.py b/src/cursorloop/domain/control.py
+index abf7857..8c65eb3 100644
+--- a/src/cursorloop/domain/control.py
++++ b/src/cursorloop/domain/control.py
+@@ -68,4 +68,16 @@ class SavePoint:
+     """Request a git savepoint at the next operator boundary."""
+ 
+ 
+-ControlCommand = Stop | Prompt | SetModel | SetEffort | SetCwd | Snapshot | SavePoint
++@dataclass(frozen=True, slots=True)
++class WindDownCommand:
++    """Request a clean wind-down and exit 75."""
++
++    reason: str = "operator wind-down"
++
++    def __post_init__(self) -> None:
++        if not self.reason.strip():
++            raise ValueError("wind-down reason must not be blank")
++
++
++ControlCommand = Stop | WindDownCommand | Prompt | SetModel | SetEffort | SetCwd | Snapshot | SavePoint
++
+diff --git a/src/cursorloop/infrastructure/control.py b/src/cursorloop/infrastructure/control.py
+index caf4cd2..b20b398 100644
+--- a/src/cursorloop/infrastructure/control.py
++++ b/src/cursorloop/infrastructure/control.py
+@@ -16,6 +16,7 @@ from cursorloop.domain.control import (
+     SetModel,
+     Snapshot,
+     Stop,
++    WindDownCommand,
+ )
+ 
+ 
+@@ -47,14 +48,19 @@ class FileRunControl:
+ 
+ def _stop_outranks(commands: list[ControlCommand]) -> list[ControlCommand]:
+     stops = [c for c in commands if isinstance(c, Stop)]
++    wind_downs = [c for c in commands if isinstance(c, WindDownCommand)]
+     if stops:
+         return [stops[0], *[c for c in commands if not isinstance(c, Stop)]]
++    if wind_downs:
++        return [wind_downs[0], *[c for c in commands if not isinstance(c, WindDownCommand)]]
+     return commands
+ 
+ 
+ def _command_to_payload(command: ControlCommand) -> dict[str, Any]:
+     if isinstance(command, Stop):
+         return {"type": "stop"}
++    if isinstance(command, WindDownCommand):
++        return {"type": "wind_down", "reason": command.reason}
+     if isinstance(command, Prompt):
+         return {"type": "prompt", "text": command.text}
+     if isinstance(command, SetModel):
+@@ -74,6 +80,9 @@ def _payload_to_command(raw: dict[str, object]) -> ControlCommand:
+     kind = str(raw["type"])
+     if kind == "stop":
+         return Stop()
++    if kind == "wind_down":
++        reason = str(raw.get("reason", "operator wind-down"))
++        return WindDownCommand(reason=reason)
+     if kind == "prompt":
+         return Prompt(text=str(raw["text"]))
+     if kind == "set_model":
+@@ -87,3 +96,4 @@ def _payload_to_command(raw: dict[str, object]) -> ControlCommand:
+     if kind == "savepoint":
+         return SavePoint()
+     raise ValueError(f"unknown control command type: {kind}")
++
+diff --git a/src/cursorloop/infrastructure/run_control.py b/src/cursorloop/infrastructure/run_control.py
+index 45232c4..6bda03c 100644
+--- a/src/cursorloop/infrastructure/run_control.py
++++ b/src/cursorloop/infrastructure/run_control.py
+@@ -14,6 +14,7 @@ from cursorloop.domain.control import (
+     SetModel,
+     Snapshot,
+     Stop,
++    WindDownCommand,
+ )
+ from cursorloop.infrastructure.control import FileRunControl
+ from cursorloop.infrastructure.rundir import resolve_run_directory
+@@ -35,6 +36,11 @@ def enqueue_stop(cwd: Path, run_id: str | None = None) -> EnqueueResult:
+     return enqueue(cwd, Stop(), run_id)
+ 
+ 
++def enqueue_wind_down(cwd: Path, reason: str = "operator wind-down", run_id: str | None = None) -> EnqueueResult:
++    return enqueue(cwd, WindDownCommand(reason=reason), run_id)
++
++
++
+ def enqueue_prompt(cwd: Path, text: str, run_id: str | None = None) -> EnqueueResult:
+     return enqueue(cwd, Prompt(text=text), run_id)
+ 
+diff --git a/src/cursorloop/infrastructure/rundir.py b/src/cursorloop/infrastructure/rundir.py
+index 5e099f4..a4881cb 100644
+--- a/src/cursorloop/infrastructure/rundir.py
++++ b/src/cursorloop/infrastructure/rundir.py
+@@ -149,6 +149,19 @@ class RunDirectory:
+         self.stop_summary_path.write_text(markdown, encoding="utf-8")
+         return self.stop_summary_path
+ 
++    @property
++    def handoff_marker_path(self) -> Path:
++        from cursorloop.domain.handoff_marker import HANDOFF_MARKER_FILENAME
++        return self.root / HANDOFF_MARKER_FILENAME
++
++    def write_handoff_marker(self, marker: HandoffMarker) -> Path:
++        path = self.handoff_marker_path
++        tmp = path.with_suffix(".tmp")
++        tmp.write_text(marker.to_json(), encoding="utf-8")
++        os.replace(tmp, path)
++        return path
++
++
+     @property
+     def resources_root(self) -> Path:
+         return self.root / "resources"
