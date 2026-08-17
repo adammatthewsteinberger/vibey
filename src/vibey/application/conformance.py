@@ -125,8 +125,8 @@ async def run_conformance(
     missing_files = [f for f in required if not (handle.run_dir / f).exists()]
     if missing_files or not snapshot_path.exists():
         step = 0.5
-        deadline = asyncio.get_event_loop().time() + run_dir_poll_seconds
-        while asyncio.get_event_loop().time() < deadline:
+        deadline = asyncio.get_running_loop().time() + run_dir_poll_seconds
+        while asyncio.get_running_loop().time() < deadline:
             missing_files = [f for f in required if not (handle.run_dir / f).exists()]
             if not missing_files and snapshot_path.exists():
                 break

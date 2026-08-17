@@ -82,7 +82,7 @@ class RotationHandoffService:
         )
 
         # Select next engine
-        next_engine, selection = await self._selector.select_engine(
+        next_engine, _ = await self._selector.select_engine(
             project_id=project_id,
             requirement=updated_requirement,
         )
@@ -134,7 +134,7 @@ class RotationHandoffService:
         )
 
         # Select next engine
-        next_engine, selection = await self._selector.select_engine(
+        next_engine, _ = await self._selector.select_engine(
             project_id=project_id,
             requirement=updated_requirement,
         )

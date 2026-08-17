@@ -881,10 +881,9 @@ def worker(
     from vibey.domain.engine import EngineId
     from vibey.infrastructure.db.notifier import PostgresJobReadyNotifier
 
-    _allow_list: frozenset[EngineId] | None = None
     if engines_opt:
         try:
-            _allow_list = frozenset(EngineId(e.strip()) for e in engines_opt.split(","))
+            _ = frozenset(EngineId(e.strip()) for e in engines_opt.split(","))
         except ValueError as exc:
             typer.echo(f"Invalid engine: {exc}")
             raise typer.Exit(2) from exc

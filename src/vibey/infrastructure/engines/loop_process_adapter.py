@@ -189,7 +189,7 @@ class LoopProcessAdapter:
         seen_lines = 0
         while True:
             try:
-                lines = events_path.read_text().splitlines()
+                lines = (await asyncio.to_thread(events_path.read_text)).splitlines()
                 for line in lines[seen_lines:]:
                     if not line.strip():
                         continue
