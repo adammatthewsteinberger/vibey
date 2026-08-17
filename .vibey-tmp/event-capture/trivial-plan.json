@@ -1,0 +1,25 @@
+[
+  {
+    "role": "user",
+    "content": "Create a file called hello.txt with the content 'Hello, World!'"
+  },
+  {
+    "role": "assistant",
+    "content": "I'll create that file for you.",
+    "tool_calls": [
+      {
+        "name": "Write",
+        "parameters": {"file_path": "hello.txt", "content": "Hello, World!"}
+      }
+    ]
+  },
+  {
+    "role": "tool_result",
+    "tool_call_id": "1",
+    "content": "File written successfully"
+  },
+  {
+    "role": "assistant",
+    "content": "Done! I've created hello.txt with 'Hello, World!'.\n\nCLAUDELOOP_TASK_FULLY_COMPLETE"
+  }
+]

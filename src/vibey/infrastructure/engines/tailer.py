@@ -62,11 +62,22 @@ def translate_event(
     correlation_id: UUID,
     causation_id: UUID | None = None,
     provenance: Provenance = Provenance.AGENT,
-) -> LedgerEventDraft:
+) -> LedgerEventDraft | None:
+    """Translate an EngineEvent to a LedgerEventDraft, or None if the event
+    kind is unrecognized.
+
+    Returns None (rather than raising) for unrecognized event types so a new
+    loop version emitting a new event type does not crash vibey. The caller
+    should log the skip and continue.
+    """
     try:
         kind = EventKind(event.kind)
-    except ValueError as exc:
-        raise UnknownEventKind(event.kind) from exc
+    except ValueError:
+        # Unrecognized event kind - skip it gracefully.
+        # The adapter should have already translated event_type -> kind using
+        # LOOP_EVENT_MAP; if we get here, either the adapter is using a stale
+        # map or the loop emitted something genuinely new.
+        return None
 
     payload = dict(event.payload)
     return LedgerEventDraft(
@@ -95,6 +106,8 @@ async def translate_run_iter(
     job_id: UUID | None,
     correlation_id: UUID,
 ) -> AsyncIterator[LedgerEventDraft]:
+    """Translate a stream of EngineEvents to LedgerEventDrafts, skipping
+    unrecognized event kinds gracefully."""
     causation_id: UUID | None = None
     async for event in events:
         draft = translate_event(
@@ -107,7 +120,9 @@ async def translate_run_iter(
             correlation_id=correlation_id,
             causation_id=causation_id,
         )
-        yield draft
+        if draft is not None:
+            yield draft
+        # else: unrecognized event kind, logged by caller if needed
 
 
 __all__ = [
