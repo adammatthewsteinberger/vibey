@@ -4,6 +4,7 @@ in -- ScriptedEngine in CI, a real adapter locally. A failing check sets
 conformance_ok = false and makes the engine ineligible for rotation
 (degraded, not broken); it never crashes the caller."""
 
+import asyncio
 import tempfile
 from collections.abc import Sequence
 from pathlib import Path
@@ -32,6 +33,7 @@ async def run_conformance(
     *,
     capacity_fixtures: Sequence[tuple[str, dict[str, object], type[CapacityState]]] = (),
     trivial_worktree: str | None = None,
+    run_dir_poll_seconds: float = 30.0,
 ) -> ConformanceReport:
     descriptor: EngineDescriptor = adapter.descriptor
     checks: list[ConformanceCheckResult] = []
@@ -107,9 +109,28 @@ async def run_conformance(
     )
 
     # 4. run_dir_shape
+    # adapter.start() only spawns the process; a real engine's own startup
+    # sequence (SDK client init, first API round-trip, first write) can
+    # trail the subprocess spawn by many seconds, more under degraded
+    # conditions (rate-limit retries). Poll rather than judging
+    # run_dir_shape on whatever happened to exist the instant start()
+    # returned -- a ScriptedEngine's files are already there, so this never
+    # adds latency to the fake-backed test suite. run_dir_poll_seconds
+    # defaults to 30s, matching this module's own stop()-equivalent poll
+    # budget elsewhere in the adapter; tests that deliberately model a file
+    # that never appears should pass a small value so the negative case
+    # doesn't cost real wall-clock time.
     required = ("meta.json", "events.jsonl")
-    missing_files = [f for f in required if not (handle.run_dir / f).exists()]
     snapshot_path = handle.run_dir / "snapshots" / "latest.json"
+    missing_files = [f for f in required if not (handle.run_dir / f).exists()]
+    if missing_files or not snapshot_path.exists():
+        step = 0.5
+        deadline = asyncio.get_event_loop().time() + run_dir_poll_seconds
+        while asyncio.get_event_loop().time() < deadline:
+            missing_files = [f for f in required if not (handle.run_dir / f).exists()]
+            if not missing_files and snapshot_path.exists():
+                break
+            await asyncio.sleep(min(step, run_dir_poll_seconds))
     if not snapshot_path.exists():
         missing_files.append("snapshots/latest.json")
     checks.append(
