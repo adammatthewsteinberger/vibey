@@ -164,6 +164,46 @@ async def test_adapter_start_raising_fails_downstream_checks_without_crashing(
         assert "disk full" in check.detail
 
 
+async def test_run_dir_shape_waits_for_a_slow_real_engine_instead_of_racing_it(
+    tmp_path: Path,
+) -> None:
+    """A real engine's own startup (SDK client init, first write) can trail
+    adapter.start() returning by a beat -- run_conformance must not judge
+    run_dir_shape on whatever happened to exist the instant start() returned.
+    """
+    import asyncio
+    import json
+
+    from vibey.application.dto import RunHandle
+
+    class _SlowToWriteAdapter(ScriptedEngine):
+        async def start(self, spec):  # type: ignore[no-untyped-def, override]
+            run_dir = self.base_dir / self.descriptor.state_dir / "runs" / str(spec.run_id)
+            (run_dir / "inbox").mkdir(parents=True, exist_ok=True)
+            (run_dir / "snapshots").mkdir(parents=True, exist_ok=True)
+            self._handles[spec.run_id] = run_dir
+
+            async def _write_late() -> None:
+                await asyncio.sleep(0.05)
+                (run_dir / "meta.json").write_text(json.dumps({"run_id": str(spec.run_id)}))
+                (run_dir / "events.jsonl").write_text("")
+                (run_dir / "snapshots" / "latest.json").write_text(
+                    json.dumps({"schema_version": 1, "run_id": str(spec.run_id)})
+                )
+
+            asyncio.create_task(_write_late())
+            return RunHandle(
+                run_id=spec.run_id, engine_id=self.descriptor.engine_id, run_dir=run_dir, pid=None
+            )
+
+    engine = _SlowToWriteAdapter(descriptor=CLAUDELOOP, base_dir=tmp_path)
+
+    report = await run_conformance(engine)
+
+    check = next(c for c in report.checks if c.name == "run_dir_shape")
+    assert check.ok is True, check.detail
+
+
 async def test_missing_snapshot_fails_snapshot_schema_check(tmp_path: Path) -> None:
     class _NoSnapshotAdapter(ScriptedEngine):
         async def snapshot(self, handle):  # type: ignore[no-untyped-def, override]
@@ -228,7 +268,7 @@ async def test_a_missing_snapshot_fails_the_run_dir_shape_check(tmp_path: Path) 
         script=[{"kind": "SessionSeeded", "at": "2026-01-01T00:00:00+00:00", "payload": {}}],
     )
 
-    report = await run_conformance(engine)
+    report = await run_conformance(engine, run_dir_poll_seconds=0.05)
 
     shape = next(c for c in report.checks if c.name == "run_dir_shape")
     assert shape.ok is False

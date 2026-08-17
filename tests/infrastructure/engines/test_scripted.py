@@ -1,8 +1,7 @@
 import json
+from collections.abc import AsyncIterator
 from pathlib import Path
 from uuid import uuid4
-
-import pytest
 
 from vibey.application.dto import RunSpec
 from vibey.domain.effort import Effort
@@ -12,7 +11,6 @@ from vibey.domain.phase import Phase
 from vibey.infrastructure.engines.descriptors import ALL_DESCRIPTORS, CLAUDELOOP
 from vibey.infrastructure.engines.scripted import ScriptedEngine
 from vibey.infrastructure.engines.tailer import (
-    UnknownEventKind,
     translate_event,
     translate_run_iter,
 )
@@ -216,23 +214,22 @@ async def test_attribute_returns_a_failure_class(tmp_path: Path) -> None:
     assert isinstance(fc, FailureClass)
 
 
-def test_translate_event_raises_on_unknown_kind() -> None:
+def test_translate_event_returns_none_on_unknown_kind() -> None:
     from datetime import UTC, datetime
 
     from vibey.application.dto import EngineEvent
 
     event = EngineEvent(kind="TotallyUnknownKind", at=datetime.now(UTC), payload={})
-    with pytest.raises(UnknownEventKind) as exc_info:
-        translate_event(
-            event,
-            project_id=uuid4(),
-            cycle=1,
-            phase=Phase.BUILD,
-            engine_id=CLAUDELOOP.engine_id,
-            job_id=None,
-            correlation_id=uuid4(),
-        )
-    assert exc_info.value.kind == "TotallyUnknownKind"
+    result = translate_event(
+        event,
+        project_id=uuid4(),
+        cycle=1,
+        phase=Phase.BUILD,
+        engine_id=CLAUDELOOP.engine_id,
+        job_id=None,
+        correlation_id=uuid4(),
+    )
+    assert result is None
 
 
 async def test_scripted_available_run_factory(tmp_path: Path) -> None:
@@ -241,6 +238,41 @@ async def test_scripted_available_run_factory(tmp_path: Path) -> None:
     engine = scripted_available_run(CLAUDELOOP, tmp_path)
     assert isinstance(engine, ScriptedEngine)
     assert engine.descriptor == CLAUDELOOP
+
+
+def test_unknown_event_kind_stores_kind_and_formats_message() -> None:
+    from vibey.infrastructure.engines.tailer import UnknownEventKind
+
+    err = UnknownEventKind("BrandNewKind")
+    assert err.kind == "BrandNewKind"
+    assert "BrandNewKind" in str(err)
+
+
+async def test_translate_run_iter_skips_unrecognized_kinds() -> None:
+    from datetime import UTC, datetime
+
+    from vibey.application.dto import EngineEvent
+
+    async def _mixed_events() -> AsyncIterator[EngineEvent]:
+        yield EngineEvent(kind="SessionSeeded", at=datetime.now(UTC), payload={})
+        yield EngineEvent(kind="CompletelyFakeKind", at=datetime.now(UTC), payload={})
+        yield EngineEvent(kind="TurnCompleted", at=datetime.now(UTC), payload={})
+
+    drafts = [
+        d
+        async for d in translate_run_iter(
+            _mixed_events(),
+            project_id=uuid4(),
+            cycle=1,
+            phase=Phase.BUILD,
+            engine_id=CLAUDELOOP.engine_id,
+            job_id=None,
+            correlation_id=uuid4(),
+        )
+    ]
+    assert len(drafts) == 2
+    assert drafts[0].kind == EventKind.SESSION_SEEDED
+    assert drafts[1].kind == EventKind.TURN_COMPLETED
 
 
 async def test_all_four_descriptors_produce_a_valid_run_directory(tmp_path: Path) -> None:

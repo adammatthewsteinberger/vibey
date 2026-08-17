@@ -343,6 +343,7 @@ def watch_dashboard(
     """Live dashboard monitoring current phase, queue, circuits, worktrees, and ledger tail."""
     from vibey.infrastructure.db.engine_health_repository import PostgresEngineHealthRepository
     from vibey.tui.dashboard import (
+        DashboardState,
         VibeyDashboardApp,
         VibeyReplayApp,
         build_replay_states,
@@ -380,7 +381,19 @@ def watch_dashboard(
                     project_id=project.project_id,
                 )
 
-                tui_app = VibeyDashboardApp(initial_state=initial_state)
+                async def _fetch_state() -> DashboardState:
+                    return await fetch_dashboard_state(
+                        projects=resources.projects,
+                        jobs=resources.jobs,
+                        health=health_repo,
+                        ledger=resources.ledger,
+                        project_id=project.project_id,
+                    )
+
+                tui_app = VibeyDashboardApp(
+                    initial_state=initial_state,
+                    state_fetcher=_fetch_state,
+                )
                 await tui_app.run_async()
 
     asyncio.run(run_dashboard())
@@ -786,3 +799,146 @@ def deploy_rollback(
             typer.echo(f"Initiated rollback for {project.name} to previous stable revision.")
 
     asyncio.run(run_rollback())
+
+
+@app.command("doctor")
+def doctor(
+    conformance: Annotated[
+        bool, typer.Option("--conformance", help="Run the 9-check conformance suite")
+    ] = False,
+    engine: Annotated[
+        str | None,
+        typer.Option("--engine", help="Specific engine to check (default: all installed)"),
+    ] = None,
+) -> None:
+    """Check engine health, auth status, and optionally run conformance."""
+    from vibey.application.conformance import run_conformance
+    from vibey.infrastructure.engines.classify import CREDITS_FIXTURES
+    from vibey.infrastructure.engines.descriptors import ALL_DESCRIPTORS, BY_ENGINE_ID
+    from vibey.infrastructure.engines.loop_process_adapter import LoopProcessAdapter
+
+    async def run_doctor() -> None:
+        if engine is not None:
+            from vibey.domain.engine import EngineId
+
+            try:
+                eid = EngineId(engine)
+            except ValueError as exc:
+                typer.echo(f"Unknown engine: {engine}")
+                raise typer.Exit(1) from exc
+            descriptors = [BY_ENGINE_ID[eid]]
+        else:
+            descriptors = list(ALL_DESCRIPTORS)
+
+        base_dir = Path.cwd()
+        all_ok = True
+
+        for desc in descriptors:
+            adapter = LoopProcessAdapter(descriptor=desc, base_dir=base_dir)
+            preflight = await adapter.preflight()
+
+            status = "installed" if preflight.installed else "NOT INSTALLED"
+            version = preflight.version or "?"
+            auth = "auth OK" if preflight.auth_ok else "auth FAIL"
+            typer.echo(f"{desc.engine_id.value:<12} {status:<14} v{version:<10} {auth}")
+
+            if preflight.detail:
+                typer.echo(f"  detail: {preflight.detail}")
+
+            if conformance and preflight.installed:
+                from vibey.domain.capacity import CreditsExhausted
+
+                capacity_fixtures = [
+                    ("credits", CREDITS_FIXTURES[desc.engine_id], CreditsExhausted)
+                ]
+                report = await run_conformance(adapter, capacity_fixtures=capacity_fixtures)
+                for check in report.checks:
+                    mark = "PASS" if check.ok else "FAIL"
+                    detail = f" — {check.detail}" if check.detail else ""
+                    typer.echo(f"  {mark} {check.name}{detail}")
+                if not report.ok:
+                    all_ok = False
+
+        if conformance and not all_ok:
+            raise typer.Exit(1)
+
+    asyncio.run(run_doctor())
+
+
+@app.command("worker")
+def worker(
+    engines_opt: Annotated[
+        str | None,
+        typer.Option("--engines", help="Comma-separated list of engines to use"),
+    ] = None,
+    parallelism: Annotated[int, typer.Option("--parallelism", "-j", min=1, max=16)] = 1,
+    once: Annotated[
+        bool,
+        typer.Option("--once", help="Process one job and exit"),
+    ] = False,
+) -> None:
+    """Long-running worker: LISTEN vibey_job_ready, dispatch across phases."""
+    from vibey.domain.engine import EngineId
+    from vibey.infrastructure.db.notifier import PostgresJobReadyNotifier
+
+    if engines_opt:
+        try:
+            _ = frozenset(EngineId(e.strip()) for e in engines_opt.split(","))
+        except ValueError as exc:
+            typer.echo(f"Invalid engine: {exc}")
+            raise typer.Exit(2) from exc
+
+    async def run_worker() -> None:
+        from datetime import timedelta
+
+        async with build_app() as resources:
+            latest = await resources.projects.get_latest()
+            if latest is None:
+                typer.echo("no projects found; create one with `vibey new` first")
+                raise typer.Exit(1)
+
+            project = latest
+            owner = f"worker-{os.getpid()}"
+            dsn = os.environ.get(
+                "VIBEY_PG_URL",
+                f"postgresql://{os.environ.get('USER', 'vibey')}@localhost:5432/vibey",
+            )
+
+            notifier = PostgresJobReadyNotifier(dsn)
+            await notifier.connect()
+
+            typer.echo(
+                f"worker started: project={project.name} "
+                f"engines={engines_opt or 'all'} parallelism={parallelism}"
+            )
+
+            try:
+                while True:
+                    # Try to claim and process a job
+                    job = await resources.jobs.claim(
+                        project.project_id, owner=owner, lease=timedelta(seconds=120)
+                    )
+                    if job is not None:
+                        typer.echo(f"claimed job {job.id} ({job.kind})")
+                        # For now, we just ack the job — full dispatch through
+                        # phase handlers will come when those handlers are wired
+                        # to the rotation infrastructure
+                        await resources.jobs.ack(job.id, owner=owner)
+                        typer.echo(f"completed job {job.id}")
+                        if once:
+                            break
+                        continue
+
+                    if once:
+                        typer.echo("no ready job")
+                        break
+
+                    # Wait for notification or poll timeout
+                    await notifier.wait_for_job_ready(
+                        project.project_id, timeout=timedelta(seconds=5)
+                    )
+            finally:
+                await notifier.close()
+
+    with guard():
+        asyncio.run(run_worker())

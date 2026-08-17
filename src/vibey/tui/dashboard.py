@@ -249,7 +249,7 @@ class VibeyDashboardApp(App[None]):
         self,
         *,
         initial_state: DashboardState | None = None,
-        state_fetcher: Callable[[], DashboardState | None] | None = None,
+        state_fetcher: Callable[[], DashboardState | None] | Callable[[], Any] | None = None,
         refresh_interval: float = 1.0,
     ) -> None:
         super().__init__()
@@ -271,14 +271,24 @@ class VibeyDashboardApp(App[None]):
     def on_mount(self) -> None:
         self._update_all_widgets(self._current_state)
         if self._state_fetcher is not None and self._refresh_interval > 0:
-            self.set_interval(self._refresh_interval, self.action_refresh)
+            self.set_interval(self._refresh_interval, self._do_refresh)
+
+    async def _do_refresh(self) -> None:
+        if self._state_fetcher is None:
+            return
+        import inspect
+
+        result = self._state_fetcher()
+        if inspect.isawaitable(result):
+            new_state: DashboardState | None = await result
+        else:
+            new_state = result
+        if new_state is not None:
+            self._current_state = new_state
+            self._update_all_widgets(new_state)
 
     def action_refresh(self) -> None:
-        if self._state_fetcher is not None:
-            new_state = self._state_fetcher()
-            if new_state is not None:
-                self._current_state = new_state
-                self._update_all_widgets(new_state)
+        self.run_worker(self._do_refresh())
 
     def _update_all_widgets(self, state: DashboardState | None) -> None:
         if state is None:

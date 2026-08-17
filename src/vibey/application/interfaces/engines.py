@@ -10,13 +10,14 @@ from vibey.application.dto import (
     EngineEvent,
     EngineHealthRecord,
     PreflightResult,
+    RotationCursor,
     RunHandle,
     RunSpec,
     SnapshotRef,
     StopSummary,
 )
 from vibey.domain.capacity import CapacityState
-from vibey.domain.engine import EngineDescriptor
+from vibey.domain.engine import EngineDescriptor, EngineId
 from vibey.domain.job import FailureClass
 
 
@@ -66,3 +67,20 @@ class EngineHealthRepository(Protocol):
     async def upsert(self, record: EngineHealthRecord) -> EngineHealthRecord: ...
 
     async def list_for_project(self, project_id: UUID) -> tuple[EngineHealthRecord, ...]: ...
+
+
+@runtime_checkable
+class RotationCursorRepository(Protocol):
+    async def get(self, project_id: UUID, engine_id: EngineId) -> RotationCursor | None: ...
+
+    async def list_for_project(self, project_id: UUID) -> tuple[RotationCursor, ...]: ...
+
+    async def upsert(self, cursor: RotationCursor) -> RotationCursor: ...
+
+    async def update_many(
+        self, project_id: UUID, cursors: tuple[RotationCursor, ...]
+    ) -> tuple[RotationCursor, ...]: ...
+
+    async def initialize_for_project(
+        self, project_id: UUID, engines: tuple[EngineId, ...]
+    ) -> tuple[RotationCursor, ...]: ...

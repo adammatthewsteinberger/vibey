@@ -702,3 +702,246 @@ def test_deploy_inspect_no_spec_events(tmp_path: Path) -> None:
     res = runner.invoke(app, ["deploy", "inspect", str(pid)])
     assert res.exit_code == 0, res.output
     assert "default" in res.output
+
+
+# ── doctor command ────────────────────────────────────────────────────────────
+
+
+def test_doctor_basic_lists_all_engines() -> None:
+    res = runner.invoke(app, ["doctor"])
+    assert res.exit_code == 0, res.output
+    assert "claudeloop" in res.output
+
+
+def test_doctor_specific_engine() -> None:
+    res = runner.invoke(app, ["doctor", "--engine", "claudeloop"])
+    assert res.exit_code == 0, res.output
+    assert "claudeloop" in res.output
+
+
+def test_doctor_unknown_engine() -> None:
+    res = runner.invoke(app, ["doctor", "--engine", "nonexistent"])
+    assert res.exit_code == 1
+
+
+def test_doctor_no_detail_skips_detail_line() -> None:
+    from unittest.mock import AsyncMock, patch
+
+    from vibey.application.dto import PreflightResult
+
+    fake_result = PreflightResult(installed=True, auth_ok=True, version="1.0.0", detail="")
+    with patch(
+        "vibey.infrastructure.engines.loop_process_adapter.LoopProcessAdapter.preflight",
+        new=AsyncMock(return_value=fake_result),
+    ):
+        res = runner.invoke(app, ["doctor", "--engine", "claudeloop"])
+    assert res.exit_code == 0, res.output
+    assert "detail:" not in res.output
+    assert "installed" in res.output
+
+
+def test_doctor_shows_detail_when_present() -> None:
+    from unittest.mock import AsyncMock, patch
+
+    from vibey.application.dto import PreflightResult
+
+    fake_result = PreflightResult(
+        installed=False, auth_ok=False, version=None, detail="claude not found in PATH"
+    )
+    with patch(
+        "vibey.infrastructure.engines.loop_process_adapter.LoopProcessAdapter.preflight",
+        new=AsyncMock(return_value=fake_result),
+    ):
+        res = runner.invoke(app, ["doctor", "--engine", "claudeloop"])
+    assert res.exit_code == 0, res.output
+    assert "detail:" in res.output
+    assert "claude not found in PATH" in res.output
+
+
+def test_doctor_with_conformance() -> None:
+    from unittest.mock import AsyncMock, patch
+
+    from vibey.application.dto import ConformanceCheckResult, ConformanceReport, PreflightResult
+    from vibey.domain.engine import EngineId
+
+    fake_report = ConformanceReport(
+        engine_id=EngineId.CLAUDELOOP,
+        checks=(
+            ConformanceCheckResult(name="preflight", ok=True),
+            ConformanceCheckResult(name="start_stop", ok=True),
+        ),
+    )
+    # preflight() must also be mocked: the CLI only calls run_conformance
+    # when preflight.installed is True, and a CI runner has no engine
+    # binaries on PATH -- leaving this real makes the test pass only on a
+    # machine that happens to have claudeloop installed.
+    with (
+        patch(
+            "vibey.infrastructure.engines.loop_process_adapter.LoopProcessAdapter.preflight",
+            new=AsyncMock(
+                return_value=PreflightResult(installed=True, version="0.5.5", auth_ok=True)
+            ),
+        ),
+        patch(
+            "vibey.application.conformance.run_conformance",
+            new=AsyncMock(return_value=fake_report),
+        ),
+    ):
+        res = runner.invoke(app, ["doctor", "--conformance", "--engine", "claudeloop"])
+    assert res.exit_code == 0, res.output
+    assert "PASS" in res.output
+
+
+def test_doctor_with_conformance_failure() -> None:
+    from unittest.mock import AsyncMock, patch
+
+    from vibey.application.dto import ConformanceCheckResult, ConformanceReport, PreflightResult
+    from vibey.domain.engine import EngineId
+
+    fake_report = ConformanceReport(
+        engine_id=EngineId.CLAUDELOOP,
+        checks=(
+            ConformanceCheckResult(name="preflight", ok=True),
+            ConformanceCheckResult(name="start_stop", ok=False, detail="timed out"),
+        ),
+    )
+    with (
+        patch(
+            "vibey.infrastructure.engines.loop_process_adapter.LoopProcessAdapter.preflight",
+            new=AsyncMock(
+                return_value=PreflightResult(installed=True, version="0.5.5", auth_ok=True)
+            ),
+        ),
+        patch(
+            "vibey.application.conformance.run_conformance",
+            new=AsyncMock(return_value=fake_report),
+        ),
+    ):
+        res = runner.invoke(app, ["doctor", "--conformance", "--engine", "claudeloop"])
+    assert res.exit_code == 1
+    assert "FAIL" in res.output
+    assert "timed out" in res.output
+
+
+# ── worker command ────────────────────────────────────────────────────────────
+
+
+def test_worker_once_no_job(tmp_path: Path) -> None:
+    async def seed_empty() -> None:
+        async with build_app() as resources:
+            await resources.projects.create("empty-worker", tmp_path, max_cycles=1, config={})
+
+    asyncio.run(seed_empty())
+    from unittest.mock import AsyncMock, patch
+
+    with patch("vibey.infrastructure.db.notifier.PostgresJobReadyNotifier") as mock_notifier_cls:
+        mock_notifier = AsyncMock()
+        mock_notifier_cls.return_value = mock_notifier
+        res = runner.invoke(app, ["worker", "--once"])
+    assert res.exit_code == 0, res.output
+    assert "no ready job" in res.output
+
+
+def test_worker_once_with_job(tmp_path: Path) -> None:
+    async def seed() -> UUID:
+        async with build_app() as resources:
+            p = await resources.projects.create("worker-proj", tmp_path, max_cycles=1, config={})
+            from vibey.domain.job import idempotency_key
+
+            await resources.jobs.enqueue(
+                EnqueueRequest(
+                    project_id=p.project_id,
+                    cycle=p.cycle,
+                    phase=Phase.INTAKE,
+                    kind="test.work",
+                    idempotency_key=idempotency_key(p.project_id, p.cycle, "test.work", "1"),
+                    requirement={},
+                )
+            )
+            return p.project_id
+
+    asyncio.run(seed())
+    from unittest.mock import AsyncMock, patch
+
+    with patch("vibey.infrastructure.db.notifier.PostgresJobReadyNotifier") as mock_notifier_cls:
+        mock_notifier = AsyncMock()
+        mock_notifier_cls.return_value = mock_notifier
+        res = runner.invoke(app, ["worker", "--once"])
+    assert res.exit_code == 0, res.output
+    assert "claimed job" in res.output
+    assert "completed job" in res.output
+
+
+def test_worker_no_projects() -> None:
+    from unittest.mock import AsyncMock, patch
+
+    with patch("vibey.infrastructure.db.notifier.PostgresJobReadyNotifier") as mock_notifier_cls:
+        mock_notifier = AsyncMock()
+        mock_notifier_cls.return_value = mock_notifier
+        res = runner.invoke(app, ["worker", "--once"])
+    assert res.exit_code == 1
+    assert "no projects found" in res.output
+
+
+def test_worker_continuous_processes_then_waits(tmp_path: Path) -> None:
+    async def seed() -> None:
+        async with build_app() as resources:
+            p = await resources.projects.create("cont-worker", tmp_path, max_cycles=1, config={})
+            from vibey.domain.job import idempotency_key as idem_key
+
+            await resources.jobs.enqueue(
+                EnqueueRequest(
+                    project_id=p.project_id,
+                    cycle=p.cycle,
+                    phase=Phase.INTAKE,
+                    kind="test.work",
+                    idempotency_key=idem_key(p.project_id, p.cycle, "test.work", "1"),
+                    requirement={},
+                )
+            )
+
+    asyncio.run(seed())
+    from unittest.mock import AsyncMock, patch
+
+    with patch("vibey.infrastructure.db.notifier.PostgresJobReadyNotifier") as mock_notifier_cls:
+        mock_notifier = AsyncMock()
+        mock_notifier.wait_for_job_ready = AsyncMock(side_effect=KeyboardInterrupt)
+        mock_notifier_cls.return_value = mock_notifier
+        res = runner.invoke(app, ["worker"])
+    assert "claimed job" in res.output
+    assert "completed job" in res.output
+
+
+def test_worker_invalid_engine() -> None:
+    res = runner.invoke(app, ["worker", "--engines", "nonexistent"])
+    assert res.exit_code == 2
+
+
+# ── watch state_fetcher coverage ──────────────────────────────────────────────
+
+
+def test_watch_state_fetcher_is_invoked(tmp_path: Path) -> None:
+    from unittest.mock import AsyncMock, patch
+
+    pid = asyncio.run(_seed_status_project(tmp_path))
+    fetcher_called = False
+
+    with patch("vibey.tui.dashboard.VibeyDashboardApp") as mock_app_cls:
+
+        def capture_init(**kwargs: object) -> AsyncMock:
+            fetcher = kwargs.get("state_fetcher")
+
+            async def run_async_calls_fetcher() -> None:
+                nonlocal fetcher_called
+                if fetcher is not None:
+                    await fetcher()
+                    fetcher_called = True
+
+            m = AsyncMock()
+            m.run_async = run_async_calls_fetcher
+            return m
+
+        mock_app_cls.side_effect = capture_init
+        res = runner.invoke(app, ["watch", str(pid)])
+        assert res.exit_code == 0, res.output
+    assert fetcher_called

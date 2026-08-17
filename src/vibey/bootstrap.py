@@ -2,7 +2,7 @@
 
 import getpass
 import os
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Mapping
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -14,22 +14,30 @@ from vibey.application.design_handler import DesignInterviewHandler
 from vibey.application.design_research_handler import DesignResearchHandler
 from vibey.application.design_synthesis_handler import DesignSpecHandler, DesignSynthesizeHandler
 from vibey.application.dto import ProjectRecord
+from vibey.application.engine_health_service import EngineHealthService
+from vibey.application.engine_selector import EngineSelector
 from vibey.application.interfaces import (
     DesignProvider,
+    EngineAdapter,
     VisualInventoryProducer,
 )
 from vibey.application.job_dispatcher import JobDispatcher
+from vibey.application.rotation_handoff import RotationHandoffService
 from vibey.application.visual_handler import VisualInventoryHandler, VisualPlanHandler
 from vibey.application.worker import WorkerLoop
 from vibey.domain.engine import EngineId
 from vibey.infrastructure.db.design_ledger import PostgresDesignLedger
 from vibey.infrastructure.db.design_spec_repository import FileDesignSpecRepository
+from vibey.infrastructure.db.engine_health_repository import PostgresEngineHealthRepository
 from vibey.infrastructure.db.human_gate_repository import PostgresHumanGateRepository
 from vibey.infrastructure.db.job_repository import PostgresJobRepository
 from vibey.infrastructure.db.ledger_repository import PostgresLedgerRepository
 from vibey.infrastructure.db.migrator import apply_migrations, discover_migrations
 from vibey.infrastructure.db.project_repository import PostgresProjectRepository
+from vibey.infrastructure.db.rotation_cursor_repository import PostgresRotationCursorRepository
 from vibey.infrastructure.db.visual_inventory_repository import FileVisualInventoryRepository
+from vibey.infrastructure.engines.descriptors import ALL_DESCRIPTORS, BY_ENGINE_ID
+from vibey.infrastructure.engines.loop_process_adapter import LoopProcessAdapter
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,6 +49,13 @@ class AppResources:
     design_ledger: PostgresDesignLedger
     design_specs: FileDesignSpecRepository
     visual_inventories: FileVisualInventoryRepository
+    # Rotation infrastructure (Phase E1)
+    engine_health_repo: PostgresEngineHealthRepository
+    rotation_cursors: PostgresRotationCursorRepository
+    engine_health_service: EngineHealthService
+    engine_selector: EngineSelector
+    rotation_handoff: RotationHandoffService
+    engine_adapters: Mapping[EngineId, EngineAdapter]
 
 
 class SystemClock:
@@ -111,7 +126,9 @@ def database_url() -> str:
 
 
 @asynccontextmanager
-async def build_app(*, url: str | None = None) -> AsyncIterator[AppResources]:
+async def build_app(
+    *, url: str | None = None, base_dir: Path | None = None
+) -> AsyncIterator[AppResources]:
     pool = await asyncpg.create_pool(url or database_url(), min_size=1, max_size=10)
     if pool is None:
         raise RuntimeError("asyncpg did not create a pool")
@@ -119,8 +136,31 @@ async def build_app(*, url: str | None = None) -> AsyncIterator[AppResources]:
         migrations_dir = Path(__file__).resolve().parents[2] / "migrations"
         async with pool.acquire() as conn:
             await apply_migrations(conn, discover_migrations(migrations_dir))
+
         projects = PostgresProjectRepository(pool)
         ledger = PostgresLedgerRepository(pool)
+
+        # Build rotation infrastructure (Phase E1)
+        engine_health_repo = PostgresEngineHealthRepository(pool)
+        rotation_cursors = PostgresRotationCursorRepository(pool)
+        engine_health_service = EngineHealthService(engine_health_repo)
+        engine_selector = EngineSelector(
+            health_service=engine_health_service,
+            cursor_repository=rotation_cursors,
+            descriptors=BY_ENGINE_ID,
+        )
+        rotation_handoff = RotationHandoffService(engine_selector)
+
+        # Build engine adapters
+        adapter_base_dir = base_dir or Path.cwd()
+        engine_adapters = {
+            desc.engine_id: LoopProcessAdapter(
+                descriptor=desc,
+                base_dir=adapter_base_dir,
+            )
+            for desc in ALL_DESCRIPTORS
+        }
+
         yield AppResources(
             projects=projects,
             jobs=PostgresJobRepository(pool),
@@ -129,6 +169,12 @@ async def build_app(*, url: str | None = None) -> AsyncIterator[AppResources]:
             design_ledger=PostgresDesignLedger(ledger),
             design_specs=FileDesignSpecRepository(projects),
             visual_inventories=FileVisualInventoryRepository(projects),
+            engine_health_repo=engine_health_repo,
+            rotation_cursors=rotation_cursors,
+            engine_health_service=engine_health_service,
+            engine_selector=engine_selector,
+            rotation_handoff=rotation_handoff,
+            engine_adapters=engine_adapters,
         )
     finally:
         await pool.close()

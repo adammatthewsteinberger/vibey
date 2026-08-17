@@ -13,3 +13,6 @@ htmlcov/
 .claudeloop/
 .vibey/plans/
 .agyloop/
+.codexloop/
+.cursorloop/
+.vibey-tmp/

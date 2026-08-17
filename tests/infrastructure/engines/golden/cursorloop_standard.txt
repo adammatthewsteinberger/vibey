@@ -1,1 +1,1 @@
-cursorloop run /repo/.vibey/worktrees/c1-item-001/.vibey/plans/00000000-0000-0000-0000-000000000001.md --model grok-4.5 --cwd /repo/.vibey/worktrees/c1-item-001
+cursorloop run /repo/.vibey/worktrees/c1-item-001/.vibey/plans/00000000-0000-0000-0000-000000000001.md --run-id 00000000-0000-0000-0000-000000000001 --model grok-4.5 --cwd /repo/.vibey/worktrees/c1-item-001

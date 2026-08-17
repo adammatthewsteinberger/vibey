@@ -126,6 +126,15 @@ class FakeJobRepository:
     async def reap(self) -> int:
         return 0
 
+    async def queue_depth(self, project_id: UUID) -> Mapping[str, int]:
+        from collections import Counter
+
+        counts: Counter[str] = Counter()
+        for job in self._jobs.values():
+            if job.project_id == project_id:
+                counts[job.state] += 1
+        return dict(counts)
+
     async def get(self, job_id: UUID) -> JobRecord | None:
         return self._jobs.get(job_id)
 

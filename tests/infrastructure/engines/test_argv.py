@@ -43,12 +43,14 @@ def test_exactly_twenty_golden_files_exist() -> None:
 
 
 @pytest.mark.parametrize("descriptor", ALL_DESCRIPTORS, ids=lambda d: d.engine_id.value)
-def test_new_run_uses_a_positional_plan_file_and_not_a_caller_supplied_run_id(
+def test_new_run_uses_a_positional_plan_file_and_includes_run_id_flag(
     descriptor,
 ) -> None:  # type: ignore[no-untyped-def]
     argv = build_argv(descriptor, _spec(Effort.LOW))
     assert argv[2] == f"{WORKTREE}/.vibey/plans/{RUN_ID}.md"
-    assert "--run-id" not in argv
+    assert "--run-id" in argv
+    run_id_index = argv.index("--run-id")
+    assert argv[run_id_index + 1] == str(RUN_ID)
 
 
 @pytest.mark.parametrize("descriptor", ALL_DESCRIPTORS, ids=lambda d: d.engine_id.value)
