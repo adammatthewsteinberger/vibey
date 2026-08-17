@@ -187,3 +187,13 @@ class EngineHealthRecord:
 class FailureAttribution:
     failure_class: FailureClass
     detail: str
+
+
+@dataclass(frozen=True, slots=True)
+class RotationCursor:
+    """SWRR cursor state for one engine in one project."""
+
+    project_id: UUID
+    engine_id: EngineId
+    current: int
+    order: int

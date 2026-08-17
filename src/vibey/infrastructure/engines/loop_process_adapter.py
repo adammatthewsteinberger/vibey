@@ -12,13 +12,13 @@ descriptors, not four separate classes.
 
 import asyncio
 import json
-import logging
 import shutil
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+
+import structlog
 
 from vibey.application.dto import (
     EngineEvent,
@@ -36,7 +36,7 @@ from vibey.infrastructure.engines.argv import build_argv
 from vibey.infrastructure.engines.classify import attribute_failure, classify_capacity
 from vibey.infrastructure.engines.loop_events import translate_event_type
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 EXIT_CODE_WIND_DOWN = 75
 
@@ -80,7 +80,7 @@ class LoopProcessAdapter:
             stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=10.0)
             version_output = (stdout or stderr).decode().strip()
             version = version_output.split()[-1] if version_output else None
-        except (asyncio.TimeoutError, Exception) as e:
+        except (TimeoutError, Exception) as e:
             logger.warning(
                 "version_check_failed",
                 engine=self.descriptor.engine_id.value,
@@ -102,7 +102,7 @@ class LoopProcessAdapter:
             auth_ok = proc.returncode == 0
             if not auth_ok:
                 detail = (stderr or stdout).decode().strip()[:500]
-        except (asyncio.TimeoutError, Exception) as e:
+        except (TimeoutError, Exception) as e:
             logger.warning(
                 "doctor_check_failed",
                 engine=self.descriptor.engine_id.value,
@@ -309,8 +309,8 @@ class LoopProcessAdapter:
             try:
                 snapshot_data = json.loads(snapshot_ref.path.read_text())
                 remaining_work = snapshot_data.get("remaining_work", [])
-            except Exception:
-                pass
+            except Exception:  # noqa: BLE001  # nosec B110
+                logger.debug("snapshot_remaining_work_failed", run_id=str(handle.run_id))
 
         return StopSummary(
             run_id=handle.run_id,
@@ -340,7 +340,7 @@ class LoopProcessAdapter:
             )
             return None
 
-    def classify(self, raw: dict[str, Any]) -> CapacityState:
+    def classify(self, raw: Mapping[str, object]) -> CapacityState:
         """Classify capacity state using existing classify.py."""
         return classify_capacity(self.descriptor.engine_id, raw)
 

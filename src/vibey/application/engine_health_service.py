@@ -7,9 +7,13 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 from vibey.application.dto import EngineHealthRecord, PreflightResult
-from vibey.application.interfaces.engines import EngineAdapter, EngineHealthRepository
-from vibey.domain.capacity import AuthenticationFailed, CapacityState, CreditsExhausted, WindowExhausted
-from vibey.domain.circuit import Circuit, CircuitState
+from vibey.application.interfaces.engines import EngineHealthRepository
+from vibey.domain.capacity import (
+    AuthenticationFailed,
+    CapacityState,
+    CreditsExhausted,
+    WindowExhausted,
+)
 from vibey.domain.engine import EngineId
 
 
@@ -19,9 +23,7 @@ class EngineHealthService:
     def __init__(self, repository: EngineHealthRepository) -> None:
         self._repository = repository
 
-    async def get_or_create(
-        self, project_id: UUID, engine_id: EngineId
-    ) -> EngineHealthRecord:
+    async def get_or_create(self, project_id: UUID, engine_id: EngineId) -> EngineHealthRecord:
         """Get existing health record or create a new one with defaults."""
         existing = await self._repository.get(project_id, engine_id.value)
         if existing is not None:
@@ -101,10 +103,9 @@ class EngineHealthService:
             # No resets_at for credits exhausted (enforced by DB constraint)
             # Probe on exponential backoff
             from datetime import timedelta
+
             probe_attempt = record.probe_attempt + 1
-            probe_next_at = datetime.now(UTC) + timedelta(
-                minutes=min(5 * (2 ** probe_attempt), 30)
-            )
+            probe_next_at = datetime.now(UTC) + timedelta(minutes=min(5 * (2**probe_attempt), 30))
 
         elif isinstance(capacity_state, WindowExhausted):
             circuit_state = "open"
@@ -165,9 +166,7 @@ class EngineHealthService:
 
         return await self._repository.upsert(updated)
 
-    async def record_success(
-        self, project_id: UUID, engine_id: EngineId
-    ) -> EngineHealthRecord:
+    async def record_success(self, project_id: UUID, engine_id: EngineId) -> EngineHealthRecord:
         """Record a successful execution (clears consecutive failures)."""
         record = await self.get_or_create(project_id, engine_id)
 
@@ -193,9 +192,7 @@ class EngineHealthService:
 
         return await self._repository.upsert(updated)
 
-    async def list_for_project(
-        self, project_id: UUID
-    ) -> tuple[EngineHealthRecord, ...]:
+    async def list_for_project(self, project_id: UUID) -> tuple[EngineHealthRecord, ...]:
         """List all health records for a project."""
         return await self._repository.list_for_project(project_id)
 

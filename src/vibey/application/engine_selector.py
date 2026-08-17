@@ -7,7 +7,10 @@ to select the next engine using SWRR. Updates the rotation cursor atomically.
 from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
+from vibey.application.dto import RotationCursor
 from vibey.application.engine_health_service import EngineHealthService
+from vibey.application.interfaces.engines import RotationCursorRepository
+from vibey.domain.capacity import Available
 from vibey.domain.circuit import Circuit, CircuitState
 from vibey.domain.engine import EngineDescriptor, EngineId, JobRequirement
 from vibey.domain.errors import NoEligibleEngine
@@ -20,10 +23,6 @@ from vibey.domain.rotation import (
     health_factor,
     select,
 )
-from vibey.infrastructure.db.rotation_cursor_repository import (
-    PostgresRotationCursorRepository,
-    RotationCursor,
-)
 
 # Authentication TTL from architecture doc
 AUTH_TTL = timedelta(hours=24)
@@ -35,7 +34,7 @@ class EngineSelector:
     def __init__(
         self,
         health_service: EngineHealthService,
-        cursor_repository: PostgresRotationCursorRepository,
+        cursor_repository: RotationCursorRepository,
         descriptors: dict[EngineId, EngineDescriptor],
     ) -> None:
         self._health_service = health_service
@@ -72,6 +71,8 @@ class EngineSelector:
             # Build circuit state
             circuit = Circuit(
                 state=CircuitState(record.circuit),
+                capacity=Available(),
+                probe=None,
                 consecutive_failures=record.consecutive_fail,
                 ewma_failure=record.ewma_failure,
             )
@@ -104,7 +105,7 @@ class EngineSelector:
             cursor_map = {c.engine_id: c for c in cursors}
 
         # Build candidates
-        candidates = []
+        candidates: list[Candidate] = []
         for runtime in eligible_runtimes:
             cursor = cursor_map.get(runtime.engine_id)
             if cursor is None:

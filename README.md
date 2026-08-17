@@ -84,9 +84,12 @@ three things those runners deliberately do not do:
 
 ## Status
 
-**M10 complete.** All milestones M0 through M10 are fully implemented and verified
-against the 7-gate CI sweep. The complete six-phase delivery-to-deployment pipeline is
-operational:
+**M10 + E1 complete.** All milestones M0 through M10 are fully implemented and verified
+against the 7-gate CI sweep. Phase E1 (live engines, rotation wiring, full worker,
+two-mode test harness) added real engine process management, SWRR rotation with crash-safe
+cursor persistence, and the `LoopProcessAdapter` that drives all four loop binaries
+through a single data-driven adapter. The complete six-phase delivery-to-deployment
+pipeline is operational:
 
 - **Phase ① DESIGN** — interactive interview, research, synthesis, spec acceptance,
   and optional visual-design interstitial

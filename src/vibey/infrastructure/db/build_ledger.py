@@ -35,4 +35,5 @@ class PostgresBuildLedger:
             job_id=job_id,
             correlation_id=correlation_id,
         )
-        await self._ledger.append(draft)
+        if draft is not None:
+            await self._ledger.append(draft)

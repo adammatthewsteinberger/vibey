@@ -5,22 +5,12 @@ per project per engine. This state is updated transactionally with job leasing
 to ensure crash-safety.
 """
 
-from dataclasses import dataclass
 from uuid import UUID
 
 import asyncpg
 
+from vibey.application.dto import RotationCursor
 from vibey.domain.engine import EngineId
-
-
-@dataclass(frozen=True, slots=True)
-class RotationCursor:
-    """SWRR cursor state for one engine in one project."""
-
-    project_id: UUID
-    engine_id: EngineId
-    current: int  # Current weight value in SWRR algorithm
-    order: int  # Tie-breaker (lower wins when current values are equal)
 
 
 class PostgresRotationCursorRepository:
@@ -48,7 +38,7 @@ class PostgresRotationCursorRepository:
         """Get all cursors for a project."""
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(
-                "SELECT * FROM rotation_cursor WHERE project_id = $1 ORDER BY \"order\"",
+                'SELECT * FROM rotation_cursor WHERE project_id = $1 ORDER BY "order"',
                 project_id,
             )
             return tuple(
@@ -93,12 +83,11 @@ class PostgresRotationCursorRepository:
         This is the critical operation that must happen transactionally with
         job leasing so a crash cannot double-advance the cursor.
         """
-        async with self._pool.acquire() as conn:
-            async with conn.transaction():
-                results = []
-                for cursor in cursors:
-                    row = await conn.fetchrow(
-                        """
+        async with self._pool.acquire() as conn, conn.transaction():
+            results = []
+            for cursor in cursors:
+                row = await conn.fetchrow(
+                    """
                         INSERT INTO rotation_cursor (project_id, engine_id, current, "order")
                         VALUES ($1, $2, $3, $4)
                         ON CONFLICT (project_id, engine_id) DO UPDATE SET
@@ -106,20 +95,20 @@ class PostgresRotationCursorRepository:
                             "order" = EXCLUDED."order"
                         RETURNING *
                         """,
-                        cursor.project_id,
-                        cursor.engine_id.value,
-                        cursor.current,
-                        cursor.order,
+                    cursor.project_id,
+                    cursor.engine_id.value,
+                    cursor.current,
+                    cursor.order,
+                )
+                results.append(
+                    RotationCursor(
+                        project_id=row["project_id"],
+                        engine_id=EngineId(row["engine_id"]),
+                        current=row["current"],
+                        order=row["order"],
                     )
-                    results.append(
-                        RotationCursor(
-                            project_id=row["project_id"],
-                            engine_id=EngineId(row["engine_id"]),
-                            current=row["current"],
-                            order=row["order"],
-                        )
-                    )
-                return tuple(results)
+                )
+            return tuple(results)
 
     async def initialize_for_project(
         self, project_id: UUID, engines: tuple[EngineId, ...]
@@ -129,45 +118,44 @@ class PostgresRotationCursorRepository:
         Sets current=0 and order based on engine position in the tuple.
         Idempotent - only inserts if not present.
         """
-        async with self._pool.acquire() as conn:
-            async with conn.transaction():
-                results = []
-                for idx, engine_id in enumerate(engines):
-                    row = await conn.fetchrow(
-                        """
+        async with self._pool.acquire() as conn, conn.transaction():
+            results = []
+            for idx, engine_id in enumerate(engines):
+                row = await conn.fetchrow(
+                    """
                         INSERT INTO rotation_cursor (project_id, engine_id, current, "order")
                         VALUES ($1, $2, 0, $3)
                         ON CONFLICT (project_id, engine_id) DO NOTHING
                         RETURNING *
                         """,
-                        project_id,
-                        engine_id.value,
-                        idx,
-                    )
-                    if row:
-                        results.append(
-                            RotationCursor(
-                                project_id=row["project_id"],
-                                engine_id=EngineId(row["engine_id"]),
-                                current=row["current"],
-                                order=row["order"],
-                            )
-                        )
-
-                # Return all cursors for the project
-                rows = await conn.fetch(
-                    "SELECT * FROM rotation_cursor WHERE project_id = $1 ORDER BY \"order\"",
                     project_id,
+                    engine_id.value,
+                    idx,
                 )
-                return tuple(
-                    RotationCursor(
-                        project_id=row["project_id"],
-                        engine_id=EngineId(row["engine_id"]),
-                        current=row["current"],
-                        order=row["order"],
+                if row:
+                    results.append(
+                        RotationCursor(
+                            project_id=row["project_id"],
+                            engine_id=EngineId(row["engine_id"]),
+                            current=row["current"],
+                            order=row["order"],
+                        )
                     )
-                    for row in rows
+
+            # Return all cursors for the project
+            rows = await conn.fetch(
+                'SELECT * FROM rotation_cursor WHERE project_id = $1 ORDER BY "order"',
+                project_id,
+            )
+            return tuple(
+                RotationCursor(
+                    project_id=row["project_id"],
+                    engine_id=EngineId(row["engine_id"]),
+                    current=row["current"],
+                    order=row["order"],
                 )
+                for row in rows
+            )
 
 
-__all__ = ["RotationCursor", "PostgresRotationCursorRepository"]
+__all__ = ["PostgresRotationCursorRepository"]

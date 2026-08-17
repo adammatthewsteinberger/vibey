@@ -2,7 +2,7 @@
 
 import getpass
 import os
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Mapping
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -55,7 +55,7 @@ class AppResources:
     engine_health_service: EngineHealthService
     engine_selector: EngineSelector
     rotation_handoff: RotationHandoffService
-    engine_adapters: dict[EngineId, EngineAdapter]
+    engine_adapters: Mapping[EngineId, EngineAdapter]
 
 
 class SystemClock:
