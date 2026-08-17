@@ -6,25 +6,39 @@ allowed-tools: Read Grep
 
 # vibey engine adapters
 
-Vibey orchestrates four autonomous session runners: `claudeloop`, `codexloop`,
+Vibey drives four autonomous session runners: `claudeloop`, `codexloop`,
 `cursorloop`, `agyloop`. Each has its own CLI surface, effort vocabulary,
 state directory, and done marker. Vibey abstracts these differences via
-`EngineAdapter` (a Protocol in `application/ports.py`) and concrete
-implementations in `infrastructure/engines/`.
+`EngineAdapter`, a `Protocol` defined in `application/interfaces/engines.py`
+and re-exported from `application/ports.py`.
 
 ## The adapter pattern
 
-Every engine adapter implements:
-- `build_argv(spec: RunSpec) -> tuple[str, ...]` — constructs the command line
-- `classify_capacity(error: dict) -> CapacityState` — maps vendor errors to
-  vibey's capacity ADT
-- `tail_run_dir(run_dir: Path) -> AsyncIterator[EngineEvent]` — reads events
-  from the engine's state directory
-- `doctor() -> PreflightResult` — checks installation, auth, and version
+`EngineAdapter` (read the real definition before relying on this summary —
+it's short):
+- `descriptor: EngineDescriptor` — a property, the engine's static facts
+- `async def preflight() -> PreflightResult` — runs `<engine> doctor`;
+  classifies auth + availability
+- `async def start(spec: RunSpec) -> RunHandle` — builds argv from
+  `descriptor.effort_projection` + isolation flags, spawns the runner,
+  returns a handle over its run directory
+- `def tail(handle: RunHandle) -> AsyncIterator[EngineEvent]` — streams the
+  runner's `events.jsonl`, translated into vibey's own event vocabulary
+- `async def send_prompt(handle, text, *, now: bool) -> None` — writes the
+  runner's control-plane inbox
+- `async def stop(handle: RunHandle) -> StopSummary` — soft-stops the run;
+  collects `stop-summary.md` and the final snapshot
+- `async def snapshot(handle: RunHandle) -> SnapshotRef | None`
 
-See `application/ports.py::EngineAdapter` and
+`start()` internally calls `infrastructure/engines/argv.py::build_argv()` —
+that's a plain function, not an adapter method; it takes both the descriptor
+and the `RunSpec` (`build_argv(descriptor, spec)`), not just the spec.
+
+See `application/interfaces/engines.py::EngineAdapter` and
 `infrastructure/engines/scripted.py::ScriptedEngine` (the fake runner used in
-tests).
+tests). If `infrastructure/engines/loop_process_adapter.py` exists, that's
+the real (non-scripted) implementation — check its docstring for how far
+production wiring has progressed before assuming rotation is live.
 
 ## Engine descriptors
 
@@ -60,33 +74,23 @@ See ADR-0006 (normalized effort ladder).
 
 ## argv building
 
-`infrastructure/engines/argv.py::build_argv()` takes a `RunSpec` (the work to
-be done) and an `EngineDescriptor`, and produces the command line:
-
-```python
-RunSpec(
-    brief="Fix the bug in payment.py",
-    effort=Effort.HIGH,
-    run_id=UUID("..."),
-    worktree=Path("/vibey/worktrees/c3-item-042"),
-    isolation=IsolationLevel.CONTAINER,
-)
-```
-
-→
-
-```bash
-claudeloop run \
-  --prompt "Fix the bug in payment.py" \
-  --preset high \
-  --effort high \
-  --run-id "..." \
-  --cwd "/vibey/worktrees/c3-item-042" \
-  --permission-mode container
-```
+`infrastructure/engines/argv.py::build_argv(descriptor, spec)` takes an
+`EngineDescriptor` and a `RunSpec` (fields: `run_id`, `worktree_path`,
+`prompt`, `effort`, `isolation`, optional `session_id` to resume) and
+produces the command line — read the real function, it's short and worth
+reading in full rather than trusting a paraphrase, since exactly how it
+assembles the plan path, effort flags, isolation flags, and `--cwd` is the
+kind of thing that changes as the adapter work progresses. As of this
+writing it emits the plan file as a **positional path argument** (not a
+`--prompt` flag) followed by `descriptor.invoke(effort).argv`, then
+`descriptor.isolation_flags[...]`, then `--cwd <worktree_path>` — verify
+this is still accurate, and check whether a `--run-id` flag has been added
+(it corrects a real bug where the adapter couldn't find the run directory
+the spawned process actually wrote to).
 
 20 golden files under `tests/infrastructure/engines/golden/` (4 engines × 5
-efforts) capture the expected argv for each combination.
+efforts) capture the expected argv for each combination — the source of
+truth for the exact current shape.
 
 ## Capacity classification
 
@@ -111,13 +115,14 @@ payloads, this is the first thing to replace.
 
 ## The conformance suite
 
-`application/conformance.py::run_conformance()` asserts, per engine:
-- The state directory exists where the descriptor says.
-- `run --help` exposes the flags the descriptor claims.
-- A trivial scripted plan produces a run directory with `meta.json`,
-  `events.jsonl`, and a snapshot at the documented paths.
-- Capacity classification maps to vibey's ADT.
-- The done marker matches.
+`application/conformance.py::run_conformance()` runs 9 named checks per
+engine (grep the file for the check-name strings if this list drifts):
+`binary` (installed + version), `flags` (`run --help` exposes what the
+descriptor claims), `state_dir`, `run_dir_shape` (a real run produces
+`meta.json`/`events.jsonl`/`snapshots/latest.json` — this one races a real
+subprocess's own startup time, not just an instant file check; read the
+function if you're touching it), `snapshot_schema`, `capacity_map`,
+`done_marker`, `control_plane`, `structured_verdict`.
 
 A failing conformance check marks that engine **ineligible** rather than
 letting it fail mid-cycle.

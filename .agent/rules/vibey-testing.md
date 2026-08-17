@@ -2,7 +2,6 @@
 
 description: The 100% per-layer coverage gates, Postgres integration tests (never mocked), property testing for rotation and no-loss gate, and the chaos test.
 alwaysApply: false
-> **Cursor rule mirror** of `.claude/skills/vibey-testing/SKILL.md`. When this guidance changes, update Claude, Cursor, Codex, and Antigravity in the same PR.
 
 # vibey testing
 

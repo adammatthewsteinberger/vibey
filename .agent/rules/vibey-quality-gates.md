@@ -2,7 +2,6 @@
 
 description: The 7-gate CI sweep (ruff check, ruff format, mypy, per-layer coverage × 4, lint-imports, bandit, pip-audit) and what each gate catches.
 alwaysApply: false
-> **Cursor rule mirror** of `.claude/skills/vibey-quality-gates/SKILL.md`. When this guidance changes, update Claude, Cursor, Codex, and Antigravity in the same PR.
 
 # vibey quality gates
 

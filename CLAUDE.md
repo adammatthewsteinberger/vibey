@@ -66,7 +66,11 @@ explicit opt-in; declining deployment records a successful local completion.
 - **Queue backend:** PostgreSQL, never SQLite. `FOR UPDATE SKIP LOCKED` is
   the reason; see ADR-0002.
 - **Engines:** `claudeloop`, `codexloop`, `cursorloop`, `agyloop` — four
-  autonomous session runners that vibey orchestrates via round-robin rotation.
+  autonomous session runners. `domain/rotation.py::select()` implements
+  smooth-weighted round-robin selection (ADR-0005); check whether
+  production wiring (an `EngineSelector` calling it from a real dispatch
+  path) has landed before describing rotation as an active runtime
+  behavior rather than a designed-and-tested algorithm.
 - **Handoff:** when an engine hits `CreditsExhausted`, vibey produces a
   `HandoffBrief`, verifies it against the no-loss gate, and seeds the next
   engine. The full ledger is always written to disk inside the receiving

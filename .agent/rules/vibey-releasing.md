@@ -2,7 +2,6 @@
 
 description: Release-please workflow, Conventional Commits, and publishing to PyPI. Read before cutting a release.
 alwaysApply: false
-> **Cursor rule mirror** of `.claude/skills/vibey-releasing/SKILL.md`. When this guidance changes, update Claude, Cursor, Codex, and Antigravity in the same PR.
 
 # vibey releasing
 

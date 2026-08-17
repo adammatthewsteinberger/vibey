@@ -2,7 +2,6 @@
 
 description: Phases, jobs, ledger, handoff, rotation, and the no-loss gate — the core domain types and invariants in vibey.
 alwaysApply: false
-> **Cursor rule mirror** of `.claude/skills/vibey-domain-model/SKILL.md`. When this guidance changes, update Claude, Cursor, Codex, and Antigravity in the same PR.
 
 # vibey domain model
 
