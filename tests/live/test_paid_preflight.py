@@ -50,3 +50,4 @@ async def test_preflight_auth_env_present_reports_version(
 
     assert result.installed is True
     assert result.version is not None
+    assert result.auth_ok is True
