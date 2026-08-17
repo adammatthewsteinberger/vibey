@@ -50,10 +50,11 @@ else
   git worktree add -B "$BRANCH" "$WT" origin/develop
 fi
 
-# Protected paths: a run must never merge a diff touching these without a
-# human. Enforced again at land.sh time, but recorded here for the seed
-# prompt to see too.
-PROTECTED_PATHS_NOTE="Do not modify: tests/infrastructure/db/test_chaos.py, tests/domain/test_noloss*.py, tests/domain/test_briefing.py (no-loss property suite), tests/system/test_delivery_stage_set.py, tests/live/** — these are protected; a change to them requires explicit human approval and will not auto-merge."
+# Protected paths (tests/infrastructure/db/test_chaos.py, the no-loss
+# property suite, tests/system/test_delivery_stage_set.py, tests/live/**)
+# are called out in each plan file directly and enforced again by land.sh's
+# refusal check — no driver here supports an appended system prompt, so
+# there is no out-of-band note to inject at launch time.
 
 LOG_DIR="$WT/.$DRIVER"
 mkdir -p "$LOG_DIR"
@@ -64,7 +65,6 @@ case "$DRIVER" in
       --cwd "$WT" \
       --run-id "$RUN_ID" \
       --add-folder "$VIBEY_ROOT/docs/plans" \
-      --append-system-prompt "$PROTECTED_PATHS_NOTE" \
       --max-turns 800 --max-dollars 80 --max-wait 21600 \
       --permission-mode acceptEdits \
       --done-marker CLAUDELOOP_TASK_FULLY_COMPLETE \
@@ -72,6 +72,17 @@ case "$DRIVER" in
       --stream-ui
     ;;
   agyloop)
+    # KNOWN BROKEN as of 2026-08-17, tracked in
+    # docs/plans/fleet/c2-harness-fix-agyloop.md — do not launch an
+    # agyloop-driven run until that lands:
+    #   --gateway sdk (this default): the local Antigravity harness fails
+    #     to start ("Failed to read length from stdout").
+    #   --gateway cli: --scoped has no effect on the CLI gateway's exported
+    #     `agy` settings, so every tool call is silently auto-denied and the
+    #     run falsely reports AGYLOOP_TASK_FULLY_COMPLETE having done
+    #     nothing. Do NOT "fix" this here by switching to --gateway cli —
+    #     that's the worse of the two failure modes (silent false success,
+    #     not a loud crash).
     exec agyloop -v --log-file "$LOG_DIR/run.log" \
       run "$PLAN_FILE" \
       --cwd "$WT" \
