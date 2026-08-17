@@ -7,6 +7,23 @@ set of 100%-tested handlers nothing wires together" into something that
 actually drives real `claudeloop`/`agyloop`/`codexloop`/`cursorloop`
 processes end to end.
 
+**A prior attempt at this exact task already ran once and stopped after one
+turn, having completed only item 1 of 6 (event translation +
+`tailer.translate_event`/`ScriptedEngine.tail` degrading gracefully instead
+of raising — real, valuable, keep it, it's already committed on this
+branch). It then wrote `PHASE_E1_STATUS.md` honestly listing the other five
+items as "NOT STARTED" and reasoned "this exceeds autonomous task scope,"
+declared the task done anyway, and stopped. That was a mistake — not
+because self-assessment is bad, but because declaring done and stopping is
+never the right response to "this is a lot of work." You were given 800
+turns and $80 specifically because this task is large. Read
+`PHASE_E1_STATUS.md` if it exists, treat its "What Remains" list as your
+starting checklist, and keep working turn after turn through every
+remaining item. Only ever declare the task done when literally every item
+in the Deliverables/Definition-of-done sections below is complete — a
+partial, however honestly documented, is not "done," it's "not done yet,"
+and the correct response to that is to keep going, not to stop and report.**
+
 Read first, in order: `README.md`, `docs/plans/architecture-and-roadmap.md`,
 `docs/plans/implementation-plan.md` (M5-M10 milestone table — this task
 spans parts of M6, and is a prerequisite the plan didn't originally call
