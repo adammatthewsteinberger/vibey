@@ -34,6 +34,22 @@ and squash-merges **only if every check is green and the diff does not touch
 a protected path**. A protected-path diff or a red PR is left open with an
 explanation — never silently merged.
 
+## Smoke-testing the fleet
+
+```bash
+scripts/fleet/smoke.sh [--repo NAME]... [--live] [--skip-conformance]
+```
+
+The fleet-wide gate: the same 7-gate sweep every PR is judged on (4x
+100%-branch coverage layers, ruff check/format, mypy --strict, lint-imports,
+bandit, pip-audit), run against each repo's actual primary checkout on its
+current branch — plus, for vibey, the two-mode `tests/live/` harness (faked
+mode by default; `--live` opts into real API calls against installed
+engines, capped at `--max-dollars 5`) and `vibey doctor --conformance`
+across every installed engine binary. Defaults to all 5 repos; pass
+`--repo NAME` (repeatable) to scope it. Meant to be green before any
+TestPyPI/PyPI publish (Phase F's `harness` gate).
+
 ## Protected paths
 
 A run must not modify these without explicit human review (enforced by

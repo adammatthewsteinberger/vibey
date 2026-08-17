@@ -52,7 +52,20 @@ if [ -z "$PR_NUM" ]; then
   PR_NUM="$(gh pr list -R "adammatthewsteinberger/$REPO" --head "$BRANCH" --json number -q '.[0].number')"
 fi
 
-echo "PR #$PR_NUM — watching checks..."
+echo "PR #$PR_NUM — waiting for checks to register..."
+# gh pr checks --watch polls once immediately; if GitHub hasn't attached any
+# check runs to the new push yet (a real, repeatedly-observed race, not
+# hypothetical), that first poll sees zero checks and --watch treats it as
+# "nothing to wait for" instead of "not started yet". Block here until at
+# least one check shows up (or ~2 minutes pass) before handing off to
+# --watch, which is correct once checks actually exist.
+for _ in $(seq 1 24); do
+  COUNT="$(gh pr checks "$PR_NUM" -R "adammatthewsteinberger/$REPO" --json name -q 'length' 2>/dev/null || echo 0)"
+  [ "$COUNT" -gt 0 ] && break
+  sleep 5
+done
+
+echo "watching checks..."
 if gh pr checks "$PR_NUM" -R "adammatthewsteinberger/$REPO" --watch --fail-fast; then
   echo "green — merging"
   gh pr merge "$PR_NUM" -R "adammatthewsteinberger/$REPO" --squash --delete-branch --admin
