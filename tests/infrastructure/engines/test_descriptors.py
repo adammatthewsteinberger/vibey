@@ -13,8 +13,19 @@ from vibey.infrastructure.engines.descriptors import (
 
 ALL_EFFORTS = list(Effort)
 
+# claudeloop/agyloop/cursorloop all have a real, verified per-effort CLI
+# flag (confirmed against real --help output, see descriptors.py's own
+# header comment) and so always produce non-empty argv. codexloop has no
+# CLI-level effort control at all -- see test_codexloop_has_no_cli_level_
+# effort_control below for its own, deliberately different invariant.
+DESCRIPTORS_WITH_REAL_EFFORT_FLAGS = [
+    d for d in ALL_DESCRIPTORS if d.engine_id != EngineId.CODEXLOOP
+]
 
-@pytest.mark.parametrize("descriptor", ALL_DESCRIPTORS, ids=lambda d: d.engine_id.value)
+
+@pytest.mark.parametrize(
+    "descriptor", DESCRIPTORS_WITH_REAL_EFFORT_FLAGS, ids=lambda d: d.engine_id.value
+)
 @pytest.mark.parametrize("effort", ALL_EFFORTS)
 def test_invoke_covers_every_effort_level(descriptor, effort) -> None:  # type: ignore[no-untyped-def]
     invocation = descriptor.invoke(effort)
@@ -40,11 +51,24 @@ def test_claudeloop_and_agyloop_achieve_full_five_level_range() -> None:
         assert AGYLOOP.invoke(effort).achieved is effort
 
 
-def test_codexloop_saturates_at_high() -> None:
-    assert CODEXLOOP.invoke(Effort.HIGH).achieved is Effort.HIGH
-    assert CODEXLOOP.invoke(Effort.MAX).achieved is Effort.HIGH
+def test_codexloop_has_no_cli_level_effort_control() -> None:
+    """codexloop's `run` has no --effort flag at all (confirmed against real
+    --help and cli/commands/run.py directly) and no other CLI-level way to
+    set effort/reasoning depth at invocation -- per its own domain/
+    model_profile.py it always starts at internal Effort.MEDIUM and can
+    only change via a runtime SetEffort event, not a launch flag. Every
+    level projects to empty argv and Effort.STANDARD (MEDIUM's vibey
+    equivalent) -- vibey's own effort request has no effect on codexloop
+    today, so requesting anything above STANDARD saturates."""
+    for effort in ALL_EFFORTS:
+        invocation = CODEXLOOP.invoke(effort)
+        assert invocation.argv == ()
+        assert invocation.achieved is Effort.STANDARD
+    assert CODEXLOOP.saturates_at(Effort.TRIVIAL) is False
+    assert CODEXLOOP.saturates_at(Effort.LOW) is False
+    assert CODEXLOOP.saturates_at(Effort.STANDARD) is False
+    assert CODEXLOOP.saturates_at(Effort.HIGH) is True
     assert CODEXLOOP.saturates_at(Effort.MAX) is True
-    assert CODEXLOOP.saturates_at(Effort.HIGH) is False
 
 
 def test_agyloop_uses_real_five_level_effort_flag() -> None:
