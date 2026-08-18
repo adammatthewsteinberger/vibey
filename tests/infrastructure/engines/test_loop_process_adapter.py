@@ -993,6 +993,66 @@ async def test_tail_enriches_verdict_with_done_marker(tmp_path: Path) -> None:
     assert events[0].payload.get("done_marker") == "AGYLOOP_TASK_FULLY_COMPLETE"
 
 
+async def test_tail_does_not_enrich_failed_verdict_with_done_marker(tmp_path: Path) -> None:
+    """agyloop's "finished" event_type covers both success and failure,
+    distinguished only by payload["success"] -- a failed run must never get
+    a done_marker injected, or conformance/production code would read a
+    failed run as having completed successfully."""
+    from vibey.infrastructure.engines.descriptors import AGYLOOP
+
+    adapter = LoopProcessAdapter(descriptor=AGYLOOP)
+    run_dir = tmp_path / "test-run"
+    run_dir.mkdir(parents=True)
+    handle = _make_handle(run_dir)
+
+    events_path = run_dir / "events.jsonl"
+    events_path.write_text(
+        '{"event_type":"finished","ts":"2026-01-01T00:00:00+00:00",'
+        '"payload":{"success":false,"reason":"budget exhausted"}}\n'
+    )
+
+    meta_path = run_dir / "meta.json"
+    meta_path.write_text('{"status":"failed"}')
+
+    events = []
+    async for event in adapter.tail(handle):
+        events.append(event)
+
+    assert len(events) == 1
+    assert events[0].kind == "VerdictRendered"
+    assert "done_marker" not in events[0].payload
+
+
+async def test_tail_does_not_enrich_verdict_missing_success_key(tmp_path: Path) -> None:
+    """A VerdictRendered event whose payload has no "success" key at all
+    (e.g. an engine like claudeloop, whose own structured-output schema uses
+    "complete" instead) must not get a done_marker injected -- there is no
+    positive confirmation of success to enrich from, and defaulting to True
+    when the key is merely absent would incorrectly treat "we don't know"
+    as "it succeeded"."""
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
+    run_dir = tmp_path / "test-run"
+    run_dir.mkdir(parents=True)
+    handle = _make_handle(run_dir)
+
+    events_path = run_dir / "events.jsonl"
+    events_path.write_text(
+        '{"event_type":"verdict.rendered","at":"2026-01-01T00:00:00+00:00",'
+        '"payload":{"complete":false,"summary":"still working"}}\n'
+    )
+
+    meta_path = run_dir / "meta.json"
+    meta_path.write_text('{"status":"finished"}')
+
+    events = []
+    async for event in adapter.tail(handle):
+        events.append(event)
+
+    assert len(events) == 1
+    assert events[0].kind == "VerdictRendered"
+    assert "done_marker" not in events[0].payload
+
+
 async def test_tail_preserves_existing_done_marker(tmp_path: Path) -> None:
     """If an event already has done_marker in payload, don't overwrite it."""
     adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)

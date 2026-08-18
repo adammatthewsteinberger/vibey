@@ -79,10 +79,11 @@ def test_all_engines_have_mappings() -> None:
 
 
 def test_agyloop_capacity_event() -> None:
-    """Verify capacity forecast maps to CAPACITY_REJECTED."""
-    assert (
-        translate_event_type(EngineId.AGYLOOP, "capacity.forecast") == EventKind.CAPACITY_REJECTED
-    )
+    """capacity.forecast is proactive headroom telemetry emitted only while
+    capacity IS available (see runner.py::_project_capacity) -- it must not
+    map to CAPACITY_REJECTED, or every normal successful run would look
+    capacity-constrained."""
+    assert translate_event_type(EngineId.AGYLOOP, "capacity.forecast") == EventKind.BUDGET_SPENT
 
 
 def test_agyloop_tool_invocation() -> None:

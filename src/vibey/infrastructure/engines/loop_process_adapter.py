@@ -246,9 +246,22 @@ class LoopProcessAdapter:
                         at_str = raw.get("at") or raw.get("timestamp") or raw.get("ts")
                         at = datetime.fromisoformat(at_str) if at_str else datetime.now(UTC)
 
-                        # Enrich payload for verdict events with done_marker
+                        # Enrich payload for verdict events with done_marker.
+                        # agyloop's own "finished" event_type covers both
+                        # success and failure (see application/runner.py),
+                        # distinguished only by payload["success"] -- require
+                        # it explicitly True rather than defaulting when
+                        # absent, since other engines' verdict payloads use a
+                        # different field ("complete", not "success") whose
+                        # true/false state this code can't read here. A
+                        # missing or falsy "success" must never enrich, or a
+                        # failed run could report a false done_marker match.
                         payload = dict(raw.get("payload", {}))
-                        if kind == EventKind.VERDICT_RENDERED and "done_marker" not in payload:
+                        if (
+                            kind == EventKind.VERDICT_RENDERED
+                            and "done_marker" not in payload
+                            and payload.get("success") is True
+                        ):
                             payload["done_marker"] = self.descriptor.done_marker
 
                         # Yield translated event

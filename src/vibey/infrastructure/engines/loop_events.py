@@ -77,7 +77,14 @@ LOOP_EVENT_MAP: dict[EngineId, dict[str, EventKind]] = {
         "savepoint": EventKind.SAVEPOINT_CREATED,
         "savepoint.created": EventKind.SAVEPOINT_CREATED,
         "savepoint.skipped": EventKind.SAVEPOINT_CREATED,
-        "capacity.forecast": EventKind.CAPACITY_REJECTED,
+        # capacity.forecast is emitted only while capacity IS available (see
+        # runner.py::_project_capacity's own docstring: "only while the
+        # vendor says we are not already blocked" -- it's proactive headroom
+        # telemetry, never a rejection). Mapping it to CAPACITY_REJECTED
+        # would make every normal, successful run look capacity-constrained.
+        # BUDGET_SPENT matches its actual payload (headroom,
+        # turns_until_exhaustion, seconds_until_reset).
+        "capacity.forecast": EventKind.BUDGET_SPENT,
         "finished": EventKind.VERDICT_RENDERED,
     },
 }
