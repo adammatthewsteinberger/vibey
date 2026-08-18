@@ -39,6 +39,11 @@ logger = structlog.get_logger(__name__)
 
 EXIT_CODE_WIND_DOWN = 75
 
+# Global registry to keep subprocess.Process objects alive so they don't get
+# garbage collected (which would close stdin and kill the child process).
+# Key: run_id (UUID), Value: asyncio.subprocess.Process
+_active_processes: dict[object, asyncio.subprocess.Process] = {}
+
 
 class ProcessError(VibeyError):
     """Raised when a loop process fails in an unexpected way."""
@@ -123,7 +128,8 @@ class LoopProcessAdapter:
     async def start(self, spec: RunSpec) -> RunHandle:
         """Build argv, write plan, spawn process, return handle."""
         run_dir = spec.worktree_path / self.descriptor.state_dir / "runs" / str(spec.run_id)
-        run_dir.mkdir(parents=True, exist_ok=True)
+        # Don't create run_dir here - let the engine create it (some engines
+        # like agyloop use exist_ok=False and will fail if it already exists)
 
         # Write the plan file if this is a new run
         if spec.session_id is None:
@@ -136,11 +142,22 @@ class LoopProcessAdapter:
         argv = build_argv(self.descriptor, spec)
 
         # Spawn the process
+        # Don't use PIPE for stdout/stderr since we never drain them - that would
+        # cause the child to block when the pipe buffer fills, or cause Python to
+        # close stdin on GC when the process object goes out of scope. Use DEVNULL
+        # instead since we read state from files, not stdout.
         try:
+            logger.debug(
+                "spawning_process",
+                engine=self.descriptor.engine_id.value,
+                argv=" ".join(argv),
+                stdout="DEVNULL",
+                stderr="DEVNULL",
+            )
             process = await asyncio.create_subprocess_exec(
                 *argv,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
+                stdout=asyncio.subprocess.DEVNULL,
+                stderr=asyncio.subprocess.DEVNULL,
                 cwd=spec.worktree_path,
             )
         except Exception as e:
@@ -152,6 +169,16 @@ class LoopProcessAdapter:
             run_id=str(spec.run_id),
             pid=process.pid,
             argv=" ".join(argv),
+        )
+
+        # Store the process object globally to prevent garbage collection
+        # (which would close stdin and kill the child process)
+        _active_processes[spec.run_id] = process
+        logger.debug(
+            "process_stored",
+            run_id=str(spec.run_id),
+            pid=process.pid,
+            active_count=len(_active_processes),
         )
 
         return RunHandle(
@@ -309,6 +336,9 @@ class LoopProcessAdapter:
                 remaining_work = snapshot_data.get("remaining_work", [])
             except Exception:  # noqa: BLE001  # nosec B110
                 logger.debug("snapshot_remaining_work_failed", run_id=str(handle.run_id))
+
+        # Clean up the process reference
+        _active_processes.pop(handle.run_id, None)
 
         return StopSummary(
             run_id=handle.run_id,
