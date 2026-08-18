@@ -117,12 +117,14 @@ async def run_conformance(
 
     # A trivial scripted run backs state_dir, run_dir_shape, snapshot_schema,
     # done_marker, control_plane, and structured_verdict.
+    # Real engines need a concrete, trivially-completable prompt with a clear
+    # deliverable; "conformance check" is too vague and causes timeouts.
     handle = None
     try:
         spec = RunSpec(
             run_id=uuid4(),
             worktree_path=Path(trivial_worktree),
-            prompt="conformance check",
+            prompt="Create a file at test.txt containing the text OK, then finish.",
             effort=Effort.TRIVIAL,
             isolation=IsolationLevel.WORKTREE,
         )
