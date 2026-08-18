@@ -31,6 +31,7 @@ from vibey.domain.capacity import CapacityState
 from vibey.domain.engine import EngineDescriptor
 from vibey.domain.errors import VibeyError
 from vibey.domain.job import FailureClass
+from vibey.domain.ledger import EventKind
 from vibey.infrastructure.engines.argv import build_argv
 from vibey.infrastructure.engines.classify import attribute_failure, classify_capacity
 from vibey.infrastructure.engines.loop_events import translate_event_type
@@ -242,14 +243,32 @@ class LoopProcessAdapter:
                             continue
 
                         # Parse timestamp
-                        at_str = raw.get("at") or raw.get("timestamp")
+                        at_str = raw.get("at") or raw.get("timestamp") or raw.get("ts")
                         at = datetime.fromisoformat(at_str) if at_str else datetime.now(UTC)
+
+                        # Enrich payload for verdict events with done_marker.
+                        # agyloop's own "finished" event_type covers both
+                        # success and failure (see application/runner.py),
+                        # distinguished only by payload["success"] -- require
+                        # it explicitly True rather than defaulting when
+                        # absent, since other engines' verdict payloads use a
+                        # different field ("complete", not "success") whose
+                        # true/false state this code can't read here. A
+                        # missing or falsy "success" must never enrich, or a
+                        # failed run could report a false done_marker match.
+                        payload = dict(raw.get("payload", {}))
+                        if (
+                            kind == EventKind.VERDICT_RENDERED
+                            and "done_marker" not in payload
+                            and payload.get("success") is True
+                        ):
+                            payload["done_marker"] = self.descriptor.done_marker
 
                         # Yield translated event
                         yield EngineEvent(
                             kind=kind.value,  # EventKind enum value
                             at=at,
-                            payload=raw.get("payload", {}),
+                            payload=payload,
                         )
                     except (json.JSONDecodeError, KeyError, ValueError) as e:
                         logger.warning(

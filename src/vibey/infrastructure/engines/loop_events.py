@@ -66,14 +66,26 @@ LOOP_EVENT_MAP: dict[EngineId, dict[str, EventKind]] = {
         "capacity.limited": EventKind.CAPACITY_REJECTED,
     },
     EngineId.AGYLOOP: {
-        # Gemini/Agy events
-        "session.user_turn": EventKind.TURN_REQUESTED,
-        "session.model_turn": EventKind.TURN_COMPLETED,
-        "function.call": EventKind.TOOL_INVOKED,
-        "session.init": EventKind.SESSION_SEEDED,
-        "quota.exceeded": EventKind.CAPACITY_REJECTED,
-        "resource.exhausted": EventKind.CAPACITY_REJECTED,
-        "file.updated": EventKind.FILE_EDITED,
+        # Agyloop events (captured from real agyloop 0.1.0 events.jsonl)
+        "run.started": EventKind.SESSION_SEEDED,
+        "preflight": EventKind.SESSION_SEEDED,
+        "chatter.prompt": EventKind.TURN_REQUESTED,
+        "turn.starting": EventKind.TURN_REQUESTED,
+        "chatter.assistant": EventKind.TURN_COMPLETED,
+        "turn.completed": EventKind.TURN_COMPLETED,
+        "sdk.event": EventKind.TOOL_INVOKED,
+        "savepoint": EventKind.SAVEPOINT_CREATED,
+        "savepoint.created": EventKind.SAVEPOINT_CREATED,
+        "savepoint.skipped": EventKind.SAVEPOINT_CREATED,
+        # capacity.forecast is emitted only while capacity IS available (see
+        # runner.py::_project_capacity's own docstring: "only while the
+        # vendor says we are not already blocked" -- it's proactive headroom
+        # telemetry, never a rejection). Mapping it to CAPACITY_REJECTED
+        # would make every normal, successful run look capacity-constrained.
+        # BUDGET_SPENT matches its actual payload (headroom,
+        # turns_until_exhaustion, seconds_until_reset).
+        "capacity.forecast": EventKind.BUDGET_SPENT,
+        "finished": EventKind.VERDICT_RENDERED,
     },
 }
 
