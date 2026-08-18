@@ -70,6 +70,12 @@ if gh pr checks "$PR_NUM" -R "adammatthewsteinberger/$REPO" --watch --fail-fast;
   echo "green — merging"
   gh pr merge "$PR_NUM" -R "adammatthewsteinberger/$REPO" --squash --delete-branch --admin
   git -C "$REPO_ROOT" worktree remove --force "$WT"
+  # Removing the last linked worktree has repeatedly (3 times observed, same
+  # repo, same trigger) left the primary checkout's own config with
+  # core.bare=true, which breaks `git status`/`git checkout` there until
+  # corrected -- root cause not yet identified, but the primary checkout is
+  # never actually bare, so it's always safe to reassert this.
+  git -C "$REPO_ROOT" config core.bare false
   echo "merged and worktree removed: $WT"
 else
   echo "PR #$PR_NUM is red — left open for a human. Run log: $WT/.*/run.log" >&2
