@@ -963,3 +963,57 @@ async def test_stop_handles_corrupt_snapshot_gracefully(tmp_path: Path) -> None:
 
     assert summary.remaining_work == ()
     assert summary.complete is False
+
+
+async def test_tail_enriches_verdict_with_done_marker(tmp_path: Path) -> None:
+    """VerdictRendered events get done_marker injected into payload when missing."""
+    from vibey.infrastructure.engines.descriptors import AGYLOOP
+
+    adapter = LoopProcessAdapter(descriptor=AGYLOOP)
+    run_dir = tmp_path / "test-run"
+    run_dir.mkdir(parents=True)
+    handle = _make_handle(run_dir)
+
+    events_path = run_dir / "events.jsonl"
+    # agyloop's "finished" event maps to VerdictRendered but doesn't have done_marker in payload
+    events_path.write_text(
+        '{"event_type":"finished","ts":"2026-01-01T00:00:00+00:00","payload":{"success":true,"reason":"Done"}}\n'
+    )
+
+    meta_path = run_dir / "meta.json"
+    meta_path.write_text('{"status":"finished"}')
+
+    events = []
+    async for event in adapter.tail(handle):
+        events.append(event)
+
+    assert len(events) == 1
+    assert events[0].kind == "VerdictRendered"
+    # The adapter should inject the done_marker from the descriptor
+    assert events[0].payload.get("done_marker") == "AGYLOOP_TASK_FULLY_COMPLETE"
+
+
+async def test_tail_preserves_existing_done_marker(tmp_path: Path) -> None:
+    """If an event already has done_marker in payload, don't overwrite it."""
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
+    run_dir = tmp_path / "test-run"
+    run_dir.mkdir(parents=True)
+    handle = _make_handle(run_dir)
+
+    events_path = run_dir / "events.jsonl"
+    events_path.write_text(
+        '{"event_type":"verdict.rendered","at":"2026-01-01T00:00:00+00:00",'
+        '"payload":{"done_marker":"CUSTOM_MARKER"}}\n'
+    )
+
+    meta_path = run_dir / "meta.json"
+    meta_path.write_text('{"status":"finished"}')
+
+    events = []
+    async for event in adapter.tail(handle):
+        events.append(event)
+
+    assert len(events) == 1
+    assert events[0].kind == "VerdictRendered"
+    # Should preserve the existing done_marker, not overwrite with descriptor's
+    assert events[0].payload.get("done_marker") == "CUSTOM_MARKER"

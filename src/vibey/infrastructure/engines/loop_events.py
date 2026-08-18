@@ -66,14 +66,19 @@ LOOP_EVENT_MAP: dict[EngineId, dict[str, EventKind]] = {
         "capacity.limited": EventKind.CAPACITY_REJECTED,
     },
     EngineId.AGYLOOP: {
-        # Gemini/Agy events
-        "session.user_turn": EventKind.TURN_REQUESTED,
-        "session.model_turn": EventKind.TURN_COMPLETED,
-        "function.call": EventKind.TOOL_INVOKED,
-        "session.init": EventKind.SESSION_SEEDED,
-        "quota.exceeded": EventKind.CAPACITY_REJECTED,
-        "resource.exhausted": EventKind.CAPACITY_REJECTED,
-        "file.updated": EventKind.FILE_EDITED,
+        # Agyloop events (captured from real agyloop 0.1.0 events.jsonl)
+        "run.started": EventKind.SESSION_SEEDED,
+        "preflight": EventKind.SESSION_SEEDED,
+        "chatter.prompt": EventKind.TURN_REQUESTED,
+        "turn.starting": EventKind.TURN_REQUESTED,
+        "chatter.assistant": EventKind.TURN_COMPLETED,
+        "turn.completed": EventKind.TURN_COMPLETED,
+        "sdk.event": EventKind.TOOL_INVOKED,
+        "savepoint": EventKind.SAVEPOINT_CREATED,
+        "savepoint.created": EventKind.SAVEPOINT_CREATED,
+        "savepoint.skipped": EventKind.SAVEPOINT_CREATED,
+        "capacity.forecast": EventKind.CAPACITY_REJECTED,
+        "finished": EventKind.VERDICT_RENDERED,
     },
 }
 
