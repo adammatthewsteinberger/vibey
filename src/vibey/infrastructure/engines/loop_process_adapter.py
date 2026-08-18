@@ -262,12 +262,17 @@ class LoopProcessAdapter:
 
                 seen_lines = len(lines)
 
-                # Check if done - look for done_marker in the output
-                # (In a real implementation, also check process status)
+                # Check if done via meta.json's own status field. Every loop
+                # engine's RunMeta documents the same terminal vocabulary
+                # (active | stopped | finished | failed) -- none of the four
+                # ever write the literal "complete". Checking for that
+                # non-existent value meant this loop never broke on its own
+                # for any real engine and ran until the read raised (or, if
+                # nothing ever raised, forever).
                 meta_path = handle.run_dir / "meta.json"
                 if meta_path.exists():
                     meta = json.loads(meta_path.read_text())
-                    if meta.get("status") == "complete":
+                    if meta.get("status") in ("finished", "failed", "stopped"):
                         break
 
                 await asyncio.sleep(0.5)  # Poll interval
