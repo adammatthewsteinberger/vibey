@@ -207,6 +207,130 @@ def _make_fake_binary(tmp_path: Path, name: str, script: str) -> Path:
     return bin_dir
 
 
+def test_help_text_returns_none_when_binary_not_found() -> None:
+    fake_desc = CLAUDELOOP.__class__(
+        engine_id=EngineId.CLAUDELOOP,
+        binary="vibey_test_nonexistent_binary_for_help_text",
+        min_version="0.1.0",
+        state_dir=".test",
+        done_marker="TEST_DONE",
+        auth_env=("TEST_KEY",),
+        capabilities=frozenset(),
+        effort_projection=CLAUDELOOP.effort_projection,
+        session_verb="sessions",
+        isolation_flags=CLAUDELOOP.isolation_flags,
+        cost_per_mtok_in=1.0,
+        cost_per_mtok_out=5.0,
+        context_window=100_000,
+    )
+    adapter = LoopProcessAdapter(descriptor=fake_desc)
+    assert adapter.help_text is None
+
+
+def test_help_text_fetches_and_caches_real_output(tmp_path: Path) -> None:
+    import os
+
+    bin_dir = _make_fake_binary(
+        tmp_path, "fakecli_help1", 'echo "usage: fakecli_help1 run [OPTIONS] --my-flag <str>"'
+    )
+    old_path = os.environ.get("PATH", "")
+    os.environ["PATH"] = f"{bin_dir}:{old_path}"
+    try:
+        desc = CLAUDELOOP.__class__(
+            engine_id=EngineId.CLAUDELOOP,
+            binary="fakecli_help1",
+            min_version="0.1.0",
+            state_dir=".test",
+            done_marker="TEST_DONE",
+            auth_env=("TEST_KEY",),
+            capabilities=frozenset(),
+            effort_projection=CLAUDELOOP.effort_projection,
+            session_verb="sessions",
+            isolation_flags=CLAUDELOOP.isolation_flags,
+            cost_per_mtok_in=1.0,
+            cost_per_mtok_out=5.0,
+            context_window=100_000,
+        )
+        adapter = LoopProcessAdapter(descriptor=desc)
+
+        help_text = adapter.help_text
+
+        assert help_text is not None
+        assert "--my-flag" in help_text
+    finally:
+        os.environ["PATH"] = old_path
+
+
+def test_help_text_is_cached_after_first_fetch(tmp_path: Path) -> None:
+    """A binary invoked once for --help, not once per access."""
+    import os
+
+    counter_file = tmp_path / "invocation_count"
+    bin_dir = _make_fake_binary(
+        tmp_path,
+        "fakecli_help2",
+        f'printf x >> {counter_file}\necho "usage: fakecli_help2 run [OPTIONS]"',
+    )
+    old_path = os.environ.get("PATH", "")
+    os.environ["PATH"] = f"{bin_dir}:{old_path}"
+    try:
+        desc = CLAUDELOOP.__class__(
+            engine_id=EngineId.CLAUDELOOP,
+            binary="fakecli_help2",
+            min_version="0.1.0",
+            state_dir=".test",
+            done_marker="TEST_DONE",
+            auth_env=("TEST_KEY",),
+            capabilities=frozenset(),
+            effort_projection=CLAUDELOOP.effort_projection,
+            session_verb="sessions",
+            isolation_flags=CLAUDELOOP.isolation_flags,
+            cost_per_mtok_in=1.0,
+            cost_per_mtok_out=5.0,
+            context_window=100_000,
+        )
+        adapter = LoopProcessAdapter(descriptor=desc)
+
+        first = adapter.help_text
+        second = adapter.help_text
+
+        assert first == second
+        assert counter_file.read_text() == "x"  # invoked exactly once
+    finally:
+        os.environ["PATH"] = old_path
+
+
+def test_help_text_returns_none_on_subprocess_error(tmp_path: Path) -> None:
+    import os
+    from unittest.mock import patch
+
+    bin_dir = _make_fake_binary(tmp_path, "fakecli_help3", 'echo "usage: fakecli_help3"')
+    old_path = os.environ.get("PATH", "")
+    os.environ["PATH"] = f"{bin_dir}:{old_path}"
+    try:
+        desc = CLAUDELOOP.__class__(
+            engine_id=EngineId.CLAUDELOOP,
+            binary="fakecli_help3",
+            min_version="0.1.0",
+            state_dir=".test",
+            done_marker="TEST_DONE",
+            auth_env=("TEST_KEY",),
+            capabilities=frozenset(),
+            effort_projection=CLAUDELOOP.effort_projection,
+            session_verb="sessions",
+            isolation_flags=CLAUDELOOP.isolation_flags,
+            cost_per_mtok_in=1.0,
+            cost_per_mtok_out=5.0,
+            context_window=100_000,
+        )
+        adapter = LoopProcessAdapter(descriptor=desc)
+
+        with patch("subprocess.run", side_effect=OSError("boom")):
+            assert adapter.help_text is None
+    finally:
+        os.environ["PATH"] = old_path
+
+
 async def test_tail_yields_translated_events(tmp_path: Path) -> None:
     adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
     run_dir = tmp_path / "test-run"

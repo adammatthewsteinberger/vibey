@@ -12,7 +12,9 @@ descriptors, not four separate classes.
 
 import asyncio
 import json
+import os
 import shutil
+import subprocess  # nosec B404 - fixed argv, never shell=True
 from collections.abc import AsyncIterator, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -45,6 +47,11 @@ EXIT_CODE_WIND_DOWN = 75
 # Key: run_id (UUID), Value: asyncio.subprocess.Process
 _active_processes: dict[object, asyncio.subprocess.Process] = {}
 
+# `<binary> run --help` output, keyed by binary name. Fetched once per
+# process lifetime; --help is static for a given install, so there's
+# nothing to invalidate.
+_help_text_cache: dict[str, str] = {}
+
 
 class ProcessError(VibeyError):
     """Raised when a loop process fails in an unexpected way."""
@@ -61,6 +68,50 @@ class LoopProcessAdapter:
     """
 
     descriptor: EngineDescriptor
+
+    @property
+    def help_text(self) -> str | None:
+        """`<binary> run --help` output, for the flags conformance check to
+        verify descriptor.effort_projection/isolation_flags against.
+
+        A plain synchronous property, not async: the conformance check reads
+        it via getattr(), a sync attribute access. --help never talks to a
+        vendor API or touches the filesystem beyond the binary itself, so a
+        short blocking subprocess call here is a fixed, small cost, not an
+        open-ended one -- unlike preflight()'s doctor/--version calls, which
+        do real auth/network work and stay async.
+        """
+        binary = self.descriptor.binary
+        if binary in _help_text_cache:
+            return _help_text_cache[binary]
+        if shutil.which(binary) is None:
+            return None
+        try:
+            # A wide COLUMNS keeps Rich-based CLIs (typer/click) from
+            # truncating flag names/descriptions when stdout isn't a real
+            # terminal -- confirmed directly: piped without this, longer
+            # flags like --append-system-prompt get cut to
+            # "--append-system-pro…", which would make a real, present flag
+            # look missing to a substring check.
+            env = dict(os.environ, COLUMNS="250")
+            result = subprocess.run(  # nosec B603 - fixed argv, never shell=True
+                [binary, "run", "--help"],
+                capture_output=True,
+                text=True,
+                timeout=10.0,
+                env=env,
+                check=False,
+            )
+            text = (result.stdout or "") + (result.stderr or "")
+        except (OSError, subprocess.TimeoutExpired) as e:
+            logger.warning(
+                "help_text_fetch_failed",
+                engine=self.descriptor.engine_id.value,
+                error=str(e),
+            )
+            return None
+        _help_text_cache[binary] = text
+        return text
 
     async def preflight(self) -> PreflightResult:
         """Check if binary exists and auth is OK (via `doctor`)."""
