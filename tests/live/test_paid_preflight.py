@@ -17,13 +17,12 @@ from vibey.infrastructure.engines.loop_process_adapter import LoopProcessAdapter
 @pytest.mark.parametrize("descriptor", ALL_DESCRIPTORS, ids=lambda d: d.engine_id.value)
 async def test_preflight_detects_installed_engine(
     descriptor,  # type: ignore[no-untyped-def]
-    tmp_path,  # type: ignore[no-untyped-def]
 ) -> None:
     """If the binary is on PATH, preflight reports installed=True and a version."""
     if shutil.which(descriptor.binary) is None:
         pytest.skip(f"{descriptor.binary} not installed")
 
-    adapter = LoopProcessAdapter(descriptor=descriptor, base_dir=tmp_path)
+    adapter = LoopProcessAdapter(descriptor=descriptor)
     result = await adapter.preflight()
 
     assert result.installed is True
@@ -34,7 +33,6 @@ async def test_preflight_detects_installed_engine(
 @pytest.mark.parametrize("descriptor", ALL_DESCRIPTORS, ids=lambda d: d.engine_id.value)
 async def test_preflight_auth_env_present_reports_version(
     descriptor,  # type: ignore[no-untyped-def]
-    tmp_path,  # type: ignore[no-untyped-def]
 ) -> None:
     """If the binary is installed AND the required auth env vars are set,
     preflight should report installed=True and a version string."""
@@ -45,7 +43,7 @@ async def test_preflight_auth_env_present_reports_version(
     if not any(os.getenv(var) for var in descriptor.auth_env):
         pytest.skip(f"no auth env vars set: {descriptor.auth_env}")
 
-    adapter = LoopProcessAdapter(descriptor=descriptor, base_dir=tmp_path)
+    adapter = LoopProcessAdapter(descriptor=descriptor)
     result = await adapter.preflight()
 
     assert result.installed is True

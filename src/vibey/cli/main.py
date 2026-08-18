@@ -830,11 +830,10 @@ def doctor(
         else:
             descriptors = list(ALL_DESCRIPTORS)
 
-        base_dir = Path.cwd()
         all_ok = True
 
         for desc in descriptors:
-            adapter = LoopProcessAdapter(descriptor=desc, base_dir=base_dir)
+            adapter = LoopProcessAdapter(descriptor=desc)
             preflight = await adapter.preflight()
 
             status = "installed" if preflight.installed else "NOT INSTALLED"

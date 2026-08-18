@@ -40,6 +40,43 @@ async def run_conformance(
     if trivial_worktree is None:
         trivial_worktree = str(Path(tempfile.gettempdir()) / "vibey-conformance")
 
+    # Real engines are autonomous software-development session runners that
+    # check for a git repository during their own startup (visible directly
+    # in claudeloop/cursorloop's own `doctor` preflight output) -- against a
+    # bare scratch directory a real run can silently produce no output at
+    # all, which then reads as a run_dir_shape/done_marker failure with
+    # nothing pointing at the actual cause. ScriptedEngine ignores this
+    # entirely, so it's a harmless no-op in faked mode.
+    worktree_path = Path(trivial_worktree)
+    worktree_path.mkdir(parents=True, exist_ok=True)
+    if not (worktree_path / ".git").exists():
+        init = await asyncio.create_subprocess_exec(
+            "git",
+            "init",
+            "-q",
+            str(worktree_path),
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.DEVNULL,
+        )
+        await init.wait()
+        commit = await asyncio.create_subprocess_exec(
+            "git",
+            "-C",
+            str(worktree_path),
+            "-c",
+            "user.email=vibey-conformance@localhost",
+            "-c",
+            "user.name=vibey conformance",
+            "commit",
+            "--allow-empty",
+            "-q",
+            "-m",
+            "vibey conformance scratch worktree",
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.DEVNULL,
+        )
+        await commit.wait()
+
     # 1. binary
     preflight = await adapter.preflight()
     if not preflight.installed:
