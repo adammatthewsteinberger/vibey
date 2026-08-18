@@ -818,6 +818,9 @@ def doctor(
     from vibey.infrastructure.engines.loop_process_adapter import LoopProcessAdapter
 
     async def run_doctor() -> None:
+        import tempfile
+        from uuid import uuid4
+
         if engine is not None:
             from vibey.domain.engine import EngineId
 
@@ -850,7 +853,17 @@ def doctor(
                 capacity_fixtures = [
                     ("credits", CREDITS_FIXTURES[desc.engine_id], CreditsExhausted)
                 ]
-                report = await run_conformance(adapter, capacity_fixtures=capacity_fixtures)
+                # Use a unique scratch directory per conformance run to avoid
+                # session-lock collisions in shared state
+                conformance_id = uuid4().hex[:8]
+                unique_worktree = str(
+                    Path(tempfile.gettempdir()) / f"vibey-conformance-{conformance_id}"
+                )
+                report = await run_conformance(
+                    adapter,
+                    capacity_fixtures=capacity_fixtures,
+                    trivial_worktree=unique_worktree,
+                )
                 for check in report.checks:
                     mark = "PASS" if check.ok else "FAIL"
                     detail = f" — {check.detail}" if check.detail else ""

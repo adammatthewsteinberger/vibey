@@ -220,7 +220,7 @@ async def test_tail_yields_translated_events(tmp_path: Path) -> None:
     )
 
     meta_path = run_dir / "meta.json"
-    meta_path.write_text('{"status":"complete"}')
+    meta_path.write_text('{"status":"finished"}')
 
     events = []
     async for event in adapter.tail(handle):
@@ -244,7 +244,7 @@ async def test_tail_skips_unknown_event_types(tmp_path: Path) -> None:
     )
 
     meta_path = run_dir / "meta.json"
-    meta_path.write_text('{"status":"complete"}')
+    meta_path.write_text('{"status":"finished"}')
 
     events = []
     async for event in adapter.tail(handle):
@@ -267,7 +267,7 @@ async def test_tail_skips_events_missing_type(tmp_path: Path) -> None:
     )
 
     meta_path = run_dir / "meta.json"
-    meta_path.write_text('{"status":"complete"}')
+    meta_path.write_text('{"status":"finished"}')
 
     events = []
     async for event in adapter.tail(handle):
@@ -289,7 +289,7 @@ async def test_tail_skips_invalid_json_lines(tmp_path: Path) -> None:
     )
 
     meta_path = run_dir / "meta.json"
-    meta_path.write_text('{"status":"complete"}')
+    meta_path.write_text('{"status":"finished"}')
 
     events = []
     async for event in adapter.tail(handle):
@@ -310,7 +310,7 @@ async def test_tail_skips_blank_lines(tmp_path: Path) -> None:
     )
 
     meta_path = run_dir / "meta.json"
-    meta_path.write_text('{"status":"complete"}')
+    meta_path.write_text('{"status":"finished"}')
 
     events = []
     async for event in adapter.tail(handle):
@@ -345,7 +345,7 @@ async def test_tail_uses_kind_field_fallback(tmp_path: Path) -> None:
     )
 
     meta_path = run_dir / "meta.json"
-    meta_path.write_text('{"status":"complete"}')
+    meta_path.write_text('{"status":"finished"}')
 
     events = []
     async for event in adapter.tail(handle):
@@ -367,7 +367,7 @@ async def test_tail_uses_timestamp_field_fallback(tmp_path: Path) -> None:
     )
 
     meta_path = run_dir / "meta.json"
-    meta_path.write_text('{"status":"complete"}')
+    meta_path.write_text('{"status":"finished"}')
 
     events = []
     async for event in adapter.tail(handle):
@@ -387,7 +387,7 @@ async def test_tail_defaults_timestamp_to_now(tmp_path: Path) -> None:
     events_path.write_text('{"event_type":"session.started","payload":{}}\n')
 
     meta_path = run_dir / "meta.json"
-    meta_path.write_text('{"status":"complete"}')
+    meta_path.write_text('{"status":"finished"}')
 
     events = []
     async for event in adapter.tail(handle):
@@ -877,7 +877,7 @@ async def test_tail_polls_until_complete(tmp_path: Path) -> None:
         await asyncio.sleep(0.6)
         meta_path.write_text('{"status":"running"}')
         await asyncio.sleep(0.6)
-        meta_path.write_text('{"status":"complete"}')
+        meta_path.write_text('{"status":"finished"}')
 
     task = asyncio.create_task(_write_meta_after_delay())
     events: list[object] = []
