@@ -34,30 +34,30 @@ def test_exit_code_wind_down_is_75() -> None:
 
 
 def test_descriptor_property() -> None:
-    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP, base_dir=Path("/tmp"))
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
     assert adapter.descriptor is CLAUDELOOP
 
 
 def test_classify_credits_exhausted() -> None:
-    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP, base_dir=Path("/tmp"))
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
     result = adapter.classify(CREDITS_FIXTURES[EngineId.CLAUDELOOP])
     assert isinstance(result, CreditsExhausted)
 
 
 def test_attribute_normal_exit() -> None:
-    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP, base_dir=Path("/tmp"))
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
     result = adapter.attribute(0, "")
     assert result == FailureClass.WORK
 
 
 def test_attribute_wind_down() -> None:
-    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP, base_dir=Path("/tmp"))
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
     result = adapter.attribute(75, "")
     assert isinstance(result, FailureClass)
 
 
 async def test_send_prompt_writes_inbox_file(tmp_path: Path) -> None:
-    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP, base_dir=tmp_path)
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
     run_dir = tmp_path / ".claudeloop" / "runs" / "test-run"
     run_dir.mkdir(parents=True)
     handle = _make_handle(run_dir)
@@ -74,7 +74,7 @@ async def test_send_prompt_writes_inbox_file(tmp_path: Path) -> None:
 
 
 async def test_send_prompt_at_break(tmp_path: Path) -> None:
-    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP, base_dir=tmp_path)
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
     run_dir = tmp_path / ".claudeloop" / "runs" / "test-run"
     run_dir.mkdir(parents=True)
     handle = _make_handle(run_dir)
@@ -88,7 +88,7 @@ async def test_send_prompt_at_break(tmp_path: Path) -> None:
 
 
 async def test_snapshot_returns_ref_when_file_exists(tmp_path: Path) -> None:
-    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP, base_dir=tmp_path)
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
     run_dir = tmp_path / "test-run"
     run_dir.mkdir(parents=True)
     handle = _make_handle(run_dir)
@@ -113,7 +113,7 @@ async def test_snapshot_returns_ref_when_file_exists(tmp_path: Path) -> None:
 
 
 async def test_snapshot_returns_none_when_missing(tmp_path: Path) -> None:
-    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP, base_dir=tmp_path)
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
     run_dir = tmp_path / "test-run"
     run_dir.mkdir(parents=True)
     handle = _make_handle(run_dir)
@@ -123,7 +123,7 @@ async def test_snapshot_returns_none_when_missing(tmp_path: Path) -> None:
 
 
 async def test_snapshot_returns_none_on_invalid_json(tmp_path: Path) -> None:
-    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP, base_dir=tmp_path)
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
     run_dir = tmp_path / "test-run"
     run_dir.mkdir(parents=True)
     handle = _make_handle(run_dir)
@@ -137,7 +137,7 @@ async def test_snapshot_returns_none_on_invalid_json(tmp_path: Path) -> None:
 
 
 async def test_stop_writes_stop_signal(tmp_path: Path) -> None:
-    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP, base_dir=tmp_path)
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
     run_dir = tmp_path / "test-run"
     run_dir.mkdir(parents=True)
     handle = _make_handle(run_dir)
@@ -154,7 +154,7 @@ async def test_stop_writes_stop_signal(tmp_path: Path) -> None:
 
 
 async def test_stop_detects_done_marker(tmp_path: Path) -> None:
-    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP, base_dir=tmp_path)
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
     run_dir = tmp_path / "test-run"
     run_dir.mkdir(parents=True)
     handle = _make_handle(run_dir)
@@ -184,7 +184,7 @@ async def test_preflight_not_installed(tmp_path: Path) -> None:
         cost_per_mtok_out=5.0,
         context_window=100_000,
     )
-    adapter = LoopProcessAdapter(descriptor=fake_desc, base_dir=tmp_path)
+    adapter = LoopProcessAdapter(descriptor=fake_desc)
 
     result = await adapter.preflight()
 
@@ -193,7 +193,7 @@ async def test_preflight_not_installed(tmp_path: Path) -> None:
 
 
 def test_adapter_works_with_any_descriptor() -> None:
-    adapter = LoopProcessAdapter(descriptor=CODEXLOOP, base_dir=Path("/tmp"))
+    adapter = LoopProcessAdapter(descriptor=CODEXLOOP)
     assert adapter.descriptor.engine_id == EngineId.CODEXLOOP
 
 
@@ -208,7 +208,7 @@ def _make_fake_binary(tmp_path: Path, name: str, script: str) -> Path:
 
 
 async def test_tail_yields_translated_events(tmp_path: Path) -> None:
-    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP, base_dir=tmp_path)
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
     run_dir = tmp_path / "test-run"
     run_dir.mkdir(parents=True)
     handle = _make_handle(run_dir)
@@ -232,7 +232,7 @@ async def test_tail_yields_translated_events(tmp_path: Path) -> None:
 
 
 async def test_tail_skips_unknown_event_types(tmp_path: Path) -> None:
-    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP, base_dir=tmp_path)
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
     run_dir = tmp_path / "test-run"
     run_dir.mkdir(parents=True)
     handle = _make_handle(run_dir)
@@ -255,7 +255,7 @@ async def test_tail_skips_unknown_event_types(tmp_path: Path) -> None:
 
 
 async def test_tail_skips_events_missing_type(tmp_path: Path) -> None:
-    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP, base_dir=tmp_path)
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
     run_dir = tmp_path / "test-run"
     run_dir.mkdir(parents=True)
     handle = _make_handle(run_dir)
@@ -277,7 +277,7 @@ async def test_tail_skips_events_missing_type(tmp_path: Path) -> None:
 
 
 async def test_tail_skips_invalid_json_lines(tmp_path: Path) -> None:
-    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP, base_dir=tmp_path)
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
     run_dir = tmp_path / "test-run"
     run_dir.mkdir(parents=True)
     handle = _make_handle(run_dir)
@@ -299,7 +299,7 @@ async def test_tail_skips_invalid_json_lines(tmp_path: Path) -> None:
 
 
 async def test_tail_skips_blank_lines(tmp_path: Path) -> None:
-    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP, base_dir=tmp_path)
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
     run_dir = tmp_path / "test-run"
     run_dir.mkdir(parents=True)
     handle = _make_handle(run_dir)
@@ -321,7 +321,7 @@ async def test_tail_skips_blank_lines(tmp_path: Path) -> None:
 
 async def test_tail_returns_immediately_when_events_file_missing(tmp_path: Path) -> None:
     """tail() must return without blocking when events.jsonl never appears."""
-    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP, base_dir=tmp_path)
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
     run_dir = tmp_path / "test-run"
     run_dir.mkdir(parents=True)
     handle = _make_handle(run_dir)
@@ -334,7 +334,7 @@ async def test_tail_returns_immediately_when_events_file_missing(tmp_path: Path)
 
 
 async def test_tail_uses_kind_field_fallback(tmp_path: Path) -> None:
-    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP, base_dir=tmp_path)
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
     run_dir = tmp_path / "test-run"
     run_dir.mkdir(parents=True)
     handle = _make_handle(run_dir)
@@ -356,7 +356,7 @@ async def test_tail_uses_kind_field_fallback(tmp_path: Path) -> None:
 
 
 async def test_tail_uses_timestamp_field_fallback(tmp_path: Path) -> None:
-    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP, base_dir=tmp_path)
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
     run_dir = tmp_path / "test-run"
     run_dir.mkdir(parents=True)
     handle = _make_handle(run_dir)
@@ -378,7 +378,7 @@ async def test_tail_uses_timestamp_field_fallback(tmp_path: Path) -> None:
 
 
 async def test_tail_defaults_timestamp_to_now(tmp_path: Path) -> None:
-    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP, base_dir=tmp_path)
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
     run_dir = tmp_path / "test-run"
     run_dir.mkdir(parents=True)
     handle = _make_handle(run_dir)
@@ -398,7 +398,7 @@ async def test_tail_defaults_timestamp_to_now(tmp_path: Path) -> None:
 
 
 async def test_stop_extracts_remaining_work_from_snapshot(tmp_path: Path) -> None:
-    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP, base_dir=tmp_path)
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
     run_dir = tmp_path / "test-run"
     run_dir.mkdir(parents=True)
     handle = _make_handle(run_dir)
@@ -422,7 +422,7 @@ async def test_stop_extracts_remaining_work_from_snapshot(tmp_path: Path) -> Non
 
 
 async def test_stop_handles_missing_summary(tmp_path: Path) -> None:
-    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP, base_dir=tmp_path)
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
     run_dir = tmp_path / "test-run"
     run_dir.mkdir(parents=True)
     handle = _make_handle(run_dir)
@@ -433,7 +433,7 @@ async def test_stop_handles_missing_summary(tmp_path: Path) -> None:
 
 
 async def test_stop_handles_invalid_snapshot_json(tmp_path: Path) -> None:
-    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP, base_dir=tmp_path)
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
     run_dir = tmp_path / "test-run"
     run_dir.mkdir(parents=True)
     handle = _make_handle(run_dir)
@@ -470,7 +470,7 @@ async def test_start_raises_process_error_on_spawn_failure(tmp_path: Path) -> No
         cost_per_mtok_out=5.0,
         context_window=100_000,
     )
-    adapter = LoopProcessAdapter(descriptor=fake_desc, base_dir=tmp_path)
+    adapter = LoopProcessAdapter(descriptor=fake_desc)
 
     import pytest
 
@@ -516,7 +516,7 @@ async def test_preflight_installed_with_doctor_ok(tmp_path: Path, monkeypatch: o
             cost_per_mtok_out=5.0,
             context_window=100_000,
         )
-        adapter = LoopProcessAdapter(descriptor=desc, base_dir=tmp_path)
+        adapter = LoopProcessAdapter(descriptor=desc)
         result = await adapter.preflight()
 
         assert result.installed is True
@@ -558,7 +558,7 @@ async def test_preflight_installed_doctor_fails_reports_detail(
             cost_per_mtok_out=5.0,
             context_window=100_000,
         )
-        adapter = LoopProcessAdapter(descriptor=desc, base_dir=tmp_path)
+        adapter = LoopProcessAdapter(descriptor=desc)
         result = await adapter.preflight()
 
         assert result.installed is True
@@ -602,7 +602,7 @@ async def test_preflight_version_timeout_still_checks_auth(tmp_path: Path) -> No
             cost_per_mtok_out=5.0,
             context_window=100_000,
         )
-        adapter = LoopProcessAdapter(descriptor=desc, base_dir=tmp_path)
+        adapter = LoopProcessAdapter(descriptor=desc)
 
         orig_wait_for = asyncio.wait_for
         call_count = 0
@@ -659,7 +659,7 @@ async def test_preflight_doctor_exception_falls_back_to_env(tmp_path: Path) -> N
             cost_per_mtok_out=5.0,
             context_window=100_000,
         )
-        adapter = LoopProcessAdapter(descriptor=desc, base_dir=tmp_path)
+        adapter = LoopProcessAdapter(descriptor=desc)
 
         orig_wait_for = asyncio.wait_for
         call_count = 0
@@ -711,11 +711,20 @@ async def test_start_writes_plan_and_returns_handle(tmp_path: Path) -> None:
             cost_per_mtok_out=5.0,
             context_window=100_000,
         )
-        adapter = LoopProcessAdapter(descriptor=desc, base_dir=tmp_path)
+        adapter = LoopProcessAdapter(descriptor=desc)
 
+        # worktree_path is deliberately its own subdirectory, distinct from
+        # tmp_path itself (where the fake binary lives) -- start() must root
+        # run_dir under the RunSpec's own worktree_path, not wherever the
+        # adapter happens to be constructed from. This is the regression
+        # case for a real bug where run_dir was rooted under a fixed
+        # adapter-level base_dir instead, silently breaking every downstream
+        # tail()/stop()/snapshot() lookup whenever the two paths diverged.
+        worktree_path = tmp_path / "project"
+        worktree_path.mkdir()
         spec = RunSpec(
             run_id=uuid4(),
-            worktree_path=tmp_path,
+            worktree_path=worktree_path,
             prompt="test prompt here",
             effort=Effort.STANDARD,
             isolation=IsolationLevel.WORKTREE,
@@ -726,8 +735,9 @@ async def test_start_writes_plan_and_returns_handle(tmp_path: Path) -> None:
         assert handle.run_id == spec.run_id
         assert handle.engine_id == EngineId.CLAUDELOOP
         assert handle.pid is not None
+        assert handle.run_dir == worktree_path / desc.state_dir / "runs" / str(spec.run_id)
 
-        plan_file = tmp_path / ".vibey" / "plans" / f"{spec.run_id}.md"
+        plan_file = worktree_path / ".vibey" / "plans" / f"{spec.run_id}.md"
         assert plan_file.exists()
         assert plan_file.read_text() == "test prompt here"
 
@@ -765,7 +775,7 @@ async def test_start_skips_plan_for_resume(tmp_path: Path) -> None:
             cost_per_mtok_out=5.0,
             context_window=100_000,
         )
-        adapter = LoopProcessAdapter(descriptor=desc, base_dir=tmp_path)
+        adapter = LoopProcessAdapter(descriptor=desc)
 
         run_id = uuid4()
         spec = RunSpec(
@@ -825,7 +835,7 @@ async def test_preflight_doctor_exception_no_env_reports_detail(tmp_path: Path) 
             cost_per_mtok_out=5.0,
             context_window=100_000,
         )
-        adapter = LoopProcessAdapter(descriptor=desc, base_dir=tmp_path)
+        adapter = LoopProcessAdapter(descriptor=desc)
 
         orig_wait_for = asyncio.wait_for
         call_count = 0
@@ -851,7 +861,7 @@ async def test_tail_polls_until_complete(tmp_path: Path) -> None:
     """When meta.json isn't present initially, tail sleeps and retries."""
     import asyncio
 
-    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP, base_dir=tmp_path)
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
     run_dir = tmp_path / "test-run"
     run_dir.mkdir(parents=True)
     handle = _make_handle(run_dir)
@@ -880,7 +890,7 @@ async def test_tail_polls_until_complete(tmp_path: Path) -> None:
 
 async def test_tail_outer_exception_breaks_loop(tmp_path: Path) -> None:
     """When an unexpected error occurs in tail's outer loop, it breaks cleanly."""
-    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP, base_dir=tmp_path)
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
     run_dir = tmp_path / "test-run"
     run_dir.mkdir(parents=True)
     handle = _make_handle(run_dir)
@@ -902,7 +912,7 @@ async def test_tail_outer_exception_breaks_loop(tmp_path: Path) -> None:
 
 async def test_stop_remaining_work_round_trips_through_snapshot(tmp_path: Path) -> None:
     """stop() extracts remaining_work list from the snapshot file."""
-    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP, base_dir=tmp_path)
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
     run_dir = tmp_path / "test-run"
     run_dir.mkdir(parents=True)
     handle = _make_handle(run_dir)
@@ -943,7 +953,7 @@ async def test_stop_handles_corrupt_snapshot_gracefully(tmp_path: Path) -> None:
         async def snapshot(self, handle: RunHandle) -> SnapshotRef | None:
             return fake_ref
 
-    adapter = _CorruptSnapshotAdapter(descriptor=CLAUDELOOP, base_dir=tmp_path)
+    adapter = _CorruptSnapshotAdapter(descriptor=CLAUDELOOP)
     handle = _make_handle(run_dir)
 
     summary_path = run_dir / "stop-summary.md"

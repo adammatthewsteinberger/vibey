@@ -23,8 +23,8 @@ def scripted_engine(request: pytest.FixtureRequest, tmp_path: Path) -> ScriptedE
 
 
 @pytest.fixture(params=ALL_DESCRIPTORS, ids=lambda d: d.engine_id.value)
-def live_adapter(request: pytest.FixtureRequest, tmp_path: Path) -> LoopProcessAdapter:
-    return LoopProcessAdapter(descriptor=request.param, base_dir=tmp_path)
+def live_adapter(request: pytest.FixtureRequest) -> LoopProcessAdapter:
+    return LoopProcessAdapter(descriptor=request.param)
 
 
 @pytest.fixture()

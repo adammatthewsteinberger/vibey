@@ -126,9 +126,7 @@ def database_url() -> str:
 
 
 @asynccontextmanager
-async def build_app(
-    *, url: str | None = None, base_dir: Path | None = None
-) -> AsyncIterator[AppResources]:
+async def build_app(*, url: str | None = None) -> AsyncIterator[AppResources]:
     pool = await asyncpg.create_pool(url or database_url(), min_size=1, max_size=10)
     if pool is None:
         raise RuntimeError("asyncpg did not create a pool")
@@ -152,13 +150,8 @@ async def build_app(
         rotation_handoff = RotationHandoffService(engine_selector)
 
         # Build engine adapters
-        adapter_base_dir = base_dir or Path.cwd()
         engine_adapters = {
-            desc.engine_id: LoopProcessAdapter(
-                descriptor=desc,
-                base_dir=adapter_base_dir,
-            )
-            for desc in ALL_DESCRIPTORS
+            desc.engine_id: LoopProcessAdapter(descriptor=desc) for desc in ALL_DESCRIPTORS
         }
 
         yield AppResources(

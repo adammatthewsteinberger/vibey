@@ -16,7 +16,6 @@ import shutil
 from collections.abc import AsyncIterator, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from pathlib import Path
 
 import structlog
 
@@ -56,7 +55,6 @@ class LoopProcessAdapter:
     """
 
     descriptor: EngineDescriptor
-    base_dir: Path  # Where the engine's state_dir lives (e.g. .claudeloop/)
 
     async def preflight(self) -> PreflightResult:
         """Check if binary exists and auth is OK (via `doctor`)."""
@@ -124,7 +122,7 @@ class LoopProcessAdapter:
 
     async def start(self, spec: RunSpec) -> RunHandle:
         """Build argv, write plan, spawn process, return handle."""
-        run_dir = self.base_dir / self.descriptor.state_dir / "runs" / str(spec.run_id)
+        run_dir = spec.worktree_path / self.descriptor.state_dir / "runs" / str(spec.run_id)
         run_dir.mkdir(parents=True, exist_ok=True)
 
         # Write the plan file if this is a new run
