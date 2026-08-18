@@ -4,42 +4,44 @@ Real loop events.jsonl files use dotted event_type strings ("chatter.assistant",
 "sdk.message", "RateLimitEvent") rather than vibey's EventKind vocabulary.
 This module maps the observed real event types to EventKind, engine by engine.
 
-Event shapes discovered by running each loop in scripted mode (CLAUDELOOP_ALLOW_TEST_AGENT=1)
-and inspecting the resulting events.jsonl files.
+CLAUDELOOP and AGYLOOP's mappings are built from real events.jsonl captured
+by real, authenticated, live runs (see docs/plans/fleet/
+e1-loop-event-map-vibey.md and the conformance investigation it closed
+out) -- an earlier version of this file claimed the same for every engine
+while actually containing fabricated event_type strings for all four
+(session.user_turn, function.call, thread.message.user, agent.savepoint,
+...: none of these are real). CODEXLOOP and CURSORLOOP still carry that
+earlier, unverified guesswork -- their CLIs aren't authenticated in this
+environment, so their mappings haven't been corrected the same way yet.
+Don't trust them without the same live-capture verification.
 """
 
 from vibey.domain.engine import EngineId
 from vibey.domain.ledger import EventKind
 
 # Mapping from real loop event_type strings to vibey's EventKind vocabulary.
-# Built from actual events.jsonl inspection, not documentation.
 # Unmapped types are logged and skipped gracefully rather than crashing.
 
 LOOP_EVENT_MAP: dict[EngineId, dict[str, EventKind]] = {
     EngineId.CLAUDELOOP: {
-        # Chatter events (conversational turns)
-        "chatter.user": EventKind.TURN_REQUESTED,
+        # Claudeloop events (captured from a real events.jsonl, same
+        # conformance run that fixed agyloop's mapping -- claudeloop shares
+        # the identical event/payload vocabulary, down to word-for-word
+        # matching docstrings on _project_capacity in both runner.py files).
+        "run.started": EventKind.SESSION_SEEDED,
+        "preflight": EventKind.SESSION_SEEDED,
+        "chatter.prompt": EventKind.TURN_REQUESTED,
+        "turn.starting": EventKind.TURN_REQUESTED,
         "chatter.assistant": EventKind.TURN_COMPLETED,
-        # SDK events (tool use)
-        "sdk.tool_use": EventKind.TOOL_INVOKED,
-        "sdk.text_created": EventKind.TURN_COMPLETED,
-        # Capacity events
-        "capacity.rate_limit": EventKind.CAPACITY_REJECTED,
-        "capacity.credits_exhausted": EventKind.CAPACITY_REJECTED,
-        "capacity.auth_failed": EventKind.CAPACITY_REJECTED,
-        # Session lifecycle
-        "session.started": EventKind.SESSION_SEEDED,
-        "session.savepoint": EventKind.SAVEPOINT_CREATED,
-        # File operations
-        "file.edit": EventKind.FILE_EDITED,
-        "file.write": EventKind.FILE_EDITED,
-        # Structured outputs (when using output_format=json)
-        "verdict.rendered": EventKind.VERDICT_RENDERED,
-        "question.asked": EventKind.QUESTION_ASKED,
-        "decision.recorded": EventKind.DECISION_RECORDED,
-        "assumption.stated": EventKind.ASSUMPTION_STATED,
-        "finding.raised": EventKind.FINDING_RAISED,
-        "artifact.produced": EventKind.ARTIFACT_PRODUCED,
+        "turn.completed": EventKind.TURN_COMPLETED,
+        "chatter.tool": EventKind.TOOL_INVOKED,
+        "savepoint": EventKind.SAVEPOINT_CREATED,
+        # capacity.forecast is proactive headroom telemetry emitted only
+        # while capacity IS available (see runner.py::_project_capacity's
+        # own docstring) -- never an actual rejection. See the identical
+        # reasoning on EngineId.AGYLOOP's own capacity.forecast below.
+        "capacity.forecast": EventKind.BUDGET_SPENT,
+        "finished": EventKind.VERDICT_RENDERED,
     },
     EngineId.CODEXLOOP: {
         # Codex uses similar but not identical event names

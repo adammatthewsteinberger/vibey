@@ -215,7 +215,7 @@ async def test_tail_yields_translated_events(tmp_path: Path) -> None:
 
     events_path = run_dir / "events.jsonl"
     events_path.write_text(
-        '{"event_type":"session.started","at":"2026-01-01T00:00:00+00:00","payload":{}}\n'
+        '{"event_type":"run.started","at":"2026-01-01T00:00:00+00:00","payload":{}}\n'
         '{"event_type":"chatter.assistant","at":"2026-01-01T00:00:01+00:00","payload":{"text":"hi"}}\n'
     )
 
@@ -240,7 +240,7 @@ async def test_tail_skips_unknown_event_types(tmp_path: Path) -> None:
     events_path = run_dir / "events.jsonl"
     events_path.write_text(
         '{"event_type":"totally.unknown","at":"2026-01-01T00:00:00+00:00","payload":{}}\n'
-        '{"event_type":"session.started","at":"2026-01-01T00:00:01+00:00","payload":{}}\n'
+        '{"event_type":"run.started","at":"2026-01-01T00:00:01+00:00","payload":{}}\n'
     )
 
     meta_path = run_dir / "meta.json"
@@ -263,7 +263,7 @@ async def test_tail_skips_events_missing_type(tmp_path: Path) -> None:
     events_path = run_dir / "events.jsonl"
     events_path.write_text(
         '{"payload":{"no":"type"}}\n'
-        '{"event_type":"session.started","at":"2026-01-01T00:00:00+00:00","payload":{}}\n'
+        '{"event_type":"run.started","at":"2026-01-01T00:00:00+00:00","payload":{}}\n'
     )
 
     meta_path = run_dir / "meta.json"
@@ -285,7 +285,7 @@ async def test_tail_skips_invalid_json_lines(tmp_path: Path) -> None:
     events_path = run_dir / "events.jsonl"
     events_path.write_text(
         "not valid json\n"
-        '{"event_type":"session.started","at":"2026-01-01T00:00:00+00:00","payload":{}}\n'
+        '{"event_type":"run.started","at":"2026-01-01T00:00:00+00:00","payload":{}}\n'
     )
 
     meta_path = run_dir / "meta.json"
@@ -306,7 +306,7 @@ async def test_tail_skips_blank_lines(tmp_path: Path) -> None:
 
     events_path = run_dir / "events.jsonl"
     events_path.write_text(
-        '\n   \n{"event_type":"session.started","at":"2026-01-01T00:00:00+00:00","payload":{}}\n'
+        '\n   \n{"event_type":"run.started","at":"2026-01-01T00:00:00+00:00","payload":{}}\n'
     )
 
     meta_path = run_dir / "meta.json"
@@ -340,9 +340,7 @@ async def test_tail_uses_kind_field_fallback(tmp_path: Path) -> None:
     handle = _make_handle(run_dir)
 
     events_path = run_dir / "events.jsonl"
-    events_path.write_text(
-        '{"kind":"session.started","at":"2026-01-01T00:00:00+00:00","payload":{}}\n'
-    )
+    events_path.write_text('{"kind":"run.started","at":"2026-01-01T00:00:00+00:00","payload":{}}\n')
 
     meta_path = run_dir / "meta.json"
     meta_path.write_text('{"status":"finished"}')
@@ -363,7 +361,7 @@ async def test_tail_uses_timestamp_field_fallback(tmp_path: Path) -> None:
 
     events_path = run_dir / "events.jsonl"
     events_path.write_text(
-        '{"event_type":"session.started","timestamp":"2026-06-15T12:00:00+00:00","payload":{}}\n'
+        '{"event_type":"run.started","timestamp":"2026-06-15T12:00:00+00:00","payload":{}}\n'
     )
 
     meta_path = run_dir / "meta.json"
@@ -384,7 +382,7 @@ async def test_tail_defaults_timestamp_to_now(tmp_path: Path) -> None:
     handle = _make_handle(run_dir)
 
     events_path = run_dir / "events.jsonl"
-    events_path.write_text('{"event_type":"session.started","payload":{}}\n')
+    events_path.write_text('{"event_type":"run.started","payload":{}}\n')
 
     meta_path = run_dir / "meta.json"
     meta_path.write_text('{"status":"finished"}')
@@ -868,7 +866,7 @@ async def test_tail_polls_until_complete(tmp_path: Path) -> None:
 
     events_path = run_dir / "events.jsonl"
     events_path.write_text(
-        '{"event_type":"session.started","at":"2026-01-01T00:00:00+00:00","payload":{}}\n'
+        '{"event_type":"run.started","at":"2026-01-01T00:00:00+00:00","payload":{}}\n'
     )
 
     meta_path = run_dir / "meta.json"
@@ -897,7 +895,7 @@ async def test_tail_outer_exception_breaks_loop(tmp_path: Path) -> None:
 
     events_path = run_dir / "events.jsonl"
     events_path.write_text(
-        '{"event_type":"session.started","at":"2026-01-01T00:00:00+00:00","payload":{}}\n'
+        '{"event_type":"run.started","at":"2026-01-01T00:00:00+00:00","payload":{}}\n'
     )
 
     meta_path = run_dir / "meta.json"
@@ -1037,7 +1035,7 @@ async def test_tail_does_not_enrich_verdict_missing_success_key(tmp_path: Path) 
 
     events_path = run_dir / "events.jsonl"
     events_path.write_text(
-        '{"event_type":"verdict.rendered","at":"2026-01-01T00:00:00+00:00",'
+        '{"event_type":"finished","at":"2026-01-01T00:00:00+00:00",'
         '"payload":{"complete":false,"summary":"still working"}}\n'
     )
 
@@ -1062,7 +1060,7 @@ async def test_tail_preserves_existing_done_marker(tmp_path: Path) -> None:
 
     events_path = run_dir / "events.jsonl"
     events_path.write_text(
-        '{"event_type":"verdict.rendered","at":"2026-01-01T00:00:00+00:00",'
+        '{"event_type":"finished","at":"2026-01-01T00:00:00+00:00",'
         '"payload":{"done_marker":"CUSTOM_MARKER"}}\n'
     )
 

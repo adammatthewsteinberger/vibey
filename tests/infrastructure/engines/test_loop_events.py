@@ -89,3 +89,75 @@ def test_agyloop_capacity_event() -> None:
 def test_agyloop_tool_invocation() -> None:
     """Verify sdk.event maps to TOOL_INVOKED."""
     assert translate_event_type(EngineId.AGYLOOP, "sdk.event") == EventKind.TOOL_INVOKED
+
+
+def test_claudeloop_event_mapping_coverage() -> None:
+    """Verify all real claudeloop event types from a captured run are mapped."""
+    # Captured from a real, authenticated `vibey doctor --conformance
+    # --engine claudeloop` run's events.jsonl.
+    real_claudeloop_events = [
+        "run.started",
+        "preflight",
+        "chatter.prompt",
+        "turn.starting",
+        "chatter.assistant",
+        "turn.completed",
+        "chatter.tool",
+        "savepoint",
+        "capacity.forecast",
+        "finished",
+    ]
+
+    claudeloop_map = LOOP_EVENT_MAP[EngineId.CLAUDELOOP]
+
+    for event_type in real_claudeloop_events:
+        assert event_type in claudeloop_map, f"Real claudeloop event '{event_type}' not mapped"
+
+
+def test_claudeloop_finished_maps_to_verdict_rendered() -> None:
+    """The 'finished' event must map to VerdictRendered for structured_verdict check."""
+    result = translate_event_type(EngineId.CLAUDELOOP, "finished")
+    assert result == EventKind.VERDICT_RENDERED, (
+        f"'finished' must map to VerdictRendered, got {result}"
+    )
+
+
+def test_claudeloop_turn_events() -> None:
+    """Verify turn-related events map correctly."""
+    assert translate_event_type(EngineId.CLAUDELOOP, "chatter.prompt") == EventKind.TURN_REQUESTED
+    assert translate_event_type(EngineId.CLAUDELOOP, "turn.starting") == EventKind.TURN_REQUESTED
+    assert (
+        translate_event_type(EngineId.CLAUDELOOP, "chatter.assistant") == EventKind.TURN_COMPLETED
+    )
+    assert translate_event_type(EngineId.CLAUDELOOP, "turn.completed") == EventKind.TURN_COMPLETED
+
+
+def test_claudeloop_session_events() -> None:
+    """Verify session initialization events map to SESSION_SEEDED."""
+    assert translate_event_type(EngineId.CLAUDELOOP, "run.started") == EventKind.SESSION_SEEDED
+    assert translate_event_type(EngineId.CLAUDELOOP, "preflight") == EventKind.SESSION_SEEDED
+
+
+def test_claudeloop_savepoint_event() -> None:
+    """Verify the savepoint event maps correctly."""
+    assert translate_event_type(EngineId.CLAUDELOOP, "savepoint") == EventKind.SAVEPOINT_CREATED
+
+
+def test_claudeloop_capacity_event() -> None:
+    """capacity.forecast is proactive headroom telemetry emitted only while
+    capacity IS available (see runner.py::_project_capacity, word-for-word
+    identical to agyloop's own) -- it must not map to CAPACITY_REJECTED, or
+    every normal successful run would look capacity-constrained."""
+    assert translate_event_type(EngineId.CLAUDELOOP, "capacity.forecast") == EventKind.BUDGET_SPENT
+
+
+def test_claudeloop_tool_invocation() -> None:
+    """Verify chatter.tool maps to TOOL_INVOKED."""
+    assert translate_event_type(EngineId.CLAUDELOOP, "chatter.tool") == EventKind.TOOL_INVOKED
+
+
+def test_claudeloop_unknown_event_returns_none() -> None:
+    """Unknown event types (including the old fabricated mapping's own
+    entries, now removed) return None and are gracefully skipped."""
+    assert translate_event_type(EngineId.CLAUDELOOP, "unknown.event.type") is None
+    assert translate_event_type(EngineId.CLAUDELOOP, "session.started") is None
