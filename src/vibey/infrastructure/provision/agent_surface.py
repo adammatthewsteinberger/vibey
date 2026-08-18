@@ -11,7 +11,7 @@ never lands in a commit -- exactly ADR-0011's "Bad, but" tradeoff.
 
 The marketplace skill directories (`.claude/skills/`, `.agents/skills/`,
 `.cursor/rules/`, `.agent/`) from ADR-0011's table are not materialized here:
-there is no `vibe-engineering-skills` marketplace available in this build
+there is no `vibey-skills` (formerly `vibe-engineering-skills`) marketplace available in this build
 environment to pull skill content from. Only the four router files -- the
 part that's genuinely self-contained -- are provisioned. Replace this
 docstring note, not the emitter's signature, once real marketplace access
