@@ -60,6 +60,19 @@ class IntegrationBranch(Protocol):
 
 
 @runtime_checkable
+class IntegrationLock(Protocol):
+    """Serializes concurrent ``build.integrate`` jobs for one
+    (project, cycle): the integration branch is a single shared git ref,
+    so two workers merging into it at once corrupt each other. A failed
+    ``try_acquire`` means another worker holds the branch -- the job
+    defers and retries, it never blocks a worker thread waiting."""
+
+    async def try_acquire(self, project_id: UUID, cycle: int) -> bool: ...
+
+    async def release(self, project_id: UUID, cycle: int) -> None: ...
+
+
+@runtime_checkable
 class VerifyWorktrees(Protocol):
     def path_for(self, item_id: str) -> Path: ...
 

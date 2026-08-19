@@ -228,3 +228,97 @@ async def test_integrate_review_bridge_tolerates_cas_miss(tmp_path: Path) -> Non
 
     assert isinstance(outcome, Success)
     assert any(j.kind == "review.demo" for j in jobs._jobs.values())
+
+
+# ── the integration lock ─────────────────────────────────────────────────────
+
+
+class FakeIntegrationLock:
+    def __init__(self, *, available: bool = True) -> None:
+        self.available = available
+        self.calls: list[str] = []
+
+    async def try_acquire(self, project_id, cycle):  # type: ignore[no-untyped-def]
+        self.calls.append("try_acquire")
+        return self.available
+
+    async def release(self, project_id, cycle):  # type: ignore[no-untyped-def]
+        self.calls.append("release")
+
+
+async def test_lock_contention_defers_instead_of_merging(tmp_path: Path) -> None:
+    from vibey.application.worker import Defer
+
+    integration = FakeIntegration(merge_outcome=MergeOutcome(ok=True, detail=""), path=tmp_path)
+    lock = FakeIntegrationLock(available=False)
+    handler = BuildIntegrateHandler(
+        integration=integration,
+        gates=FakeGateRunner(),
+        ledger=FakeLedger(),
+        jobs=FakeJobRepository(),
+        clock=FixedClock(),
+        lock=lock,  # type: ignore[arg-type]
+    )
+
+    outcome = await handler.handle(_job())
+
+    assert isinstance(outcome, Defer)
+    assert outcome.retry_at == FixedClock().now() + timedelta(seconds=30)
+    assert "held by another worker" in outcome.detail
+    assert integration.merged == []
+    assert lock.calls == ["try_acquire"]
+
+
+async def test_lock_is_released_after_a_successful_merge(tmp_path: Path) -> None:
+    integration = FakeIntegration(merge_outcome=MergeOutcome(ok=True, detail=""), path=tmp_path)
+    lock = FakeIntegrationLock()
+    handler = BuildIntegrateHandler(
+        integration=integration,
+        gates=FakeGateRunner(),
+        ledger=FakeLedger(),
+        jobs=FakeJobRepository(),
+        clock=FixedClock(),
+        lock=lock,  # type: ignore[arg-type]
+    )
+
+    outcome = await handler.handle(_job())
+
+    assert isinstance(outcome, Success)
+    assert lock.calls == ["try_acquire", "release"]
+
+
+async def test_lock_is_released_even_when_the_merge_conflicts(tmp_path: Path) -> None:
+    integration = FakeIntegration(
+        merge_outcome=MergeOutcome(ok=False, detail="conflict in app.py"), path=tmp_path
+    )
+    lock = FakeIntegrationLock()
+    handler = BuildIntegrateHandler(
+        integration=integration,
+        gates=FakeGateRunner(),
+        ledger=FakeLedger(),
+        jobs=FakeJobRepository(),
+        clock=FixedClock(),
+        lock=lock,  # type: ignore[arg-type]
+    )
+
+    outcome = await handler.handle(_job())
+
+    assert isinstance(outcome, Failure)
+    assert lock.calls == ["try_acquire", "release"]
+
+
+async def test_kind_and_item_guards_never_touch_the_lock(tmp_path: Path) -> None:
+    lock = FakeIntegrationLock()
+    handler = BuildIntegrateHandler(
+        integration=FakeIntegration(merge_outcome=MergeOutcome(ok=True, detail=""), path=tmp_path),
+        gates=FakeGateRunner(),
+        ledger=FakeLedger(),
+        jobs=FakeJobRepository(),
+        clock=FixedClock(),
+        lock=lock,  # type: ignore[arg-type]
+    )
+
+    await handler.handle(replace(make_job(uuid4()), kind="build.verify"))
+    await handler.handle(replace(make_job(uuid4()), kind="build.integrate", work_item_id=None))
+
+    assert lock.calls == []

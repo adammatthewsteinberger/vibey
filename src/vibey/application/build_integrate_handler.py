@@ -6,18 +6,18 @@ one bad item -- a merge conflict or a post-merge gate failure produces a
 on the integration branch's current head, not a rollback of everything
 (phase-protocols.md section 2.4).
 
-Concurrency note: this handler does not serialize concurrent
-``build.integrate`` jobs for the same (project, cycle) against each other --
-a real lock (e.g. a Postgres advisory lock scoped to project_id/cycle) is
-needed before multiple workers can safely integrate into the same branch at
-once. Safe today because nothing in this codebase runs more than one worker
-against a project concurrently yet; flagged here so it isn't forgotten when
-that changes.
+Concurrency: concurrent ``build.integrate`` jobs for the same
+(project, cycle) are serialized through the optional ``lock``
+(IntegrationLock -- a Postgres advisory lock in production). Contention
+defers the job for a short retry instead of blocking the worker; the lock
+is released in a ``finally`` so a crashed merge can never wedge the
+branch for every other worker.
 """
 
 import contextlib
 import shlex
 from collections.abc import Mapping
+from datetime import timedelta
 from uuid import uuid4
 
 from vibey.application.build_engine_run import BuildLedger
@@ -25,11 +25,12 @@ from vibey.application.build_verify_handler import GateRunner
 from vibey.application.dto import EngineEvent, EnqueueRequest, JobRecord
 from vibey.application.interfaces import (
     IntegrationBranch,
+    IntegrationLock,
     MergeOutcome,
     ProjectTransitioner,
 )
 from vibey.application.ports import Clock, JobRepository
-from vibey.application.worker import Failure, Outcome, Success
+from vibey.application.worker import Defer, Failure, Outcome, Success
 from vibey.domain.effort import Effort
 from vibey.domain.job import FailureClass, idempotency_key
 from vibey.domain.ledger import EventKind
@@ -48,6 +49,8 @@ class BuildIntegrateHandler:
         jobs: JobRepository,
         clock: Clock,
         projects: ProjectTransitioner | None = None,
+        lock: IntegrationLock | None = None,
+        lock_backoff: timedelta = timedelta(seconds=30),
     ) -> None:
         self._integration = integration
         self._gates = gates
@@ -55,6 +58,8 @@ class BuildIntegrateHandler:
         self._jobs = jobs
         self._clock = clock
         self._projects = projects
+        self._lock = lock
+        self._lock_backoff = lock_backoff
 
     async def handle(self, job: JobRecord) -> Outcome:
         if job.kind != "build.integrate":
@@ -62,7 +67,20 @@ class BuildIntegrateHandler:
         if job.work_item_id is None:
             return Failure(FailureClass.VIBEY, "build.integrate job is missing work_item_id")
 
-        merge = await self._integration.merge_item(job.work_item_id)
+        if self._lock is None:
+            return await self._integrate(job, job.work_item_id)
+        if not await self._lock.try_acquire(job.project_id, job.cycle):
+            return Defer(
+                retry_at=self._clock.now() + self._lock_backoff,
+                detail=(f"integration branch for cycle {job.cycle} is held by another worker"),
+            )
+        try:
+            return await self._integrate(job, job.work_item_id)
+        finally:
+            await self._lock.release(job.project_id, job.cycle)
+
+    async def _integrate(self, job: JobRecord, work_item_id: str) -> Outcome:
+        merge = await self._integration.merge_item(work_item_id)
         if not merge.ok:
             detail = f"merge conflict integrating {job.work_item_id!r}: {merge.detail}"
             await self._isolate_and_repair(job, detail)
