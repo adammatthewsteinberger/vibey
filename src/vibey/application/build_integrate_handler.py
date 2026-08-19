@@ -15,6 +15,7 @@ against a project concurrently yet; flagged here so it isn't forgotten when
 that changes.
 """
 
+import contextlib
 import shlex
 from collections.abc import Mapping
 from uuid import uuid4
@@ -25,6 +26,7 @@ from vibey.application.dto import EngineEvent, EnqueueRequest, JobRecord
 from vibey.application.interfaces import (
     IntegrationBranch,
     MergeOutcome,
+    ProjectTransitioner,
 )
 from vibey.application.ports import Clock, JobRepository
 from vibey.application.worker import Failure, Outcome, Success
@@ -45,12 +47,14 @@ class BuildIntegrateHandler:
         ledger: BuildLedger,
         jobs: JobRepository,
         clock: Clock,
+        projects: ProjectTransitioner | None = None,
     ) -> None:
         self._integration = integration
         self._gates = gates
         self._ledger = ledger
         self._jobs = jobs
         self._clock = clock
+        self._projects = projects
 
     async def handle(self, job: JobRecord) -> Outcome:
         if job.kind != "build.integrate":
@@ -77,7 +81,37 @@ class BuildIntegrateHandler:
                 await self._isolate_and_repair(job, detail)
                 return Failure(FailureClass.WORK, detail)
 
+        await self._maybe_enter_review(job)
         return Success({"work_item_id": job.work_item_id})
+
+    async def _maybe_enter_review(self, job: JobRecord) -> None:
+        """The BUILD -> REVIEW bridge: when this integrate is the cycle's
+        last unsettled BUILD job, transition the phase and enqueue the
+        review.demo entry. Both operations tolerate replay: the enqueue is
+        idempotent by key, and a CAS miss on the transition means another
+        worker (or a replayed self) already won -- that is success, not an
+        error, or replays would poison the job."""
+        if self._projects is None:
+            return
+        remaining = await self._jobs.count_unsettled(
+            job.project_id, cycle=job.cycle, phase=Phase.BUILD, exclude=job.id
+        )
+        if remaining != 0:
+            return
+        # A CAS miss (ValueError) means a replay or another worker already
+        # moved the phase on -- swallowing it keeps replays idempotent.
+        with contextlib.suppress(ValueError):
+            await self._projects.transition(job.project_id, expected=Phase.BUILD, to=Phase.REVIEW)
+        await self._jobs.enqueue(
+            EnqueueRequest(
+                project_id=job.project_id,
+                cycle=job.cycle,
+                phase=Phase.REVIEW,
+                kind="review.demo",
+                idempotency_key=idempotency_key(job.project_id, job.cycle, "review.demo", "entry"),
+                requirement={"effort": Effort.HIGH.name.lower()},
+            )
+        )
 
     async def _isolate_and_repair(self, job: JobRecord, detail: str) -> None:
         """The item is isolated (a finding + a repair job against it), but

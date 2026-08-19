@@ -93,7 +93,15 @@ class WorkerLoop:
             # The gate is raised before the lease is released, so there is
             # never a window where the job looks claimable again before the
             # human_gate row exists to explain why it is parked.
-            await self._gates.raise_gate(job.project_id, job.id, outcome.request)
+            #
+            # Some handlers (review.collect, the deploy gates) raise their
+            # gate themselves before returning Park; raising here again
+            # would leave a duplicate unanswered gate that latest_for_job
+            # returns forever, re-parking the job no matter what the human
+            # answered. Only raise when this job has no open gate already.
+            existing = await self._gates.latest_for_job(job.id)
+            if existing is None or existing.answer is not None:
+                await self._gates.raise_gate(job.project_id, job.id, outcome.request)
             await self._jobs.park(job.id, owner=self._owner)
         elif isinstance(outcome, Defer):
             await self._jobs.defer(

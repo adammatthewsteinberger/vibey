@@ -242,3 +242,48 @@ async def test_lease_for_kind_matching_default_skips_the_extra_heartbeat() -> No
     await loop.run_once(PROJECT_ID)
 
     assert "heartbeat" not in jobs.calls
+
+
+async def test_park_does_not_duplicate_a_handler_raised_gate() -> None:
+    """Handlers like review.collect raise their gate themselves before
+    returning Park; _settle raising again would leave a duplicate unanswered
+    gate that latest_for_job returns forever, re-parking the job no matter
+    what the human answered."""
+    job = make_job(PROJECT_ID)
+    jobs = FakeJobRepository([job])
+    gates = FakeHumanGateRepository()
+
+    class _SelfRaisingHandler:
+        async def handle(self, handled: JobRecord) -> Outcome:
+            request = HumanGateRequest(kind="approval", prompt="ok?", options=("yes",))
+            await gates.raise_gate(handled.project_id, handled.id, request)
+            return Park(request)
+
+    loop = WorkerLoop(jobs=jobs, gates=gates, handler=_SelfRaisingHandler(), owner="w1")
+
+    await loop.run_once(PROJECT_ID)
+
+    assert len(gates.raised) == 1
+
+
+async def test_park_raises_a_fresh_gate_when_the_last_one_is_answered() -> None:
+    """A staged interview parks again for its next question batch after the
+    previous gate was answered -- the answered gate must not suppress the
+    new raise."""
+    job = make_job(PROJECT_ID)
+    jobs = FakeJobRepository([job])
+    gates = FakeHumanGateRepository()
+    request = HumanGateRequest(kind="question", prompt="q-1?", options=())
+    first = await gates.raise_gate(PROJECT_ID, job.id, request)
+    await gates.answer(first.gate_id, answer={"answers": {"q-1": "a"}}, answered_by="t")
+
+    loop = WorkerLoop(
+        jobs=jobs,
+        gates=gates,
+        handler=_FixedHandler(Park(HumanGateRequest(kind="question", prompt="q-2?", options=()))),
+        owner="w1",
+    )
+
+    await loop.run_once(PROJECT_ID)
+
+    assert len(gates.raised) == 2

@@ -123,3 +123,17 @@ async def test_decompose_rejects_a_topologically_invalid_item_order() -> None:
     assert isinstance(outcome, Failure)
     assert outcome.failure_class is FailureClass.VIBEY
     assert "topologically" in outcome.detail
+
+
+async def test_build_plan_kind_is_the_fast_loopback_spelling() -> None:
+    """review.triage's fast loop-back enqueues 'build.plan'; the decompose
+    handler accepts it as the same work."""
+    job = replace(make_job(uuid4()), kind="build.plan")
+    items = (_item("skeleton", acceptance_ids=("AC-1", "AC-2")),)
+    jobs = FakeJobRepository()
+    handler = BuildDecomposeHandler(specs=Specs(spec()), decomposer=Decomposer(items), jobs=jobs)
+
+    outcome = await handler.handle(job)
+
+    assert isinstance(outcome, Success)
+    assert any(j.kind == "build.implement" for j in jobs._jobs.values())

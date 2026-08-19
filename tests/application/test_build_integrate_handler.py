@@ -156,3 +156,75 @@ async def test_gate_failure_after_merge_raises_a_finding_and_repairs(tmp_path: P
     repair = await jobs.claim(job.project_id, owner="t", lease=timedelta(seconds=5))
     assert repair is not None
     assert repair.kind == "build.implement"
+
+
+class FakeTransitioner:
+    def __init__(self, *, raises: bool = False) -> None:
+        self.calls: list[tuple[object, object]] = []
+        self._raises = raises
+
+    async def transition(self, project_id, *, expected, to, cycle=None):  # type: ignore[no-untyped-def]
+        self.calls.append((expected, to))
+        if self._raises:
+            raise ValueError("not in expected phase")
+
+
+async def test_last_integrate_transitions_to_review_and_enqueues_demo(tmp_path: Path) -> None:
+    jobs = FakeJobRepository()
+    projects = FakeTransitioner()
+    handler = BuildIntegrateHandler(
+        integration=FakeIntegration(merge_outcome=MergeOutcome(True, ""), path=tmp_path),
+        gates=FakeGateRunner(),
+        ledger=FakeLedger(),
+        jobs=jobs,
+        clock=FixedClock(),
+        projects=projects,
+    )
+
+    outcome = await handler.handle(_job())
+
+    assert isinstance(outcome, Success)
+    assert projects.calls == [("build", "review")]
+    demo_jobs = [j for j in jobs._jobs.values() if j.kind == "review.demo"]
+    assert len(demo_jobs) == 1
+
+
+async def test_integrate_with_unsettled_siblings_does_not_enter_review(tmp_path: Path) -> None:
+    job = _job()
+    sibling = replace(make_job(job.project_id), kind="build.implement")
+    jobs = FakeJobRepository([sibling])
+    projects = FakeTransitioner()
+    handler = BuildIntegrateHandler(
+        integration=FakeIntegration(merge_outcome=MergeOutcome(True, ""), path=tmp_path),
+        gates=FakeGateRunner(),
+        ledger=FakeLedger(),
+        jobs=jobs,
+        clock=FixedClock(),
+        projects=projects,
+    )
+
+    outcome = await handler.handle(job)
+
+    assert isinstance(outcome, Success)
+    assert projects.calls == []
+    assert not any(j.kind == "review.demo" for j in jobs._jobs.values())
+
+
+async def test_integrate_review_bridge_tolerates_cas_miss(tmp_path: Path) -> None:
+    """A replay whose transition already happened must still (idempotently)
+    enqueue review.demo and settle as success -- never poison the job."""
+    jobs = FakeJobRepository()
+    projects = FakeTransitioner(raises=True)
+    handler = BuildIntegrateHandler(
+        integration=FakeIntegration(merge_outcome=MergeOutcome(True, ""), path=tmp_path),
+        gates=FakeGateRunner(),
+        ledger=FakeLedger(),
+        jobs=jobs,
+        clock=FixedClock(),
+        projects=projects,
+    )
+
+    outcome = await handler.handle(_job())
+
+    assert isinstance(outcome, Success)
+    assert any(j.kind == "review.demo" for j in jobs._jobs.values())

@@ -291,3 +291,63 @@ async def test_deploy_review_triage_uses_defaults_with_no_finding_events() -> No
     outcome = await handler.handle(job)
     assert isinstance(outcome, Park)
     assert "Unknown deployment failure" in outcome.request.prompt
+
+
+async def test_deploy_demo_answer_enqueues_a_route_job() -> None:
+    from dataclasses import replace
+
+    from tests.application.fakes import FakeJobRepository
+    from vibey.domain.phase import Phase
+
+    gates = FakeHumanGateRepository()
+    jobs = FakeJobRepository()
+    handler = DeployReviewDemoHandler(ledger=FakeDeployLedger(), human_gates=gates, jobs=jobs)
+    job = replace(make_job(uuid4()), phase=Phase.DEPLOY_REVIEW, kind="deploy.demo")
+
+    first = await handler.handle(job)
+    assert isinstance(first, Park)
+    gate = await gates.latest_for_job(job.id)
+    assert gate is not None
+    await gates.answer(gate.gate_id, answer={"verdict": "approve"}, answered_by="user")
+
+    outcome = await handler.handle(job)
+
+    assert isinstance(outcome, Success)
+    routes = [j for j in jobs._jobs.values() if j.kind == "deploy.route"]
+    assert len(routes) == 1
+    assert routes[0].payload == {"action": "approve"}
+    assert routes[0].phase is Phase.DEPLOY_REVIEW
+
+
+async def test_deploy_triage_answer_enqueues_a_route_job_with_the_choice() -> None:
+    from dataclasses import replace
+
+    from tests.application.fakes import FakeJobRepository
+    from vibey.domain.phase import Phase
+
+    gates = FakeHumanGateRepository()
+    jobs = FakeJobRepository()
+    handler = DeployReviewTriageHandler(ledger=FakeDeployLedger(), human_gates=gates, jobs=jobs)
+    job = replace(make_job(uuid4()), phase=Phase.DEPLOY_REVIEW, kind="deploy.triage")
+
+    first = await handler.handle(job)
+    assert isinstance(first, Park)
+    gate = await gates.latest_for_job(job.id)
+    assert gate is not None
+    await gates.answer(gate.gate_id, answer={"choice": "RETRY_DEPLOY_EXECUTE"}, answered_by="user")
+
+    outcome = await handler.handle(job)
+
+    assert isinstance(outcome, Success)
+    routes = [j for j in jobs._jobs.values() if j.kind == "deploy.route"]
+    assert len(routes) == 1
+    assert routes[0].payload == {"action": "RETRY_DEPLOY_EXECUTE"}
+
+
+async def test_gate_action_falls_back_to_first_value_then_approve() -> None:
+    from vibey.application.deploy_review_handler import _gate_action
+
+    assert _gate_action({"verdict": "request_changes"}) == "request_changes"
+    assert _gate_action({"choice": "ABORT_DEPLOYMENT"}) == "ABORT_DEPLOYMENT"
+    assert _gate_action({"something_else": "custom"}) == "custom"
+    assert _gate_action({}) == "approve"
