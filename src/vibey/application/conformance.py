@@ -119,12 +119,19 @@ async def run_conformance(
     # done_marker, control_plane, and structured_verdict.
     # Real engines need a concrete, trivially-completable prompt with a clear
     # deliverable; "conformance check" is too vague and causes timeouts.
+    # Checkbox syntax matters, not just style: codexloop's own WorkPlan
+    # parser (domain/plan.py) requires at least one "- [ ]" item and raises
+    # immediately otherwise -- confirmed directly, and confirmed to leave
+    # meta.json's status field unset, which without a separate fix would
+    # make LoopProcessAdapter.tail() poll forever waiting for a terminal
+    # status that never arrives. Checkbox syntax is still valid, readable
+    # plain-text prompt content for the other three engines.
     handle = None
     try:
         spec = RunSpec(
             run_id=uuid4(),
             worktree_path=Path(trivial_worktree),
-            prompt="Create a file at test.txt containing the text OK, then finish.",
+            prompt="- [ ] Create a file at test.txt containing the text OK, then finish.",
             effort=Effort.TRIVIAL,
             isolation=IsolationLevel.WORKTREE,
         )

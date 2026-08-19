@@ -69,6 +69,16 @@ def test_resume_verb_used_when_session_id_present(descriptor) -> None:  # type: 
 
 
 @pytest.mark.parametrize("descriptor", ALL_DESCRIPTORS, ids=lambda d: d.engine_id.value)
+def test_cwd_flag_presence_matches_descriptor_capability(descriptor) -> None:  # type: ignore[no-untyped-def]
+    """build_argv() must never append --cwd for an engine whose real CLI
+    doesn't accept it (codexloop `run` rejects it at argument parsing) --
+    regression test for a bug that made LoopProcessAdapter unable to spawn
+    codexloop at all, caught by a real subprocess-level conformance test."""
+    argv = build_argv(descriptor, _spec(Effort.LOW))
+    assert ("--cwd" in argv) == descriptor.supports_cwd_flag
+
+
+@pytest.mark.parametrize("descriptor", ALL_DESCRIPTORS, ids=lambda d: d.engine_id.value)
 def test_isolation_flags_included_for_container(descriptor) -> None:  # type: ignore[no-untyped-def]
     spec = RunSpec(
         run_id=RUN_ID,

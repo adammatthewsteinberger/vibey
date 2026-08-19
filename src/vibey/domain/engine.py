@@ -55,6 +55,12 @@ class EngineDescriptor:
     cost_per_mtok_out: float
     context_window: int
     base_weight: int = 1
+    # Whether the engine's own `run`/`resume` CLI accepts a `--cwd` flag.
+    # False for an engine that doesn't have it yet (verified against the
+    # real installed binary, not assumed) -- build_argv() must not append a
+    # flag the binary would reject at argument parsing, before it ever gets
+    # a chance to run.
+    supports_cwd_flag: bool = True
 
     def invoke(self, effort: Effort) -> EngineInvocation:
         try:

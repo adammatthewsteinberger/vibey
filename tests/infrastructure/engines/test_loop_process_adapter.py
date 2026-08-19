@@ -17,6 +17,7 @@ from vibey.infrastructure.engines.descriptors import CLAUDELOOP, CODEXLOOP
 from vibey.infrastructure.engines.loop_process_adapter import (
     EXIT_CODE_WIND_DOWN,
     LoopProcessAdapter,
+    _active_processes,
 )
 
 
@@ -1030,6 +1031,39 @@ async def test_tail_outer_exception_breaks_loop(tmp_path: Path) -> None:
         events.append(event)
 
     assert len(events) == 1
+
+
+async def test_tail_gives_up_when_process_exits_without_terminal_status(
+    tmp_path: Path,
+) -> None:
+    """Regression: a process that exits (crash, early validation failure)
+    without ever writing a terminal meta.json status must not hang tail()
+    forever -- confirmed real via codexloop's own plan parser raising
+    before it ever touches meta.json's status field. Bounded by wait_for so
+    a regression fails this test loudly instead of hanging the suite."""
+    import asyncio
+    from types import SimpleNamespace
+
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
+    run_dir = tmp_path / "test-run"
+    run_dir.mkdir(parents=True)
+    handle = _make_handle(run_dir)
+
+    events_path = run_dir / "events.jsonl"
+    events_path.write_text("")
+    # meta.json exists but never carries a terminal (or any) status field --
+    # exactly what codexloop's own meta.json looks like today.
+    (run_dir / "meta.json").write_text('{"run_id": "x", "pid": 1}')
+
+    _active_processes[handle.run_id] = SimpleNamespace(returncode=0)  # type: ignore[assignment]
+    try:
+        events2: list[object] = []
+        async with asyncio.timeout(5.0):
+            async for event in adapter.tail(handle):
+                events2.append(event)
+        assert events2 == []
+    finally:
+        _active_processes.pop(handle.run_id, None)
 
 
 async def test_stop_remaining_work_round_trips_through_snapshot(tmp_path: Path) -> None:

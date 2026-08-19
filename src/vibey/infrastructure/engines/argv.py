@@ -19,6 +19,7 @@ def build_argv(descriptor: EngineDescriptor, spec: RunSpec) -> tuple[str, ...]:
 
     argv.extend(descriptor.invoke(spec.effort).argv)
     argv.extend(descriptor.isolation_flags.get(spec.isolation, ()))
-    argv.extend(["--cwd", str(spec.worktree_path)])
+    if descriptor.supports_cwd_flag:
+        argv.extend(["--cwd", str(spec.worktree_path)])
 
     return tuple(argv)
