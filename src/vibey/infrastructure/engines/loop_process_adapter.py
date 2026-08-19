@@ -264,6 +264,7 @@ class LoopProcessAdapter:
 
         # Tail the file (simplified for now - can be made more sophisticated)
         seen_lines = 0
+        process_exited_without_status_since: float | None = None
         while True:
             try:
                 lines = (await asyncio.to_thread(events_path.read_text)).splitlines()
@@ -344,6 +345,32 @@ class LoopProcessAdapter:
                     meta = json.loads(meta_path.read_text())
                     if meta.get("status") in ("finished", "failed", "stopped"):
                         break
+
+                # A well-behaved engine always writes a terminal status
+                # before its process exits. A crash, an early validation
+                # failure (confirmed real: codexloop exits immediately with
+                # "work plan has no checkbox items" and never touches
+                # meta.json's status field), or an unhandled signal means
+                # nothing will ever flip that status -- without this check
+                # the loop above spins forever, exactly the failure mode its
+                # own comment already warned about. Give one extra poll
+                # interval after first observing the exit, in case the
+                # terminal status write and process exit are racing each
+                # other, then give up rather than hang indefinitely.
+                process = _active_processes.get(handle.run_id)
+                if process is not None and process.returncode is not None:
+                    now = asyncio.get_running_loop().time()
+                    if process_exited_without_status_since is None:
+                        process_exited_without_status_since = now
+                    elif now - process_exited_without_status_since > 1.0:
+                        logger.warning(
+                            "process_exited_without_terminal_status",
+                            run_id=str(handle.run_id),
+                            returncode=process.returncode,
+                        )
+                        break
+                else:
+                    process_exited_without_status_since = None
 
                 await asyncio.sleep(0.5)  # Poll interval
             except Exception as e:

@@ -136,6 +136,17 @@ CODEXLOOP = EngineDescriptor(
     cost_per_mtok_out=8.0,
     context_window=200_000,
     base_weight=2,
+    # `codexloop run` doesn't accept --cwd yet -- confirmed directly:
+    # `codexloop run <plan> --cwd <dir>` fails at argument parsing with
+    # "No such option: --cwd" before the process ever starts. build_argv()
+    # appending it unconditionally meant LoopProcessAdapter could never
+    # actually drive codexloop; caught by a real subprocess-level
+    # conformance test (tests/live/test_scripted_binary_conformance.py),
+    # not assumed. Safe without it: LoopProcessAdapter.start() already
+    # spawns the subprocess with the OS-level cwd set to the worktree
+    # (create_subprocess_exec(..., cwd=spec.worktree_path)), and codexloop's
+    # own bootstrap.py falls back to Path.cwd() when --cwd is absent.
+    supports_cwd_flag=False,
 )
 
 CURSORLOOP = EngineDescriptor(
