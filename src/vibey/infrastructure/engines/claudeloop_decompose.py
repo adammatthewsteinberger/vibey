@@ -37,7 +37,10 @@ class ClaudeLoopWorkPlanProducer:
             'lowercase alphanumeric with hyphens (e.g. "ws", "cli-parsing") -- it '
             "becomes a git branch name. Items that will modify the same file MUST be "
             "chained via depends_on (they run in parallel branches otherwise and their "
-            "merges conflict). Do not inspect files; "
+            "merges conflict). Every verification command must be self-contained and "
+            "pass in a clean checkout with nothing installed (no pip install, no "
+            "network); prefer one pytest suite under tests/ shared by all items over "
+            "inventing per-item test styles. Do not inspect files; "
             "answer immediately in this first turn. Return only JSON with shape "
             '{"items":[{"item_id":str,"title":str,"acceptance_ids":[str],'
             '"depends_on":[str],"est_effort":"trivial|low|standard|high|max",'

@@ -181,6 +181,20 @@ class BuildImplementHandler:
         return Success({"work_item_id": job.work_item_id, "run_id": str(run_id)})
 
 
+# Standing constraints for every engine session. Each line traces to a
+# real failure from the live runs: root-level test stubs broke the shared
+# suite, `pip install` mutated environments, generated files caused binary
+# merge conflicts, and scratch files polluted review scans.
+_HOUSE_RULES = (
+    "House rules:\n"
+    "- Keep every test under tests/; never create test files at the repo root.\n"
+    "- Verification must pass in a clean checkout of this branch with nothing "
+    "installed: no pip install, no network, no reliance on your own environment.\n"
+    "- Never commit generated files (caches, coverage data, egg-info, build "
+    "artifacts) or scratch notes; the deliverable files only.\n"
+)
+
+
 def _render_prompt(item_id: str, payload: Mapping[str, object]) -> str:
     seed = payload.get("seed_prompt")
     if isinstance(seed, str) and seed:
@@ -201,7 +215,7 @@ def _render_prompt(item_id: str, payload: Mapping[str, object]) -> str:
     )
     return (
         f"Implement work item {item_id}: {title}\n\n"
-        f"{repair_note}Verify your work with:\n{checklist}\n"
+        f"{repair_note}{_HOUSE_RULES}\nVerify your work with:\n{checklist}\n"
     )
 
 

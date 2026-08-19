@@ -231,7 +231,7 @@ async def test_structured_verdict_claimed_but_missing_fails_that_check(tmp_path:
         ],
     )
 
-    report = await run_conformance(engine)
+    report = await run_conformance(engine, verdict_poll_seconds=0.1)
 
     check = next(c for c in report.checks if c.name == "structured_verdict")
     assert check.ok is False
@@ -296,3 +296,62 @@ async def test_an_adapter_that_raises_fails_the_control_plane_check_rather_than_
     control = next(c for c in report.checks if c.name == "control_plane")
     assert control.ok is False
     assert "not writable" in control.detail
+
+
+async def test_late_verdict_is_found_by_the_bounded_re_tail(tmp_path: Path) -> None:
+    """Observed live: the tail can drain in a race with the engine's final
+    verdict write, false-failing structured_verdict and marking a healthy
+    engine ineligible. The bounded re-tail must catch a verdict that
+    appears shortly after the first drain."""
+    import json as _json
+
+    engine = ScriptedEngine(
+        descriptor=CLAUDELOOP,
+        base_dir=tmp_path,
+        script=[
+            {
+                "kind": "SessionSeeded",
+                "at": "2026-01-01T00:00:00+00:00",
+                "payload": {"seed_digest": "x"},
+            }
+        ],
+    )
+
+    class _LateVerdict:
+        """First drain sees no verdict; the file gains one before the
+        re-tail -- the exact race shape from the live flake."""
+
+        def __init__(self) -> None:
+            self.drains = 0
+
+        def __getattr__(self, name):  # type: ignore[no-untyped-def]
+            return getattr(engine, name)
+
+        async def tail(self, handle):  # type: ignore[no-untyped-def]
+            self.drains += 1
+            if self.drains == 2:
+                with (handle.run_dir / "events.jsonl").open("a") as f:
+                    f.write(
+                        _json.dumps(
+                            {
+                                "kind": "VerdictRendered",
+                                "at": "2026-01-01T00:00:01+00:00",
+                                "payload": {
+                                    "complete": True,
+                                    "done_marker": CLAUDELOOP.done_marker,
+                                },
+                            }
+                        )
+                        + "\n"
+                    )
+            async for event in engine.tail(handle):
+                yield event
+
+    adapter = _LateVerdict()
+    report = await run_conformance(adapter, verdict_poll_seconds=5.0)  # type: ignore[arg-type]
+
+    verdict = next(c for c in report.checks if c.name == "structured_verdict")
+    assert verdict.ok is True
+    marker = next(c for c in report.checks if c.name == "done_marker")
+    assert marker.ok is True
+    assert adapter.drains >= 2

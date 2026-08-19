@@ -34,6 +34,7 @@ async def run_conformance(
     capacity_fixtures: Sequence[tuple[str, dict[str, object], type[CapacityState]]] = (),
     trivial_worktree: str | None = None,
     run_dir_poll_seconds: float = 30.0,
+    verdict_poll_seconds: float = 10.0,
 ) -> ConformanceReport:
     descriptor: EngineDescriptor = adapter.descriptor
     checks: list[ConformanceCheckResult] = []
@@ -220,8 +221,23 @@ async def run_conformance(
         )
 
     # 7. done_marker
+    # The tail can drain in a race with the engine's final verdict write
+    # (observed live: a real claudeloop run false-failed structured_verdict
+    # once, marking the engine ineligible until a manual re-run). When the
+    # descriptor claims a structured verdict and none arrived, re-tail for
+    # a bounded window before judging -- tail() re-reads events.jsonl from
+    # the start, so this is idempotent and adds no latency when the
+    # verdict is already there.
     done_marker_found = False
     events = [e async for e in adapter.tail(handle)]
+    if Capability.STRUCTURED_VERDICT in descriptor.capabilities:
+        deadline = asyncio.get_running_loop().time() + verdict_poll_seconds
+        while (
+            not any(e.kind == "VerdictRendered" for e in events)
+            and asyncio.get_running_loop().time() < deadline
+        ):
+            await asyncio.sleep(0.5)
+            events = [e async for e in adapter.tail(handle)]
     for event in events:
         if str(event.payload.get("done_marker", "")) == descriptor.done_marker:
             done_marker_found = True
