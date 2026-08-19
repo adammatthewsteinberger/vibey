@@ -33,16 +33,21 @@ class Candidate:
 
     @property
     def effective_weight(self) -> int:
-        return max(
-            0,
-            round(
-                self.base_weight
-                * self.health_factor
-                * self.fidelity_factor
-                * self.cost_factor
-                * self.affinity_factor
-            ),
+        raw = (
+            self.base_weight
+            * self.health_factor
+            * self.fidelity_factor
+            * self.cost_factor
+            * self.affinity_factor
         )
+        if raw <= 0:
+            return 0
+        # A positive weight must never round down to zero: a half-open
+        # probe on a base_weight-1 engine is 1 * 0.25 = 0.25, and round()
+        # made it 0 -- so the probe could never fire and the engine stayed
+        # open forever (caught by the unattended validation run, where
+        # forced rotation then had no candidate left at all).
+        return max(1, round(raw))
 
 
 @dataclass(frozen=True, slots=True)
