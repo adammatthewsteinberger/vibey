@@ -320,3 +320,58 @@ async def test_select_engine_skips_auth_expired_engines() -> None:
 
     eid, _ = await selector.select_engine(project_id, JobRequirement(effort=Effort.STANDARD))
     assert eid == EngineId.CODEXLOOP
+
+
+async def test_an_expired_open_circuit_half_opens_and_probes() -> None:
+    """The probe deadline must actually fire at selection: without it an
+    opened circuit could only be closed by a success that could never
+    happen, because open circuits are never selected -- one capacity
+    rejection removed an engine from the project permanently, live."""
+    from dataclasses import replace as _replace
+    from datetime import UTC, datetime, timedelta
+
+    repo = FakeEngineHealthRepository()
+    project_id = uuid4()
+    past = datetime.now(UTC) - timedelta(minutes=30)
+    stuck_open = _replace(
+        _healthy_record(project_id, EngineId.CLAUDELOOP),
+        circuit="open",
+        resets_at=past,
+    )
+    await repo.upsert(stuck_open)
+    selector = EngineSelector(
+        health_service=EngineHealthService(repo),
+        cursor_repository=FakeRotationCursorRepository(),
+        descriptors=BY_ENGINE_ID,
+    )
+
+    engine_id, _ = await selector.select_engine(project_id, JobRequirement(effort=Effort.LOW))
+
+    assert engine_id is EngineId.CLAUDELOOP
+
+
+async def test_an_open_circuit_before_its_deadline_stays_excluded() -> None:
+    from dataclasses import replace as _replace
+    from datetime import UTC, datetime, timedelta
+
+    import pytest as _pytest
+
+    from vibey.domain.errors import NoEligibleEngine
+
+    repo = FakeEngineHealthRepository()
+    project_id = uuid4()
+    future = datetime.now(UTC) + timedelta(minutes=30)
+    for resets_at in (future, None):
+        stuck_open = _replace(
+            _healthy_record(project_id, EngineId.CLAUDELOOP),
+            circuit="open",
+            resets_at=resets_at,
+        )
+        await repo.upsert(stuck_open)
+        selector = EngineSelector(
+            health_service=EngineHealthService(repo),
+            cursor_repository=FakeRotationCursorRepository(),
+            descriptors=BY_ENGINE_ID,
+        )
+        with _pytest.raises(NoEligibleEngine):
+            await selector.select_engine(project_id, JobRequirement(effort=Effort.LOW))

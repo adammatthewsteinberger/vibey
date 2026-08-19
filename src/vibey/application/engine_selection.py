@@ -167,7 +167,11 @@ class RotationRecordingHandler:
         outcome = await self._inner.handle(job)
         if isinstance(outcome, Success):
             await self._health.record_success(self._project_id, self._engine_id)
-        elif isinstance(outcome, Defer):
+        elif isinstance(outcome, Defer) and outcome.capacity:
+            # Only capacity-classed Defers open the circuit. Caught live:
+            # verify-repair waits are also Defers, and recording them as
+            # rejections opened both engines' circuits and stalled the
+            # project on "No engines meet requirements".
             await self._health.record_capacity_rejection(
                 self._project_id,
                 self._engine_id,

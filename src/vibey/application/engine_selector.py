@@ -68,9 +68,22 @@ class EngineSelector:
             # Check auth TTL
             auth_valid = record.auth_ok_at is not None and (now - record.auth_ok_at) < AUTH_TTL
 
-            # Build circuit state
+            # Build circuit state, honoring the probe deadline: an open
+            # circuit whose resets_at has passed becomes HALF_OPEN
+            # (selectable at reduced weight -- domain/rotation.py's 0.25).
+            # Caught live: without this, an opened circuit could only be
+            # closed by a success that could never happen, because open
+            # circuits are never selected -- one capacity rejection
+            # removed an engine from the project permanently.
+            state = CircuitState(record.circuit)
+            if (
+                state is CircuitState.OPEN
+                and record.resets_at is not None
+                and now >= record.resets_at
+            ):
+                state = CircuitState.HALF_OPEN
             circuit = Circuit(
-                state=CircuitState(record.circuit),
+                state=state,
                 capacity=Available(),
                 probe=None,
                 consecutive_failures=record.consecutive_fail,

@@ -38,6 +38,11 @@ class Park:
 class Defer:
     retry_at: datetime
     detail: str
+    capacity: bool = False
+    """True only when the deferral is a real engine capacity signal.
+    Caught live: verify-repair waits are also Defers, and recording them
+    as capacity rejections opened both engines' circuits and stalled the
+    whole project. Only a capacity-classed Defer may open a circuit."""
 
 
 # What a handler is allowed to say happened. Part of the JobHandler seam's

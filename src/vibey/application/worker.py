@@ -69,7 +69,7 @@ class WorkerLoop:
             try:
                 outcome: Outcome = await self._handler.handle(job)
             except CapacityDeferred as exc:
-                outcome = Defer(exc.retry_at, exc.detail)
+                outcome = Defer(exc.retry_at, exc.detail, capacity=True)
             except Exception as exc:  # noqa: BLE001 - any handler bug becomes a VIBEY-class nack
                 outcome = Failure(FailureClass.VIBEY, str(exc))
         finally:
