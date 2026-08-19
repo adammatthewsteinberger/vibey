@@ -9,6 +9,7 @@ learning what this module can already see.
 """
 
 import json
+import re
 from pathlib import Path
 from uuid import uuid4
 
@@ -32,7 +33,9 @@ class ClaudeLoopWorkPlanProducer:
             "The FIRST item must be the walking skeleton, with no dependencies. Every "
             "acceptance criterion must appear in at least one item's acceptance_ids, and "
             "every item's verification.criteria_checked must be non-empty. Items must be "
-            "ordered so every dependency precedes its dependents. Do not inspect files; "
+            "ordered so every dependency precedes its dependents. Every item_id must be "
+            'lowercase alphanumeric with hyphens (e.g. "ws", "cli-parsing") -- it '
+            "becomes a git branch name. Do not inspect files; "
             "answer immediately in this first turn. Return only JSON with shape "
             '{"items":[{"item_id":str,"title":str,"acceptance_ids":[str],'
             '"depends_on":[str],"est_effort":"trivial|low|standard|high|max",'
@@ -54,6 +57,19 @@ class ClaudeLoopWorkPlanProducer:
             raise ValueError("decomposition requires a non-empty items list")
         items = tuple(_item(entry) for entry in raw_items)
 
+        # Caught live: the model returned ids like "WI-01" despite the
+        # prompt, and every downstream consumer (branch names, worktrees)
+        # requires the lowercase-hyphen shape -- so normalization must be
+        # guaranteed here, not requested politely.
+        seen: set[str] = set()
+        for item in items:
+            if item.item_id in seen:
+                raise ValueError(
+                    f"model produced an invalid decomposition: duplicate item id "
+                    f"{item.item_id!r} after normalization"
+                )
+            seen.add(item.item_id)
+
         violations = validate_decomposition(
             items,
             criteria_ids=[criterion.criterion_id for criterion in spec.criteria],
@@ -64,6 +80,15 @@ class ClaudeLoopWorkPlanProducer:
         return items
 
 
+def _slug(raw: object) -> str:
+    """Deterministic projection onto domain/worktree.py's id shape:
+    lowercase alphanumeric and hyphens, starting alphanumeric, <= 64."""
+    text = re.sub(r"[^a-z0-9-]+", "-", str(raw).lower()).strip("-")[:64]
+    if not text:
+        raise ValueError(f"decomposition item id {raw!r} normalizes to nothing")
+    return text
+
+
 def _item(entry: object) -> WorkItem:
     if not isinstance(entry, dict):
         raise ValueError("every decomposition item must be an object")
@@ -72,10 +97,10 @@ def _item(entry: object) -> WorkItem:
         if not isinstance(verification, dict):
             raise ValueError("verification must be an object")
         return WorkItem(
-            item_id=str(entry["item_id"]),
+            item_id=_slug(entry["item_id"]),
             title=str(entry["title"]),
             acceptance_ids=tuple(str(a) for a in _str_list(entry.get("acceptance_ids", []))),
-            depends_on=tuple(str(d) for d in _str_list(entry.get("depends_on", []))),
+            depends_on=tuple(_slug(d) for d in _str_list(entry.get("depends_on", []))),
             est_effort=Effort[str(entry.get("est_effort", "low")).upper()],
             files_touched_hint=(),
             verification=VerificationSpec(
