@@ -168,15 +168,20 @@ async def test_sigkill_mid_create_leaves_no_orphan_and_the_next_create_succeeds(
     assert listed.stdout.count(f"worktree {target}") == 1
 
 
-async def test_git_failure_raises_worktree_error_with_argv_and_stderr(repo: Path) -> None:
-    manager = GitWorktreeManager(repo, cycle=1)
-    await manager.create("item-1")
+async def test_git_failure_raises_worktree_error_with_argv_and_stderr(
+    tmp_path: Path,
+) -> None:
+    # A directory that is not a git repository: every git call fails, and
+    # the error must carry the argv and stderr for the operator. (A missing
+    # base_ref is no longer an error -- create() falls back to HEAD.)
+    not_a_repo = tmp_path / "not-a-repo"
+    not_a_repo.mkdir()
+    manager = GitWorktreeManager(not_a_repo, cycle=1)
 
     with pytest.raises(WorktreeError) as excinfo:
-        # base_ref that doesn't exist -> git worktree add fails
-        await manager.create("item-2", base_ref="not-a-real-ref")
+        await manager.create("item-1")
 
-    assert "worktree" in excinfo.value.argv
+    assert excinfo.value.argv
     assert excinfo.value.stderr
 
 
@@ -214,3 +219,33 @@ async def test_ensure_does_not_wipe_an_already_registered_worktree(repo: Path) -
 
     assert second == first
     assert (second / "accumulated-state.txt").exists()
+
+
+async def test_create_falls_back_to_head_when_base_ref_is_missing(repo: Path) -> None:
+    """Item branches prefer the cycle's integration branch, which does not
+    exist before the first integrate -- early items must still build."""
+    manager = GitWorktreeManager(repo, cycle=1)
+
+    worktree = await manager.create("early-item", base_ref="vibey/1/integration")
+
+    assert worktree.exists()
+    head = await CleanGitEnvSubprocessExecutor().execute(
+        ("git", "-C", str(worktree), "rev-parse", "--abbrev-ref", "HEAD")
+    )
+    assert head.stdout.strip() == "vibey/1/early-item"
+
+
+async def test_create_uses_the_base_ref_when_it_exists(repo: Path) -> None:
+    executor = CleanGitEnvSubprocessExecutor()
+    await executor.execute(("git", "-C", str(repo), "branch", "vibey/1/integration"))
+    marker = repo / "integrated.txt"
+    marker.write_text("integrated\n")
+    await executor.execute(("git", "-C", str(repo), "add", "integrated.txt"))
+    await executor.execute(("git", "-C", str(repo), "commit", "-q", "-m", "integrated state"))
+    # The integration branch is BEHIND main now; a worktree from it must
+    # not contain the marker, proving base_ref was honored over HEAD.
+    manager = GitWorktreeManager(repo, cycle=1)
+
+    worktree = await manager.create("late-item", base_ref="vibey/1/integration")
+
+    assert not (worktree / "integrated.txt").exists()

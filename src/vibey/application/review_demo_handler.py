@@ -68,6 +68,12 @@ class ReviewDemoHandler:
             return Failure(FailureClass.WORK, "no accepted design spec exists")
 
         if self._automated_reviewer is not None:
+            # A fresh scan supersedes every earlier automated finding:
+            # anything still true is re-raised below, and anything fixed
+            # since the last scan must not stay open -- a stale worktree's
+            # dead-code finding looped an accepted review back into BUILD
+            # live. User-raised findings are never touched here.
+            await self._supersede_stale_automated_findings(job)
             automated_findings = await self._automated_reviewer.run_automated_reviews(
                 job.project_id, job.cycle
             )
@@ -145,6 +151,33 @@ class ReviewDemoHandler:
         )
 
         return Success({"cycle": job.cycle, "artifacts": tuple(artifacts_dict.keys())})
+
+    async def _supersede_stale_automated_findings(self, job: JobRecord) -> None:
+        raised: list[str] = []
+        resolved: set[str] = set()
+        for event in await self._ledger.all_for_project(job.project_id):
+            finding_id = str(event.payload.get("finding_id", ""))
+            if not finding_id:
+                continue
+            if event.kind is EventKind.FINDING_RAISED and event.payload.get("automated") is True:
+                raised.append(finding_id)
+            elif event.kind is EventKind.FINDING_RESOLVED:
+                resolved.add(finding_id)
+        for finding_id in raised:
+            if finding_id in resolved:
+                continue
+            await self._ledger.append_event(
+                project_id=job.project_id,
+                cycle=job.cycle,
+                job_id=job.id,
+                kind=EventKind.FINDING_RESOLVED,
+                payload={
+                    "finding_id": finding_id,
+                    "resolution": (
+                        f"superseded by the fresh automated review scan of cycle {job.cycle}"
+                    ),
+                },
+            )
 
 
 # Re-exported for the same reason `application/ports.py` re-exports the

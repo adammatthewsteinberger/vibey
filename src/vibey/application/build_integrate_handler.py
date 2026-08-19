@@ -26,6 +26,7 @@ from vibey.application.dto import EngineEvent, EnqueueRequest, JobRecord
 from vibey.application.interfaces import (
     IntegrationBranch,
     IntegrationLock,
+    LedgerReader,
     MergeOutcome,
     ProjectTransitioner,
 )
@@ -51,6 +52,7 @@ class BuildIntegrateHandler:
         projects: ProjectTransitioner | None = None,
         lock: IntegrationLock | None = None,
         lock_backoff: timedelta = timedelta(seconds=30),
+        ledger_reader: LedgerReader | None = None,
     ) -> None:
         self._integration = integration
         self._gates = gates
@@ -60,6 +62,7 @@ class BuildIntegrateHandler:
         self._projects = projects
         self._lock = lock
         self._lock_backoff = lock_backoff
+        self._ledger_reader = ledger_reader
 
     async def handle(self, job: JobRecord) -> Outcome:
         if job.kind != "build.integrate":
@@ -99,8 +102,51 @@ class BuildIntegrateHandler:
                 await self._isolate_and_repair(job, detail)
                 return Failure(FailureClass.WORK, detail)
 
+        if self._ledger_reader is not None:
+            # A successful integrate closes its own earlier merge/gate
+            # findings, or they stay open in the ledger and poison
+            # review.triage into a needless loop-back long after the
+            # conflict was repaired -- caught live: 39 stale conflict
+            # findings sent an accepted review straight back to BUILD.
+            await self._resolve_own_findings(job, work_item_id, self._ledger_reader)
+
         await self._maybe_enter_review(job)
         return Success({"work_item_id": job.work_item_id})
+
+    async def _resolve_own_findings(
+        self, job: JobRecord, work_item_id: str, reader: LedgerReader
+    ) -> None:
+        prefix = f"f_integrate_{work_item_id}_"
+        raised: list[str] = []
+        resolved: set[str] = set()
+        for event in await reader.all_for_project(job.project_id):
+            if event.cycle != job.cycle:
+                continue
+            finding_id = str(event.payload.get("finding_id", ""))
+            if not finding_id.startswith(prefix):
+                continue
+            if event.kind is EventKind.FINDING_RAISED:
+                raised.append(finding_id)
+            elif event.kind is EventKind.FINDING_RESOLVED:
+                resolved.add(finding_id)
+        for finding_id in raised:
+            if finding_id in resolved:
+                continue
+            await self._ledger.record(
+                project_id=job.project_id,
+                cycle=job.cycle,
+                job_id=job.id,
+                engine_id=None,
+                correlation_id=uuid4(),
+                event=EngineEvent(
+                    kind=EventKind.FINDING_RESOLVED.value,
+                    at=self._clock.now(),
+                    payload={
+                        "finding_id": finding_id,
+                        "resolution": "the work item now integrates cleanly",
+                    },
+                ),
+            )
 
     async def _maybe_enter_review(self, job: JobRecord) -> None:
         """The BUILD -> REVIEW bridge: when this integrate is the cycle's

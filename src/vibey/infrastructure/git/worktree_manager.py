@@ -56,7 +56,15 @@ class GitWorktreeManager:
         if await self._branch_exists(branch):
             await self._git("worktree", "add", str(path), branch)
         else:
-            await self._git("worktree", "add", "-b", branch, str(path), base_ref)
+            # base_ref is a preference, not a hard requirement: callers ask
+            # for the cycle's integration branch so item branches stack on
+            # already-integrated code, but before the first integrate that
+            # branch does not exist yet -- fall back to HEAD rather than
+            # failing every early item.
+            base = base_ref
+            if base != "HEAD" and not await self._branch_exists(base):
+                base = "HEAD"
+            await self._git("worktree", "add", "-b", branch, str(path), base)
         return path
 
     async def ensure(self, item_id: str, *, base_ref: str = "HEAD") -> Path:
