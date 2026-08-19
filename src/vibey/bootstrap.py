@@ -67,6 +67,7 @@ from vibey.infrastructure.db.project_repository import PostgresProjectRepository
 from vibey.infrastructure.db.review_ledger import PostgresReviewLedger
 from vibey.infrastructure.db.rotation_cursor_repository import PostgresRotationCursorRepository
 from vibey.infrastructure.db.visual_inventory_repository import FileVisualInventoryRepository
+from vibey.infrastructure.deploy.state_repository import FileDeploymentStateRepository
 from vibey.infrastructure.engines.descriptors import ALL_DESCRIPTORS, BY_ENGINE_ID
 from vibey.infrastructure.engines.loop_process_adapter import LoopProcessAdapter
 from vibey.infrastructure.git.integration_branch import IntegrationBranch
@@ -216,6 +217,7 @@ def build_full_worker(
     azure = azure_client if azure_client is not None else InMemoryAzureClientAdapter()
     clock = resources.clock
     repo_root = Path(project.repo_path)
+    deploy_state = FileDeploymentStateRepository(repo_root)
     deploy_design_ledger = PostgresReviewLedger(resources.ledger, phase=Phase.DEPLOY_DESIGN)
     deploy_execute_ledger = PostgresReviewLedger(resources.ledger, phase=Phase.DEPLOY_EXECUTE)
 
@@ -332,6 +334,7 @@ def build_full_worker(
             ledger=deploy_design_ledger,
             clock=clock,
             jobs=resources.jobs,
+            spec_store=deploy_state,
         ),
         "deploy.spec": DeployAcceptanceHandler(
             ledger=deploy_design_ledger,
@@ -339,6 +342,8 @@ def build_full_worker(
             jobs=resources.jobs,
             projects=resources.projects,
             clock=clock,
+            spec_provider=deploy_state.load_spec,
+            consent_store=deploy_state,
         ),
         "deploy.execute": DeployExecuteHandler(
             ledger=deploy_execute_ledger,
@@ -346,22 +351,28 @@ def build_full_worker(
             projects=resources.projects,
             azure_client=azure,
             clock=clock,
+            spec_provider=deploy_state.load_spec,
+            consent_provider=deploy_state.load_consent,
         ),
         "deploy.demo": DeployReviewDemoHandler(
             ledger=resources.deploy_review_ledger,
             human_gates=resources.gates,
             jobs=resources.jobs,
+            spec_provider=deploy_state.load_spec,
         ),
         "deploy.triage": DeployReviewTriageHandler(
             ledger=resources.deploy_review_ledger,
             human_gates=resources.gates,
             jobs=resources.jobs,
+            spec_provider=deploy_state.load_spec,
         ),
         "deploy.route": DeployReviewRoutingHandler(
             ledger=resources.deploy_review_ledger,
             jobs=resources.jobs,
             projects=resources.projects,
             azure_client=azure,
+            spec_provider=deploy_state.load_spec,
+            consent_provider=deploy_state.load_consent,
         ),
     }
     # Alias kinds sharing a handler (the handlers themselves guard on both).
