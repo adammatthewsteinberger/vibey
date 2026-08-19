@@ -13,7 +13,9 @@ from vibey.application.dto import (
     HumanGateRequest,
     JobRecord,
 )
+from vibey.domain.engine import EngineId
 from vibey.domain.job import FailureClass, JobState
+from vibey.domain.phase import Phase
 
 
 @dataclass(frozen=True, slots=True)
@@ -95,6 +97,22 @@ class JobRepository(Protocol):
     async def reap(self) -> int:
         """Reclaims jobs whose lease has expired. Returns the count
         reclaimed."""
+        ...
+
+    async def assign_engine(self, job_id: UUID, *, owner: str, engine_id: EngineId) -> bool:
+        """Durably records which engine this attempt selected. Guarded by the
+        lease so a zombie worker whose lease expired (and whose job was
+        reclaimed by someone else) can never overwrite the new owner's
+        selection. On a retry, the previous attempt's value is the
+        "previous engine" input to forced-rotation exclusion."""
+        ...
+
+    async def count_unsettled(
+        self, project_id: UUID, *, cycle: int, phase: Phase, exclude: UUID | None = None
+    ) -> int:
+        """Counts this cycle+phase's jobs not yet in a terminal state
+        (succeeded/failed/cancelled). `exclude` lets the caller ask "am I the
+        last one?" from inside its own still-leased job."""
         ...
 
     async def queue_depth(self, project_id: UUID) -> Mapping[JobState, int]:

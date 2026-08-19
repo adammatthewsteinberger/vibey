@@ -17,6 +17,7 @@ from vibey.application.dto import ProjectRecord
 from vibey.application.engine_health_service import EngineHealthService
 from vibey.application.engine_selector import EngineSelector
 from vibey.application.interfaces import (
+    Clock,
     DesignProvider,
     EngineAdapter,
     VisualInventoryProducer,
@@ -26,14 +27,18 @@ from vibey.application.rotation_handoff import RotationHandoffService
 from vibey.application.visual_handler import VisualInventoryHandler, VisualPlanHandler
 from vibey.application.worker import WorkerLoop
 from vibey.domain.engine import EngineId
+from vibey.domain.phase import Phase
+from vibey.infrastructure.db.build_ledger import PostgresBuildLedger
 from vibey.infrastructure.db.design_ledger import PostgresDesignLedger
 from vibey.infrastructure.db.design_spec_repository import FileDesignSpecRepository
 from vibey.infrastructure.db.engine_health_repository import PostgresEngineHealthRepository
+from vibey.infrastructure.db.handoff_repository import PostgresHandoffRepository
 from vibey.infrastructure.db.human_gate_repository import PostgresHumanGateRepository
 from vibey.infrastructure.db.job_repository import PostgresJobRepository
 from vibey.infrastructure.db.ledger_repository import PostgresLedgerRepository
 from vibey.infrastructure.db.migrator import apply_migrations, discover_migrations
 from vibey.infrastructure.db.project_repository import PostgresProjectRepository
+from vibey.infrastructure.db.review_ledger import PostgresReviewLedger
 from vibey.infrastructure.db.rotation_cursor_repository import PostgresRotationCursorRepository
 from vibey.infrastructure.db.visual_inventory_repository import FileVisualInventoryRepository
 from vibey.infrastructure.engines.descriptors import ALL_DESCRIPTORS, BY_ENGINE_ID
@@ -49,6 +54,10 @@ class AppResources:
     design_ledger: PostgresDesignLedger
     design_specs: FileDesignSpecRepository
     visual_inventories: FileVisualInventoryRepository
+    # Phase-specific ledger adapters over the one append-only event log.
+    build_ledger: PostgresBuildLedger
+    review_ledger: PostgresReviewLedger
+    deploy_review_ledger: PostgresReviewLedger
     # Rotation infrastructure (Phase E1)
     engine_health_repo: PostgresEngineHealthRepository
     rotation_cursors: PostgresRotationCursorRepository
@@ -56,6 +65,8 @@ class AppResources:
     engine_selector: EngineSelector
     rotation_handoff: RotationHandoffService
     engine_adapters: Mapping[EngineId, EngineAdapter]
+    handoffs: PostgresHandoffRepository
+    clock: Clock
 
 
 class SystemClock:
@@ -162,12 +173,17 @@ async def build_app(*, url: str | None = None) -> AsyncIterator[AppResources]:
             design_ledger=PostgresDesignLedger(ledger),
             design_specs=FileDesignSpecRepository(projects),
             visual_inventories=FileVisualInventoryRepository(projects),
+            build_ledger=PostgresBuildLedger(ledger),
+            review_ledger=PostgresReviewLedger(ledger),
+            deploy_review_ledger=PostgresReviewLedger(ledger, phase=Phase.DEPLOY_REVIEW),
             engine_health_repo=engine_health_repo,
             rotation_cursors=rotation_cursors,
             engine_health_service=engine_health_service,
             engine_selector=engine_selector,
             rotation_handoff=rotation_handoff,
             engine_adapters=engine_adapters,
+            handoffs=PostgresHandoffRepository(pool),
+            clock=SystemClock(),
         )
     finally:
         await pool.close()
