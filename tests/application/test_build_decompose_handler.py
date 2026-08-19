@@ -137,3 +137,26 @@ async def test_build_plan_kind_is_the_fast_loopback_spelling() -> None:
 
     assert isinstance(outcome, Success)
     assert any(j.kind == "build.implement" for j in jobs._jobs.values())
+
+
+async def test_fan_out_stamps_the_integration_base_ref_on_every_item() -> None:
+    """Item branches stack on integrated code when any exists -- every
+    item branching from the empty base rewrote the same module in
+    parallel and guaranteed add/add merge conflicts, live."""
+    from vibey.domain.worktree import branch_name
+
+    job = replace(make_job(uuid4()), kind="build.decompose")
+    items = (
+        _item("skeleton", acceptance_ids=("AC-1",)),
+        _item("item-2", acceptance_ids=("AC-2",), depends_on=("skeleton",)),
+    )
+    jobs = FakeJobRepository()
+    handler = BuildDecomposeHandler(specs=Specs(spec()), decomposer=Decomposer(items), jobs=jobs)
+
+    outcome = await handler.handle(job)
+
+    assert isinstance(outcome, Success)
+    records = list(jobs._jobs.values())
+    assert len(records) == 2
+    for record in records:
+        assert record.payload["base_ref"] == branch_name(record.cycle, "integration")

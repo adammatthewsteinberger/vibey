@@ -318,6 +318,7 @@ def build_full_worker(
             clock=clock,
             projects=resources.projects,
             lock=resources.integration_lock,
+            ledger_reader=resources.ledger,
         )
 
     handlers: dict[str, JobHandler] = {

@@ -322,3 +322,64 @@ async def test_kind_and_item_guards_never_touch_the_lock(tmp_path: Path) -> None
     await handler.handle(replace(make_job(uuid4()), kind="build.integrate", work_item_id=None))
 
     assert lock.calls == []
+
+
+async def test_success_resolves_this_items_open_integrate_findings(tmp_path: Path) -> None:
+    """Caught live: 39 stale conflict findings sent an accepted review
+    straight back to BUILD long after the conflicts were repaired."""
+    from uuid import uuid4 as _uuid4
+
+    from vibey.domain.ledger import EventKind, LedgerEvent, Provenance, digest_event
+    from vibey.domain.phase import Phase as _Phase
+
+    def _event(kind: EventKind, finding_id: str, cycle: int = 1) -> LedgerEvent:
+        payload: dict[str, object] = {"finding_id": finding_id}
+        return LedgerEvent(
+            event_id=_uuid4(),
+            project_id=_uuid4(),
+            cycle=cycle,
+            phase=_Phase.BUILD,
+            seq=1,
+            kind=kind,
+            engine_id=None,
+            job_id=None,
+            causation_id=None,
+            correlation_id=_uuid4(),
+            provenance=Provenance.AGENT,
+            produced_at=datetime(2026, 8, 19, tzinfo=UTC),
+            payload=payload,
+            digest=digest_event(payload),
+        )
+
+    class _Reader:
+        def __init__(self, events):  # type: ignore[no-untyped-def]
+            self._events = events
+
+        async def all_for_project(self, project_id):  # type: ignore[no-untyped-def]
+            return tuple(self._events)
+
+    job = _job()
+    events = [
+        _event(EventKind.FINDING_RAISED, "f_integrate_item-1_11111111"),
+        _event(EventKind.FINDING_RAISED, "f_integrate_item-1_22222222"),
+        _event(EventKind.FINDING_RESOLVED, "f_integrate_item-1_11111111"),
+        _event(EventKind.FINDING_RAISED, "f_integrate_other_33333333"),
+        _event(EventKind.FINDING_RAISED, "f_integrate_item-1_44444444", cycle=2),
+        _event(EventKind.DECISION_RECORDED, "f_integrate_item-1_55555555"),
+    ]
+    ledger = FakeLedger()
+    handler = BuildIntegrateHandler(
+        integration=FakeIntegration(merge_outcome=MergeOutcome(ok=True, detail=""), path=tmp_path),
+        gates=FakeGateRunner(),
+        ledger=ledger,
+        jobs=FakeJobRepository(),
+        clock=FixedClock(),
+        ledger_reader=_Reader(events),  # type: ignore[arg-type]
+    )
+
+    outcome = await handler.handle(job)
+
+    assert isinstance(outcome, Success)
+    resolutions = [e for e in ledger.recorded if e.kind == "FindingResolved"]
+    assert [e.payload["finding_id"] for e in resolutions] == ["f_integrate_item-1_22222222"]
+    assert "integrates cleanly" in str(resolutions[0].payload["resolution"])

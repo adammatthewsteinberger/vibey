@@ -35,7 +35,9 @@ class ClaudeLoopWorkPlanProducer:
             "every item's verification.criteria_checked must be non-empty. Items must be "
             "ordered so every dependency precedes its dependents. Every item_id must be "
             'lowercase alphanumeric with hyphens (e.g. "ws", "cli-parsing") -- it '
-            "becomes a git branch name. Do not inspect files; "
+            "becomes a git branch name. Items that will modify the same file MUST be "
+            "chained via depends_on (they run in parallel branches otherwise and their "
+            "merges conflict). Do not inspect files; "
             "answer immediately in this first turn. Return only JSON with shape "
             '{"items":[{"item_id":str,"title":str,"acceptance_ids":[str],'
             '"depends_on":[str],"est_effort":"trivial|low|standard|high|max",'
