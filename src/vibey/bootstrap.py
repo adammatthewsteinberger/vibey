@@ -57,6 +57,7 @@ from vibey.domain.phase import Phase
 from vibey.infrastructure.azure.adapter import InMemoryAzureClientAdapter
 from vibey.infrastructure.build.automated_review_runner import SubprocessAutomatedReviewRunner
 from vibey.infrastructure.build.gate_runner import SubprocessGateRunner
+from vibey.infrastructure.db.advisory_lock import PostgresAdvisoryLock
 from vibey.infrastructure.db.build_ledger import PostgresBuildLedger
 from vibey.infrastructure.db.design_ledger import PostgresDesignLedger
 from vibey.infrastructure.db.design_spec_repository import FileDesignSpecRepository
@@ -102,6 +103,7 @@ class AppResources:
     engine_adapters: Mapping[EngineId, EngineAdapter]
     handoffs: PostgresHandoffRepository
     clock: Clock
+    integration_lock: PostgresAdvisoryLock | None = None
 
 
 class SystemClock:
@@ -306,6 +308,7 @@ def build_full_worker(
             jobs=resources.jobs,
             clock=clock,
             projects=resources.projects,
+            lock=resources.integration_lock,
         )
 
     handlers: dict[str, JobHandler] = {
@@ -502,6 +505,7 @@ async def build_app(*, url: str | None = None) -> AsyncIterator[AppResources]:
             engine_adapters=engine_adapters,
             handoffs=PostgresHandoffRepository(pool),
             clock=SystemClock(),
+            integration_lock=PostgresAdvisoryLock(pool),
         )
     finally:
         await pool.close()
