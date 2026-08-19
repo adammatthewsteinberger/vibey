@@ -15,7 +15,7 @@ import asyncpg
 from vibey.application.build_decompose_handler import BuildDecomposeHandler
 from vibey.application.build_implement_handler import BuildImplementHandler
 from vibey.application.build_integrate_handler import BuildIntegrateHandler
-from vibey.application.build_verify_handler import BuildVerifyHandler
+from vibey.application.build_verify_handler import BuildVerifyHandler, VerifyRepairPolicy
 from vibey.application.deploy_acceptance_handler import DeployAcceptanceHandler
 from vibey.application.deploy_design_bridge import DeployDesignBridgeHandler
 from vibey.application.deploy_design_handler import (
@@ -305,6 +305,7 @@ def build_full_worker(
             reviewer=adapter,
             ledger=resources.build_ledger,
             jobs=resources.jobs,
+            repair=VerifyRepairPolicy(ledger_reader=resources.ledger, clock=clock),
         )
         return _recording(handler, adapter)
 

@@ -191,7 +191,17 @@ def _render_prompt(item_id: str, payload: Mapping[str, object]) -> str:
     verification = payload.get("verification", {})
     commands = verification.get("commands", ()) if isinstance(verification, Mapping) else ()
     checklist = "\n".join(f"- {command}" for command in commands) or "- (none specified)"
-    return f"Implement work item {item_id}: {title}\n\nVerify your work with:\n{checklist}\n"
+    repair_detail = payload.get("repair_detail")
+    repair_note = (
+        f"This item's verification is FAILING. Fix the failure below, on this "
+        f"branch, without weakening the checks themselves:\n{repair_detail}\n\n"
+        if isinstance(repair_detail, str) and repair_detail
+        else ""
+    )
+    return (
+        f"Implement work item {item_id}: {title}\n\n"
+        f"{repair_note}Verify your work with:\n{checklist}\n"
+    )
 
 
 # Re-exported for the same reason `application/ports.py` re-exports the

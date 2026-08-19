@@ -449,3 +449,23 @@ async def test_seed_prompt_in_the_payload_reaches_the_engine_verbatim(tmp_path: 
 
     assert _render_prompt("item-1", {"seed_prompt": seed}) == seed
     assert "Implement work item" in _render_prompt("item-1", {"seed_prompt": ""})
+
+
+def test_render_prompt_frames_a_repair_without_weakening_checks() -> None:
+    from vibey.application.build_implement_handler import _render_prompt
+
+    prompt = _render_prompt(
+        "item-1",
+        {
+            "title": "the thing",
+            "repair_detail": "gate failed: pytest: FAILED test_x",
+            "verification": {"commands": ["pytest -q"]},
+        },
+    )
+    assert "verification is FAILING" in prompt
+    assert "FAILED test_x" in prompt
+    assert "without weakening the checks" in prompt
+    assert "- pytest -q" in prompt
+
+    plain = _render_prompt("item-1", {"title": "the thing", "repair_detail": 123})
+    assert "FAILING" not in plain
