@@ -888,67 +888,112 @@ def worker(
         bool,
         typer.Option("--once", help="Process one job and exit"),
     ] = False,
+    provider: Annotated[
+        str,
+        typer.Option("--provider", help="Design/decompose providers: scripted or claudeloop"),
+    ] = "scripted",
+    max_turns: Annotated[int, typer.Option("--max-turns", min=1)] = 25,
+    max_dollars: Annotated[float, typer.Option("--max-dollars", min=0.01, max=10)] = 2.0,
+    project_opt: Annotated[
+        UUID | None,
+        typer.Option("--project", help="Project id (default: the latest project)"),
+    ] = None,
 ) -> None:
-    """Long-running worker: LISTEN vibey_job_ready, dispatch across phases."""
+    """Long-running worker: LISTEN vibey_job_ready, dispatch across all phases."""
+    from datetime import timedelta
+
+    from vibey.application.worker import WorkerLoop
+    from vibey.bootstrap import build_full_worker, database_url
     from vibey.domain.engine import EngineId
     from vibey.infrastructure.db.notifier import PostgresJobReadyNotifier
+    from vibey.infrastructure.engines.scripted_decompose import ScriptedWorkPlanProducer
 
+    allow_list: frozenset[EngineId] | None = None
     if engines_opt:
         try:
-            _ = frozenset(EngineId(e.strip()) for e in engines_opt.split(","))
+            allow_list = frozenset(EngineId(e.strip()) for e in engines_opt.split(","))
         except ValueError as exc:
             typer.echo(f"Invalid engine: {exc}")
             raise typer.Exit(2) from exc
+    if provider not in ("scripted", "claudeloop"):
+        typer.echo("provider must be 'scripted' or 'claudeloop'")
+        raise typer.Exit(2)
 
     async def run_worker() -> None:
-        from datetime import timedelta
-
         async with build_app() as resources:
-            latest = await resources.projects.get_latest()
-            if latest is None:
+            if project_opt is not None:
+                project = await resources.projects.get(project_opt)
+            else:
+                project = await resources.projects.get_latest()
+            if project is None:
                 typer.echo("no projects found; create one with `vibey new` first")
                 raise typer.Exit(1)
 
-            project = latest
-            owner = f"worker-{os.getpid()}"
-            dsn = os.environ.get(
-                "VIBEY_PG_URL",
-                f"postgresql://{os.environ.get('USER', 'vibey')}@localhost:5432/vibey",
-            )
+            design_provider: DesignProvider
+            if provider == "claudeloop":
+                process = ClaudeLoopProcess(
+                    executor=AsyncSubprocessExecutor(),
+                    max_turns=max_turns,
+                    max_dollars=max_dollars,
+                )
+                design_provider = ClaudeLoopDesignProvider(
+                    process=process,
+                    worktree_path=project.repo_path,
+                )
+            else:
+                design_provider = ScriptedDesignProvider()
 
-            notifier = PostgresJobReadyNotifier(dsn)
+            adapters = dict(resources.engine_adapters)
+            if allow_list is not None:
+                adapters = {eid: a for eid, a in adapters.items() if eid in allow_list}
+            build_engine = EngineId.CLAUDELOOP
+            if allow_list is not None and EngineId.CLAUDELOOP not in allow_list:
+                build_engine = sorted(allow_list, key=lambda e: e.value)[0]
+
+            count = max(1, min(parallelism, len(adapters) * 2, os.cpu_count() or 1))
+            loops = [
+                build_full_worker(
+                    resources=resources,
+                    project=project,
+                    design_provider=design_provider,
+                    visual_provider=ScriptedVisualProvider(),
+                    decomposer=ScriptedWorkPlanProducer(),
+                    owner=f"worker-{os.getpid()}-{i}",
+                    engine_adapters=adapters,
+                    build_engine=build_engine,
+                )
+                for i in range(count)
+            ]
+
+            notifier = PostgresJobReadyNotifier(database_url())
             await notifier.connect()
 
             typer.echo(
                 f"worker started: project={project.name} "
-                f"engines={engines_opt or 'all'} parallelism={parallelism}"
+                f"engines={engines_opt or 'all'} parallelism={count} provider={provider}"
             )
 
-            try:
+            async def drive(loop_: WorkerLoop) -> None:
                 while True:
-                    # Try to claim and process a job
-                    job = await resources.jobs.claim(
-                        project.project_id, owner=owner, lease=timedelta(seconds=120)
-                    )
-                    if job is not None:
-                        typer.echo(f"claimed job {job.id} ({job.kind})")
-                        # For now, we just ack the job — full dispatch through
-                        # phase handlers will come when those handlers are wired
-                        # to the rotation infrastructure
-                        await resources.jobs.ack(job.id, owner=owner)
-                        typer.echo(f"completed job {job.id}")
+                    worked = await loop_.run_once(project.project_id)
+                    if worked:
+                        typer.echo("processed one job")
                         if once:
-                            break
+                            return
                         continue
-
                     if once:
                         typer.echo("no ready job")
-                        break
-
-                    # Wait for notification or poll timeout
+                        return
+                    await resources.jobs.reap()
                     await notifier.wait_for_job_ready(
                         project.project_id, timeout=timedelta(seconds=5)
                     )
+
+            try:
+                if once or count == 1:
+                    await drive(loops[0])
+                else:
+                    await asyncio.gather(*(drive(loop_) for loop_ in loops))
             finally:
                 await notifier.close()
 

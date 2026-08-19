@@ -2,32 +2,57 @@
 
 import getpass
 import os
-from collections.abc import AsyncIterator, Mapping
+from collections.abc import AsyncIterator, Callable, Mapping
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import asyncpg
 
+from vibey.application.build_decompose_handler import BuildDecomposeHandler
+from vibey.application.build_implement_handler import BuildImplementHandler
+from vibey.application.build_integrate_handler import BuildIntegrateHandler
+from vibey.application.build_verify_handler import BuildVerifyHandler
+from vibey.application.deploy_acceptance_handler import DeployAcceptanceHandler
+from vibey.application.deploy_design_handler import (
+    DeployInterviewHandler,
+    DeploySynthesizeHandler,
+)
+from vibey.application.deploy_execute_handler import DeployExecuteHandler
+from vibey.application.deploy_review_handler import (
+    DeployReviewDemoHandler,
+    DeployReviewTriageHandler,
+)
+from vibey.application.deploy_review_routing import DeployReviewRoutingHandler
 from vibey.application.design_handler import DesignInterviewHandler
 from vibey.application.design_research_handler import DesignResearchHandler
 from vibey.application.design_synthesis_handler import DesignSpecHandler, DesignSynthesizeHandler
-from vibey.application.dto import ProjectRecord
+from vibey.application.dto import JobRecord, ProjectRecord
 from vibey.application.engine_health_service import EngineHealthService
 from vibey.application.engine_selector import EngineSelector
 from vibey.application.interfaces import (
+    AzureClientPort,
     Clock,
     DesignProvider,
     EngineAdapter,
+    JobHandler,
     VisualInventoryProducer,
+    WorkPlanProducer,
 )
 from vibey.application.job_dispatcher import JobDispatcher
+from vibey.application.review_collect_handler import ReviewCollectHandler
+from vibey.application.review_demo_handler import ReviewDemoHandler
+from vibey.application.review_deployment_choice_handler import ReviewDeploymentChoiceHandler
+from vibey.application.review_triage_handler import ReviewTriageHandler
 from vibey.application.rotation_handoff import RotationHandoffService
 from vibey.application.visual_handler import VisualInventoryHandler, VisualPlanHandler
 from vibey.application.worker import WorkerLoop
 from vibey.domain.engine import EngineId
 from vibey.domain.phase import Phase
+from vibey.infrastructure.azure.adapter import InMemoryAzureClientAdapter
+from vibey.infrastructure.build.automated_review_runner import SubprocessAutomatedReviewRunner
+from vibey.infrastructure.build.gate_runner import SubprocessGateRunner
 from vibey.infrastructure.db.build_ledger import PostgresBuildLedger
 from vibey.infrastructure.db.design_ledger import PostgresDesignLedger
 from vibey.infrastructure.db.design_spec_repository import FileDesignSpecRepository
@@ -43,6 +68,10 @@ from vibey.infrastructure.db.rotation_cursor_repository import PostgresRotationC
 from vibey.infrastructure.db.visual_inventory_repository import FileVisualInventoryRepository
 from vibey.infrastructure.engines.descriptors import ALL_DESCRIPTORS, BY_ENGINE_ID
 from vibey.infrastructure.engines.loop_process_adapter import LoopProcessAdapter
+from vibey.infrastructure.git.integration_branch import IntegrationBranch
+from vibey.infrastructure.git.worktree_manager import GitWorktreeManager
+from vibey.infrastructure.provision.agent_surface import AgentSurfaceProvisioner
+from vibey.infrastructure.review_artifact_writer import FileReviewArtifactWriter
 
 
 @dataclass(frozen=True, slots=True)
@@ -129,6 +158,218 @@ def build_visual_worker(
         gates=resources.gates,
         handler=dispatcher,
         owner=owner,
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class _ClosureFactory:
+    """JobHandlerFactory over a plain construction closure. The closures are
+    defined inside build_full_worker, the only place allowed to see every
+    concrete class -- keeping per-job construction in the composition root."""
+
+    build: Callable[[JobRecord], JobHandler]
+
+    async def create(self, job: JobRecord) -> JobHandler:
+        return self.build(job)
+
+
+_KIND_LEASES: Mapping[str, timedelta] = {
+    # Engine-driven jobs run for hours; control-plane jobs for minutes.
+    # Everything unlisted gets a 2-minute lease (still >> the heartbeat
+    # interval of lease/3, so a healthy worker never loses one).
+    "build.implement": timedelta(hours=2),
+    "build.verify": timedelta(hours=2),
+    "build.decompose": timedelta(minutes=15),
+    "build.integrate": timedelta(minutes=15),
+}
+
+
+def lease_for_kind(kind: str) -> timedelta:
+    return _KIND_LEASES.get(kind, timedelta(minutes=2))
+
+
+def build_full_worker(
+    *,
+    resources: AppResources,
+    project: ProjectRecord,
+    design_provider: DesignProvider,
+    visual_provider: VisualInventoryProducer,
+    decomposer: WorkPlanProducer,
+    owner: str,
+    engine_adapters: Mapping[EngineId, EngineAdapter] | None = None,
+    build_engine: EngineId = EngineId.CLAUDELOOP,
+    azure_client: AzureClientPort | None = None,
+) -> WorkerLoop:
+    """The full-phase dispatcher: every job kind vibey enqueues, routed.
+
+    `engine_adapters` overrides resources.engine_adapters -- the faked
+    harness injects ScriptedEngines here instead of patching. `build_engine`
+    picks the implementer until per-job rotation lands; the verify reviewer
+    is deterministically the first adapter that differs from the
+    implementer (build.verify's verifier-differs-from-implementer rule).
+    `azure_client` defaults to the in-memory adapter -- real `az` wiring is
+    an explicit later decision, never an accidental default.
+    """
+    adapters = engine_adapters if engine_adapters is not None else resources.engine_adapters
+    azure = azure_client if azure_client is not None else InMemoryAzureClientAdapter()
+    clock = resources.clock
+    repo_root = Path(project.repo_path)
+    deploy_design_ledger = PostgresReviewLedger(resources.ledger, phase=Phase.DEPLOY_DESIGN)
+    deploy_execute_ledger = PostgresReviewLedger(resources.ledger, phase=Phase.DEPLOY_EXECUTE)
+
+    def _implement(job: JobRecord) -> JobHandler:
+        return BuildImplementHandler(
+            worktrees=GitWorktreeManager(repo_root, cycle=job.cycle),
+            provisioner=AgentSurfaceProvisioner(),
+            engine=adapters[build_engine],
+            ledger=resources.build_ledger,
+            jobs=resources.jobs,
+            clock=clock,
+        )
+
+    def _verify(job: JobRecord) -> JobHandler:
+        implementer = str(job.requirement.get("implementer_engine_id", ""))
+        reviewer = next(
+            (a for eid, a in adapters.items() if eid.value != implementer),
+            adapters[build_engine],
+        )
+        return BuildVerifyHandler(
+            worktrees=GitWorktreeManager(repo_root, cycle=job.cycle),
+            gates=SubprocessGateRunner(),
+            reviewer=reviewer,
+            ledger=resources.build_ledger,
+            jobs=resources.jobs,
+        )
+
+    def _integrate(job: JobRecord) -> JobHandler:
+        return BuildIntegrateHandler(
+            integration=IntegrationBranch(repo_root, cycle=job.cycle),
+            gates=SubprocessGateRunner(),
+            ledger=resources.build_ledger,
+            jobs=resources.jobs,
+            clock=clock,
+        )
+
+    handlers: dict[str, JobHandler] = {
+        "design.interview": DesignInterviewHandler(
+            ledger=resources.design_ledger,
+            jobs=resources.jobs,
+            gates=resources.gates,
+            questions=design_provider,
+            clock=clock,
+            interviewer=EngineId.CLAUDELOOP,
+        ),
+        "design.research": DesignResearchHandler(
+            ledger=resources.design_ledger,
+            researcher=design_provider,
+            clock=clock,
+            engine_id=EngineId.CLAUDELOOP,
+        ),
+        "design.synthesize": DesignSynthesizeHandler(
+            ledger=resources.design_ledger,
+            synthesizer=design_provider,
+            specs=resources.design_specs,
+        ),
+        "design.spec": DesignSpecHandler(specs=resources.design_specs),
+        "visual.inventory": VisualInventoryHandler(
+            ledger=resources.design_ledger,
+            producer=visual_provider,
+            inventories=resources.visual_inventories,
+            jobs=resources.jobs,
+        ),
+        "visual.plan": VisualPlanHandler(inventories=resources.visual_inventories),
+        "build.decompose": BuildDecomposeHandler(
+            specs=resources.design_specs,
+            decomposer=decomposer,
+            jobs=resources.jobs,
+        ),
+        "review.demo": ReviewDemoHandler(
+            specs=resources.design_specs,
+            ledger=resources.review_ledger,
+            artifacts=FileReviewArtifactWriter(resources.projects),
+            jobs=resources.jobs,
+            clock=clock,
+            automated_reviewer=SubprocessAutomatedReviewRunner(
+                projects=resources.projects,
+                gates=SubprocessGateRunner(),
+            ),
+        ),
+        "review.collect": ReviewCollectHandler(
+            ledger=resources.review_ledger,
+            gates=resources.gates,
+            jobs=resources.jobs,
+            clock=clock,
+        ),
+        "review.triage": ReviewTriageHandler(
+            ledger=resources.review_ledger,
+            specs=resources.design_specs,
+            jobs=resources.jobs,
+            clock=clock,
+            projects=resources.projects,
+        ),
+        "review.deployment_choice": ReviewDeploymentChoiceHandler(
+            ledger=resources.review_ledger,
+            gates=resources.gates,
+            jobs=resources.jobs,
+            projects=resources.projects,
+            clock=clock,
+        ),
+        "deploy.interview": DeployInterviewHandler(
+            ledger=deploy_design_ledger,
+            gates=resources.gates,
+            clock=clock,
+        ),
+        "deploy.synthesize": DeploySynthesizeHandler(
+            ledger=deploy_design_ledger,
+            clock=clock,
+        ),
+        "deploy.spec": DeployAcceptanceHandler(
+            ledger=deploy_design_ledger,
+            gates=resources.gates,
+            jobs=resources.jobs,
+            projects=resources.projects,
+            clock=clock,
+        ),
+        "deploy.execute": DeployExecuteHandler(
+            ledger=deploy_execute_ledger,
+            jobs=resources.jobs,
+            projects=resources.projects,
+            azure_client=azure,
+            clock=clock,
+        ),
+        "deploy.demo": DeployReviewDemoHandler(
+            ledger=resources.deploy_review_ledger,
+            human_gates=resources.gates,
+        ),
+        "deploy.triage": DeployReviewTriageHandler(
+            ledger=resources.deploy_review_ledger,
+            human_gates=resources.gates,
+        ),
+        "deploy.route": DeployReviewRoutingHandler(
+            ledger=resources.deploy_review_ledger,
+            jobs=resources.jobs,
+            projects=resources.projects,
+            azure_client=azure,
+        ),
+    }
+    # Alias kinds sharing a handler (the handlers themselves guard on both).
+    handlers["deploy.accept"] = handlers["deploy.spec"]
+    handlers["deploy.graph"] = handlers["deploy.execute"]
+
+    dispatcher = JobDispatcher(
+        handlers,
+        factories={
+            "build.implement": _ClosureFactory(_implement),
+            "build.verify": _ClosureFactory(_verify),
+            "build.integrate": _ClosureFactory(_integrate),
+        },
+    )
+    return WorkerLoop(
+        jobs=resources.jobs,
+        gates=resources.gates,
+        handler=dispatcher,
+        owner=owner,
+        lease_for_kind=lease_for_kind,
     )
 
 
