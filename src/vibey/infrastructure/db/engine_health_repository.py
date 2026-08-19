@@ -3,12 +3,19 @@ from uuid import UUID
 import asyncpg
 
 from vibey.application.dto import EngineHealthRecord
+from vibey.domain.engine import EngineId
 
 
 def _row_to_record(row: asyncpg.Record) -> EngineHealthRecord:
     return EngineHealthRecord(
         project_id=row["project_id"],
-        engine_id=row["engine_id"],
+        # The column is text; EngineHealthRecord declares EngineId. Leaving
+        # the raw str here propagated all the way into RotationCursor and
+        # crashed PostgresRotationCursorRepository.update_many's
+        # `.value` access the first time EngineSelector ran against real
+        # Postgres -- every fake-backed test stored real EngineId values, so
+        # only a Postgres round-trip regression test catches this.
+        engine_id=EngineId(row["engine_id"]),
         installed=row["installed"],
         version=row["version"],
         conformance_ok=row["conformance_ok"],

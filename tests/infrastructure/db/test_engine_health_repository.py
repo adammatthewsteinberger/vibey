@@ -4,10 +4,12 @@ from uuid import UUID
 import asyncpg
 import pytest
 
-from vibey.application.dto import EngineHealthRecord
+from vibey.application.dto import EngineHealthRecord, RotationCursor
 from vibey.domain.capacity import CreditsExhausted, WindowExhausted
 from vibey.domain.circuit import BackoffProbe, DeadlineProbe, schedule_probe
+from vibey.domain.engine import EngineId
 from vibey.infrastructure.db.engine_health_repository import PostgresEngineHealthRepository
+from vibey.infrastructure.db.rotation_cursor_repository import PostgresRotationCursorRepository
 
 NOW = datetime(2026, 1, 1, tzinfo=UTC)
 
@@ -212,3 +214,40 @@ async def test_probe_scheduling_round_trip_for_credits_exhausted_never_persists_
     assert written.probe_next_at == probe.next_at
     assert written.resets_at is None
     assert written.probe_attempt == 2
+
+
+async def test_row_engine_id_is_a_real_engine_id_enum(
+    migrated_pool: asyncpg.Pool, project_id: UUID
+) -> None:
+    """Regression: the engine_id column is text; leaving the raw str on the
+    record propagated into RotationCursor and crashed update_many's `.value`
+    access the first time EngineSelector ran against real Postgres."""
+    repo = PostgresEngineHealthRepository(migrated_pool)
+    await repo.upsert(_record(project_id))
+
+    fetched = await repo.get(project_id, "claudeloop")
+    assert fetched is not None
+    assert isinstance(fetched.engine_id, EngineId)
+    listed = await repo.list_for_project(project_id)
+    assert all(isinstance(r.engine_id, EngineId) for r in listed)
+
+
+async def test_health_engine_id_survives_rotation_cursor_round_trip(
+    migrated_pool: asyncpg.Pool, project_id: UUID
+) -> None:
+    """The exact production crash path: EngineSelector builds RotationCursors
+    from health-record engine ids and calls update_many, which needs
+    `.value`. A raw str here raised AttributeError before the fix."""
+    health = PostgresEngineHealthRepository(migrated_pool)
+    await health.upsert(_record(project_id))
+    record = (await health.list_for_project(project_id))[0]
+
+    cursors = PostgresRotationCursorRepository(migrated_pool)
+    await cursors.update_many(
+        project_id,
+        (RotationCursor(project_id=project_id, engine_id=record.engine_id, current=7, order=0),),
+    )
+
+    fetched = await cursors.get(project_id, EngineId.CLAUDELOOP)
+    assert fetched is not None
+    assert fetched.current == 7

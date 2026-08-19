@@ -1,4 +1,7 @@
-"""Adapter between REVIEW application events and the durable event ledger."""
+"""Adapter between interactive-phase application events and the durable
+event ledger. Defaults to REVIEW; the deploy stage set constructs additional
+instances with their own phase so DEPLOY_* events are never mislabeled as
+REVIEW in the append-only ledger."""
 
 from collections.abc import Mapping
 from datetime import UTC, datetime
@@ -11,8 +14,9 @@ from vibey.infrastructure.engines.tailer import LedgerEventDraft
 
 
 class PostgresReviewLedger:
-    def __init__(self, ledger: PostgresLedgerRepository) -> None:
+    def __init__(self, ledger: PostgresLedgerRepository, *, phase: Phase = Phase.REVIEW) -> None:
         self._ledger = ledger
+        self._phase = phase
 
     async def all_for_project(self, project_id: UUID) -> tuple[LedgerEvent, ...]:
         return await self._ledger.all_for_project(project_id)
@@ -30,7 +34,7 @@ class PostgresReviewLedger:
             LedgerEventDraft(
                 project_id=project_id,
                 cycle=cycle,
-                phase=Phase.REVIEW,
+                phase=self._phase,
                 kind=kind,
                 engine_id=None,
                 job_id=job_id,
