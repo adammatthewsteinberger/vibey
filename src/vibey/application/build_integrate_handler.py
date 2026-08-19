@@ -22,7 +22,7 @@ from uuid import uuid4
 
 from vibey.application.build_engine_run import BuildLedger
 from vibey.application.build_verify_handler import GateRunner, gate_output_tail
-from vibey.application.dto import EngineEvent, EnqueueRequest, JobRecord
+from vibey.application.dto import EngineEvent, EnqueueRequest, HumanGateRequest, JobRecord
 from vibey.application.interfaces import (
     IntegrationBranch,
     IntegrationLock,
@@ -31,7 +31,7 @@ from vibey.application.interfaces import (
     ProjectTransitioner,
 )
 from vibey.application.ports import Clock, JobRepository
-from vibey.application.worker import Defer, Failure, Outcome, Success
+from vibey.application.worker import Defer, Failure, Outcome, Park, Success
 from vibey.domain.effort import Effort
 from vibey.domain.job import FailureClass, idempotency_key
 from vibey.domain.ledger import EventKind
@@ -53,6 +53,8 @@ class BuildIntegrateHandler:
         lock: IntegrationLock | None = None,
         lock_backoff: timedelta = timedelta(seconds=30),
         ledger_reader: LedgerReader | None = None,
+        max_repair_rounds: int = 3,
+        repair_backoff: timedelta = timedelta(minutes=10),
     ) -> None:
         self._integration = integration
         self._gates = gates
@@ -63,6 +65,8 @@ class BuildIntegrateHandler:
         self._lock = lock
         self._lock_backoff = lock_backoff
         self._ledger_reader = ledger_reader
+        self._max_repair_rounds = max_repair_rounds
+        self._repair_backoff = repair_backoff
 
     async def handle(self, job: JobRecord) -> Outcome:
         if job.kind != "build.integrate":
@@ -86,8 +90,7 @@ class BuildIntegrateHandler:
         merge = await self._integration.merge_item(work_item_id)
         if not merge.ok:
             detail = f"merge conflict integrating {job.work_item_id!r}: {merge.detail}"
-            await self._isolate_and_repair(job, detail)
-            return Failure(FailureClass.WORK, detail)
+            return await self._fail_or_repair(job, work_item_id, detail, merge_conflict=True)
 
         integration_path = await self._integration.ensure()
         verification = job.payload.get("verification", {})
@@ -99,8 +102,7 @@ class BuildIntegrateHandler:
                     f"gate failed after merging {job.work_item_id!r}: {command}: "
                     f"{gate_output_tail(result)}"
                 )
-                await self._isolate_and_repair(job, detail)
-                return Failure(FailureClass.WORK, detail)
+                return await self._fail_or_repair(job, work_item_id, detail, merge_conflict=False)
 
         if self._ledger_reader is not None:
             # A successful integrate closes its own earlier merge/gate
@@ -177,7 +179,76 @@ class BuildIntegrateHandler:
             )
         )
 
-    async def _isolate_and_repair(self, job: JobRecord, detail: str) -> None:
+    async def _fail_or_repair(
+        self, job: JobRecord, work_item_id: str, detail: str, *, merge_conflict: bool
+    ) -> Outcome:
+        """Without a ledger reader: the original raise-and-fail behavior.
+        With one: the bounded repair loop -- dedupe against an in-flight
+        repair, park after max rounds, and give the repair session
+        instructions it can actually act on. Caught live: every failed
+        integrate attempt spawned a fresh repair, and a merge-conflict
+        repair without merge instructions worked on the item branch where
+        nothing looked wrong -- an unbounded storm of paid sessions."""
+        if self._ledger_reader is None:
+            await self._isolate_and_repair(job, detail)
+            return Failure(FailureClass.WORK, detail)
+
+        prefix = f"f_integrate_{work_item_id}_"
+        raised: list[str] = []
+        resolved: set[str] = set()
+        for event in await self._ledger_reader.all_for_project(job.project_id):
+            if event.cycle != job.cycle:
+                continue
+            finding_id = str(event.payload.get("finding_id", ""))
+            if not finding_id.startswith(prefix):
+                continue
+            if event.kind is EventKind.FINDING_RAISED:
+                raised.append(finding_id)
+            elif event.kind is EventKind.FINDING_RESOLVED:
+                resolved.add(finding_id)
+        retry_at = self._clock.now() + self._repair_backoff
+
+        if any(finding_id not in resolved for finding_id in raised):
+            return Defer(
+                retry_at=retry_at,
+                detail=f"integration of {work_item_id!r} failing; repair in flight",
+            )
+        if len(raised) >= self._max_repair_rounds:
+            return Park(
+                HumanGateRequest(
+                    kind="integrate_repair_exhausted",
+                    prompt=(
+                        f"work item {work_item_id!r} failed integration after "
+                        f"{len(raised)} repair rounds; latest: {detail[:500]}. "
+                        "How should it proceed?"
+                    ),
+                )
+            )
+
+        integration_branch = branch_name(job.cycle, "integration")
+        if merge_conflict:
+            instructions = (
+                f"This branch could not be merged into the shared integration branch "
+                f"{integration_branch}. In this worktree run `git merge {integration_branch}`, "
+                "resolve every conflict so both the integrated code's behavior and this "
+                "item's changes survive, commit the merge, then re-run the verification "
+                "commands."
+            )
+        else:
+            instructions = (
+                f"The merged result on {integration_branch} fails the checks below. Fix the "
+                "cause on this branch without weakening the checks, then re-run the "
+                "verification commands."
+            )
+        await self._isolate_and_repair(job, detail, repair_instructions=instructions)
+        return Defer(
+            retry_at=retry_at,
+            detail=f"integration of {work_item_id!r} failed; repair enqueued",
+        )
+
+    async def _isolate_and_repair(
+        self, job: JobRecord, detail: str, *, repair_instructions: str | None = None
+    ) -> None:
         """The item is isolated (a finding + a repair job against it), but
         nothing about the rest of the phase is touched -- other items'
         build.integrate jobs proceed independently."""
@@ -199,6 +270,13 @@ class BuildIntegrateHandler:
                 },
             ),
         )
+        payload: dict[str, object] = {
+            **dict(job.payload),
+            "base_ref": branch_name(job.cycle, "integration"),
+        }
+        if repair_instructions is not None:
+            payload["repair_finding_id"] = finding_id
+            payload["repair_detail"] = f"{detail[:1500]}\n\n{repair_instructions}"
         await self._jobs.enqueue(
             EnqueueRequest(
                 project_id=job.project_id,
@@ -209,7 +287,7 @@ class BuildIntegrateHandler:
                     job.project_id, job.cycle, "build.implement", f"repair-{finding_id}"
                 ),
                 work_item_id=job.work_item_id,
-                payload={**dict(job.payload), "base_ref": branch_name(job.cycle, "integration")},
+                payload=payload,
                 requirement={"effort": Effort.LOW.name.lower()},
             )
         )
