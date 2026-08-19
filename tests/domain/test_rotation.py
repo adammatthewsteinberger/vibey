@@ -310,3 +310,35 @@ def test_select_rejects_duplicate_engine_ids() -> None:
     ]
     with pytest.raises(ValueError, match="unique engine_id"):
         select(duplicated)
+
+
+def test_a_positive_weight_never_rounds_down_to_zero() -> None:
+    """A half-open probe on a base_weight-1 engine is 1 * 0.25 = 0.25;
+    round() made it 0, so the probe could never fire and the engine
+    stayed open forever -- caught by the unattended validation run."""
+    probe = Candidate(
+        engine_id=EngineId.AGYLOOP,
+        base_weight=1,
+        current=0,
+        order=0,
+        health_factor=0.25,
+        fidelity_factor=1.0,
+        cost_factor=1.0,
+        affinity_factor=1.0,
+    )
+    assert probe.effective_weight == 1
+
+    dead = Candidate(
+        engine_id=EngineId.CLAUDELOOP,
+        base_weight=3,
+        current=0,
+        order=1,
+        health_factor=0.0,
+        fidelity_factor=1.0,
+        cost_factor=1.0,
+        affinity_factor=1.0,
+    )
+    assert dead.effective_weight == 0
+
+    selection = select([probe, dead])
+    assert selection.engine_id is EngineId.AGYLOOP
