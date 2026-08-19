@@ -13,37 +13,40 @@ while actually containing fabricated event_type strings for all four
 ...: none of these are real).
 
 CODEXLOOP and CURSORLOOP previously carried that same unverified guesswork.
-It has been replaced (2026-08-18) with vocabulary read directly from each
+It was replaced (2026-08-18) with vocabulary read directly from each
 engine's own source -- real string literals their own code already
-recognizes or emits, not fabrications -- but it is **not** live-capture
-verified the way CLAUDELOOP/AGYLOOP's is, because neither engine currently
-writes anything into events.jsonl in this environment:
+recognizes or emits, not fabrications. At the time, neither engine wrote
+anything into events.jsonl in this environment at all (both sinks were
+fully implemented but not wired into the real run path -- see
+docs/plans/fleet/c4-wire-events-sink-{codexloop,cursorloop}.md); both gaps
+were fixed and landed the same day (codexloop#30, cursorloop#27). Current
+verification status per engine:
 
-- CODEXLOOP: `infrastructure/events.py::JsonlRunEventSink` is fully
-  implemented and unit-tested but never constructed anywhere in
-  codexloop's own `src/` outside its tests -- confirmed by source grep and
-  empirically, by running `codexloop run` to a real successful completion
-  in scripted mode and finding events.jsonl at 0 bytes. The vocabulary
-  below is what `infrastructure/agent/events.py::JsonlParser` recognizes
-  from the wrapped `codex exec --json` subprocess's own stdout -- genuine,
-  but currently unreachable until the sink gets wired. See
-  docs/plans/fleet/c4-wire-events-sink-codexloop.md.
-- CURSORLOOP: the sink is wired, but only for the live Cursor Agent SDK
-  path (`bootstrap.py::build_runner`'s non-scripted branch); the
-  scripted/test-agent branch discards it. Confirmed empirically the same
-  way: a full scripted `cursorloop run` left events.jsonl at 0 bytes. The
-  vocabulary below is hardcoded verbatim in
+- CODEXLOOP: `infrastructure/events.py::JsonlRunEventSink` is now
+  constructed in `bootstrap.py` and wired into `CodexExecGateway`, which
+  emits the vocabulary below (sourced from
+  `infrastructure/agent/events.py::JsonlParser`, the exact type strings it
+  parses from the wrapped `codex exec --json` subprocess's own stdout) to
+  the sink after every turn. Verified end to end with a real subprocess
+  smoke test -- a fake `codex` binary on PATH (codexloop's own
+  `tests/shim/fake_codex.py` harness) driving the real, unmodified
+  `CodexExecGateway.send_turn` code path -- confirming events.jsonl is
+  genuinely populated with this vocabulary. Not yet observed against a
+  live, authenticated `codex` CLI session, since `codex` isn't installed
+  in this environment.
+- CURSORLOOP: the sink is now wired into the scripted/test-agent path too
+  (previously live-SDK-only), confirmed by a real scripted `cursorloop
+  run` populating events.jsonl. That confirms the forwarding mechanism,
+  not the vocabulary itself: the actual event types
+  (`tool_call`/`status`/`usage`) still come only from
   `infrastructure/agent/translate.py::TeeStream`'s
-  `_on_tool_call`/`_on_status`/`_on_usage` methods -- genuine, reachable
-  only in live mode (untested here -- no CURSOR_API_KEY). Cursorloop also
-  has no wrapper-level session/turn/verdict boundary event in
-  events.jsonl at all, unlike the other three engines -- only in-turn SDK
-  message types. See docs/plans/fleet/c4-wire-events-sink-cursorloop.md.
-
-Both gaps are real bugs in codexloop/cursorloop themselves, not vibey
-guesses papering over them -- queued as separate fleet plan files rather
-than fixed inline here, since each involves wiring/design decisions in
-that engine's own codebase.
+  `_on_tool_call`/`_on_status`/`_on_usage`, which only executes in the
+  live Cursor Agent SDK path -- those three string literals are hardcoded
+  verbatim in that source (reading them is equivalent to observing them),
+  but still unconfirmed against a real live SDK session, since no
+  CURSOR_API_KEY is available here. Cursorloop also has no wrapper-level
+  session/turn/verdict boundary event in events.jsonl at all, unlike the
+  other three engines -- only in-turn SDK message types.
 """
 
 from vibey.domain.engine import EngineId
@@ -77,9 +80,10 @@ LOOP_EVENT_MAP: dict[EngineId, dict[str, EventKind]] = {
         # Real `codex exec --json` vocabulary, sourced directly from
         # codexloop's own infrastructure/agent/events.py::JsonlParser --
         # the exact type strings it parses from the wrapped codex CLI's
-        # own event stream. See the module docstring: this is genuine,
-        # source-verified vocabulary, not a live capture (the sink that
-        # would write it to events.jsonl isn't wired yet).
+        # own event stream. See the module docstring: now wired end to end
+        # and verified with a real subprocess smoke test (fake codex
+        # binary, real CodexExecGateway code path), though not yet against
+        # a live, authenticated codex CLI session.
         "thread.started": EventKind.SESSION_SEEDED,
         "turn.started": EventKind.TURN_REQUESTED,
         "turn.completed": EventKind.TURN_COMPLETED,
@@ -115,10 +119,12 @@ LOOP_EVENT_MAP: dict[EngineId, dict[str, EventKind]] = {
         # Real Cursor Agent SDK vocabulary, hardcoded verbatim in
         # cursorloop's own infrastructure/agent/translate.py::TeeStream
         # (_on_tool_call/_on_status/_on_usage). See the module docstring:
-        # genuine, source-verified, but only reachable via the live SDK
-        # path in cursorloop today (untested here -- no CURSOR_API_KEY),
-        # and cursorloop's events.jsonl never carries a session/turn/
-        # verdict boundary marker at all, only these in-turn types.
+        # the sink is wired for both scripted and live runs now, but this
+        # specific vocabulary only ever flows from TeeStream, which only
+        # runs in the live SDK path -- still unobserved live here (no
+        # CURSOR_API_KEY). Cursorloop's events.jsonl never carries a
+        # session/turn/verdict boundary marker at all, only these in-turn
+        # types.
         "tool_call": EventKind.TOOL_INVOKED,
         "usage": EventKind.BUDGET_SPENT,
         # "status" deliberately left unmapped: it's a free-text SDK
