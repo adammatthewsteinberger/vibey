@@ -15,6 +15,8 @@ from vibey.application.interfaces.azure import (
     AzureDiscoveryResult,
     AzureExecutionResult,
     AzureResourceStatus,
+    DeploymentConsentStore,
+    DeploymentSpecStore,
 )
 from vibey.application.interfaces.build import (
     BudgetSource,
@@ -85,6 +87,8 @@ __all__ = [
     "AutomatedFinding",
     "AutomatedReviewRunner",
     "AzureClientPort",
+    "DeploymentConsentStore",
+    "DeploymentSpecStore",
     "AzureDiscoveryResult",
     "AzureExecutionResult",
     "AzureResourceStatus",

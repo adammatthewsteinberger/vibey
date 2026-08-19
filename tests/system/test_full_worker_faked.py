@@ -23,6 +23,8 @@ from vibey.application.dto import EnqueueRequest
 from vibey.bootstrap import build_app, build_full_worker, database_url
 from vibey.domain.job import JobState, idempotency_key
 from vibey.domain.phase import Phase, VisualDecision
+from vibey.infrastructure.azure.adapter import InMemoryAzureClientAdapter
+from vibey.infrastructure.deploy.state_repository import FileDeploymentStateRepository
 from vibey.infrastructure.engines.descriptors import BY_ENGINE_ID
 from vibey.infrastructure.engines.scripted import ScriptedEngine
 from vibey.infrastructure.engines.scripted_decompose import ScriptedWorkPlanProducer
@@ -65,12 +67,12 @@ def _make_repo(root: Path) -> Path:
     return repo
 
 
-async def _open_gate(project_id: UUID) -> tuple[UUID, str, tuple[str, ...]] | None:
+async def _open_gate(project_id: UUID) -> tuple[UUID, str, str] | None:
     conn = await asyncpg.connect(database_url())
     try:
         row = await conn.fetchrow(
             """
-            SELECT gate_id, prompt, options FROM human_gate
+            SELECT gate_id, kind, prompt FROM human_gate
             WHERE project_id = $1 AND answered_at IS NULL
             ORDER BY raised_at LIMIT 1
             """,
@@ -80,17 +82,20 @@ async def _open_gate(project_id: UUID) -> tuple[UUID, str, tuple[str, ...]] | No
         await conn.close()
     if row is None:
         return None
-    import json
-
-    options = tuple(str(o) for o in json.loads(row["options"]))
-    return row["gate_id"], str(row["prompt"]), options
+    return row["gate_id"], str(row["kind"]), str(row["prompt"])
 
 
-def _answer_for(prompt: str, options: tuple[str, ...]) -> dict[str, object]:
-    if "local_only" in options:
-        return {"choice": "local_only"}
-    if "accept" in options:
+def _answer_for(kind: str, prompt: str, *, deploy: bool) -> dict[str, object]:
+    if kind == "choice":
+        return {"choice": "deploy" if deploy else "local_only"}
+    if kind == "approval":
         return {"verdict": "accept"}
+    if kind == "deploy_interview":
+        return {"choice": "accept_defaults"}
+    if kind == "deploy_acceptance":
+        return {"verdict": "accept", "explicit_mutation_authorized": True}
+    if kind == "deploy_demo_review":
+        return {"verdict": "approve"}
     question_ids = sorted(set(re.findall(r"\bq-(\d+)\b", prompt)), key=int)
     return {"answers": {f"q-{n}": f"scripted-default-{n}" for n in question_ids}}
 
@@ -138,9 +143,9 @@ async def test_full_worker_drives_a_project_to_done_local(tmp_path: Path) -> Non
 
             gate = await _open_gate(project_id)
             if gate is not None:
-                gate_id, prompt, options = gate
+                gate_id, kind, prompt = gate
                 await resources.gates.answer(
-                    gate_id, answer=_answer_for(prompt, options), answered_by="e2e"
+                    gate_id, answer=_answer_for(kind, prompt, deploy=False), answered_by="e2e"
                 )
                 continue
 
@@ -201,3 +206,111 @@ async def test_full_worker_drives_a_project_to_done_local(tmp_path: Path) -> Non
 
         demo_files = list(repo.glob(".vibey/**/DEMO.md"))
         assert demo_files, "review.demo produced no DEMO.md artifact"
+
+
+async def test_full_worker_drives_the_deploy_stage_set_to_done_deployed(tmp_path: Path) -> None:
+    """Milestone test B: the same flow, opting INTO deployment -- the bridge,
+    the deploy design chain, spec+consent persistence, execute against the
+    in-memory Azure adapter, demo approval, and routing to DONE."""
+    repo = _make_repo(tmp_path)
+    azure = InMemoryAzureClientAdapter()
+
+    async with build_app() as resources:
+        project = await resources.projects.create("faked-e2e-deploy", repo, max_cycles=3, config={})
+        project_id = project.project_id
+        await resources.projects.transition(project_id, expected=Phase.INTAKE, to=Phase.DESIGN)
+        await resources.jobs.enqueue(
+            EnqueueRequest(
+                project_id=project_id,
+                cycle=project.cycle,
+                phase=Phase.DESIGN,
+                kind="design.interview",
+                idempotency_key=idempotency_key(
+                    project_id, project.cycle, "design.interview", "interactive"
+                ),
+                requirement={"effort": "high"},
+            )
+        )
+
+        adapters = {
+            engine_id: ScriptedEngine(
+                descriptor=descriptor, base_dir=tmp_path / "engines" / engine_id.value
+            )
+            for engine_id, descriptor in BY_ENGINE_ID.items()
+        }
+        worker = build_full_worker(
+            resources=resources,
+            project=project,
+            design_provider=ScriptedDesignProvider(),
+            visual_provider=ScriptedVisualProvider(),
+            decomposer=ScriptedWorkPlanProducer(),
+            owner="e2e-deploy-worker",
+            engine_adapters=adapters,
+            azure_client=azure,
+        )
+
+        accepted_design = False
+        for _ in range(200):
+            if await worker.run_once(project_id):
+                continue
+            gate = await _open_gate(project_id)
+            if gate is not None:
+                gate_id, kind, prompt = gate
+                await resources.gates.answer(
+                    gate_id, answer=_answer_for(kind, prompt, deploy=True), answered_by="e2e"
+                )
+                continue
+            current = await resources.projects.get(project_id)
+            assert current is not None
+            if current.phase is Phase.DONE:
+                break
+            if current.phase is Phase.DESIGN and not accepted_design:
+                await DesignAcceptanceService(
+                    projects=resources.projects,
+                    ledger=resources.design_ledger,
+                    specs=resources.design_specs,
+                    jobs=resources.jobs,
+                    clock=resources.clock,
+                ).accept(project_id, visual_choice=VisualDecision.DECLINED)
+                accepted_design = True
+                continue
+            await asyncio.sleep(0.3)
+
+        final = await resources.projects.get(project_id)
+        assert final is not None
+        assert final.phase is Phase.DONE, f"ended in {final.phase} (cycle {final.cycle})"
+
+        conn = await asyncpg.connect(database_url())
+        try:
+            kinds = {
+                (row["kind"], row["state"]): row["count"]
+                for row in await conn.fetch(
+                    "SELECT kind, state, count(*) AS count FROM job "
+                    "WHERE project_id = $1 GROUP BY kind, state",
+                    project_id,
+                )
+            }
+        finally:
+            await conn.close()
+
+        for deploy_kind in (
+            "deploy.design",
+            "deploy.interview",
+            "deploy.synthesize",
+            "deploy.spec",
+            "deploy.execute",
+            "deploy.demo",
+            "deploy.route",
+        ):
+            assert kinds.get((deploy_kind, "succeeded")) == 1, f"{deploy_kind}: {kinds}"
+
+        # The in-memory Azure adapter executed exactly one consented plan.
+        assert len(azure.deployments) == 1
+        assert azure.deployments[0].provisioning_state == "Succeeded"
+
+        # Spec and consent were persisted, and the consent is digest-bound.
+        state = FileDeploymentStateRepository(repo)
+        spec = state.load_spec(project_id)
+        consent = state.load_consent(project_id)
+        assert spec is not None and consent is not None
+        assert consent.matches_spec(spec) is True
