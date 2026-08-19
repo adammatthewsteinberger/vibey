@@ -161,3 +161,112 @@ def test_claudeloop_unknown_event_returns_none() -> None:
     entries, now removed) return None and are gracefully skipped."""
     assert translate_event_type(EngineId.CLAUDELOOP, "unknown.event.type") is None
     assert translate_event_type(EngineId.CLAUDELOOP, "session.started") is None
+
+
+def test_codexloop_event_mapping_coverage() -> None:
+    """Verify the real `codex exec --json` vocabulary is mapped.
+
+    Sourced from codexloop's own infrastructure/agent/events.py::JsonlParser
+    -- the exact type strings it recognizes -- not a live capture, since
+    codexloop's own event sink isn't wired to events.jsonl yet (see
+    docs/plans/fleet/c4-wire-events-sink-codexloop.md).
+    """
+    real_codexloop_events = [
+        "thread.started",
+        "turn.started",
+        "turn.completed",
+        "turn.failed",
+        "item.started",
+        "item.completed",
+        "rate_limits.updated",
+    ]
+
+    codexloop_map = LOOP_EVENT_MAP[EngineId.CODEXLOOP]
+
+    for event_type in real_codexloop_events:
+        assert event_type in codexloop_map, f"Real codexloop event '{event_type}' not mapped"
+
+
+def test_codexloop_session_and_turn_events() -> None:
+    """Verify session/turn events map correctly."""
+    assert translate_event_type(EngineId.CODEXLOOP, "thread.started") == EventKind.SESSION_SEEDED
+    assert translate_event_type(EngineId.CODEXLOOP, "turn.started") == EventKind.TURN_REQUESTED
+    assert translate_event_type(EngineId.CODEXLOOP, "turn.completed") == EventKind.TURN_COMPLETED
+    assert translate_event_type(EngineId.CODEXLOOP, "turn.failed") == EventKind.TURN_COMPLETED
+
+
+def test_codexloop_item_events_map_to_tool_invoked() -> None:
+    """Verify item.started/item.completed map to TOOL_INVOKED."""
+    assert translate_event_type(EngineId.CODEXLOOP, "item.started") == EventKind.TOOL_INVOKED
+    assert translate_event_type(EngineId.CODEXLOOP, "item.completed") == EventKind.TOOL_INVOKED
+
+
+def test_codexloop_rate_limits_event() -> None:
+    """rate_limits.updated is proactive plan/window telemetry folded into
+    TurnSignals for classification (domain/classify.py) -- it is never
+    itself a rejection, so it must not map to CAPACITY_REJECTED."""
+    assert translate_event_type(EngineId.CODEXLOOP, "rate_limits.updated") == EventKind.BUDGET_SPENT
+
+
+def test_codexloop_ambiguous_events_are_unmapped() -> None:
+    """ "error" and "event_msg" carry payload-dependent meaning this
+    string-keyed map can't resolve -- they must be skipped, not guessed."""
+    assert translate_event_type(EngineId.CODEXLOOP, "error") is None
+    assert translate_event_type(EngineId.CODEXLOOP, "event_msg") is None
+
+
+def test_codexloop_unknown_event_returns_none() -> None:
+    """Unknown event types (including the old fabricated mapping's own
+    entries, now removed) return None and are gracefully skipped."""
+    assert translate_event_type(EngineId.CODEXLOOP, "unknown.event.type") is None
+    assert translate_event_type(EngineId.CODEXLOOP, "thread.message.user") is None
+    assert translate_event_type(EngineId.CODEXLOOP, "output.verdict") is None
+
+
+def test_cursorloop_event_mapping_coverage() -> None:
+    """Verify the real Cursor Agent SDK vocabulary is mapped.
+
+    Sourced from cursorloop's own infrastructure/agent/translate.py::
+    TeeStream -- string literals hardcoded verbatim in
+    _on_tool_call/_on_status/_on_usage -- not a live capture, since the
+    scripted (offline) path never reaches the sink (see
+    docs/plans/fleet/c4-wire-events-sink-cursorloop.md).
+    """
+    real_cursorloop_events = ["tool_call", "usage"]
+
+    cursorloop_map = LOOP_EVENT_MAP[EngineId.CURSORLOOP]
+
+    for event_type in real_cursorloop_events:
+        assert event_type in cursorloop_map, f"Real cursorloop event '{event_type}' not mapped"
+
+
+def test_cursorloop_tool_invocation() -> None:
+    """Verify tool_call maps to TOOL_INVOKED."""
+    assert translate_event_type(EngineId.CURSORLOOP, "tool_call") == EventKind.TOOL_INVOKED
+
+
+def test_cursorloop_usage_event() -> None:
+    """Verify usage maps to BUDGET_SPENT."""
+    assert translate_event_type(EngineId.CURSORLOOP, "usage") == EventKind.BUDGET_SPENT
+
+
+def test_cursorloop_status_is_unmapped() -> None:
+    """ "status" is a free-text SDK message, not a fixed vocabulary -- no
+    single EventKind fits every value it can carry, so it's skipped."""
+    assert translate_event_type(EngineId.CURSORLOOP, "status") is None
+
+
+def test_cursorloop_has_no_session_or_verdict_events() -> None:
+    """Unlike the other three engines, cursorloop's events.jsonl carries no
+    wrapper-level session/turn/verdict boundary marker at all -- only
+    in-turn SDK message types. These must stay unmapped, not guessed."""
+    assert translate_event_type(EngineId.CURSORLOOP, "agent.started") is None
+    assert translate_event_type(EngineId.CURSORLOOP, "finished") is None
+    assert translate_event_type(EngineId.CURSORLOOP, "agent.savepoint") is None
+
+
+def test_cursorloop_unknown_event_returns_none() -> None:
+    """Unknown event types (including the old fabricated mapping's own
+    entries, now removed) return None and are gracefully skipped."""
+    assert translate_event_type(EngineId.CURSORLOOP, "unknown.event.type") is None
+    assert translate_event_type(EngineId.CURSORLOOP, "capacity.limited") is None
