@@ -182,15 +182,27 @@ def answer(
         str | None,
         typer.Option("--raw", help="Answer with an arbitrary JSON object"),
     ] = None,
+    defaults: Annotated[
+        bool,
+        typer.Option(
+            "--defaults",
+            help="Interview gates: accept every question's default "
+            "(combinable with positional pairs, which win)",
+        ),
+    ] = False,
 ) -> None:
     """Answer a parked gate: QUESTION_ID=ANSWER pairs, --choice, --verdict, or --raw.
 
-    Interview gates take the positional pairs; review gates take --verdict
-    (accept/changes/cancel/approve/request_changes); deployment and triage
-    gates take --choice; --raw covers any other shape.
+    Interview gates take the positional pairs or --defaults (question keys
+    are model-minted and vary per run; --defaults needs none); review gates
+    take --verdict (accept/changes/cancel/approve/request_changes);
+    deployment and triage gates take --choice; --raw covers any other shape.
     """
     modes = [m for m in (answers, choice, verdict, raw) if m]
-    if len(modes) != 1:
+    if defaults and (choice or verdict or raw):
+        typer.echo("--defaults only combines with positional QUESTION_ID=ANSWER pairs")
+        raise typer.Exit(2)
+    if len(modes) != 1 and not defaults:
         typer.echo("provide exactly one of: QUESTION_ID=ANSWER pairs, --choice, --verdict, --raw")
         raise typer.Exit(2)
 
@@ -211,6 +223,8 @@ def answer(
         payload = decoded
     else:
         payload = _parse_question_answers(tuple(answers or ()))
+        if defaults:
+            payload["accept_defaults"] = True
 
     async def submit() -> None:
         async with build_app() as resources:

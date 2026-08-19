@@ -61,6 +61,15 @@ class DesignInterviewHandler:
                 if gate is None or gate.answer is None or stage.value not in gate.prompt:
                     return Park(_gate_for(QuestionBatch(stage, questions)))
                 answers = _answers_from(gate.answer)
+                if bool(gate.answer.get("accept_defaults")):
+                    # The designed zero-touch path: every question not
+                    # explicitly answered takes its default, blocking ones
+                    # included. Question KEYS are model-minted and vary
+                    # per run, so an unattended caller cannot know them --
+                    # this contract needs none.
+                    answers = {
+                        question.question_id: question.default for question in questions
+                    } | answers
                 for event in answer_questions(questions, answers, now=self._clock.now()):
                     if str(event.payload["item_id"]) not in answered_ids:
                         await self._append(job, event)

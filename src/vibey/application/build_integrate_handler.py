@@ -21,7 +21,7 @@ from datetime import timedelta
 from uuid import uuid4
 
 from vibey.application.build_engine_run import BuildLedger
-from vibey.application.build_verify_handler import GateRunner, gate_output_tail
+from vibey.application.build_verify_handler import GateRunner, gate_output_tail, granted_max_rounds
 from vibey.application.dto import EngineEvent, EnqueueRequest, HumanGateRequest, JobRecord
 from vibey.application.interfaces import (
     IntegrationBranch,
@@ -30,7 +30,7 @@ from vibey.application.interfaces import (
     MergeOutcome,
     ProjectTransitioner,
 )
-from vibey.application.ports import Clock, JobRepository
+from vibey.application.ports import Clock, HumanGateRepository, JobRepository
 from vibey.application.worker import Defer, Failure, Outcome, Park, Success
 from vibey.domain.effort import Effort
 from vibey.domain.job import FailureClass, idempotency_key
@@ -55,6 +55,7 @@ class BuildIntegrateHandler:
         ledger_reader: LedgerReader | None = None,
         max_repair_rounds: int = 3,
         repair_backoff: timedelta = timedelta(minutes=10),
+        human_gates: HumanGateRepository | None = None,
     ) -> None:
         self._integration = integration
         self._gates = gates
@@ -67,6 +68,7 @@ class BuildIntegrateHandler:
         self._ledger_reader = ledger_reader
         self._max_repair_rounds = max_repair_rounds
         self._repair_backoff = repair_backoff
+        self._human_gates = human_gates
 
     async def handle(self, job: JobRecord) -> Outcome:
         if job.kind != "build.integrate":
@@ -213,14 +215,23 @@ class BuildIntegrateHandler:
                 retry_at=retry_at,
                 detail=f"integration of {work_item_id!r} failing; repair in flight",
             )
-        if len(raised) >= self._max_repair_rounds:
+        allowed = self._max_repair_rounds
+        if self._human_gates is not None:
+            gate = await self._human_gates.latest_for_job(job.id)
+            if gate is not None and gate.answer is not None:
+                granted = granted_max_rounds(gate.answer)
+                if granted is not None and granted > allowed:
+                    allowed = granted
+        if len(raised) >= allowed:
             return Park(
                 HumanGateRequest(
                     kind="integrate_repair_exhausted",
                     prompt=(
                         f"work item {work_item_id!r} failed integration after "
                         f"{len(raised)} repair rounds; latest: {detail[:500]}. "
-                        "How should it proceed?"
+                        "Grant more repair rounds by answering "
+                        f"--raw '{{\"max_rounds\": {len(raised) + 3}}}', or fix the "
+                        "branch by hand and answer anything to retry."
                     ),
                 )
             )

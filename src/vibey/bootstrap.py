@@ -305,7 +305,9 @@ def build_full_worker(
             reviewer=adapter,
             ledger=resources.build_ledger,
             jobs=resources.jobs,
-            repair=VerifyRepairPolicy(ledger_reader=resources.ledger, clock=clock),
+            repair=VerifyRepairPolicy(
+                ledger_reader=resources.ledger, clock=clock, gates=resources.gates
+            ),
         )
         return _recording(handler, adapter)
 
@@ -319,6 +321,7 @@ def build_full_worker(
             projects=resources.projects,
             lock=resources.integration_lock,
             ledger_reader=resources.ledger,
+            human_gates=resources.gates,
         )
 
     handlers: dict[str, JobHandler] = {

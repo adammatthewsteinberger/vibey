@@ -34,7 +34,7 @@ from vibey.application.interfaces import (
     LedgerReader,
     VerifyWorktrees,
 )
-from vibey.application.ports import Clock, EngineAdapter, JobRepository
+from vibey.application.ports import Clock, EngineAdapter, HumanGateRepository, JobRepository
 from vibey.application.worker import Defer, Failure, Outcome, Park, Success
 from vibey.domain.effort import Effort
 from vibey.domain.engine import IsolationLevel
@@ -59,6 +59,27 @@ def gate_output_tail(result: GateResult, *, limit: int = 1500) -> str:
     return "\n".join(parts) or "(no output)"
 
 
+def granted_max_rounds(answer: Mapping[str, object]) -> int | None:
+    """A human's round-grant from an answered exhausted-repair gate:
+    ``--raw '{"max_rounds": 6}'`` or the positional-pair form
+    ``max_rounds=6``. Without this contract the exhausted park was a dead
+    end -- answering un-parked the job, the bound re-tripped, and it
+    parked again forever unless the human fixed the branch by hand."""
+    sources: list[Mapping[str, object]] = [answer]
+    nested = answer.get("answers")
+    if isinstance(nested, Mapping):
+        sources.append(nested)
+    for source in sources:
+        raw = source.get("max_rounds")
+        if isinstance(raw, bool):
+            continue
+        if isinstance(raw, int):
+            return raw
+        if isinstance(raw, str) and raw.isdigit():
+            return int(raw)
+    return None
+
+
 @dataclass(frozen=True, slots=True)
 class VerifyRepairPolicy:
     """What turns a deterministic gate failure into a repair loop instead
@@ -71,6 +92,9 @@ class VerifyRepairPolicy:
     clock: Clock
     max_rounds: int = 3
     backoff: timedelta = timedelta(minutes=10)
+    gates: HumanGateRepository | None = None
+    """When present, an answered exhausted-gate for this job can raise
+    the round bound (see granted_max_rounds)."""
 
 
 class BuildVerifyHandler:
@@ -193,14 +217,23 @@ class BuildVerifyHandler:
                 retry_at=retry_at,
                 detail=f"verify gates failing for {item_id!r}; repair in flight",
             )
-        if len(raised) >= repair.max_rounds:
+        allowed = repair.max_rounds
+        if repair.gates is not None:
+            gate = await repair.gates.latest_for_job(job.id)
+            if gate is not None and gate.answer is not None:
+                granted = granted_max_rounds(gate.answer)
+                if granted is not None and granted > allowed:
+                    allowed = granted
+        if len(raised) >= allowed:
             return Park(
                 HumanGateRequest(
                     kind="verify_repair_exhausted",
                     prompt=(
                         f"work item {item_id!r} failed verification after "
                         f"{len(raised)} repair rounds; latest: {detail[:500]}. "
-                        "How should it proceed?"
+                        "Grant more repair rounds by answering "
+                        f"--raw '{{\"max_rounds\": {len(raised) + 3}}}', or fix the "
+                        "branch by hand and answer anything to retry."
                     ),
                 )
             )

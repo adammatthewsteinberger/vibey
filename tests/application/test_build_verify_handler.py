@@ -375,3 +375,74 @@ async def test_without_a_repair_policy_gate_failure_stays_a_plain_failure(
 
     assert isinstance(outcome, Failure)
     assert outcome.failure_class is FailureClass.WORK
+
+
+async def test_an_answered_gate_can_grant_more_repair_rounds(tmp_path: Path) -> None:
+    """The exhausted park was a dead end: answering un-parked the job,
+    the bound re-tripped, and it parked again forever. A max_rounds grant
+    in the answer raises the bound."""
+    from datetime import UTC as _UTC
+    from datetime import datetime as _dt
+    from datetime import timedelta as _td
+
+    from tests.application.fakes import FakeHumanGateRepository
+    from vibey.application.build_verify_handler import VerifyRepairPolicy
+    from vibey.application.worker import Defer, Park
+    from vibey.domain.ledger import EventKind
+
+    job = _job()
+    history = []
+    for index in range(3):
+        fid = f"f_verify_item-1_{index:08d}"
+        history.append(_finding_event(job.cycle, EventKind.FINDING_RAISED, fid))
+        history.append(_finding_event(job.cycle, EventKind.FINDING_RESOLVED, fid))
+
+    class _Reader:
+        async def all_for_project(self, project_id):  # type: ignore[no-untyped-def]
+            return tuple(history)
+
+    class _Clock:
+        def now(self):  # type: ignore[no-untyped-def]
+            return _dt(2026, 8, 19, tzinfo=_UTC)
+
+    gates = FakeHumanGateRepository()
+    policy = VerifyRepairPolicy(
+        ledger_reader=_Reader(), clock=_Clock(), backoff=_td(minutes=10), gates=gates
+    )
+
+    def _handler_with(policy):  # type: ignore[no-untyped-def]
+        return BuildVerifyHandler(
+            worktrees=FakeWorktrees(tmp_path),
+            gates=FakeGateRunner(returncode=1),
+            reviewer=ScriptedEngine(descriptor=CLAUDELOOP, base_dir=tmp_path / "r"),
+            ledger=FakeLedger(),
+            jobs=FakeJobRepository(),
+            repair=policy,
+        )
+
+    # Without a grant: parks, and the prompt advertises the contract.
+    parked = await _handler_with(policy).handle(job)
+    assert isinstance(parked, Park)
+    assert '"max_rounds"' in parked.request.prompt
+
+    # The human answers the raised gate with a grant; the retry proceeds.
+    gate = await gates.raise_gate(job.project_id, job.id, parked.request)
+    await gates.answer(gate.gate_id, answer={"max_rounds": 6}, answered_by="operator")
+    retried = await _handler_with(policy).handle(job)
+    assert isinstance(retried, Defer)
+    assert "repair" in retried.detail
+
+    # A grant at or below the burned rounds still parks (pairs form too).
+    await gates.answer(gate.gate_id, answer={"answers": {"max_rounds": "2"}}, answered_by="op")
+    still_parked = await _handler_with(policy).handle(job)
+    assert isinstance(still_parked, Park)
+
+
+def test_granted_max_rounds_parses_both_forms_and_rejects_junk() -> None:
+    from vibey.application.build_verify_handler import granted_max_rounds
+
+    assert granted_max_rounds({"max_rounds": 6}) == 6
+    assert granted_max_rounds({"answers": {"max_rounds": "7"}}) == 7
+    assert granted_max_rounds({"max_rounds": True}) is None
+    assert granted_max_rounds({"max_rounds": "lots"}) is None
+    assert granted_max_rounds({"resolution": "fixed by hand"}) is None
