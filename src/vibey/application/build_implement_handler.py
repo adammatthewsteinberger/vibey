@@ -35,9 +35,10 @@ from vibey.application.interfaces import (
     BuildWorktrees,
 )
 from vibey.application.ports import Clock, EngineAdapter, JobRepository
+from vibey.application.wind_down import WindDownOrchestrator
 from vibey.application.worker import Defer, Failure, Outcome, Park, Success
 from vibey.domain.effort import PHASE_BASE_EFFORT, effort_for_attempt, forces_rotation
-from vibey.domain.engine import IsolationLevel
+from vibey.domain.engine import EXIT_CODE_WIND_DOWN, IsolationLevel
 from vibey.domain.errors import EscalationExhausted
 from vibey.domain.job import FailureClass, idempotency_key
 from vibey.domain.phase import Phase
@@ -59,6 +60,7 @@ class BuildImplementHandler:
         provision_spec: ProvisionSpec = _EMPTY_PROVISION_SPEC,
         capacity_backoff: timedelta = timedelta(minutes=5),
         budget_source: BudgetSource | None = None,
+        wind_down: WindDownOrchestrator | None = None,
     ) -> None:
         self._worktrees = worktrees
         self._provisioner = provisioner
@@ -69,6 +71,7 @@ class BuildImplementHandler:
         self._provision_spec = provision_spec
         self._capacity_backoff = capacity_backoff
         self._budget_source = budget_source
+        self._wind_down = wind_down
 
     async def handle(self, job: JobRecord) -> Outcome:
         if job.kind != "build.implement":
@@ -142,6 +145,20 @@ class BuildImplementHandler:
                 retry_at=self._clock.now() + self._capacity_backoff,
                 detail=f"engine {engine_id} reported capacity rejection",
             )
+        if self._wind_down is not None and run_outcome.exit_code == EXIT_CODE_WIND_DOWN:
+            # Graceful wind-down: stop() first so the outgoing engine's
+            # final snapshot (StopSummary.remaining_work) can feed the
+            # brief, then hand the whole no-loss pipeline to the
+            # orchestrator. This settles Success -- wind-down must never
+            # burn the escalation ladder.
+            stop = await self._engine.stop(handle)
+            return await self._wind_down.execute(
+                job=job,
+                worktree_path=worktree_path,
+                engine_id=self._engine.descriptor.engine_id,
+                effort=effort,
+                stop=stop,
+            )
         if not run_outcome.complete:
             return Failure(FailureClass.WORK, "engine run did not report completion")
 
@@ -164,6 +181,12 @@ class BuildImplementHandler:
 
 
 def _render_prompt(item_id: str, payload: Mapping[str, object]) -> str:
+    seed = payload.get("seed_prompt")
+    if isinstance(seed, str) and seed:
+        # A wind-down follow-up: the seed prompt was rendered from the
+        # gate-verified brief and must reach the incoming engine verbatim
+        # (every closable id appears in it by construction).
+        return seed
     title = str(payload.get("title", item_id))
     verification = payload.get("verification", {})
     commands = verification.get("commands", ()) if isinstance(verification, Mapping) else ()

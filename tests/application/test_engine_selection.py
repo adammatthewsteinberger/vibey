@@ -260,3 +260,49 @@ async def test_failure_outcomes_record_nothing() -> None:
     record = await health.get_or_create(project_id, EngineId.CLAUDELOOP)  # type: ignore[arg-type]
     assert record.circuit == "closed"
     assert record.selected_count == 0
+
+
+def test_requirement_excluded_engine_ids_are_honored() -> None:
+    """The wind-down follow-up's durable "never back to the engine that
+    wound down" constraint rides on the job requirement."""
+    job = replace(_implement_job(attempts=1), requirement={"excluded_engine_ids": ["claudeloop"]})
+
+    inputs = selection_inputs_for_job(job)
+
+    assert inputs.requirement.excluded == frozenset({EngineId.CLAUDELOOP})
+    assert inputs.affinity is None
+
+
+def test_requirement_exclusion_suppresses_same_tier_affinity() -> None:
+    job = replace(
+        _implement_job(attempts=2, assigned_engine="claudeloop"),
+        requirement={"excluded_engine_ids": ("claudeloop",)},
+    )
+
+    inputs = selection_inputs_for_job(job)
+
+    assert inputs.requirement.excluded == frozenset({EngineId.CLAUDELOOP})
+    assert inputs.affinity is None
+
+
+def test_requirement_exclusion_composes_with_the_verify_implementer_rule() -> None:
+    job = replace(
+        make_job(uuid4(), attempts=1),
+        kind="build.verify",
+        requirement={
+            "implementer_engine_id": "codexloop",
+            "excluded_engine_ids": ["claudeloop"],
+        },
+    )
+
+    inputs = selection_inputs_for_job(job)
+
+    assert inputs.requirement.excluded == frozenset({EngineId.CODEXLOOP, EngineId.CLAUDELOOP})
+
+
+def test_non_list_excluded_engine_ids_are_ignored() -> None:
+    job = replace(_implement_job(attempts=1), requirement={"excluded_engine_ids": "claudeloop"})
+
+    inputs = selection_inputs_for_job(job)
+
+    assert inputs.requirement.excluded == frozenset()

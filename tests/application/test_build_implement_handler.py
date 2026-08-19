@@ -337,3 +337,115 @@ async def test_run_without_a_completion_verdict_fails_as_work(tmp_path: Path) ->
     outcome = await handler.handle(_job())
 
     assert outcome == Failure(FailureClass.WORK, "engine run did not report completion")
+
+
+# ── wind-down (exit code 75) ─────────────────────────────────────────────────
+
+
+class _RecordingWindDown:
+    """Stands in for WindDownOrchestrator: records the call and returns a
+    sentinel Success so the test can prove delegation, not re-test the
+    orchestrator's own pipeline."""
+
+    def __init__(self) -> None:
+        self.calls: list[dict[str, object]] = []
+
+    async def execute(self, *, job, worktree_path, engine_id, effort, stop):  # type: ignore[no-untyped-def]
+        self.calls.append(
+            {
+                "job_id": job.id,
+                "worktree_path": worktree_path,
+                "engine_id": engine_id,
+                "effort": effort,
+                "stop": stop,
+            }
+        )
+        return Success({"wind_down": True})
+
+
+def _wind_down_script() -> list[dict[str, object]]:
+    now = datetime(2026, 1, 1, tzinfo=UTC).isoformat()
+    return [{"kind": "SessionSeeded", "at": now, "payload": {"seed_digest": "d1"}}]
+
+
+async def test_exit_75_with_an_orchestrator_stops_and_delegates(tmp_path: Path) -> None:
+    engine = ScriptedEngine(
+        descriptor=CLAUDELOOP,
+        base_dir=tmp_path / "engine",
+        script=_wind_down_script(),
+        exit_code_script=[75],
+        stop_remaining=("resume from the snapshot",),
+    )
+    wind_down = _RecordingWindDown()
+    handler = BuildImplementHandler(
+        worktrees=FakeWorktrees(tmp_path),
+        provisioner=FakeProvisioner(),
+        engine=engine,
+        ledger=FakeLedger(),
+        jobs=FakeJobRepository(),
+        clock=FixedClock(),
+        wind_down=wind_down,  # type: ignore[arg-type]
+    )
+
+    outcome = await handler.handle(_job())
+
+    assert outcome == Success({"wind_down": True})
+    (call,) = wind_down.calls
+    assert call["engine_id"] == CLAUDELOOP.engine_id
+    assert call["worktree_path"] == tmp_path / "item-1"
+    stop = call["stop"]
+    assert stop.remaining_work == ("resume from the snapshot",)
+
+
+async def test_exit_75_without_an_orchestrator_keeps_the_old_failure_path(
+    tmp_path: Path,
+) -> None:
+    engine = ScriptedEngine(
+        descriptor=CLAUDELOOP,
+        base_dir=tmp_path / "engine",
+        script=_wind_down_script(),
+        exit_code_script=[75],
+    )
+    handler, _, _ = _handler(tmp_path, engine=engine, ledger=FakeLedger())
+
+    outcome = await handler.handle(_job())
+
+    assert outcome == Failure(FailureClass.WORK, "engine run did not report completion")
+
+
+async def test_normal_exit_with_an_orchestrator_never_winds_down(tmp_path: Path) -> None:
+    engine = ScriptedEngine(
+        descriptor=CLAUDELOOP,
+        base_dir=tmp_path / "engine",
+        exit_code_script=[0],
+    )
+    wind_down = _RecordingWindDown()
+    handler = BuildImplementHandler(
+        worktrees=FakeWorktrees(tmp_path),
+        provisioner=FakeProvisioner(),
+        engine=engine,
+        ledger=FakeLedger(),
+        jobs=FakeJobRepository(),
+        clock=FixedClock(),
+        wind_down=wind_down,  # type: ignore[arg-type]
+    )
+
+    outcome = await handler.handle(_job(payload={"title": "t"}))
+
+    assert isinstance(outcome, Success)
+    assert wind_down.calls == []
+
+
+async def test_seed_prompt_in_the_payload_reaches_the_engine_verbatim(tmp_path: Path) -> None:
+    engine = ScriptedEngine(descriptor=CLAUDELOOP, base_dir=tmp_path / "engine")
+    handler, _, _ = _handler(tmp_path, engine=engine, ledger=FakeLedger())
+    seed = "Objective: resume the relay.\nNext action: close [q-77]."
+
+    outcome = await handler.handle(_job(payload={"title": "ignored", "seed_prompt": seed}))
+
+    assert isinstance(outcome, Success)
+    # ScriptedEngine ignores the prompt, so prove it through the renderer.
+    from vibey.application.build_implement_handler import _render_prompt
+
+    assert _render_prompt("item-1", {"seed_prompt": seed}) == seed
+    assert "Implement work item" in _render_prompt("item-1", {"seed_prompt": ""})

@@ -54,6 +54,12 @@ def selection_inputs_for_job(job: JobRecord) -> SelectionInputs:
     excluded: set[EngineId] = set()
     affinity: EngineId | None = None
 
+    # A durable per-job exclusion list -- the wind-down follow-up's "must
+    # not go back to the engine that wound down" constraint rides here.
+    raw_excluded = job.requirement.get("excluded_engine_ids")
+    if isinstance(raw_excluded, list | tuple):
+        excluded.update(EngineId(str(entry)) for entry in raw_excluded)
+
     if job.kind == "build.verify":
         # The diff review runs at LOW and must come from a different engine
         # than the implementer (phase-protocols.md 2.3).
@@ -77,8 +83,9 @@ def selection_inputs_for_job(job: JobRecord) -> SelectionInputs:
             if forces_rotation(previous_effort, effort):
                 # Tier crossing: the escalated attempt must rotate away.
                 excluded.add(previous)
-            else:
+            elif previous not in excluded:
                 # Same-tier WORK retry: stickiness (affinity_factor 2.0).
+                # An engine the requirement excludes never gets affinity.
                 affinity = previous
 
     return SelectionInputs(

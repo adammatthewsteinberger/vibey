@@ -49,6 +49,8 @@ from vibey.application.interfaces.ledger import (
     BriefProducer,
     BuildLedger,
     DesignLedger,
+    HandoffStore,
+    LedgerReader,
     PhaseLedger,
 )
 from vibey.application.interfaces.observability import (
@@ -110,12 +112,14 @@ __all__ = [
     "Failure",
     "GateResult",
     "GateRunner",
+    "HandoffStore",
     "HumanGateRepository",
     "IntegrationBranch",
     "JobHandler",
     "JobHandlerFactory",
     "JobReadyNotifier",
     "JobRepository",
+    "LedgerReader",
     "MergeOutcome",
     "Outcome",
     "Park",

@@ -1233,3 +1233,23 @@ async def test_tail_preserves_existing_done_marker(tmp_path: Path) -> None:
     assert events[0].kind == "VerdictRendered"
     # Should preserve the existing done_marker, not overwrite with descriptor's
     assert events[0].payload.get("done_marker") == "CUSTOM_MARKER"
+
+
+async def test_run_exit_code_reads_the_live_process_registry(tmp_path: Path) -> None:
+    from types import SimpleNamespace
+
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
+    run_dir = tmp_path / "test-run"
+    run_dir.mkdir(parents=True)
+    handle = _make_handle(run_dir)
+
+    # No registered process (never started, or stop() already released it).
+    assert adapter.run_exit_code(handle) is None
+
+    _active_processes[handle.run_id] = SimpleNamespace(returncode=None)  # type: ignore[assignment]
+    try:
+        assert adapter.run_exit_code(handle) is None  # still running
+        _active_processes[handle.run_id] = SimpleNamespace(returncode=75)  # type: ignore[assignment]
+        assert adapter.run_exit_code(handle) == 75
+    finally:
+        _active_processes.pop(handle.run_id, None)

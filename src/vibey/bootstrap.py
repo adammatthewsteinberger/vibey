@@ -50,6 +50,7 @@ from vibey.application.review_deployment_choice_handler import ReviewDeploymentC
 from vibey.application.review_triage_handler import ReviewTriageHandler
 from vibey.application.rotation_handoff import RotationHandoffService
 from vibey.application.visual_handler import VisualInventoryHandler, VisualPlanHandler
+from vibey.application.wind_down import WindDownOrchestrator
 from vibey.application.worker import WorkerLoop
 from vibey.domain.engine import EngineId
 from vibey.domain.phase import Phase
@@ -74,6 +75,7 @@ from vibey.infrastructure.engines.descriptors import ALL_DESCRIPTORS, BY_ENGINE_
 from vibey.infrastructure.engines.loop_process_adapter import LoopProcessAdapter
 from vibey.infrastructure.git.integration_branch import IntegrationBranch
 from vibey.infrastructure.git.worktree_manager import GitWorktreeManager
+from vibey.infrastructure.ledger.full_ledger_writer import write_full_ledger
 from vibey.infrastructure.provision.agent_surface import AgentSurfaceProvisioner
 from vibey.infrastructure.review_artifact_writer import FileReviewArtifactWriter
 
@@ -255,6 +257,14 @@ def build_full_worker(
         owner=owner,
         allow_list=allow_list,
     )
+    wind_down = WindDownOrchestrator(
+        ledger=resources.ledger,
+        handoff_service=RotationHandoffService(resources.engine_selector, allow_list=allow_list),
+        handoffs=resources.handoffs,
+        jobs=resources.jobs,
+        clock=clock,
+        write_ledger=write_full_ledger,
+    )
 
     def _recording(handler: JobHandler, adapter: EngineAdapter) -> JobHandler:
         return RotationRecordingHandler(
@@ -273,6 +283,7 @@ def build_full_worker(
             ledger=resources.build_ledger,
             jobs=resources.jobs,
             clock=clock,
+            wind_down=wind_down,
         )
         return _recording(handler, adapter)
 

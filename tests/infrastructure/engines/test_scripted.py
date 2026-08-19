@@ -281,3 +281,60 @@ async def test_all_four_descriptors_produce_a_valid_run_directory(tmp_path: Path
         handle = await engine.start(_spec(tmp_path / f"worktree-{descriptor.engine_id}"))
         assert (handle.run_dir / "meta.json").exists()
         assert descriptor.state_dir in str(handle.run_dir)
+
+
+async def test_per_run_scripts_and_exit_codes_are_consumed_in_order(tmp_path: Path) -> None:
+    """Run 1 winds down (exit 75, no verdict); run 2 completes normally --
+    the shape the wind-down E2E scripts on a single engine."""
+    wind_down_script: list[dict[str, object]] = [
+        {"kind": "SessionSeeded", "at": "2026-01-01T00:00:00+00:00", "payload": {"s": "d"}}
+    ]
+    engine = ScriptedEngine(
+        descriptor=CLAUDELOOP,
+        base_dir=tmp_path,
+        scripts=[wind_down_script],
+        exit_code_script=[75, None],
+        stop_remaining=("resume from the snapshot",),
+    )
+
+    first = await engine.start(_spec(tmp_path / "wt1"))
+    first_events = [e async for e in engine.tail(first)]
+    assert [e.kind for e in first_events] == ["SessionSeeded"]
+    assert engine.run_exit_code(first) == 75
+
+    stop = await engine.stop(first)
+    assert stop.remaining_work == ("resume from the snapshot",)
+
+    second = await engine.start(_spec(tmp_path / "wt2"))
+    second_events = [e async for e in engine.tail(second)]
+    assert any(e.kind == "VerdictRendered" for e in second_events)
+    assert engine.run_exit_code(second) is None
+
+
+async def test_exit_codes_past_the_script_end_report_none(tmp_path: Path) -> None:
+    engine = ScriptedEngine(descriptor=CLAUDELOOP, base_dir=tmp_path, exit_code_script=[75])
+
+    first = await engine.start(_spec(tmp_path / "wt1"))
+    second = await engine.start(_spec(tmp_path / "wt2"))
+
+    assert engine.run_exit_code(first) == 75
+    assert engine.run_exit_code(second) is None
+
+
+async def test_fixed_script_still_covers_runs_after_the_scripts_queue_drains(
+    tmp_path: Path,
+) -> None:
+    fixed: list[dict[str, object]] = [
+        {"kind": "SessionSeeded", "at": "2026-01-01T00:00:00+00:00", "payload": {"s": "x"}}
+    ]
+    per_run: list[dict[str, object]] = [
+        {"kind": "TurnCompleted", "at": "2026-01-01T00:00:00+00:00", "payload": {}}
+    ]
+    engine = ScriptedEngine(
+        descriptor=CLAUDELOOP, base_dir=tmp_path, script=fixed, scripts=[per_run]
+    )
+
+    first = await engine.start(_spec(tmp_path / "wt1"))
+    assert [e.kind async for e in engine.tail(first)] == ["TurnCompleted"]
+    second = await engine.start(_spec(tmp_path / "wt2"))
+    assert [e.kind async for e in engine.tail(second)] == ["SessionSeeded"]

@@ -30,7 +30,7 @@ from vibey.application.dto import (
     StopSummary,
 )
 from vibey.domain.capacity import CapacityState
-from vibey.domain.engine import EngineDescriptor
+from vibey.domain.engine import EXIT_CODE_WIND_DOWN, EngineDescriptor
 from vibey.domain.errors import VibeyError
 from vibey.domain.job import FailureClass
 from vibey.domain.ledger import EventKind
@@ -39,8 +39,6 @@ from vibey.infrastructure.engines.classify import attribute_failure, classify_ca
 from vibey.infrastructure.engines.loop_events import translate_event_type
 
 logger = structlog.get_logger(__name__)
-
-EXIT_CODE_WIND_DOWN = 75
 
 # Global registry to keep subprocess.Process objects alive so they don't get
 # garbage collected (which would close stdin and kill the child process).
@@ -405,6 +403,15 @@ class LoopProcessAdapter:
             now=now,
             file=str(prompt_file),
         )
+
+    def run_exit_code(self, handle: RunHandle) -> int | None:
+        """Optional capability (discovered via ``hasattr``): the spawned
+        process's exit code, or None while it still runs or once ``stop``
+        has released the process reference. Read it after ``tail`` drains
+        and before ``stop`` -- EXIT_CODE_WIND_DOWN here is the wind-down
+        handoff signal."""
+        process = _active_processes.get(handle.run_id)
+        return None if process is None else process.returncode
 
     async def stop(self, handle: RunHandle) -> StopSummary:
         """Send stop signal and collect stop-summary.md."""
