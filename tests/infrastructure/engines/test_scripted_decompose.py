@@ -59,3 +59,18 @@ async def test_output_passes_validate_decomposition() -> None:
         walking_skeleton_item_id=items[0].item_id,
     )
     assert violations == ()
+
+
+async def test_skeleton_checks_the_first_criterion() -> None:
+    """build.verify refuses items with empty criteria_checked -- the
+    skeleton proves the primary path, so it checks the first criterion."""
+    items = await ScriptedWorkPlanProducer().decompose(_spec())
+
+    assert items[0].verification.criteria_checked == ("ac-1",)
+
+
+async def test_spec_without_criteria_yields_a_bare_skeleton() -> None:
+    items = await ScriptedWorkPlanProducer().decompose(_spec(criteria_count=0))
+
+    assert len(items) == 1
+    assert items[0].verification.criteria_checked == ()

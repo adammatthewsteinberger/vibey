@@ -167,16 +167,54 @@ def _parse_question_answers(items: tuple[str, ...]) -> dict[str, object]:
 
 
 @app.command("answer")
-def answer(gate_id: UUID, answers: list[str]) -> None:
-    """Answer a parked gate with one or more QUESTION_ID=ANSWER values."""
+def answer(
+    gate_id: UUID,
+    answers: Annotated[list[str] | None, typer.Argument()] = None,
+    choice: Annotated[
+        str | None,
+        typer.Option("--choice", help='Answer a choice gate: sends {"choice": VALUE}'),
+    ] = None,
+    verdict: Annotated[
+        str | None,
+        typer.Option("--verdict", help='Answer a verdict gate: sends {"verdict": VALUE}'),
+    ] = None,
+    raw: Annotated[
+        str | None,
+        typer.Option("--raw", help="Answer with an arbitrary JSON object"),
+    ] = None,
+) -> None:
+    """Answer a parked gate: QUESTION_ID=ANSWER pairs, --choice, --verdict, or --raw.
+
+    Interview gates take the positional pairs; review gates take --verdict
+    (accept/changes/cancel/approve/request_changes); deployment and triage
+    gates take --choice; --raw covers any other shape.
+    """
+    modes = [m for m in (answers, choice, verdict, raw) if m]
+    if len(modes) != 1:
+        typer.echo("provide exactly one of: QUESTION_ID=ANSWER pairs, --choice, --verdict, --raw")
+        raise typer.Exit(2)
+
+    payload: dict[str, object]
+    if choice is not None:
+        payload = {"choice": choice}
+    elif verdict is not None:
+        payload = {"verdict": verdict}
+    elif raw is not None:
+        try:
+            decoded = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            typer.echo(f"--raw must be valid JSON: {exc}")
+            raise typer.Exit(2) from exc
+        if not isinstance(decoded, dict):
+            typer.echo("--raw must be a JSON object")
+            raise typer.Exit(2)
+        payload = decoded
+    else:
+        payload = _parse_question_answers(tuple(answers or ()))
 
     async def submit() -> None:
         async with build_app() as resources:
-            await resources.gates.answer(
-                gate_id,
-                answer=_parse_question_answers(tuple(answers)),
-                answered_by="cli",
-            )
+            await resources.gates.answer(gate_id, answer=payload, answered_by="cli")
 
     asyncio.run(submit())
     typer.echo(f"answered {gate_id}")

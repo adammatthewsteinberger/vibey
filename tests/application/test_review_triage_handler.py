@@ -274,3 +274,72 @@ async def test_review_triage_handler_skips_transition_without_transition_method(
     )
     outcome = await handler.handle(_make_job())
     assert isinstance(outcome, Success)
+
+
+class FakeSpecStore(FakeSpecRepo):
+    def __init__(self, spec: DesignSpec | None = None) -> None:
+        super().__init__(spec)
+        self.saved: list[tuple[int, DesignSpec]] = []
+
+    async def save(self, project_id: UUID, cycle: int, spec: DesignSpec) -> None:
+        self.saved.append((cycle, spec))
+
+    async def publish(self, project_id: UUID, cycle: int, spec: DesignSpec) -> None:
+        raise NotImplementedError
+
+
+async def test_fast_loopback_carries_the_spec_to_the_next_cycle() -> None:
+    """build.plan decomposes at cycle+1, but the spec store is cycle-scoped
+    -- the triage handler must copy the accepted spec forward explicitly."""
+    events = (
+        _make_event(
+            EventKind.FINDING_RAISED,
+            {
+                "finding_id": "f-1",
+                "text": "Trim leading and trailing whitespace on note title during save.",
+            },
+            seq=1,
+        ),
+    )
+    spec = _make_spec()
+    store = FakeSpecStore(spec=spec)
+    jobs = FakeJobRepository()
+    handler = ReviewTriageHandler(
+        ledger=FakeReviewTriageLedger(events=events),
+        specs=FakeSpecRepo(spec=spec),
+        jobs=jobs,
+        clock=FixedClock(),
+        spec_store=store,
+    )
+
+    outcome = await handler.handle(_make_job())
+
+    assert isinstance(outcome, Success)
+    assert outcome.result.get("next_phase") == Phase.BUILD.value
+    assert store.saved == [(2, spec)]
+
+
+async def test_fast_loopback_without_a_loaded_spec_skips_the_carry() -> None:
+    events = (
+        _make_event(
+            EventKind.FINDING_RAISED,
+            {
+                "finding_id": "f-1",
+                "text": "Trim leading and trailing whitespace on note title during save.",
+            },
+            seq=1,
+        ),
+    )
+    store = FakeSpecStore(spec=None)
+    handler = ReviewTriageHandler(
+        ledger=FakeReviewTriageLedger(events=events),
+        specs=FakeSpecRepo(spec=None),
+        jobs=FakeJobRepository(),
+        clock=FixedClock(),
+        spec_store=store,
+    )
+
+    outcome = await handler.handle(_make_job())
+
+    assert isinstance(outcome, Success)
+    assert store.saved == []

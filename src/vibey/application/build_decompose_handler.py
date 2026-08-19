@@ -38,7 +38,10 @@ class BuildDecomposeHandler:
         self._jobs = jobs
 
     async def handle(self, job: JobRecord) -> Outcome:
-        if job.kind != "build.decompose":
+        # "build.plan" is the review fast loop-back's spelling of the same
+        # work (review_triage_handler.py enqueues it at cycle+1); both kinds
+        # decompose the cycle's accepted spec.
+        if job.kind not in ("build.decompose", "build.plan"):
             return Failure(FailureClass.VIBEY, "expected build.decompose job")
         spec = await self._specs.load(job.project_id, job.cycle)
         if spec is None:

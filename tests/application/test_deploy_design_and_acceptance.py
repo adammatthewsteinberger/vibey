@@ -481,3 +481,47 @@ async def test_deploy_acceptance_invalid_spec_returns_failure() -> None:
     )
     outcome = await handler.handle(job)
     assert isinstance(outcome, Failure)
+
+
+@pytest.mark.asyncio
+async def test_deploy_interview_with_jobs_enqueues_synthesize() -> None:
+    from dataclasses import replace
+
+    from tests.application.fakes import FakeJobRepository
+
+    ledger = FakeDeployLedger()
+    gates = FakeHumanGateRepository()
+    jobs = FakeJobRepository()
+    handler = DeployInterviewHandler(ledger=ledger, gates=gates, clock=FakeClock(), jobs=jobs)
+    job = replace(make_job(uuid4()), phase=Phase.DEPLOY_DESIGN, kind="deploy.interview")
+
+    first = await handler.handle(job)
+    assert isinstance(first, Park)
+    gate = await gates.latest_for_job(job.id)
+    assert gate is not None
+    await gates.answer(gate.gate_id, answer={"choice": "accept_defaults"}, answered_by="user")
+
+    outcome = await handler.handle(job)
+
+    assert isinstance(outcome, Success)
+    synth = [j for j in jobs._jobs.values() if j.kind == "deploy.synthesize"]
+    assert len(synth) == 1
+    assert synth[0].phase is Phase.DEPLOY_DESIGN
+
+
+@pytest.mark.asyncio
+async def test_deploy_synthesize_with_jobs_enqueues_spec() -> None:
+    from dataclasses import replace
+
+    from tests.application.fakes import FakeJobRepository
+
+    jobs = FakeJobRepository()
+    handler = DeploySynthesizeHandler(ledger=FakeDeployLedger(), clock=FakeClock(), jobs=jobs)
+    job = replace(make_job(uuid4()), phase=Phase.DEPLOY_DESIGN, kind="deploy.synthesize")
+
+    outcome = await handler.handle(job)
+
+    assert isinstance(outcome, Success)
+    spec_jobs = [j for j in jobs._jobs.values() if j.kind == "deploy.spec"]
+    assert len(spec_jobs) == 1
+    assert spec_jobs[0].phase is Phase.DEPLOY_DESIGN

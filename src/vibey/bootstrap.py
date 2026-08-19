@@ -15,6 +15,7 @@ from vibey.application.build_implement_handler import BuildImplementHandler
 from vibey.application.build_integrate_handler import BuildIntegrateHandler
 from vibey.application.build_verify_handler import BuildVerifyHandler
 from vibey.application.deploy_acceptance_handler import DeployAcceptanceHandler
+from vibey.application.deploy_design_bridge import DeployDesignBridgeHandler
 from vibey.application.deploy_design_handler import (
     DeployInterviewHandler,
     DeploySynthesizeHandler,
@@ -180,6 +181,7 @@ _KIND_LEASES: Mapping[str, timedelta] = {
     "build.implement": timedelta(hours=2),
     "build.verify": timedelta(hours=2),
     "build.decompose": timedelta(minutes=15),
+    "build.plan": timedelta(minutes=15),
     "build.integrate": timedelta(minutes=15),
 }
 
@@ -248,6 +250,7 @@ def build_full_worker(
             ledger=resources.build_ledger,
             jobs=resources.jobs,
             clock=clock,
+            projects=resources.projects,
         )
 
     handlers: dict[str, JobHandler] = {
@@ -306,6 +309,7 @@ def build_full_worker(
             jobs=resources.jobs,
             clock=clock,
             projects=resources.projects,
+            spec_store=resources.design_specs,
         ),
         "review.deployment_choice": ReviewDeploymentChoiceHandler(
             ledger=resources.review_ledger,
@@ -314,14 +318,20 @@ def build_full_worker(
             projects=resources.projects,
             clock=clock,
         ),
+        "deploy.design": DeployDesignBridgeHandler(
+            jobs=resources.jobs,
+            projects=resources.projects,
+        ),
         "deploy.interview": DeployInterviewHandler(
             ledger=deploy_design_ledger,
             gates=resources.gates,
             clock=clock,
+            jobs=resources.jobs,
         ),
         "deploy.synthesize": DeploySynthesizeHandler(
             ledger=deploy_design_ledger,
             clock=clock,
+            jobs=resources.jobs,
         ),
         "deploy.spec": DeployAcceptanceHandler(
             ledger=deploy_design_ledger,
@@ -340,10 +350,12 @@ def build_full_worker(
         "deploy.demo": DeployReviewDemoHandler(
             ledger=resources.deploy_review_ledger,
             human_gates=resources.gates,
+            jobs=resources.jobs,
         ),
         "deploy.triage": DeployReviewTriageHandler(
             ledger=resources.deploy_review_ledger,
             human_gates=resources.gates,
+            jobs=resources.jobs,
         ),
         "deploy.route": DeployReviewRoutingHandler(
             ledger=resources.deploy_review_ledger,
@@ -353,6 +365,7 @@ def build_full_worker(
         ),
     }
     # Alias kinds sharing a handler (the handlers themselves guard on both).
+    handlers["build.plan"] = handlers["build.decompose"]
     handlers["deploy.accept"] = handlers["deploy.spec"]
     handlers["deploy.graph"] = handlers["deploy.execute"]
 

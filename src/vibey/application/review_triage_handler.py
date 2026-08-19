@@ -13,6 +13,7 @@ Performs severity x ambiguity classification on open findings:
 
 from vibey.application.dto import EnqueueRequest, JobRecord
 from vibey.application.interfaces import (
+    DesignSpecRepository,
     PhaseLedger,
     ProjectTransitioner,
 )
@@ -39,12 +40,14 @@ class ReviewTriageHandler:
         jobs: JobRepository,
         clock: Clock,
         projects: ProjectTransitioner | object = None,
+        spec_store: DesignSpecRepository | None = None,
     ) -> None:
         self._ledger = ledger
         self._specs = specs
         self._jobs = jobs
         self._clock = clock
         self._projects = projects
+        self._spec_store = spec_store
 
     async def handle(self, job: JobRecord) -> Outcome:
         if job.kind != "review.triage":
@@ -121,6 +124,14 @@ class ReviewTriageHandler:
             # Phase.DONE, so by this point next_phase can only be DESIGN or
             # BUILD -- next_phase_after_review's DONE case is unreachable
             # here (findings is guaranteed non-empty).
+            #
+            # The fast loop-back re-decomposes at cycle+1, but the spec store
+            # is cycle-scoped and cycle+1 has none -- carry the accepted spec
+            # forward explicitly (an auditable save, never a silent loader
+            # fallback). The DESIGN path deliberately does not carry: a
+            # design re-run produces a new spec.
+            if self._spec_store is not None and spec is not None:
+                await self._spec_store.save(job.project_id, next_cycle, spec)
             await self._jobs.enqueue(
                 EnqueueRequest(
                     project_id=job.project_id,

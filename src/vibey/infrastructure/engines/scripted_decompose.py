@@ -17,6 +17,11 @@ WALKING_SKELETON_ITEM_ID = "ws"
 
 class ScriptedWorkPlanProducer:
     async def decompose(self, spec: DesignSpec) -> tuple[WorkItem, ...]:
+        # build.verify refuses any item whose verification checks no
+        # criteria (an item that names nothing can never be verified), so
+        # the skeleton checks the first criterion -- the walking skeleton
+        # proves the primary path end to end.
+        skeleton_checks = (spec.criteria[0].criterion_id,) if spec.criteria else ()
         items = [
             WorkItem(
                 item_id=WALKING_SKELETON_ITEM_ID,
@@ -25,7 +30,7 @@ class ScriptedWorkPlanProducer:
                 depends_on=(),
                 est_effort=Effort.STANDARD,
                 files_touched_hint=(),
-                verification=VerificationSpec(commands=(), criteria_checked=()),
+                verification=VerificationSpec(commands=(), criteria_checked=skeleton_checks),
             )
         ]
         for index, criterion in enumerate(spec.criteria, start=1):
