@@ -469,3 +469,21 @@ def test_render_prompt_frames_a_repair_without_weakening_checks() -> None:
 
     plain = _render_prompt("item-1", {"title": "the thing", "repair_detail": 123})
     assert "FAILING" not in plain
+
+
+def test_every_regular_prompt_carries_the_house_rules() -> None:
+    """Each rule traces to a live failure: root-level test stubs, pip
+    installs into foreign envs, committed generated files. Seed prompts
+    (wind-down briefs) stay verbatim and are exempt."""
+    from vibey.application.build_implement_handler import _render_prompt
+
+    regular = _render_prompt("item-1", {"title": "t"})
+    repair = _render_prompt("item-1", {"title": "t", "repair_detail": "gate failed"})
+    for prompt in (regular, repair):
+        assert "House rules:" in prompt
+        assert "tests/" in prompt
+        assert "clean checkout" in prompt
+        assert "Never commit generated files" in prompt
+
+    seeded = _render_prompt("item-1", {"seed_prompt": "resume from the brief"})
+    assert "House rules:" not in seeded

@@ -233,3 +233,19 @@ async def test_decompose_rejects_ids_that_collide_or_vanish_after_normalization(
     producer = ClaudeLoopWorkPlanProducer(process=FakeProcess([vanishing]), worktree_path=tmp_path)
     with pytest.raises(ValueError, match="normalizes to nothing"):
         await producer.decompose(_spec())
+
+
+async def test_decompose_prompt_carries_the_verification_house_rules(tmp_path: Path) -> None:
+    """Engines invented per-item verification styles and root-level test
+    stubs live; the prompt must pin the expectations."""
+    process = FakeProcess([_valid_items()])
+    producer = ClaudeLoopWorkPlanProducer(process=process, worktree_path=tmp_path)
+
+    await producer.decompose(_spec())
+
+    (call,) = process.calls
+    prompt = call[0].prompt
+    assert "self-contained" in prompt
+    assert "clean checkout" in prompt
+    assert "tests/" in prompt
+    assert "chained via depends_on" in prompt
