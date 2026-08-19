@@ -152,3 +152,84 @@ async def test_decompose_fails_fast_on_a_structurally_invalid_graph(tmp_path: Pa
 
     with pytest.raises(ValueError, match="invalid decomposition"):
         await producer.decompose(_spec())
+
+
+async def test_decompose_normalizes_model_ids_to_the_worktree_shape(tmp_path: Path) -> None:
+    """Caught live: the model returned "WI-01"-style ids and every
+    implement attempt died on worktree-id validation, burning the ladder."""
+    payload = json.dumps(
+        {
+            "items": [
+                {
+                    "item_id": "WS",
+                    "title": "walking skeleton",
+                    "acceptance_ids": ["AC-1"],
+                    "depends_on": [],
+                    "est_effort": "standard",
+                    "verification": {"commands": [], "criteria_checked": ["AC-1"]},
+                },
+                {
+                    "item_id": "WI_01: CLI parsing",
+                    "title": "cli parsing",
+                    "acceptance_ids": ["AC-1"],
+                    "depends_on": ["WS"],
+                    "est_effort": "low",
+                    "verification": {"commands": [], "criteria_checked": ["AC-1"]},
+                },
+            ]
+        }
+    )
+    producer = ClaudeLoopWorkPlanProducer(process=FakeProcess([payload]), worktree_path=tmp_path)
+
+    items = await producer.decompose(_spec())
+
+    assert [item.item_id for item in items] == ["ws", "wi-01-cli-parsing"]
+    assert items[1].depends_on == ("ws",)
+
+
+async def test_decompose_rejects_ids_that_collide_or_vanish_after_normalization(
+    tmp_path: Path,
+) -> None:
+    colliding = json.dumps(
+        {
+            "items": [
+                {
+                    "item_id": "WS",
+                    "title": "skeleton",
+                    "acceptance_ids": ["AC-1"],
+                    "depends_on": [],
+                    "est_effort": "low",
+                    "verification": {"commands": [], "criteria_checked": ["AC-1"]},
+                },
+                {
+                    "item_id": "ws",
+                    "title": "duplicate",
+                    "acceptance_ids": ["AC-1"],
+                    "depends_on": [],
+                    "est_effort": "low",
+                    "verification": {"commands": [], "criteria_checked": ["AC-1"]},
+                },
+            ]
+        }
+    )
+    producer = ClaudeLoopWorkPlanProducer(process=FakeProcess([colliding]), worktree_path=tmp_path)
+    with pytest.raises(ValueError, match="duplicate item id"):
+        await producer.decompose(_spec())
+
+    vanishing = json.dumps(
+        {
+            "items": [
+                {
+                    "item_id": "***",
+                    "title": "nothing left",
+                    "acceptance_ids": ["AC-1"],
+                    "depends_on": [],
+                    "est_effort": "low",
+                    "verification": {"commands": [], "criteria_checked": ["AC-1"]},
+                }
+            ]
+        }
+    )
+    producer = ClaudeLoopWorkPlanProducer(process=FakeProcess([vanishing]), worktree_path=tmp_path)
+    with pytest.raises(ValueError, match="normalizes to nothing"):
+        await producer.decompose(_spec())
