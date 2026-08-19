@@ -216,3 +216,74 @@ async def test_too_many_wind_downs_is_a_vibey_error() -> None:
     from vibey.domain.errors import VibeyError
 
     assert issubclass(TooManyWindDowns, VibeyError)
+
+
+async def test_wind_down_carries_the_verified_brief_when_given() -> None:
+    from vibey.domain.handoff import HandoffBrief
+
+    brief = HandoffBrief(
+        objective="finish the relay",
+        constraints=(),
+        decisions=(),
+        assumptions=(),
+        done=(),
+        remaining=(),
+        open_questions=(),
+        open_findings=(),
+        artifacts=(),
+        invariants=(),
+        style_rules=(),
+        next_action="resume",
+    )
+    handoff, project_id = await _make_handoff_service([EngineId.CLAUDELOOP, EngineId.CODEXLOOP])
+
+    decision = await handoff.handle_wind_down(
+        project_id=project_id,
+        work_item_id="wi-b",
+        current_engine=EngineId.CLAUDELOOP,
+        requirement=JobRequirement(effort=Effort.STANDARD),
+        wind_down_count=0,
+        ledger_snapshot={},
+        brief=brief,
+    )
+
+    assert decision.verified_brief is brief
+
+
+async def test_wind_down_without_a_brief_leaves_verified_brief_none() -> None:
+    handoff, project_id = await _make_handoff_service([EngineId.CLAUDELOOP, EngineId.CODEXLOOP])
+
+    decision = await handoff.handle_wind_down(
+        project_id=project_id,
+        work_item_id="wi-c",
+        current_engine=EngineId.CLAUDELOOP,
+        requirement=JobRequirement(effort=Effort.STANDARD),
+        wind_down_count=0,
+        ledger_snapshot={},
+    )
+
+    assert decision.verified_brief is None
+
+
+async def test_allow_list_restricts_wind_down_selection() -> None:
+    repo = FakeEngineHealthRepository()
+    project_id = uuid4()
+    for eid in (EngineId.CLAUDELOOP, EngineId.CODEXLOOP, EngineId.AGYLOOP):
+        await repo.upsert(_healthy_record(project_id, eid))
+    selector = EngineSelector(
+        health_service=EngineHealthService(repo),
+        cursor_repository=FakeRotationCursorRepository(),
+        descriptors=BY_ENGINE_ID,
+    )
+    handoff = RotationHandoffService(selector, allow_list=frozenset({EngineId.CODEXLOOP}))
+
+    decision = await handoff.handle_wind_down(
+        project_id=project_id,
+        work_item_id="wi-d",
+        current_engine=EngineId.CLAUDELOOP,
+        requirement=JobRequirement(effort=Effort.STANDARD),
+        wind_down_count=0,
+        ledger_snapshot={},
+    )
+
+    assert decision.next_engine is EngineId.CODEXLOOP

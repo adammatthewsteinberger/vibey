@@ -12,6 +12,7 @@ from vibey.application.engine_selector import EngineSelector
 from vibey.domain.capacity import CapacityState
 from vibey.domain.engine import EngineId, JobRequirement
 from vibey.domain.errors import VibeyError
+from vibey.domain.handoff import HandoffBrief
 
 
 class TooManyWindDowns(VibeyError):
@@ -28,6 +29,10 @@ class HandoffDecision:
     reason: str
     handoff_brief: dict[str, object]
     wind_down_count: int
+    verified_brief: HandoffBrief | None = None
+    """The gate-verified HandoffBrief, when the caller ran the full
+    no-loss pipeline (WindDownOrchestrator does). The dict field above is
+    the legacy summary shape and stays for existing callers."""
 
 
 class RotationHandoffService:
@@ -35,8 +40,14 @@ class RotationHandoffService:
 
     MAX_WIND_DOWNS = 3
 
-    def __init__(self, engine_selector: EngineSelector) -> None:
+    def __init__(
+        self,
+        engine_selector: EngineSelector,
+        *,
+        allow_list: frozenset[EngineId] | None = None,
+    ) -> None:
         self._selector = engine_selector
+        self._allow_list = allow_list
 
     async def handle_wind_down(
         self,
@@ -46,6 +57,7 @@ class RotationHandoffService:
         requirement: JobRequirement,
         wind_down_count: int,
         ledger_snapshot: dict[str, object],
+        brief: HandoffBrief | None = None,
     ) -> HandoffDecision:
         """Handle wind-down (exit code 75): select next engine, build brief.
 
@@ -85,11 +97,12 @@ class RotationHandoffService:
         next_engine, _ = await self._selector.select_engine(
             project_id=project_id,
             requirement=updated_requirement,
+            allow_list=self._allow_list,
         )
 
-        # Build handoff brief (simplified for now - real implementation would
-        # run the full no-loss gate from handoff_orchestration.py)
-        brief = {
+        # The legacy dict summary; callers running the full no-loss
+        # pipeline pass the gate-verified brief alongside it.
+        summary = {
             "reason": "wind_down",
             "from_engine": current_engine.value,
             "to_engine": next_engine.value,
@@ -102,8 +115,9 @@ class RotationHandoffService:
         return HandoffDecision(
             next_engine=next_engine,
             reason=f"Wind-down from {current_engine.value}",
-            handoff_brief=brief,
+            handoff_brief=summary,
             wind_down_count=wind_down_count + 1,
+            verified_brief=brief,
         )
 
     async def handle_capacity_rejection(
@@ -137,6 +151,7 @@ class RotationHandoffService:
         next_engine, _ = await self._selector.select_engine(
             project_id=project_id,
             requirement=updated_requirement,
+            allow_list=self._allow_list,
         )
 
         # Build handoff brief

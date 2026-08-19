@@ -61,12 +61,25 @@ class ScriptedEngine:
     installed: bool = True
     auth_ok: bool = True
     script: list[dict[str, object]] | None = None
+    scripts: list[list[dict[str, object]]] | None = None
+    """Per-run event scripts, consumed one per ``start`` call in order.
+    When the queue is exhausted (or None), ``script`` -- and failing that
+    the default script -- covers every remaining run. This is what lets a
+    test script "run 1 winds down, run 2 completes" on one engine."""
+    exit_code_script: list[int | None] | None = None
+    """Per-run exit codes, consumed one per ``start`` in order; runs past
+    the end of the queue report None. EXIT_CODE_WIND_DOWN here scripts a
+    graceful wind-down for the ``run_exit_code`` capability."""
+    stop_remaining: tuple[str, ...] = ()
+    """What ``stop`` reports as StopSummary.remaining_work -- the scripted
+    stand-in for a real engine's final-snapshot remaining list."""
     help_text: str | None = None
     """`<binary> run --help` output stand-in. Defaults to a string
     containing every flag the descriptor claims, so the conformance
     suite's flags check passes by construction; a test can override this
     with an incomplete string to prove the check catches a real gap."""
     _handles: dict[UUID, Path] = field(default_factory=dict)
+    _exit_codes: dict[UUID, int | None] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         if self.help_text is None:
@@ -107,7 +120,11 @@ class ScriptedEngine:
         }
         (run_dir / "meta.json").write_text(json.dumps(meta))
 
-        events = self.script or _default_script(spec.run_id, self.descriptor.done_marker)
+        per_run = self.scripts.pop(0) if self.scripts else None
+        events = per_run or self.script or _default_script(spec.run_id, self.descriptor.done_marker)
+        self._exit_codes[spec.run_id] = (
+            self.exit_code_script.pop(0) if self.exit_code_script else None
+        )
         with (run_dir / "events.jsonl").open("w") as f:
             for event in events:
                 f.write(json.dumps(event) + "\n")
@@ -150,10 +167,16 @@ class ScriptedEngine:
         command = "prompt-now" if now else "prompt-at-break"
         (inbox / f"{ts}-{command}.json").write_text(json.dumps({"command": command, "text": text}))
 
+    def run_exit_code(self, handle: RunHandle) -> int | None:
+        return self._exit_codes.get(handle.run_id)
+
     async def stop(self, handle: RunHandle) -> StopSummary:
         (handle.run_dir / "stop-summary.md").write_text("Scripted run stopped cleanly.\n")
         return StopSummary(
-            run_id=handle.run_id, complete=True, summary="Scripted run stopped cleanly."
+            run_id=handle.run_id,
+            complete=True,
+            summary="Scripted run stopped cleanly.",
+            remaining_work=self.stop_remaining,
         )
 
     async def snapshot(self, handle: RunHandle) -> SnapshotRef | None:

@@ -16,6 +16,7 @@ from vibey.domain.engine import EngineId
 from vibey.domain.handoff import (
     GateMode,
     HandoffBrief,
+    HandoffEnvelope,
     Violation,
 )
 from vibey.domain.ledger import EventKind, LedgerEvent
@@ -77,3 +78,18 @@ class PhaseLedger(Protocol):
         kind: EventKind,
         payload: Mapping[str, object],
     ) -> None: ...
+
+
+@runtime_checkable
+class LedgerReader(Protocol):
+    """Read access to the durable project ledger -- the wind-down
+    orchestrator's source for the events the no-loss gate verifies."""
+
+    async def all_for_project(self, project_id: UUID) -> tuple[LedgerEvent, ...]: ...
+
+
+@runtime_checkable
+class HandoffStore(Protocol):
+    """Persists verified handoff envelopes (data-model.md §3.7)."""
+
+    async def record(self, envelope: HandoffEnvelope) -> UUID: ...

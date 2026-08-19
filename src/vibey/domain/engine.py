@@ -4,6 +4,13 @@ from enum import StrEnum
 
 from vibey.domain.effort import Effort
 
+# The *loop runners' shared "graceful wind-down" exit code: the engine ran
+# out of window capacity mid-item and stopped cleanly after writing its
+# state, so the item hands off to another engine instead of failing
+# (handoff-protocol.md §3). A domain constant because the meaning belongs
+# to the protocol, not to any one subprocess adapter.
+EXIT_CODE_WIND_DOWN = 75
+
 
 class EngineId(StrEnum):
     CLAUDELOOP = "claudeloop"

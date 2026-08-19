@@ -18,6 +18,11 @@ from vibey.domain.ledger import EventKind
 class RunOutcome:
     complete: bool
     capacity_rejected: bool
+    exit_code: int | None = None
+    """The engine process's exit code, when the adapter exposes the
+    optional ``run_exit_code`` capability -- EXIT_CODE_WIND_DOWN here is
+    the graceful-handoff signal. None for adapters without the capability
+    or while the process is still running."""
 
 
 async def run_and_record(
@@ -39,7 +44,17 @@ async def run_and_record(
             complete = True
         if event.kind == EventKind.CAPACITY_REJECTED.value:
             capacity_rejected = True
-    return RunOutcome(complete=complete, capacity_rejected=capacity_rejected)
+
+    # Read the exit code only after the tail drains: the adapter's process
+    # reference stays alive until stop() releases it, and a pre-drain read
+    # would race the process's own shutdown.
+    exit_code: int | None = None
+    read_exit_code = getattr(engine, "run_exit_code", None)
+    if callable(read_exit_code):
+        raw = read_exit_code(handle)
+        if isinstance(raw, int):
+            exit_code = raw
+    return RunOutcome(complete=complete, capacity_rejected=capacity_rejected, exit_code=exit_code)
 
 
 # Re-exported for the same reason `application/ports.py` re-exports the
