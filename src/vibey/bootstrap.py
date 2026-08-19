@@ -1,5 +1,6 @@
 """Composition root: the only module that wires concrete adapters to ports."""
 
+import asyncio
 import getpass
 import os
 from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
@@ -207,9 +208,16 @@ async def preflight_sweep(
     """Refresh installed/version/auth for every configured engine, then
     return the engines still ineligible for engine-driven jobs (no recorded
     conformance) so the caller can warn -- conformance itself is granted
-    only by `vibey doctor --conformance --record`."""
-    for engine_id, adapter in adapters.items():
-        preflight = await adapter.preflight()
+    only by `vibey doctor --conformance --record`.
+
+    Preflights run concurrently: each engine's doctor does real network
+    auth verification (~60s for claudeloop), and running them in sequence
+    made worker startup scale linearly with engine count."""
+    engine_ids = tuple(adapters)
+    preflights = await asyncio.gather(
+        *(adapters[engine_id].preflight() for engine_id in engine_ids)
+    )
+    for engine_id, preflight in zip(engine_ids, preflights, strict=True):
         await resources.engine_health_service.record_preflight(project_id, engine_id, preflight)
     records = await resources.engine_health_service.list_for_project(project_id)
     by_id = {record.engine_id: record for record in records}

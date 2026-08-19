@@ -140,3 +140,25 @@ async def test_provision_preserves_hand_written_content_outside_the_vibey_block(
     assert "# My project" in content
     assert "Hand-written notes." in content
     assert "no secrets in the repo" in content
+
+
+async def test_provision_excludes_generated_artifacts_from_every_worktree(repo: Path) -> None:
+    """Engine sessions commit with broad adds; the shared exclude file must
+    keep compiled caches, coverage data, and machinery dirs out of item
+    branches -- their binary add/add conflicts caused real repair storms."""
+    worktree = await GitWorktreeManager(repo, cycle=1).create("item-1")
+
+    await AgentSurfaceProvisioner().provision(worktree, spec())
+
+    exclude = (repo / ".git" / "info" / "exclude").read_text()
+    for pattern in ("__pycache__/", "*.pyc", ".coverage", "*.egg-info/", ".vibey/"):
+        assert pattern in exclude
+
+    # Proof at the git level: generated artifacts are invisible to status.
+    (worktree / "__pycache__").mkdir()
+    (worktree / "__pycache__" / "x.cpython-312.pyc").write_bytes(b"\x00")
+    (worktree / ".coverage").write_bytes(b"\x00")
+    status = await CleanGitEnvSubprocessExecutor().execute(
+        ("git", "-C", str(worktree), "status", "--porcelain")
+    )
+    assert status.stdout.strip() == ""
