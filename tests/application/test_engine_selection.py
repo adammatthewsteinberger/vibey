@@ -241,7 +241,7 @@ async def test_success_closes_the_circuit_and_records() -> None:
 
 async def test_capacity_defer_opens_the_circuit_with_the_defer_deadline() -> None:
     retry_at = NOW + timedelta(minutes=5)
-    handler, health, project_id = await _recording(Defer(retry_at, "capacity"))
+    handler, health, project_id = await _recording(Defer(retry_at, "capacity", capacity=True))
 
     outcome = await handler.handle(make_job(uuid4()))
 
@@ -306,3 +306,18 @@ def test_non_list_excluded_engine_ids_are_ignored() -> None:
     inputs = selection_inputs_for_job(job)
 
     assert inputs.requirement.excluded == frozenset()
+
+
+async def test_non_capacity_defer_never_opens_the_circuit() -> None:
+    """Caught live: verify-repair waits are Defers too, and recording them
+    as capacity rejections opened both engines' circuits and stalled the
+    project on "No engines meet requirements"."""
+    retry_at = NOW + timedelta(minutes=10)
+    handler, health, project_id = await _recording(Defer(retry_at, "repair in flight"))
+
+    outcome = await handler.handle(make_job(uuid4()))
+
+    assert isinstance(outcome, Defer)
+    record = await health.get_or_create(project_id, EngineId.CLAUDELOOP)  # type: ignore[arg-type]
+    assert record.circuit == "closed"
+    assert record.resets_at is None

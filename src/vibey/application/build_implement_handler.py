@@ -144,6 +144,7 @@ class BuildImplementHandler:
             return Defer(
                 retry_at=self._clock.now() + self._capacity_backoff,
                 detail=f"engine {engine_id} reported capacity rejection",
+                capacity=True,
             )
         if self._wind_down is not None and run_outcome.exit_code == EXIT_CODE_WIND_DOWN:
             # Graceful wind-down: stop() first so the outgoing engine's
