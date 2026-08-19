@@ -15,6 +15,7 @@ import json
 import os
 import shutil
 import subprocess  # nosec B404 - fixed argv, never shell=True
+import sys
 from collections.abc import AsyncIterator, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -55,6 +56,33 @@ class ProcessError(VibeyError):
     """Raised when a loop process fails in an unexpected way."""
 
     pass
+
+
+def isolate_python_env(
+    env: Mapping[str, str], *, venv_prefixes: tuple[str | None, ...]
+) -> dict[str, str]:
+    """A copy of ``env`` with the orchestrator's Python environment removed.
+
+    Engine sessions inheriting vibey's environment mutated it live, twice:
+    with VIRTUAL_ENV set and vibey's .venv/bin first on PATH, a session's
+    `pip install -e .` landed editable installs INSIDE vibey's own venv
+    (shadowing modules for every later gate run and even downgrading
+    vibey's dev tools), and its bare `pytest`/`python` resolved to vibey's
+    interpreter. The engine keeps everything else -- auth vars, HOME, the
+    rest of PATH -- and provisions its own tooling like any fresh shell.
+    """
+    isolated = dict(env)
+    for key in ("VIRTUAL_ENV", "VIRTUAL_ENV_PROMPT", "PYTHONHOME", "PYTHONPATH"):
+        isolated.pop(key, None)
+    prefixes = tuple(prefix for prefix in venv_prefixes if prefix)
+    path = isolated.get("PATH")
+    if prefixes and path:
+        isolated["PATH"] = os.pathsep.join(
+            part
+            for part in path.split(os.pathsep)
+            if not any(part == prefix or part.startswith(prefix + os.sep) for prefix in prefixes)
+        )
+    return isolated
 
 
 @dataclass(slots=True, frozen=True)
@@ -214,6 +242,10 @@ class LoopProcessAdapter:
                 stdout=asyncio.subprocess.DEVNULL,
                 stderr=asyncio.subprocess.DEVNULL,
                 cwd=spec.worktree_path,
+                env=isolate_python_env(
+                    os.environ,
+                    venv_prefixes=(os.environ.get("VIRTUAL_ENV"), sys.prefix),
+                ),
             )
         except Exception as e:
             raise ProcessError(f"Failed to spawn {self.descriptor.binary}: {e}") from e

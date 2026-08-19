@@ -8,6 +8,8 @@ import json
 from pathlib import Path
 from uuid import uuid4
 
+import pytest
+
 from vibey.application.dto import RunHandle
 from vibey.domain.capacity import CreditsExhausted
 from vibey.domain.engine import EngineId
@@ -1296,3 +1298,86 @@ async def test_tail_never_overwrites_an_explicit_complete_key(tmp_path: Path) ->
 
     assert events[0].payload["complete"] is False
     assert "complete" not in events[1].payload
+
+
+def test_isolate_python_env_strips_the_orchestrator_venv() -> None:
+    """Engine sessions inheriting vibey's env pip-installed INTO vibey's
+    own venv, twice, live -- shadowing modules for every later gate run."""
+    from vibey.infrastructure.engines.loop_process_adapter import isolate_python_env
+
+    env = {
+        "VIRTUAL_ENV": "/repo/.venv",
+        "VIRTUAL_ENV_PROMPT": "vibey",
+        "PYTHONPATH": "/repo/src",
+        "PYTHONHOME": "/somewhere",
+        "PATH": "/repo/.venv/bin:/usr/local/bin:/repo/.venv:/usr/bin",
+        "HOME": "/Users/dev",
+        "ANTHROPIC_API_KEY": "sk-test",
+    }
+
+    isolated = isolate_python_env(env, venv_prefixes=("/repo/.venv", None))
+
+    for stripped in ("VIRTUAL_ENV", "VIRTUAL_ENV_PROMPT", "PYTHONPATH", "PYTHONHOME"):
+        assert stripped not in isolated
+    assert isolated["PATH"] == "/usr/local/bin:/usr/bin"
+    # Everything the engine actually needs passes through untouched.
+    assert isolated["HOME"] == "/Users/dev"
+    assert isolated["ANTHROPIC_API_KEY"] == "sk-test"
+    # The input mapping is never mutated.
+    assert env["VIRTUAL_ENV"] == "/repo/.venv"
+
+
+def test_isolate_python_env_handles_missing_path_and_no_prefixes() -> None:
+    from vibey.infrastructure.engines.loop_process_adapter import isolate_python_env
+
+    no_path = isolate_python_env({"VIRTUAL_ENV": "/v"}, venv_prefixes=("/v",))
+    assert "PATH" not in no_path
+
+    no_prefixes = isolate_python_env({"PATH": "/v/bin:/usr/bin"}, venv_prefixes=(None,))
+    assert no_prefixes["PATH"] == "/v/bin:/usr/bin"
+
+    # A PATH entry that merely shares the prefix STRING is not under the
+    # venv directory and must survive.
+    lookalike = isolate_python_env(
+        {"PATH": "/repo/.venv-tools/bin:/repo/.venv/bin"}, venv_prefixes=("/repo/.venv",)
+    )
+    assert lookalike["PATH"] == "/repo/.venv-tools/bin"
+
+
+async def test_start_spawns_the_engine_with_an_isolated_env(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from unittest.mock import AsyncMock
+
+    from vibey.application.dto import RunSpec
+    from vibey.domain.effort import Effort
+    from vibey.domain.engine import IsolationLevel
+    from vibey.infrastructure.engines import loop_process_adapter as module
+
+    captured: dict[str, object] = {}
+
+    async def fake_exec(*argv, **kwargs):  # type: ignore[no-untyped-def]
+        captured.update(kwargs)
+        process = AsyncMock()
+        process.pid = 4242
+        process.returncode = None
+        return process
+
+    monkeypatch.setattr(module.asyncio, "create_subprocess_exec", fake_exec)
+    monkeypatch.setenv("VIRTUAL_ENV", "/orchestrator/.venv")
+
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
+    spec = RunSpec(
+        run_id=uuid4(),
+        worktree_path=tmp_path,
+        prompt="do the thing",
+        effort=Effort.LOW,
+        isolation=IsolationLevel.WORKTREE,
+    )
+    handle = await adapter.start(spec)
+    _active_processes.pop(handle.run_id, None)
+
+    env = captured["env"]
+    assert isinstance(env, dict)
+    assert "VIRTUAL_ENV" not in env
+    assert "/orchestrator/.venv" not in env.get("PATH", "")
