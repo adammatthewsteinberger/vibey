@@ -11,6 +11,18 @@ from vibey.application.interfaces import (
 from vibey.application.review_demo_handler import AutomatedFinding
 from vibey.domain.review import Ambiguity, Severity
 
+# vibey's own machinery inside the project repo -- worktrees under .vibey/
+# and the engines' state dirs. Reviewing them reviews dead attempt branches
+# and run transcripts, not the product: caught live when a stale cycle's
+# worktree raised a lint finding against code that no longer existed,
+# looping REVIEW back into BUILD.
+_MACHINERY_DIRS = (".vibey", ".claudeloop", ".codexloop", ".cursorloop", ".agyloop")
+
+_DEFAULT_CODE_REVIEW: tuple[tuple[str, ...], ...] = (
+    ("ruff", "check", ".")
+    + tuple(part for name in _MACHINERY_DIRS for part in ("--exclude", name)),
+)
+
 
 class SubprocessAutomatedReviewRunner:
     def __init__(
@@ -19,7 +31,7 @@ class SubprocessAutomatedReviewRunner:
         projects: ProjectStore | object,
         gates: GateRunner,
         security_commands: Sequence[tuple[str, ...]] = (("bandit", "-q", "-r", "src"),),
-        code_review_commands: Sequence[tuple[str, ...]] = (("ruff", "check", "."),),
+        code_review_commands: Sequence[tuple[str, ...]] = _DEFAULT_CODE_REVIEW,
     ) -> None:
         self._projects = projects
         self._gates = gates

@@ -173,3 +173,26 @@ async def test_reviewer_rejection_fails_as_work(tmp_path: Path) -> None:
     outcome = await handler.handle(job)
 
     assert outcome == Failure(FailureClass.WORK, "diff review did not approve this work item")
+
+
+def test_gate_output_tail_prefers_both_streams_and_labels_stdout() -> None:
+    """pytest prints the actual failure to stdout; stderr often carries
+    only warnings. Both must appear (tail-capped), or the operator sees a
+    deprecation warning and no failure -- caught live."""
+    from vibey.application.build_verify_handler import gate_output_tail
+
+    both = gate_output_tail(GateResult(1, "FAILED test_x - assert 1 == 0", "some warning"))
+    assert "some warning" in both
+    assert "[stdout] FAILED test_x" in both
+
+    stdout_only = gate_output_tail(GateResult(1, "FAILED test_y", ""))
+    assert stdout_only == "[stdout] FAILED test_y"
+
+    stderr_only = gate_output_tail(GateResult(1, "", "boom"))
+    assert stderr_only == "boom"
+
+    silent = gate_output_tail(GateResult(1, "", ""))
+    assert silent == "(no output)"
+
+    capped = gate_output_tail(GateResult(1, "x" * 5000, ""), limit=100)
+    assert len(capped) <= 120

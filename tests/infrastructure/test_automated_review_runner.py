@@ -105,3 +105,16 @@ async def test_subprocess_automated_review_runner_unknown_project() -> None:
     )
     with pytest.raises(LookupError):
         await runner_invalid.run_automated_reviews(uuid4(), 1)
+
+
+def test_default_code_review_command_excludes_vibey_machinery() -> None:
+    """`ruff check .` at the repo root must never review .vibey worktrees
+    or engine state dirs -- a stale worktree's dead code raised a real
+    finding live and looped REVIEW back into BUILD."""
+    from vibey.infrastructure.build.automated_review_runner import _DEFAULT_CODE_REVIEW
+
+    (command,) = _DEFAULT_CODE_REVIEW
+    assert command[:3] == ("ruff", "check", ".")
+    for name in (".vibey", ".claudeloop", ".codexloop", ".cursorloop", ".agyloop"):
+        index = command.index(name)
+        assert command[index - 1] == "--exclude"

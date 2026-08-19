@@ -21,7 +21,7 @@ from datetime import timedelta
 from uuid import uuid4
 
 from vibey.application.build_engine_run import BuildLedger
-from vibey.application.build_verify_handler import GateRunner
+from vibey.application.build_verify_handler import GateRunner, gate_output_tail
 from vibey.application.dto import EngineEvent, EnqueueRequest, JobRecord
 from vibey.application.interfaces import (
     IntegrationBranch,
@@ -94,7 +94,7 @@ class BuildIntegrateHandler:
             if result.returncode != 0:
                 detail = (
                     f"gate failed after merging {job.work_item_id!r}: {command}: "
-                    f"{result.stderr.strip()}"
+                    f"{gate_output_tail(result)}"
                 )
                 await self._isolate_and_repair(job, detail)
                 return Failure(FailureClass.WORK, detail)

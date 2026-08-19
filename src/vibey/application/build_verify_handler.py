@@ -39,6 +39,21 @@ from vibey.domain.job import FailureClass, idempotency_key
 from vibey.domain.phase import Phase
 
 
+def gate_output_tail(result: GateResult, *, limit: int = 1500) -> str:
+    """Both streams, tail-capped. pytest and most runners print the actual
+    failure to stdout while stderr carries only warnings -- caught live
+    when a failing gate's last_error showed nothing but a deprecation
+    warning and the real assertion failure was silently discarded."""
+    parts: list[str] = []
+    stderr = result.stderr.strip()
+    stdout = result.stdout.strip()
+    if stderr:
+        parts.append(stderr[-limit:])
+    if stdout:
+        parts.append(f"[stdout] {stdout[-limit:]}")
+    return "\n".join(parts) or "(no output)"
+
+
 class BuildVerifyHandler:
     def __init__(
         self,
@@ -73,7 +88,7 @@ class BuildVerifyHandler:
             result = await self._gates.run(tuple(shlex.split(str(command))), cwd=worktree)
             if result.returncode != 0:
                 return Failure(
-                    FailureClass.WORK, f"gate failed: {command}: {result.stderr.strip()}"
+                    FailureClass.WORK, f"gate failed: {command}: {gate_output_tail(result)}"
                 )
 
         criteria_checked = (
