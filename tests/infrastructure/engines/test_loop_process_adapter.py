@@ -1253,3 +1253,46 @@ async def test_run_exit_code_reads_the_live_process_registry(tmp_path: Path) -> 
         assert adapter.run_exit_code(handle) == 75
     finally:
         _active_processes.pop(handle.run_id, None)
+
+
+async def test_tail_normalizes_vendor_success_into_vibey_complete(tmp_path: Path) -> None:
+    """claudeloop/agyloop verdicts say {"success": bool}; every vibey
+    consumer reads {"complete": bool}. Caught live: a real claudeloop run
+    finished its item, rendered success=true, and the implement handler
+    still failed it as "did not report completion"."""
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
+    run_dir = tmp_path / "test-run"
+    run_dir.mkdir(parents=True)
+    handle = _make_handle(run_dir)
+
+    (run_dir / "events.jsonl").write_text(
+        '{"event_type":"finished","ts":"2026-01-01T00:00:00+00:00",'
+        '"payload":{"success":true,"reason":"Done"}}\n'
+        '{"event_type":"finished","ts":"2026-01-01T00:00:01+00:00",'
+        '"payload":{"success":false,"reason":"Nope"}}\n'
+    )
+    (run_dir / "meta.json").write_text('{"status":"finished"}')
+
+    events = [event async for event in adapter.tail(handle)]
+
+    assert [e.payload.get("complete") for e in events] == [True, False]
+
+
+async def test_tail_never_overwrites_an_explicit_complete_key(tmp_path: Path) -> None:
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
+    run_dir = tmp_path / "test-run"
+    run_dir.mkdir(parents=True)
+    handle = _make_handle(run_dir)
+
+    (run_dir / "events.jsonl").write_text(
+        '{"event_type":"finished","ts":"2026-01-01T00:00:00+00:00",'
+        '"payload":{"complete":false,"success":true}}\n'
+        '{"event_type":"finished","ts":"2026-01-01T00:00:01+00:00",'
+        '"payload":{"reason":"no completion field at all"}}\n'
+    )
+    (run_dir / "meta.json").write_text('{"status":"finished"}')
+
+    events = [event async for event in adapter.tail(handle)]
+
+    assert events[0].payload["complete"] is False
+    assert "complete" not in events[1].payload

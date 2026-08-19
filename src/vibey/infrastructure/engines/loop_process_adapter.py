@@ -66,6 +66,11 @@ class LoopProcessAdapter:
     """
 
     descriptor: EngineDescriptor
+    doctor_timeout: float = 120.0
+    """`<binary> doctor` wall-clock budget for preflight. claudeloop's
+    doctor verifies credentials over the network and takes ~60s warm --
+    the old hardcoded 30s meant every real claudeloop preflight timed out
+    into the env-var fallback, which cannot see CLI-credential auth."""
 
     @property
     def help_text(self) -> str | None:
@@ -151,7 +156,7 @@ class LoopProcessAdapter:
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
-            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=30.0)
+            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=self.doctor_timeout)
             auth_ok = proc.returncode == 0
             if not auth_ok:
                 detail = (stderr or stdout).decode().strip()[:500]
@@ -313,6 +318,19 @@ class LoopProcessAdapter:
                             and payload.get("success") is True
                         ):
                             payload["done_marker"] = self.descriptor.done_marker
+                        # Normalize the completion key: claudeloop/agyloop
+                        # verdict payloads say {"success": bool} while every
+                        # vibey consumer (run_and_record, the brief builder)
+                        # reads {"complete": bool}. Caught live: a real
+                        # claudeloop run finished its item, rendered
+                        # success=true, and the handler still failed it as
+                        # "did not report completion".
+                        if (
+                            kind == EventKind.VERDICT_RENDERED
+                            and "complete" not in payload
+                            and "success" in payload
+                        ):
+                            payload["complete"] = payload.get("success") is True
 
                         # Yield translated event
                         yield EngineEvent(
