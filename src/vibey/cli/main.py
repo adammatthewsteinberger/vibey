@@ -848,6 +848,17 @@ def doctor(
         str | None,
         typer.Option("--engine", help="Specific engine to check (default: all installed)"),
     ] = None,
+    record: Annotated[
+        bool,
+        typer.Option(
+            "--record",
+            help="Persist preflight (and conformance, with --conformance) to engine_health",
+        ),
+    ] = False,
+    record_project: Annotated[
+        UUID | None,
+        typer.Option("--project", help="Project to record health for (default: latest)"),
+    ] = None,
 ) -> None:
     """Check engine health, auth status, and optionally run conformance."""
     from vibey.application.conformance import run_conformance
@@ -872,6 +883,18 @@ def doctor(
             descriptors = list(ALL_DESCRIPTORS)
 
         all_ok = True
+
+        record_project_id: UUID | None = None
+        if record:
+            async with build_app() as resources:
+                if record_project is not None:
+                    target = await resources.projects.get(record_project)
+                else:
+                    target = await resources.projects.get_latest()
+            if target is None:
+                typer.echo("no projects found; create one with `vibey new` first")
+                raise typer.Exit(1)
+            record_project_id = target.project_id
 
         for desc in descriptors:
             adapter = LoopProcessAdapter(descriptor=desc)
@@ -908,6 +931,19 @@ def doctor(
                     typer.echo(f"  {mark} {check.name}{detail}")
                 if not report.ok:
                     all_ok = False
+
+                if record_project_id is not None:
+                    async with build_app() as resources:
+                        await resources.engine_health_service.update_from_preflight(
+                            record_project_id, desc.engine_id, preflight, conformance_ok=report.ok
+                        )
+                    typer.echo(f"  recorded engine_health for {desc.engine_id.value}")
+            elif record_project_id is not None:
+                async with build_app() as resources:
+                    await resources.engine_health_service.record_preflight(
+                        record_project_id, desc.engine_id, preflight
+                    )
+                typer.echo(f"  recorded preflight for {desc.engine_id.value}")
 
         if conformance and not all_ok:
             raise typer.Exit(1)
@@ -958,6 +994,10 @@ def worker(
         raise typer.Exit(2)
 
     async def run_worker() -> None:
+        from vibey.application.interfaces import WorkPlanProducer
+        from vibey.bootstrap import preflight_sweep
+        from vibey.infrastructure.engines.claudeloop_decompose import ClaudeLoopWorkPlanProducer
+
         async with build_app() as resources:
             if project_opt is not None:
                 project = await resources.projects.get(project_opt)
@@ -968,6 +1008,7 @@ def worker(
                 raise typer.Exit(1)
 
             design_provider: DesignProvider
+            decomposer: WorkPlanProducer
             if provider == "claudeloop":
                 process = ClaudeLoopProcess(
                     executor=AsyncSubprocessExecutor(),
@@ -978,15 +1019,27 @@ def worker(
                     process=process,
                     worktree_path=project.repo_path,
                 )
+                decomposer = ClaudeLoopWorkPlanProducer(
+                    process=process,
+                    worktree_path=project.repo_path,
+                )
             else:
                 design_provider = ScriptedDesignProvider()
+                decomposer = ScriptedWorkPlanProducer()
 
             adapters = dict(resources.engine_adapters)
             if allow_list is not None:
                 adapters = {eid: a for eid, a in adapters.items() if eid in allow_list}
-            build_engine = EngineId.CLAUDELOOP
-            if allow_list is not None and EngineId.CLAUDELOOP not in allow_list:
-                build_engine = sorted(allow_list, key=lambda e: e.value)[0]
+
+            ineligible = await preflight_sweep(
+                resources=resources, project_id=project.project_id, adapters=adapters
+            )
+            if ineligible:
+                names = ", ".join(sorted(e.value for e in ineligible))
+                typer.echo(
+                    f"warning: no recorded conformance for {names} -- engine-driven jobs "
+                    "will not select them until `vibey doctor --conformance --record` passes"
+                )
 
             count = max(1, min(parallelism, len(adapters) * 2, os.cpu_count() or 1))
             loops = [
@@ -995,10 +1048,10 @@ def worker(
                     project=project,
                     design_provider=design_provider,
                     visual_provider=ScriptedVisualProvider(),
-                    decomposer=ScriptedWorkPlanProducer(),
+                    decomposer=decomposer,
                     owner=f"worker-{os.getpid()}-{i}",
                     engine_adapters=adapters,
-                    build_engine=build_engine,
+                    allow_list=allow_list,
                 )
                 for i in range(count)
             ]

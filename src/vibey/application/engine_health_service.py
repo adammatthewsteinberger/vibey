@@ -49,6 +49,38 @@ class EngineHealthService:
             selected_count=0,
         )
 
+    async def record_preflight(
+        self,
+        project_id: UUID,
+        engine_id: EngineId,
+        preflight: PreflightResult,
+    ) -> EngineHealthRecord:
+        """Worker-startup refresh: installed/version/auth from a fresh
+        preflight, PRESERVING the conformance verdict -- conformance is
+        doctor's to grant (update_from_preflight), and a routine startup
+        sweep must never silently revoke or forge it."""
+        record = await self.get_or_create(project_id, engine_id)
+        now = datetime.now(UTC)
+        updated = EngineHealthRecord(
+            project_id=record.project_id,
+            engine_id=record.engine_id,
+            installed=preflight.installed,
+            version=preflight.version,
+            conformance_ok=record.conformance_ok,
+            conformance_at=record.conformance_at,
+            auth_ok_at=now if preflight.auth_ok else record.auth_ok_at,
+            circuit=record.circuit,
+            capacity_state=record.capacity_state,
+            resets_at=record.resets_at,
+            probe_next_at=record.probe_next_at,
+            probe_attempt=record.probe_attempt,
+            consecutive_fail=record.consecutive_fail,
+            ewma_failure=record.ewma_failure,
+            cost_usd_cycle=record.cost_usd_cycle,
+            selected_count=record.selected_count,
+        )
+        return await self._repository.upsert(updated)
+
     async def update_from_preflight(
         self,
         project_id: UUID,

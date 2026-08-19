@@ -291,3 +291,54 @@ async def test_list_for_project_returns_all_records() -> None:
     records = await svc.list_for_project(project_id)
 
     assert len(records) == 2
+
+
+async def test_record_preflight_refreshes_auth_but_preserves_conformance() -> None:
+    """The worker's startup sweep must never grant or revoke conformance --
+    that verdict belongs to `vibey doctor --conformance --record` alone."""
+    from vibey.application.dto import PreflightResult
+
+    repo = FakeEngineHealthRepository()
+    service = EngineHealthService(repo)
+    project_id = uuid4()
+    granted = await service.update_from_preflight(
+        project_id,
+        EngineId.CLAUDELOOP,
+        PreflightResult(installed=True, version="1.0.0", auth_ok=True),
+        conformance_ok=True,
+    )
+    assert granted.conformance_ok is True
+
+    refreshed = await service.record_preflight(
+        project_id,
+        EngineId.CLAUDELOOP,
+        PreflightResult(installed=True, version="1.1.0", auth_ok=True),
+    )
+
+    assert refreshed.version == "1.1.0"
+    assert refreshed.conformance_ok is True
+    assert refreshed.conformance_at == granted.conformance_at
+    assert refreshed.auth_ok_at is not None
+
+
+async def test_record_preflight_keeps_prior_auth_timestamp_on_auth_failure() -> None:
+    from vibey.application.dto import PreflightResult
+
+    repo = FakeEngineHealthRepository()
+    service = EngineHealthService(repo)
+    project_id = uuid4()
+    first = await service.record_preflight(
+        project_id,
+        EngineId.AGYLOOP,
+        PreflightResult(installed=True, version="1.0.0", auth_ok=True),
+    )
+    assert first.auth_ok_at is not None
+
+    second = await service.record_preflight(
+        project_id,
+        EngineId.AGYLOOP,
+        PreflightResult(installed=True, version="1.0.0", auth_ok=False),
+    )
+
+    assert second.auth_ok_at == first.auth_ok_at
+    assert second.conformance_ok is False
