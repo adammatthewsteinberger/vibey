@@ -199,3 +199,46 @@ async def test_unknown_outcome_type_is_silently_ignored() -> None:
     record = await jobs.get(job.id)
     assert record is not None
     assert record.state is JobState.LEASED
+
+
+async def test_lease_for_kind_extends_the_lease_before_handling() -> None:
+    """The kind isn't known until after the claim, so the loop claims at the
+    short default and immediately heartbeats up to the kind's real lease."""
+    job = make_job(PROJECT_ID)
+    jobs = FakeJobRepository([job])
+    gates = FakeHumanGateRepository()
+    loop = WorkerLoop(
+        jobs=jobs,
+        gates=gates,
+        handler=_FixedHandler(Success()),
+        owner="w1",
+        lease=timedelta(seconds=30),
+        lease_for_kind=lambda kind: timedelta(hours=2),
+    )
+
+    claimed = await loop.run_once(PROJECT_ID)
+
+    assert claimed is True
+    # claim, then the immediate extension heartbeat, then ack
+    assert jobs.calls[:2] == ["claim", "heartbeat"]
+    record = await jobs.get(job.id)
+    assert record is not None
+    assert record.state is JobState.SUCCEEDED
+
+
+async def test_lease_for_kind_matching_default_skips_the_extra_heartbeat() -> None:
+    job = make_job(PROJECT_ID)
+    jobs = FakeJobRepository([job])
+    gates = FakeHumanGateRepository()
+    loop = WorkerLoop(
+        jobs=jobs,
+        gates=gates,
+        handler=_FixedHandler(Success()),
+        owner="w1",
+        lease=timedelta(seconds=30),
+        lease_for_kind=lambda kind: timedelta(seconds=30),
+    )
+
+    await loop.run_once(PROJECT_ID)
+
+    assert "heartbeat" not in jobs.calls

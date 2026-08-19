@@ -868,8 +868,49 @@ def test_worker_once_with_job(tmp_path: Path) -> None:
         mock_notifier_cls.return_value = mock_notifier
         res = runner.invoke(app, ["worker", "--once"])
     assert res.exit_code == 0, res.output
-    assert "claimed job" in res.output
-    assert "completed job" in res.output
+    assert "processed one job" in res.output
+
+
+def test_worker_unknown_kind_burns_an_attempt(tmp_path: Path) -> None:
+    """The dispatcher rejects unknown kinds as VIBEY failures -- the poison
+    path is now a feature to assert, not the stub's silent ack."""
+
+    async def seed() -> UUID:
+        async with build_app() as resources:
+            p = await resources.projects.create("poison-proj", tmp_path, max_cycles=1, config={})
+            from vibey.domain.job import idempotency_key
+
+            job = await resources.jobs.enqueue(
+                EnqueueRequest(
+                    project_id=p.project_id,
+                    cycle=p.cycle,
+                    phase=Phase.INTAKE,
+                    kind="test.work",
+                    idempotency_key=idempotency_key(p.project_id, p.cycle, "test.work", "1"),
+                    requirement={},
+                )
+            )
+            return job.id
+
+    job_id = asyncio.run(seed())
+    from unittest.mock import AsyncMock, patch
+
+    with patch("vibey.infrastructure.db.notifier.PostgresJobReadyNotifier") as mock_notifier_cls:
+        mock_notifier_cls.return_value = AsyncMock()
+        res = runner.invoke(app, ["worker", "--once"])
+    assert res.exit_code == 0, res.output
+    assert "processed one job" in res.output
+
+    async def inspect() -> tuple[int, str]:
+        async with build_app() as resources:
+            job = await resources.jobs.get(job_id)
+            assert job is not None
+            assert job.last_error is not None
+            return job.attempts, str(job.last_error)
+
+    attempts, error = asyncio.run(inspect())
+    assert attempts == 1
+    assert "no handler registered" in error
 
 
 def test_worker_no_projects() -> None:
@@ -908,13 +949,127 @@ def test_worker_continuous_processes_then_waits(tmp_path: Path) -> None:
         mock_notifier.wait_for_job_ready = AsyncMock(side_effect=KeyboardInterrupt)
         mock_notifier_cls.return_value = mock_notifier
         res = runner.invoke(app, ["worker"])
-    assert "claimed job" in res.output
-    assert "completed job" in res.output
+    assert "processed one job" in res.output
 
 
 def test_worker_invalid_engine() -> None:
     res = runner.invoke(app, ["worker", "--engines", "nonexistent"])
     assert res.exit_code == 2
+
+
+def test_worker_invalid_provider() -> None:
+    res = runner.invoke(app, ["worker", "--provider", "nonexistent"])
+    assert res.exit_code == 2
+    assert "provider must be" in res.output
+
+
+def test_worker_project_flag_selects_that_project(tmp_path: Path) -> None:
+    async def seed() -> UUID:
+        async with build_app() as resources:
+            older = await resources.projects.create(
+                "older-proj", tmp_path / "older", max_cycles=1, config={}
+            )
+            await resources.projects.create(
+                "newer-proj", tmp_path / "newer", max_cycles=1, config={}
+            )
+            return older.project_id
+
+    older_id = asyncio.run(seed())
+    from unittest.mock import AsyncMock, patch
+
+    with patch("vibey.infrastructure.db.notifier.PostgresJobReadyNotifier") as mock_notifier_cls:
+        mock_notifier_cls.return_value = AsyncMock()
+        res = runner.invoke(app, ["worker", "--once", "--project", str(older_id)])
+    assert res.exit_code == 0, res.output
+    assert "project=older-proj" in res.output
+    assert "no ready job" in res.output
+
+
+def test_worker_unknown_project_exits_1(tmp_path: Path) -> None:
+    from unittest.mock import AsyncMock, patch
+    from uuid import uuid4
+
+    async def seed() -> None:
+        async with build_app() as resources:
+            await resources.projects.create("some-proj", tmp_path, max_cycles=1, config={})
+
+    asyncio.run(seed())
+    with patch("vibey.infrastructure.db.notifier.PostgresJobReadyNotifier") as mock_notifier_cls:
+        mock_notifier_cls.return_value = AsyncMock()
+        res = runner.invoke(app, ["worker", "--once", "--project", str(uuid4())])
+    assert res.exit_code == 1
+    assert "no projects found" in res.output
+
+
+def test_worker_engines_allow_list_with_claudeloop(tmp_path: Path) -> None:
+    async def seed() -> None:
+        async with build_app() as resources:
+            await resources.projects.create("eng-proj", tmp_path, max_cycles=1, config={})
+
+    asyncio.run(seed())
+    from unittest.mock import AsyncMock, patch
+
+    with patch("vibey.infrastructure.db.notifier.PostgresJobReadyNotifier") as mock_notifier_cls:
+        mock_notifier_cls.return_value = AsyncMock()
+        res = runner.invoke(app, ["worker", "--once", "--engines", "claudeloop,agyloop"])
+    assert res.exit_code == 0, res.output
+    assert "no ready job" in res.output
+
+
+def test_worker_engines_allow_list_without_claudeloop(tmp_path: Path) -> None:
+    """The implementer falls back to the first allowed engine when
+    claudeloop isn't in the allow list."""
+
+    async def seed() -> None:
+        async with build_app() as resources:
+            await resources.projects.create("eng2-proj", tmp_path, max_cycles=1, config={})
+
+    asyncio.run(seed())
+    from unittest.mock import AsyncMock, patch
+
+    with patch("vibey.infrastructure.db.notifier.PostgresJobReadyNotifier") as mock_notifier_cls:
+        mock_notifier_cls.return_value = AsyncMock()
+        res = runner.invoke(app, ["worker", "--once", "--engines", "agyloop"])
+    assert res.exit_code == 0, res.output
+    assert "no ready job" in res.output
+
+
+def test_worker_provider_claudeloop_constructs_live_providers(tmp_path: Path) -> None:
+    """--provider claudeloop builds the live design provider without any
+    subprocess spawn at construction time."""
+
+    async def seed() -> None:
+        async with build_app() as resources:
+            await resources.projects.create("live-prov-proj", tmp_path, max_cycles=1, config={})
+
+    asyncio.run(seed())
+    from unittest.mock import AsyncMock, patch
+
+    with patch("vibey.infrastructure.db.notifier.PostgresJobReadyNotifier") as mock_notifier_cls:
+        mock_notifier_cls.return_value = AsyncMock()
+        res = runner.invoke(app, ["worker", "--once", "--provider", "claudeloop"])
+    assert res.exit_code == 0, res.output
+    assert "provider=claudeloop" in res.output
+    assert "no ready job" in res.output
+
+
+def test_worker_parallelism_spawns_gathered_loops(tmp_path: Path) -> None:
+    """-j 2 continuous takes the gather branch; the mocked notifier's
+    KeyboardInterrupt ends the run once both loops go idle."""
+
+    async def seed() -> None:
+        async with build_app() as resources:
+            await resources.projects.create("par-proj", tmp_path, max_cycles=1, config={})
+
+    asyncio.run(seed())
+    from unittest.mock import AsyncMock, patch
+
+    with patch("vibey.infrastructure.db.notifier.PostgresJobReadyNotifier") as mock_notifier_cls:
+        mock_notifier = AsyncMock()
+        mock_notifier.wait_for_job_ready = AsyncMock(side_effect=KeyboardInterrupt)
+        mock_notifier_cls.return_value = mock_notifier
+        res = runner.invoke(app, ["worker", "-j", "2"])
+    assert "parallelism=2" in res.output
 
 
 # ── watch state_fetcher coverage ──────────────────────────────────────────────

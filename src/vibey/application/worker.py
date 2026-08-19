@@ -5,6 +5,7 @@ be idempotent under replay)."""
 
 import asyncio
 import contextlib
+from collections.abc import Callable
 from datetime import datetime, timedelta
 from uuid import UUID
 
@@ -37,12 +38,14 @@ class WorkerLoop:
         handler: JobHandler,
         owner: str,
         lease: timedelta = timedelta(seconds=30),
+        lease_for_kind: Callable[[str], timedelta] | None = None,
     ) -> None:
         self._jobs = jobs
         self._gates = gates
         self._handler = handler
         self._owner = owner
         self._lease = lease
+        self._lease_for_kind = lease_for_kind
 
     async def run_once(self, project_id: UUID) -> bool:
         """Claims and executes at most one job. Returns False if there was
@@ -51,7 +54,17 @@ class WorkerLoop:
         if job is None:
             return False
 
-        heartbeat_task = asyncio.ensure_future(self._heartbeat_forever(job.id))
+        # Lease duration is per-kind (a build.implement run takes hours; a
+        # triage takes minutes). The kind isn't known until after the claim,
+        # so claim at the short default and immediately extend once resolved.
+        lease = self._lease
+        if self._lease_for_kind is not None:
+            resolved = self._lease_for_kind(job.kind)
+            if resolved != self._lease:
+                await self._jobs.heartbeat(job.id, owner=self._owner, lease=resolved)
+                lease = resolved
+
+        heartbeat_task = asyncio.ensure_future(self._heartbeat_forever(job.id, lease=lease))
         try:
             try:
                 outcome: Outcome = await self._handler.handle(job)
@@ -90,12 +103,12 @@ class WorkerLoop:
                 error={"class": FailureClass.CAPACITY.value, "detail": outcome.detail},
             )
 
-    async def _heartbeat_forever(self, job_id: UUID) -> None:
-        interval = self._lease.total_seconds() / 3
+    async def _heartbeat_forever(self, job_id: UUID, *, lease: timedelta) -> None:
+        interval = lease.total_seconds() / 3
         try:
             while True:
                 await asyncio.sleep(interval)
-                await self._jobs.heartbeat(job_id, owner=self._owner, lease=self._lease)
+                await self._jobs.heartbeat(job_id, owner=self._owner, lease=lease)
         except asyncio.CancelledError:
             pass
 

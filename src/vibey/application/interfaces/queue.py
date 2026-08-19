@@ -52,6 +52,16 @@ class JobHandler(Protocol):
 
 
 @runtime_checkable
+class JobHandlerFactory(Protocol):
+    """Builds a handler per claimed job, for kinds whose collaborators are
+    job-scoped: BUILD handlers need worktree/integration managers bound to
+    `job.cycle` and (later) an engine selected per attempt, so a single
+    handler instance constructed at worker start cannot serve them."""
+
+    async def create(self, job: JobRecord) -> JobHandler: ...
+
+
+@runtime_checkable
 class JobReadyNotifier(Protocol):
     async def wait_for_job_ready(self, project_id: UUID, *, timeout: timedelta) -> bool:
         """Blocks until a job-ready notification arrives or timeout elapses.
