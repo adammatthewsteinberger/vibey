@@ -240,3 +240,77 @@ async def test_replay_skips_already_answered_and_already_assumed_items() -> None
     ]
     assert len(answer_events) == 1
     assert len(assumption_events) == 1
+
+
+async def test_accept_defaults_answers_everything_including_blocking_questions() -> None:
+    """The zero-touch contract: question KEYS are model-minted and vary
+    per run, so an unattended caller cannot know them -- accept_defaults
+    takes every default, blocking included, with no keys at all."""
+    project_id = uuid4()
+    job = make_job(project_id)
+    ledger = FakeDesignLedger()
+    gates = FakeHumanGateRepository()
+    handler = DesignInterviewHandler(
+        ledger=ledger,
+        jobs=FakeJobRepository(),
+        gates=gates,
+        questions=TwoQuestionProvider(),
+        clock=FixedClock(),
+        interviewer=EngineId.CLAUDELOOP,
+    )
+    first = await handler.handle(job)
+    assert isinstance(first, Park)
+    gate = await gates.raise_gate(project_id, job.id, first.request)
+    await gates.answer(gate.gate_id, answer={"accept_defaults": True}, answered_by="driver")
+
+    outcome = await handler.handle(job)
+
+    # The stage advanced past both questions (blocking q-a included).
+    answered = [
+        event.payload["item_id"] for event in ledger.events if event.kind is EventKind.ANSWER_GIVEN
+    ]
+    assert "q-a" in answered and "q-b" in answered
+    answers = {
+        event.payload["item_id"]: event.payload["answer"]
+        for event in ledger.events
+        if event.kind is EventKind.ANSWER_GIVEN
+    }
+    assert answers["q-a"] == "def-a"
+    assert answers["q-b"] == "def-b"
+    # The handler advanced past the first stage: the next park (the
+    # provider reuses question ids) is for the FOLLOWING stage.
+    assert isinstance(outcome, Park)
+    assert not outcome.request.prompt.startswith("context_free")
+
+
+async def test_accept_defaults_keeps_explicit_answers_over_defaults() -> None:
+    project_id = uuid4()
+    job = make_job(project_id)
+    ledger = FakeDesignLedger()
+    gates = FakeHumanGateRepository()
+    handler = DesignInterviewHandler(
+        ledger=ledger,
+        jobs=FakeJobRepository(),
+        gates=gates,
+        questions=TwoQuestionProvider(),
+        clock=FixedClock(),
+        interviewer=EngineId.CLAUDELOOP,
+    )
+    first = await handler.handle(job)
+    assert isinstance(first, Park)
+    gate = await gates.raise_gate(project_id, job.id, first.request)
+    await gates.answer(
+        gate.gate_id,
+        answer={"accept_defaults": True, "answers": {"q-a": "explicit answer"}},
+        answered_by="driver",
+    )
+
+    await handler.handle(job)
+
+    answers = {
+        event.payload["item_id"]: event.payload["answer"]
+        for event in ledger.events
+        if event.kind is EventKind.ANSWER_GIVEN
+    }
+    assert answers["q-a"] == "explicit answer"
+    assert answers["q-b"] == "def-b"

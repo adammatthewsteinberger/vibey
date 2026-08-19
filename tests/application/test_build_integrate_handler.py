@@ -549,3 +549,46 @@ async def test_without_a_ledger_reader_the_original_failure_path_stands(
     assert isinstance(outcome, Failure)
     repair = next(iter(jobs._jobs.values()))
     assert "repair_detail" not in repair.payload
+
+
+async def test_an_answered_gate_grants_integrate_repair_rounds_too(tmp_path: Path) -> None:
+    from tests.application.fakes import FakeHumanGateRepository
+    from vibey.application.worker import Defer, Park
+    from vibey.domain.ledger import EventKind
+
+    job = _job()
+    history = []
+    for index in range(3):
+        fid = f"f_integrate_item-1_{index:08d}"
+        history.append(_integrate_finding(EventKind.FINDING_RAISED, fid, cycle=job.cycle))
+        history.append(_integrate_finding(EventKind.FINDING_RESOLVED, fid, cycle=job.cycle))
+
+    gates = FakeHumanGateRepository()
+
+    def _handler():  # type: ignore[no-untyped-def]
+        return BuildIntegrateHandler(
+            integration=FakeIntegration(
+                merge_outcome=MergeOutcome(ok=False, detail="conflict"), path=tmp_path
+            ),
+            gates=FakeGateRunner(),
+            ledger=FakeLedger(),
+            jobs=FakeJobRepository(),
+            clock=FixedClock(),
+            ledger_reader=_EventReader(history),  # type: ignore[arg-type]
+            human_gates=gates,  # type: ignore[arg-type]
+        )
+
+    parked = await _handler().handle(job)
+    assert isinstance(parked, Park)
+    assert '"max_rounds"' in parked.request.prompt
+
+    gate = await gates.raise_gate(job.project_id, job.id, parked.request)
+    await gates.answer(gate.gate_id, answer={"max_rounds": 6}, answered_by="operator")
+    retried = await _handler().handle(job)
+    assert isinstance(retried, Defer)
+    assert "repair enqueued" in retried.detail
+
+    # A grant at or below the burned rounds still parks.
+    await gates.answer(gate.gate_id, answer={"max_rounds": 2}, answered_by="operator")
+    still_parked = await _handler().handle(job)
+    assert isinstance(still_parked, Park)

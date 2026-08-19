@@ -291,3 +291,28 @@ def test_answer_raw_rejects_invalid_json_and_non_objects() -> None:
     non_object = runner.invoke(app, ["answer", str(UUID(int=1)), "--raw", '["a"]'])
     assert non_object.exit_code == 2
     assert "JSON object" in non_object.output
+
+
+def test_answer_defaults_flag_sends_accept_defaults(tmp_path: Path) -> None:
+    gate_id = _raise_test_gate(tmp_path, "defaults-proj")
+
+    result = runner.invoke(app, ["answer", str(gate_id), "--defaults"])
+
+    assert result.exit_code == 0, result.output
+    assert _gate_answer(gate_id) == {"answers": {}, "accept_defaults": True}
+
+
+def test_answer_defaults_combines_with_pairs_but_not_other_modes(tmp_path: Path) -> None:
+    gate_id = _raise_test_gate(tmp_path, "defaults-pairs-proj")
+
+    result = runner.invoke(app, ["answer", str(gate_id), "q-1=explicit", "--defaults"])
+
+    assert result.exit_code == 0, result.output
+    assert _gate_answer(gate_id) == {
+        "answers": {"q-1": "explicit"},
+        "accept_defaults": True,
+    }
+
+    with_choice = runner.invoke(app, ["answer", str(UUID(int=1)), "--defaults", "--choice", "x"])
+    assert with_choice.exit_code == 2
+    assert "only combines" in with_choice.output
