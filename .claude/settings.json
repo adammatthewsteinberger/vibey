@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uv run pytest *)",
+      "Bash(uv run ruff check *)",
+      "Bash(uv run ruff format --check *)",
+      "Bash(uv run mypy *)",
+      "Bash(uv run lint-imports)",
+      "Bash(uv run bandit *)",
+      "Bash(uv run pip-audit)",
+      "Bash(uv run vibey status *)",
+      "Bash(uv run vibey cost *)",
+      "Bash(shellcheck *)",
+      "mcp__claude-in-chrome__find",
+      "mcp__claude-in-chrome__get_page_text",
+      "mcp__claude-in-chrome__read_page",
+      "mcp__claude_ai_Context7__query-docs"
+    ]
+  }
+}

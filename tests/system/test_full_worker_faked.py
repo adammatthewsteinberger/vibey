@@ -126,6 +126,13 @@ async def test_full_worker_drives_a_project_to_done_local(tmp_path: Path) -> Non
             )
             for engine_id, descriptor in BY_ENGINE_ID.items()
         }
+        # Engine-driven jobs now select via the real rotation stack, which
+        # requires populated health records -- the faked-harness equivalent
+        # of `vibey doctor --conformance --record` + the startup sweep.
+        for engine_id, adapter in adapters.items():
+            await resources.engine_health_service.update_from_preflight(
+                project_id, engine_id, await adapter.preflight(), conformance_ok=True
+            )
         worker = build_full_worker(
             resources=resources,
             project=project,
@@ -197,6 +204,27 @@ async def test_full_worker_drives_a_project_to_done_local(tmp_path: Path) -> Non
         assert kinds[("build.implement", "succeeded")] == 2
         assert kinds[("build.verify", "succeeded")] == 2
         assert kinds[("build.integrate", "succeeded")] == 2
+
+        # Real per-job rotation: every engine-driven job durably recorded
+        # its selected engine, and each verify's reviewer differs from its
+        # item's implementer.
+        conn = await asyncpg.connect(database_url())
+        try:
+            engine_rows = await conn.fetch(
+                "SELECT kind, work_item_id, assigned_engine, requirement FROM job "
+                "WHERE project_id = $1 AND kind IN ('build.implement', 'build.verify')",
+                project_id,
+            )
+        finally:
+            await conn.close()
+        assert all(row["assigned_engine"] for row in engine_rows)
+        import json as _json
+
+        for row in engine_rows:
+            if row["kind"] == "build.verify":
+                implementer = _json.loads(row["requirement"]).get("implementer_engine_id")
+                assert implementer is not None
+                assert row["assigned_engine"] != implementer
         assert kinds[("review.demo", "succeeded")] == 1
         assert kinds[("review.collect", "succeeded")] == 1
         assert kinds[("review.triage", "succeeded")] == 1
@@ -238,6 +266,13 @@ async def test_full_worker_drives_the_deploy_stage_set_to_done_deployed(tmp_path
             )
             for engine_id, descriptor in BY_ENGINE_ID.items()
         }
+        # Engine-driven jobs now select via the real rotation stack, which
+        # requires populated health records -- the faked-harness equivalent
+        # of `vibey doctor --conformance --record` + the startup sweep.
+        for engine_id, adapter in adapters.items():
+            await resources.engine_health_service.update_from_preflight(
+                project_id, engine_id, await adapter.preflight(), conformance_ok=True
+            )
         worker = build_full_worker(
             resources=resources,
             project=project,

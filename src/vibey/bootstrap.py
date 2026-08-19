@@ -2,11 +2,12 @@
 
 import getpass
 import os
-from collections.abc import AsyncIterator, Callable, Mapping
+from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from uuid import UUID
 
 import asyncpg
 
@@ -31,6 +32,7 @@ from vibey.application.design_research_handler import DesignResearchHandler
 from vibey.application.design_synthesis_handler import DesignSpecHandler, DesignSynthesizeHandler
 from vibey.application.dto import JobRecord, ProjectRecord
 from vibey.application.engine_health_service import EngineHealthService
+from vibey.application.engine_selection import RotationRecordingHandler, SelectingEngineProvider
 from vibey.application.engine_selector import EngineSelector
 from vibey.application.interfaces import (
     AzureClientPort,
@@ -165,14 +167,15 @@ def build_visual_worker(
 
 @dataclass(frozen=True, slots=True)
 class _ClosureFactory:
-    """JobHandlerFactory over a plain construction closure. The closures are
+    """JobHandlerFactory over a construction closure. The closures are
     defined inside build_full_worker, the only place allowed to see every
-    concrete class -- keeping per-job construction in the composition root."""
+    concrete class -- keeping per-job construction (and per-job engine
+    selection) in the composition root."""
 
-    build: Callable[[JobRecord], JobHandler]
+    build: Callable[[JobRecord], Awaitable[JobHandler]]
 
     async def create(self, job: JobRecord) -> JobHandler:
-        return self.build(job)
+        return await self.build(job)
 
 
 _KIND_LEASES: Mapping[str, timedelta] = {
@@ -191,6 +194,28 @@ def lease_for_kind(kind: str) -> timedelta:
     return _KIND_LEASES.get(kind, timedelta(minutes=2))
 
 
+async def preflight_sweep(
+    *,
+    resources: AppResources,
+    project_id: UUID,
+    adapters: Mapping[EngineId, EngineAdapter],
+) -> tuple[EngineId, ...]:
+    """Refresh installed/version/auth for every configured engine, then
+    return the engines still ineligible for engine-driven jobs (no recorded
+    conformance) so the caller can warn -- conformance itself is granted
+    only by `vibey doctor --conformance --record`."""
+    for engine_id, adapter in adapters.items():
+        preflight = await adapter.preflight()
+        await resources.engine_health_service.record_preflight(project_id, engine_id, preflight)
+    records = await resources.engine_health_service.list_for_project(project_id)
+    by_id = {record.engine_id: record for record in records}
+    return tuple(
+        engine_id
+        for engine_id in adapters
+        if engine_id not in by_id or not by_id[engine_id].conformance_ok
+    )
+
+
 def build_full_worker(
     *,
     resources: AppResources,
@@ -200,18 +225,19 @@ def build_full_worker(
     decomposer: WorkPlanProducer,
     owner: str,
     engine_adapters: Mapping[EngineId, EngineAdapter] | None = None,
-    build_engine: EngineId = EngineId.CLAUDELOOP,
+    allow_list: frozenset[EngineId] | None = None,
     azure_client: AzureClientPort | None = None,
 ) -> WorkerLoop:
     """The full-phase dispatcher: every job kind vibey enqueues, routed.
 
     `engine_adapters` overrides resources.engine_adapters -- the faked
-    harness injects ScriptedEngines here instead of patching. `build_engine`
-    picks the implementer until per-job rotation lands; the verify reviewer
-    is deterministically the first adapter that differs from the
-    implementer (build.verify's verifier-differs-from-implementer rule).
-    `azure_client` defaults to the in-memory adapter -- real `az` wiring is
-    an explicit later decision, never an accidental default.
+    harness injects ScriptedEngines here instead of patching. Engine-driven
+    BUILD jobs select their engine per job via the rotation stack
+    (SelectingEngineProvider -> EngineSelector SWRR), honoring the
+    `allow_list`; selection requires populated engine_health records
+    (`vibey doctor --conformance --record` + the worker's startup preflight
+    sweep). `azure_client` defaults to the in-memory adapter -- real `az`
+    wiring is an explicit later decision, never an accidental default.
     """
     adapters = engine_adapters if engine_adapters is not None else resources.engine_adapters
     azure = azure_client if azure_client is not None else InMemoryAzureClientAdapter()
@@ -220,32 +246,48 @@ def build_full_worker(
     deploy_state = FileDeploymentStateRepository(repo_root)
     deploy_design_ledger = PostgresReviewLedger(resources.ledger, phase=Phase.DEPLOY_DESIGN)
     deploy_execute_ledger = PostgresReviewLedger(resources.ledger, phase=Phase.DEPLOY_EXECUTE)
+    engine_provider = SelectingEngineProvider(
+        selector=resources.engine_selector,
+        health=resources.engine_health_service,
+        adapters=adapters,
+        jobs=resources.jobs,
+        clock=clock,
+        owner=owner,
+        allow_list=allow_list,
+    )
 
-    def _implement(job: JobRecord) -> JobHandler:
-        return BuildImplementHandler(
+    def _recording(handler: JobHandler, adapter: EngineAdapter) -> JobHandler:
+        return RotationRecordingHandler(
+            inner=handler,
+            health=resources.engine_health_service,
+            project_id=project.project_id,
+            engine_id=adapter.descriptor.engine_id,
+        )
+
+    async def _implement(job: JobRecord) -> JobHandler:
+        adapter = await engine_provider.select_for(job)
+        handler = BuildImplementHandler(
             worktrees=GitWorktreeManager(repo_root, cycle=job.cycle),
             provisioner=AgentSurfaceProvisioner(),
-            engine=adapters[build_engine],
+            engine=adapter,
             ledger=resources.build_ledger,
             jobs=resources.jobs,
             clock=clock,
         )
+        return _recording(handler, adapter)
 
-    def _verify(job: JobRecord) -> JobHandler:
-        implementer = str(job.requirement.get("implementer_engine_id", ""))
-        reviewer = next(
-            (a for eid, a in adapters.items() if eid.value != implementer),
-            adapters[build_engine],
-        )
-        return BuildVerifyHandler(
+    async def _verify(job: JobRecord) -> JobHandler:
+        adapter = await engine_provider.select_for(job)
+        handler = BuildVerifyHandler(
             worktrees=GitWorktreeManager(repo_root, cycle=job.cycle),
             gates=SubprocessGateRunner(),
-            reviewer=reviewer,
+            reviewer=adapter,
             ledger=resources.build_ledger,
             jobs=resources.jobs,
         )
+        return _recording(handler, adapter)
 
-    def _integrate(job: JobRecord) -> JobHandler:
+    async def _integrate(job: JobRecord) -> JobHandler:
         return BuildIntegrateHandler(
             integration=IntegrationBranch(repo_root, cycle=job.cycle),
             gates=SubprocessGateRunner(),
