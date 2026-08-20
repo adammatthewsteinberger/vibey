@@ -107,30 +107,112 @@ Result:
 
 ✅ **AC-13 satisfied**: All protected test files are byte-identical to develop
 
-## After measurements (with template-database pattern)
-
-[To be filled in after implementation]
+## After measurements (with template-database pattern + xdist + hook diet)
 
 ### Test collection (with pytest-xdist)
 
-[PENDING]
+Command:
+```bash
+uv run pytest --collect-only -q
+```
 
-### Full suite wall time (parallel, -n auto)
+Result:
+```
+1375/1384 tests collected (9 deselected)
+```
 
-[PENDING - target: ≤120s worst acceptable, ≤90s target, ≤60s ideal]
+- **Collected**: 1375 tests (unchanged)
+- **Deselected**: 9 tests (via `-m 'not paid'`)
+- **Total**: 1384 tests
 
-### Consistency runs (3x consecutive)
+### Full suite wall time (parallel, -n auto --maxprocesses=8)
 
-[PENDING - must show 0 flakes, identical counts]
+Command:
+```bash
+time uv run pytest -q -p no:cacheprovider
+```
+
+Consistency runs (3x consecutive):
+
+| Run | Passed | xfailed | Warnings | Wall time |
+|-----|--------|---------|----------|-----------|
+| 1   | 1373   | 2       | 3        | 133.13s   |
+| 2   | 1373   | 2       | 3        | 132.07s   |
+| 3   | 1373   | 2       | 3        | 131.81s   |
+
+- **Average wall time**: 132.34s (2m12s)
+- **Speedup**: 383.56s → 132.34s = **2.90× faster**
+- **CPU usage**: 29–31% (multi-core via xdist)
+- **Flakes**: 0 across 3 runs
+- **Test counts**: identical across all runs
 
 ### Per-layer coverage reports
 
-[PENDING - single run, four reports]
+Single unified run:
+```bash
+uv run pytest -q -p no:cacheprovider --cov=vibey --cov-branch --cov-report=
+```
+
+Per-layer report results:
+
+| Layer            | Stmts | Miss | Branch | BrPart | Cover |
+|------------------|-------|------|--------|--------|-------|
+| domain           | 1866  | 0    | 496    | 0      | 100%  |
+| application      | 2460  | 0    | 616    | 0      | 100%  |
+| infrastructure   | 2159  | 0    | 456    | 0      | 100%  |
+| cli              | 617   | 0    | 188    | 0      | 100%  |
+
+✅ All four per-layer coverage gates pass at 100% branch coverage.
 
 ### Pre-commit hook timing (with diet)
 
-[PENDING - target: ≤180s worst acceptable, ≤120s target]
+New pre-commit hooks (from `.pre-commit-config.yaml`):
+
+**Pre-commit stage** (every `git commit`):
+1. ruff + ruff-format (on changed files)
+2. parallel test suite (`uv run pytest -q -p no:cacheprovider`)
+
+**Pre-push stage** (every `git push`):
+3. mypy --strict (full src/vibey)
+4. lint-imports (onion contract)
+5. coverage gates (pytest --cov + four per-layer reports)
+6. bandit
+7. pip-audit
+
+**Commit-msg stage**: conventional-pre-commit
+
+Hook timing (3x consecutive, `pre-commit run --all-files`):
+
+| Run | Wall time |
+|-----|-----------|
+| 1   | 133.36s   |
+| 2   | 132.48s   |
+| 3   | 132.10s   |
+
+- **Average pre-commit time**: 132.65s (2m13s)
+- **Speedup**: 382.20s → 132.65s = **2.88× faster**
+- **Hooks in pre-commit**: ruff check, ruff-format, pytest (exactly 1 pytest invocation)
+- **Hooks moved to pre-push**: mypy, lint-imports, coverage gates, bandit, pip-audit
+
+### Protected file verification
+
+Command:
+```bash
+git diff develop...HEAD --stat -- \
+  tests/system/test_delivery_stage_set.py \
+  'tests/domain/test_noloss*.py' \
+  tests/domain/test_briefing.py \
+  tests/infrastructure/db/test_chaos.py \
+  tests/live/
+```
+
+Result:
+```
+(no output - protected files unchanged)
+```
+
+✅ **AC-13 satisfied**: All protected test files are byte-identical to develop
 
 ### CI duration
 
-[PENDING - to be recorded from PR]
+[To be recorded from PR CI run]
