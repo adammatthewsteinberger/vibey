@@ -1,0 +1,96 @@
+# vibey-testing (Antigravity mirror of `.claude/skills/vibey-testing/SKILL.md`)
+
+description: The 100% per-layer coverage gates, Postgres integration tests (never mocked), property testing for rotation and no-loss gate, and the chaos test.
+alwaysApply: false
+
+# vibey testing
+
+## Coverage floors — not targets
+
+Every layer carries a **100% branch coverage floor**, enforced in CI as four
+separate gates:
+
+```bash
+uv run pytest -q -p no:cacheprovider --cov=vibey.domain --cov-branch --cov-fail-under=100
+uv run pytest -q -p no:cacheprovider --cov=vibey.application --cov-branch --cov-fail-under=100
+uv run pytest -q -p no:cacheprovider --cov=vibey.infrastructure --cov-branch --cov-fail-under=100
+uv run pytest -q -p no:cacheprovider --cov=vibey.cli --cov-branch --cov-fail-under=100
+```
+
+The build **fails** if any layer drops below 100%. This is not aspirational.
+
+## Postgres integration tests — never mocked
+
+All `tests/infrastructure/db/` tests run against a **real ephemeral Postgres**
+via the `migrated_pool` and `project_id` fixtures in
+`tests/infrastructure/db/conftest.py`. Every test drops and recreates the
+`public` schema before running.
+
+**Why real Postgres, never mocked:** because `SELECT ... FOR UPDATE SKIP
+LOCKED` semantics are the thing under test. A mock cannot faithfully represent
+concurrent worker contention, lease expiry, or the reaper reclaiming expired
+leases. See ADR-0002.
+
+Set `VIBEY_TEST_DATABASE_URL` before running:
+
+```bash
+export VIBEY_TEST_DATABASE_URL="postgresql://$(whoami)@localhost:5432/vibey_test"
+```
+
+CI uses a Postgres 17 service container.
+
+## Property tests — the safety-critical invariants
+
+**Rotation fairness** (`tests/domain/test_rotation.py`):
+- Over any eligible set and any weight vector, every engine is selected at
+  least once per `sum(weights)` selections (no starvation).
+- Determinism: identical candidate state produces identical selection.
+- Exclusion honored: an engine in `requirement.excluded` is never returned.
+
+**No-loss gate soundness** (`tests/domain/test_noloss.py`):
+- For any ledger and any brief that *omits* a closable item, the gate returns
+  a violation naming that item. Generated adversarially via Hypothesis.
+
+**Credits-never-have-a-deadline** (`tests/domain/test_circuit.py`):
+- `schedule_probe(CreditsExhausted(...), ...)` can only return a `BackoffProbe`,
+  never a `DeadlineProbe`. This is the single most important property test in
+  the codebase.
+
+**Deterministic brief is provably lossless** (`tests/domain/test_briefing.py`):
+- `build_deterministic_brief()` (the floor brief producer) is built from the
+  same projections (`domain/projections.py`) that `domain/noloss.py::verify()`
+  checks, so it passes the gate by construction. Hypothesis property test
+  generates random ledgers and asserts `verify(...).ok`.
+
+## The chaos test
+
+`tests/infrastructure/db/test_chaos.py` runs 8 concurrent asyncio "workers"
+against real Postgres, each randomly abandoning a claimed job mid-flight (the
+observable effect of a kill: no ack, no nack, lease just expires), with a
+concurrent reaper reclaiming expired leases. It proves the property that
+matters: **zero double-execution, zero lost jobs** across 500 jobs.
+
+This is a scoped-down substitute for the implementation plan's literal spec
+(8 OS processes, `SIGKILL` every 2s via testcontainers) — no Docker daemon
+was available in the build environment. If you have Docker available, upgrade
+this test to the real testcontainers version.
+
+## The flagship end-to-end test
+
+`tests/infrastructure/db/test_end_to_end_forced_rotation.py` is the **single
+most important test in the repo**. It runs `ScriptedEngine` A through a
+simulated 40-turn run, hits `CreditsExhausted`, builds the deterministic
+floor brief from the real (Postgres-persisted) ledger, runs it through the
+actual gate escalation state machine, and proves every closable id open when
+A died is verbatim in engine B's first seed prompt — with a negative control
+proving the gate would have caught a dropped item.
+
+Read this test before touching `noloss.py`, `briefing.py`, or
+`handoff_orchestration.py`.
+
+## Markers
+
+- `@pytest.mark.integration` — requires Postgres (auto-applied to everything
+  under `tests/infrastructure/db/` by conftest).
+- `@pytest.mark.slow` — takes more than a couple seconds.
+- `@pytest.mark.system` — delivery-stage-set end-to-end system test.

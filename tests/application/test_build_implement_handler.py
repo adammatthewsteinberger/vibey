@@ -93,12 +93,41 @@ async def test_successful_run_provisions_and_records_events_and_succeeds(tmp_pat
     assert worktrees.created == ["item-1"]
     assert provisioner.calls == [tmp_path / "item-1"]
     assert any(event.kind == "VerdictRendered" for event in ledger.recorded)
+    # A plain implement (not a repair) resolves nothing.
+    assert not any(event.kind == "FindingResolved" for event in ledger.recorded)
 
     enqueued = await jobs.claim(job.project_id, owner="t", lease=timedelta(seconds=5))
     assert enqueued is not None
     assert enqueued.kind == "build.verify"
     assert enqueued.work_item_id == "item-1"
     assert enqueued.requirement["implementer_engine_id"] == "claudeloop"
+
+
+async def test_completed_repair_resolves_its_finding_so_reverify_can_count_rounds(
+    tmp_path: Path,
+) -> None:
+    """A repair that lands but leaves gates failing must not livelock: the
+    completed repair session closes its finding as a repair ticket, so the
+    follow-up verify raises the next round instead of deferring forever
+    behind "repair in flight" (the greeter4 live-validation finding)."""
+    engine = ScriptedEngine(descriptor=CLAUDELOOP, base_dir=tmp_path / "engine")
+    ledger = FakeLedger()
+    handler, _, _ = _handler(tmp_path, engine=engine, ledger=ledger)
+
+    job = _job(
+        payload={
+            "title": "fix the gates",
+            "repair_finding_id": "f_verify_item-1_deadbeef",
+            "repair_detail": "pytest exited 1",
+        }
+    )
+    outcome = await handler.handle(job)
+
+    assert isinstance(outcome, Success)
+    resolved = [event for event in ledger.recorded if event.kind == "FindingResolved"]
+    assert len(resolved) == 1
+    assert resolved[0].payload["finding_id"] == "f_verify_item-1_deadbeef"
+    assert "awaiting re-verification" in str(resolved[0].payload["resolution"])
 
 
 async def test_rejects_wrong_kind_and_missing_work_item_id() -> None:
@@ -337,3 +366,288 @@ async def test_run_without_a_completion_verdict_fails_as_work(tmp_path: Path) ->
     outcome = await handler.handle(_job())
 
     assert outcome == Failure(FailureClass.WORK, "engine run did not report completion")
+
+
+# ── wind-down (exit code 75) ─────────────────────────────────────────────────
+
+
+class _RecordingWindDown:
+    """Stands in for WindDownOrchestrator: records the call and returns a
+    sentinel Success so the test can prove delegation, not re-test the
+    orchestrator's own pipeline."""
+
+    def __init__(self) -> None:
+        self.calls: list[dict[str, object]] = []
+
+    async def execute(self, *, job, worktree_path, engine_id, effort, stop):  # type: ignore[no-untyped-def]
+        self.calls.append(
+            {
+                "job_id": job.id,
+                "worktree_path": worktree_path,
+                "engine_id": engine_id,
+                "effort": effort,
+                "stop": stop,
+            }
+        )
+        return Success({"wind_down": True})
+
+
+def _wind_down_script() -> list[dict[str, object]]:
+    now = datetime(2026, 1, 1, tzinfo=UTC).isoformat()
+    return [{"kind": "SessionSeeded", "at": now, "payload": {"seed_digest": "d1"}}]
+
+
+async def test_exit_75_with_an_orchestrator_stops_and_delegates(tmp_path: Path) -> None:
+    engine = ScriptedEngine(
+        descriptor=CLAUDELOOP,
+        base_dir=tmp_path / "engine",
+        script=_wind_down_script(),
+        exit_code_script=[75],
+        stop_remaining=("resume from the snapshot",),
+    )
+    wind_down = _RecordingWindDown()
+    handler = BuildImplementHandler(
+        worktrees=FakeWorktrees(tmp_path),
+        provisioner=FakeProvisioner(),
+        engine=engine,
+        ledger=FakeLedger(),
+        jobs=FakeJobRepository(),
+        clock=FixedClock(),
+        wind_down=wind_down,  # type: ignore[arg-type]
+    )
+
+    outcome = await handler.handle(_job())
+
+    assert outcome == Success({"wind_down": True})
+    (call,) = wind_down.calls
+    assert call["engine_id"] == CLAUDELOOP.engine_id
+    assert call["worktree_path"] == tmp_path / "item-1"
+    stop = call["stop"]
+    assert stop.remaining_work == ("resume from the snapshot",)
+
+
+async def test_exit_75_without_an_orchestrator_keeps_the_old_failure_path(
+    tmp_path: Path,
+) -> None:
+    engine = ScriptedEngine(
+        descriptor=CLAUDELOOP,
+        base_dir=tmp_path / "engine",
+        script=_wind_down_script(),
+        exit_code_script=[75],
+    )
+    handler, _, _ = _handler(tmp_path, engine=engine, ledger=FakeLedger())
+
+    outcome = await handler.handle(_job())
+
+    assert outcome == Failure(FailureClass.WORK, "engine run did not report completion")
+
+
+async def test_normal_exit_with_an_orchestrator_never_winds_down(tmp_path: Path) -> None:
+    engine = ScriptedEngine(
+        descriptor=CLAUDELOOP,
+        base_dir=tmp_path / "engine",
+        exit_code_script=[0],
+    )
+    wind_down = _RecordingWindDown()
+    handler = BuildImplementHandler(
+        worktrees=FakeWorktrees(tmp_path),
+        provisioner=FakeProvisioner(),
+        engine=engine,
+        ledger=FakeLedger(),
+        jobs=FakeJobRepository(),
+        clock=FixedClock(),
+        wind_down=wind_down,  # type: ignore[arg-type]
+    )
+
+    outcome = await handler.handle(_job(payload={"title": "t"}))
+
+    assert isinstance(outcome, Success)
+    assert wind_down.calls == []
+
+
+async def test_seed_prompt_in_the_payload_reaches_the_engine_verbatim(tmp_path: Path) -> None:
+    engine = ScriptedEngine(descriptor=CLAUDELOOP, base_dir=tmp_path / "engine")
+    handler, _, _ = _handler(tmp_path, engine=engine, ledger=FakeLedger())
+    seed = "Objective: resume the relay.\nNext action: close [q-77]."
+
+    outcome = await handler.handle(_job(payload={"title": "ignored", "seed_prompt": seed}))
+
+    assert isinstance(outcome, Success)
+    # ScriptedEngine ignores the prompt, so prove it through the renderer.
+    from vibey.application.build_implement_handler import _render_prompt
+
+    assert _render_prompt("item-1", {"seed_prompt": seed}) == seed
+    assert "Implement work item" in _render_prompt("item-1", {"seed_prompt": ""})
+
+
+def test_render_prompt_frames_a_repair_without_weakening_checks() -> None:
+    from vibey.application.build_implement_handler import _render_prompt
+
+    prompt = _render_prompt(
+        "item-1",
+        {
+            "title": "the thing",
+            "repair_detail": "gate failed: pytest: FAILED test_x",
+            "verification": {"commands": ["pytest -q"]},
+        },
+    )
+    assert "verification is FAILING" in prompt
+    assert "FAILED test_x" in prompt
+    assert "without weakening the checks" in prompt
+    assert "- pytest -q" in prompt
+
+    plain = _render_prompt("item-1", {"title": "the thing", "repair_detail": 123})
+    assert "FAILING" not in plain
+
+
+def test_every_regular_prompt_carries_the_house_rules() -> None:
+    """Each rule traces to a live failure: root-level test stubs, pip
+    installs into foreign envs, committed generated files. Seed prompts
+    (wind-down briefs) stay verbatim and are exempt."""
+    from vibey.application.build_implement_handler import _render_prompt
+
+    regular = _render_prompt("item-1", {"title": "t"})
+    repair = _render_prompt("item-1", {"title": "t", "repair_detail": "gate failed"})
+    for prompt in (regular, repair):
+        assert "House rules:" in prompt
+        assert "tests/" in prompt
+        assert "clean checkout" in prompt
+        assert "Never commit generated files" in prompt
+
+    seeded = _render_prompt("item-1", {"seed_prompt": "resume from the brief"})
+    assert "House rules:" not in seeded
+
+
+# ── the escalation ladder grant ──────────────────────────────────────────────
+
+
+async def test_an_answered_gate_extends_the_exhausted_ladder_at_top_effort(
+    tmp_path: Path,
+) -> None:
+    """escalation_exhausted was the last dead-end park: answering
+    un-parked the job, attempts were still past the ladder, and it parked
+    again forever."""
+    from tests.application.fakes import FakeHumanGateRepository
+    from vibey.application.worker import Park
+    from vibey.domain.effort import Effort as _Effort
+
+    gates = FakeHumanGateRepository()
+    captured: dict[str, object] = {}
+
+    class _SpyEngine(ScriptedEngine):
+        async def start(self, spec):  # type: ignore[no-untyped-def]
+            captured["effort"] = spec.effort
+            return await super().start(spec)
+
+    engine = _SpyEngine(descriptor=CLAUDELOOP, base_dir=tmp_path / "engine")
+    handler = BuildImplementHandler(
+        worktrees=FakeWorktrees(tmp_path),
+        provisioner=FakeProvisioner(),
+        engine=engine,
+        ledger=FakeLedger(),
+        jobs=FakeJobRepository(),
+        clock=FixedClock(),
+        human_gates=gates,  # type: ignore[arg-type]
+    )
+    job = _job(attempts=8, payload={"title": "t"})
+
+    parked = await handler.handle(job)
+    assert isinstance(parked, Park)
+    assert parked.request.kind == "escalation_exhausted"
+    assert '"max_attempts"' in parked.request.prompt
+
+    gate = await gates.raise_gate(job.project_id, job.id, parked.request)
+    await gates.answer(gate.gate_id, answer={"max_attempts": 10}, answered_by="operator")
+    granted = await handler.handle(job)
+    assert isinstance(granted, Success)
+    assert captured["effort"] is _Effort.HIGH
+
+    # Past the granted bound it parks again.
+    beyond = _job(attempts=11, payload={"title": "t"})
+    gate2 = await gates.raise_gate(beyond.project_id, beyond.id, parked.request)
+    await gates.answer(gate2.gate_id, answer={"max_attempts": 10}, answered_by="operator")
+    reparked = await handler.handle(beyond)
+    assert isinstance(reparked, Park)
+
+
+async def test_exhausted_ladder_without_gates_parks_as_before(tmp_path: Path) -> None:
+    from vibey.application.worker import Park
+
+    engine = ScriptedEngine(descriptor=CLAUDELOOP, base_dir=tmp_path / "engine")
+    handler, _, _ = _handler(tmp_path, engine=engine, ledger=FakeLedger())
+
+    outcome = await handler.handle(_job(attempts=9))
+
+    assert isinstance(outcome, Park)
+    assert outcome.request.kind == "escalation_exhausted"
+
+
+# ── the cycle budget brake ───────────────────────────────────────────────────
+
+
+class _FixedBudgetSource:
+    def __init__(self, budget) -> None:  # type: ignore[no-untyped-def]
+        self._budget = budget
+
+    async def current(self, project_id, cycle):  # type: ignore[no-untyped-def]
+        return self._budget
+
+
+async def test_an_exhausted_cycle_budget_parks_before_any_session(tmp_path: Path) -> None:
+    """The runaway brake the repair storms proved missing: no session
+    starts once the cycle's recorded spend crosses its cap."""
+    from vibey.application.worker import Park
+    from vibey.domain.budget import BudgetLedger
+
+    budget = BudgetLedger(turns_spent=40, dollars_spent=12.5, max_turns=None, max_dollars=10.0)
+    engine = ScriptedEngine(descriptor=CLAUDELOOP, base_dir=tmp_path / "engine")
+    handler = BuildImplementHandler(
+        worktrees=FakeWorktrees(tmp_path),
+        provisioner=FakeProvisioner(),
+        engine=engine,
+        ledger=FakeLedger(),
+        jobs=FakeJobRepository(),
+        clock=FixedClock(),
+        budget_source=_FixedBudgetSource(budget),  # type: ignore[arg-type]
+    )
+
+    outcome = await handler.handle(_job(payload={"title": "t"}))
+
+    assert isinstance(outcome, Park)
+    assert outcome.request.kind == "budget_exhausted"
+    assert "$12.50" in outcome.request.prompt
+    assert '"max_dollars"' in outcome.request.prompt
+
+
+async def test_a_budget_grant_raises_the_cap_and_the_session_runs(tmp_path: Path) -> None:
+    from tests.application.fakes import FakeHumanGateRepository
+    from vibey.application.worker import Park
+    from vibey.domain.budget import BudgetLedger
+
+    budget = BudgetLedger(turns_spent=40, dollars_spent=12.5, max_turns=None, max_dollars=10.0)
+    gates = FakeHumanGateRepository()
+    engine = ScriptedEngine(descriptor=CLAUDELOOP, base_dir=tmp_path / "engine")
+    handler = BuildImplementHandler(
+        worktrees=FakeWorktrees(tmp_path),
+        provisioner=FakeProvisioner(),
+        engine=engine,
+        ledger=FakeLedger(),
+        jobs=FakeJobRepository(),
+        clock=FixedClock(),
+        budget_source=_FixedBudgetSource(budget),  # type: ignore[arg-type]
+        human_gates=gates,  # type: ignore[arg-type]
+    )
+    job = _job(payload={"title": "t"})
+
+    parked = await handler.handle(job)
+    assert isinstance(parked, Park)
+
+    gate = await gates.raise_gate(job.project_id, job.id, parked.request)
+    await gates.answer(gate.gate_id, answer={"max_dollars": 30}, answered_by="operator")
+    granted = await handler.handle(job)
+    assert isinstance(granted, Success)
+
+    # A grant below the spend still parks (turns grant path too).
+    await gates.answer(gate.gate_id, answer={"max_dollars": 11, "max_turns": 30}, answered_by="op")
+    still_parked = await handler.handle(job)
+    assert isinstance(still_parked, Park)

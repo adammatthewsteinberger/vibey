@@ -4,6 +4,7 @@ in -- ScriptedEngine in CI, a real adapter locally. A failing check sets
 conformance_ok = false and makes the engine ineligible for rotation
 (degraded, not broken); it never crashes the caller."""
 
+import asyncio
 import tempfile
 from collections.abc import Sequence
 from pathlib import Path
@@ -32,11 +33,50 @@ async def run_conformance(
     *,
     capacity_fixtures: Sequence[tuple[str, dict[str, object], type[CapacityState]]] = (),
     trivial_worktree: str | None = None,
+    run_dir_poll_seconds: float = 30.0,
+    verdict_poll_seconds: float = 10.0,
 ) -> ConformanceReport:
     descriptor: EngineDescriptor = adapter.descriptor
     checks: list[ConformanceCheckResult] = []
     if trivial_worktree is None:
         trivial_worktree = str(Path(tempfile.gettempdir()) / "vibey-conformance")
+
+    # Real engines are autonomous software-development session runners that
+    # check for a git repository during their own startup (visible directly
+    # in claudeloop/cursorloop's own `doctor` preflight output) -- against a
+    # bare scratch directory a real run can silently produce no output at
+    # all, which then reads as a run_dir_shape/done_marker failure with
+    # nothing pointing at the actual cause. ScriptedEngine ignores this
+    # entirely, so it's a harmless no-op in faked mode.
+    worktree_path = Path(trivial_worktree)
+    worktree_path.mkdir(parents=True, exist_ok=True)
+    if not (worktree_path / ".git").exists():
+        init = await asyncio.create_subprocess_exec(
+            "git",
+            "init",
+            "-q",
+            str(worktree_path),
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.DEVNULL,
+        )
+        await init.wait()
+        commit = await asyncio.create_subprocess_exec(
+            "git",
+            "-C",
+            str(worktree_path),
+            "-c",
+            "user.email=vibey-conformance@localhost",
+            "-c",
+            "user.name=vibey conformance",
+            "commit",
+            "--allow-empty",
+            "-q",
+            "-m",
+            "vibey conformance scratch worktree",
+            stdout=asyncio.subprocess.DEVNULL,
+            stderr=asyncio.subprocess.DEVNULL,
+        )
+        await commit.wait()
 
     # 1. binary
     preflight = await adapter.preflight()
@@ -78,12 +118,21 @@ async def run_conformance(
 
     # A trivial scripted run backs state_dir, run_dir_shape, snapshot_schema,
     # done_marker, control_plane, and structured_verdict.
+    # Real engines need a concrete, trivially-completable prompt with a clear
+    # deliverable; "conformance check" is too vague and causes timeouts.
+    # Checkbox syntax matters, not just style: codexloop's own WorkPlan
+    # parser (domain/plan.py) requires at least one "- [ ]" item and raises
+    # immediately otherwise -- confirmed directly, and confirmed to leave
+    # meta.json's status field unset, which without a separate fix would
+    # make LoopProcessAdapter.tail() poll forever waiting for a terminal
+    # status that never arrives. Checkbox syntax is still valid, readable
+    # plain-text prompt content for the other three engines.
     handle = None
     try:
         spec = RunSpec(
             run_id=uuid4(),
             worktree_path=Path(trivial_worktree),
-            prompt="conformance check",
+            prompt="- [ ] Create a file at test.txt containing the text OK, then finish.",
             effort=Effort.TRIVIAL,
             isolation=IsolationLevel.WORKTREE,
         )
@@ -107,9 +156,28 @@ async def run_conformance(
     )
 
     # 4. run_dir_shape
+    # adapter.start() only spawns the process; a real engine's own startup
+    # sequence (SDK client init, first API round-trip, first write) can
+    # trail the subprocess spawn by many seconds, more under degraded
+    # conditions (rate-limit retries). Poll rather than judging
+    # run_dir_shape on whatever happened to exist the instant start()
+    # returned -- a ScriptedEngine's files are already there, so this never
+    # adds latency to the fake-backed test suite. run_dir_poll_seconds
+    # defaults to 30s, matching this module's own stop()-equivalent poll
+    # budget elsewhere in the adapter; tests that deliberately model a file
+    # that never appears should pass a small value so the negative case
+    # doesn't cost real wall-clock time.
     required = ("meta.json", "events.jsonl")
-    missing_files = [f for f in required if not (handle.run_dir / f).exists()]
     snapshot_path = handle.run_dir / "snapshots" / "latest.json"
+    missing_files = [f for f in required if not (handle.run_dir / f).exists()]
+    if missing_files or not snapshot_path.exists():
+        step = 0.5
+        deadline = asyncio.get_running_loop().time() + run_dir_poll_seconds
+        while asyncio.get_running_loop().time() < deadline:
+            missing_files = [f for f in required if not (handle.run_dir / f).exists()]
+            if not missing_files and snapshot_path.exists():
+                break
+            await asyncio.sleep(min(step, run_dir_poll_seconds))
     if not snapshot_path.exists():
         missing_files.append("snapshots/latest.json")
     checks.append(
@@ -153,8 +221,23 @@ async def run_conformance(
         )
 
     # 7. done_marker
+    # The tail can drain in a race with the engine's final verdict write
+    # (observed live: a real claudeloop run false-failed structured_verdict
+    # once, marking the engine ineligible until a manual re-run). When the
+    # descriptor claims a structured verdict and none arrived, re-tail for
+    # a bounded window before judging -- tail() re-reads events.jsonl from
+    # the start, so this is idempotent and adds no latency when the
+    # verdict is already there.
     done_marker_found = False
     events = [e async for e in adapter.tail(handle)]
+    if Capability.STRUCTURED_VERDICT in descriptor.capabilities:
+        deadline = asyncio.get_running_loop().time() + verdict_poll_seconds
+        while (
+            not any(e.kind == "VerdictRendered" for e in events)
+            and asyncio.get_running_loop().time() < deadline
+        ):
+            await asyncio.sleep(0.5)
+            events = [e async for e in adapter.tail(handle)]
     for event in events:
         if str(event.payload.get("done_marker", "")) == descriptor.done_marker:
             done_marker_found = True

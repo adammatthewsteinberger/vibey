@@ -21,12 +21,20 @@ from vibey.application.build_verify_handler import GateResult
 class SubprocessGateRunner:
     async def run(self, argv: tuple[str, ...], *, cwd: Path) -> GateResult:
         env = {key: value for key, value in os.environ.items() if not key.startswith("GIT_")}
-        process = await asyncio.create_subprocess_exec(
-            *argv,
-            cwd=str(cwd),
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-            env=env,
-        )
+        try:
+            process = await asyncio.create_subprocess_exec(
+                *argv,
+                cwd=str(cwd),
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                env=env,
+            )
+        except (FileNotFoundError, NotADirectoryError, PermissionError) as exc:
+            # The gate COMMAND is broken (engine wrote `python` on a box
+            # that only has `python3`, greeter4 live finding #3) -- that is
+            # a failing gate for the repair loop to fix, not a vibey
+            # infrastructure failure to retry into a dead job. 127 is the
+            # shell's command-not-found convention.
+            return GateResult(127, "", f"gate command could not start: {exc}")
         stdout, stderr = await process.communicate()
         return GateResult(process.returncode or 0, stdout.decode(), stderr.decode())

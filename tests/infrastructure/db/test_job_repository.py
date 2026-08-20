@@ -6,6 +6,7 @@ import asyncpg
 import pytest
 
 from vibey.application.dto import EnqueueRequest
+from vibey.domain.engine import EngineId
 from vibey.domain.job import JobState
 from vibey.domain.phase import Phase
 from vibey.infrastructure.db.job_repository import PostgresJobRepository
@@ -308,3 +309,84 @@ async def test_enqueue_raises_lookup_error_when_both_fetchrows_return_none() -> 
     repo = PostgresJobRepository(_NullPool())  # type: ignore[arg-type]
     with pytest.raises(LookupError, match="conflicting idempotency key"):
         await repo.enqueue(_request(uuid4()))
+
+
+async def test_assign_engine_records_selection_on_leased_job(
+    migrated_pool: asyncpg.Pool, project_id: UUID
+) -> None:
+    repo = PostgresJobRepository(migrated_pool)
+    await repo.enqueue(_request(project_id))
+    job = await repo.claim(project_id, owner="w1", lease=LEASE)
+    assert job is not None
+
+    ok = await repo.assign_engine(job.id, owner="w1", engine_id=EngineId.CLAUDELOOP)
+
+    assert ok is True
+    fetched = await repo.get(job.id)
+    assert fetched is not None
+    assert fetched.assigned_engine == "claudeloop"
+
+
+async def test_assign_engine_refuses_wrong_owner(
+    migrated_pool: asyncpg.Pool, project_id: UUID
+) -> None:
+    repo = PostgresJobRepository(migrated_pool)
+    await repo.enqueue(_request(project_id))
+    job = await repo.claim(project_id, owner="w1", lease=LEASE)
+    assert job is not None
+
+    ok = await repo.assign_engine(job.id, owner="somebody-else", engine_id=EngineId.AGYLOOP)
+
+    assert ok is False
+    fetched = await repo.get(job.id)
+    assert fetched is not None
+    assert fetched.assigned_engine is None
+
+
+async def test_assign_engine_refuses_unleased_job(
+    migrated_pool: asyncpg.Pool, project_id: UUID
+) -> None:
+    repo = PostgresJobRepository(migrated_pool)
+    job = await repo.enqueue(_request(project_id))
+
+    ok = await repo.assign_engine(job.id, owner="w1", engine_id=EngineId.CLAUDELOOP)
+
+    assert ok is False
+
+
+async def test_count_unsettled_scopes_by_cycle_phase_and_terminal_states(
+    migrated_pool: asyncpg.Pool, project_id: UUID
+) -> None:
+    repo = PostgresJobRepository(migrated_pool)
+    settled = await repo.enqueue(_request(project_id, subject="done-item"))
+    open_job = await repo.enqueue(_request(project_id, subject="open-item"))
+    await repo.enqueue(_request(project_id, subject="other-cycle", cycle=2))
+    await repo.enqueue(
+        _request(project_id, subject="other-phase", phase=Phase.REVIEW, kind="review.demo")
+    )
+
+    claimed = await repo.claim(project_id, owner="w1", lease=LEASE)
+    assert claimed is not None and claimed.id == settled.id
+    # A leased job still counts as unsettled.
+    assert await repo.count_unsettled(project_id, cycle=1, phase=Phase.BUILD) == 2
+    await repo.ack(settled.id, owner="w1")
+
+    assert await repo.count_unsettled(project_id, cycle=1, phase=Phase.BUILD) == 1
+    assert (
+        await repo.count_unsettled(project_id, cycle=1, phase=Phase.BUILD, exclude=open_job.id) == 0
+    )
+
+
+async def test_count_unsettled_treats_failed_as_settled(
+    migrated_pool: asyncpg.Pool, project_id: UUID
+) -> None:
+    repo = PostgresJobRepository(migrated_pool)
+    failing = await repo.enqueue(_request(project_id, subject="failing-item", max_attempts=1))
+
+    claimed = await repo.claim(project_id, owner="w1", lease=LEASE)
+    assert claimed is not None and claimed.id == failing.id
+    await repo.nack(failing.id, owner="w1", error={"class": "work", "detail": "x"})
+
+    failed = await repo.get(failing.id)
+    assert failed is not None and failed.state is JobState.FAILED
+    assert await repo.count_unsettled(project_id, cycle=1, phase=Phase.BUILD) == 0

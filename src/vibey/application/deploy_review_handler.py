@@ -1,17 +1,30 @@
 """Phase ⑥ DEPLOY REVIEW demo and failure triage handlers (Milestone 10 task 10.10)."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from uuid import UUID
 
-from vibey.application.dto import HumanGateRequest, JobRecord
+from vibey.application.dto import EnqueueRequest, HumanGateRequest, JobRecord
 from vibey.application.interfaces import (
     PhaseLedger,
 )
-from vibey.application.ports import HumanGateRepository
+from vibey.application.ports import HumanGateRepository, JobRepository
 from vibey.application.worker import Failure, Outcome, Park, Success
 from vibey.domain.deployment import DeploymentFailureClass, DeploymentSpec
-from vibey.domain.job import FailureClass
+from vibey.domain.effort import Effort
+from vibey.domain.job import FailureClass, idempotency_key
 from vibey.domain.ledger import EventKind
+from vibey.domain.phase import Phase
+
+
+def _gate_action(answer: Mapping[str, object]) -> str:
+    """A demo gate answers {"verdict": ...}; a triage gate {"choice": ...}.
+    DeployReviewRoutingHandler already accepts every option spelling either
+    gate offers (lowered), so the extracted value passes through verbatim."""
+    for key in ("verdict", "choice"):
+        value = answer.get(key)
+        if value is not None:
+            return str(value)
+    return str(next(iter(answer.values()), "approve"))
 
 
 class DeployReviewDemoHandler:
@@ -23,10 +36,12 @@ class DeployReviewDemoHandler:
         ledger: PhaseLedger,
         human_gates: HumanGateRepository,
         spec_provider: Callable[[UUID], DeploymentSpec | None] | None = None,
+        jobs: JobRepository | None = None,
     ) -> None:
         self._ledger = ledger
         self._gates = human_gates
         self._spec_provider = spec_provider
+        self._jobs = jobs
 
     async def handle(self, job: JobRecord) -> Outcome:
         if job.kind != "deploy.demo":
@@ -72,6 +87,21 @@ class DeployReviewDemoHandler:
                 )
             )
 
+        if self._jobs is not None:
+            await self._jobs.enqueue(
+                EnqueueRequest(
+                    project_id=job.project_id,
+                    cycle=job.cycle,
+                    phase=Phase.DEPLOY_REVIEW,
+                    kind="deploy.route",
+                    idempotency_key=idempotency_key(
+                        job.project_id, job.cycle, "deploy.route", str(job.id)
+                    ),
+                    payload={"action": _gate_action(gate.answer)},
+                    requirement={"effort": Effort.LOW.name.lower()},
+                )
+            )
+
         return Success(
             {"status": "demo_approved", "endpoint": endpoint, "answer": dict(gate.answer)}
         )
@@ -86,10 +116,12 @@ class DeployReviewTriageHandler:
         ledger: PhaseLedger,
         human_gates: HumanGateRepository,
         spec_provider: Callable[[UUID], DeploymentSpec | None] | None = None,
+        jobs: JobRepository | None = None,
     ) -> None:
         self._ledger = ledger
         self._gates = human_gates
         self._spec_provider = spec_provider
+        self._jobs = jobs
 
     async def handle(self, job: JobRecord) -> Outcome:
         if job.kind != "deploy.triage":
@@ -132,6 +164,21 @@ class DeployReviewTriageHandler:
                     prompt=gate.prompt,
                     options=gate.options,
                     default_answer=gate.default_answer,
+                )
+            )
+
+        if self._jobs is not None:
+            await self._jobs.enqueue(
+                EnqueueRequest(
+                    project_id=job.project_id,
+                    cycle=job.cycle,
+                    phase=Phase.DEPLOY_REVIEW,
+                    kind="deploy.route",
+                    idempotency_key=idempotency_key(
+                        job.project_id, job.cycle, "deploy.route", str(job.id)
+                    ),
+                    payload={"action": _gate_action(gate.answer)},
+                    requirement={"effort": Effort.LOW.name.lower()},
                 )
             )
 

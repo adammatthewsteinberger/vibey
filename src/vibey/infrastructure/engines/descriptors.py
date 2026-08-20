@@ -2,12 +2,29 @@
 fifth engine is a new descriptor plus an adapter, with no change to
 domain/rotation.py.
 
-The effort projections for claudeloop, codexloop, and cursorloop are
-transcribed from rotation-and-engines.md §3. agyloop was originally a
-documented preset-only stand-in because no binary was available. It was
-verified against installed agyloop 0.1.0 on 2026-08-14: `agyloop run --help`
-exposes both `--preset` and the full `low|medium|high|xhigh|max` `--effort`
-flag, so its projection now follows the same five-level shape as claudeloop.
+The effort projections for claudeloop, codexloop, and cursorloop were
+originally transcribed from rotation-and-engines.md §3, never independently
+checked against a real `<binary> run --help`. agyloop's effort_projection
+was verified against installed agyloop 0.1.0 on 2026-08-14 and confirmed
+correct. The rest were verified for the first time on 2026-08-18 by adding
+LoopProcessAdapter.help_text and running the conformance suite's `flags`
+check for real against all four installed binaries -- claudeloop's own
+effort_projection also checked out, but every isolation_flags entry across
+claudeloop/codexloop/cursorloop turned out to be fabricated (agyloop's own
+--safe flag is real and passed), and codexloop's entire effort_projection
+was invalid: `--effort` does not exist on `codexloop run` at all (confirmed
+against both --help and cli/commands/run.py directly -- the real flags are
+--run-id/--transport/--model/--max-turns/--max-wait/--stream-ui only;
+codexloop has no CLI-level way to set effort/reasoning depth at invocation
+time, per domain/model_profile.py it starts at Effort.MEDIUM and can only
+change via a runtime SetEffort event, not a flag). Every invocation at any
+non-empty effort_projection entry would have failed outright at argument
+parsing. Fixed to empty argv (the same behavior codexloop already has by
+default) rather than guess at unverified flags -- codexloop/cursorloop
+aren't authenticated in this environment, so a live end-to-end invocation
+wasn't possible to confirm a replacement; empty argv is the only change
+here guaranteed not to make things worse, since it removes a flag that
+would otherwise be rejected outright.
 """
 
 from vibey.domain.effort import Effort
@@ -55,10 +72,16 @@ CLAUDELOOP = EngineDescriptor(
         Effort.MAX: EngineInvocation(("--preset", "high", "--effort", "max"), achieved=Effort.MAX),
     },
     session_verb="sessions",
+    # --permission-mode is real (confirmed via --help), but its actual value
+    # vocabulary is Literal["bypass", "manual", "accept-edits", "plan",
+    # "auto"] (domain/permission.py in the claudeloop repo) -- "container"
+    # and "vm" were never valid values. claudeloop has no verified
+    # container/VM isolation mechanism today; empty argv is honest about
+    # that rather than passing a value the CLI would reject.
     isolation_flags={
         IsolationLevel.WORKTREE: (),
-        IsolationLevel.CONTAINER: ("--permission-mode", "container"),
-        IsolationLevel.VM: ("--permission-mode", "vm"),
+        IsolationLevel.CONTAINER: (),
+        IsolationLevel.VM: (),
     },
     cost_per_mtok_in=3.0,
     cost_per_mtok_out=15.0,
@@ -82,25 +105,48 @@ CODEXLOOP = EngineDescriptor(
             Capability.SANDBOX,
         }
     ),
+    # codexloop's `run` has no --effort flag at all (confirmed via --help
+    # and cli/commands/run.py directly) and no other CLI-level way to set
+    # effort/reasoning depth at invocation. Per domain/model_profile.py it
+    # always starts at its own internal Effort.MEDIUM and can only change
+    # via a runtime SetEffort event mid-run, not a launch flag. Empty argv
+    # for every level is the honest projection: vibey's effort request
+    # doesn't change codexloop's behavior today, whereas the previous
+    # ("--effort", ...) argv would have made every real invocation fail
+    # outright at argument parsing.
     effort_projection={
-        Effort.TRIVIAL: EngineInvocation(("--effort", "low"), achieved=Effort.TRIVIAL),
-        Effort.LOW: EngineInvocation(("--effort", "low"), achieved=Effort.LOW),
-        Effort.STANDARD: EngineInvocation(("--effort", "medium"), achieved=Effort.STANDARD),
-        Effort.HIGH: EngineInvocation(("--effort", "high"), achieved=Effort.HIGH),
+        Effort.TRIVIAL: EngineInvocation((), achieved=Effort.STANDARD),
+        Effort.LOW: EngineInvocation((), achieved=Effort.STANDARD),
+        Effort.STANDARD: EngineInvocation((), achieved=Effort.STANDARD),
+        Effort.HIGH: EngineInvocation((), achieved=Effort.STANDARD),
         Effort.MAX: EngineInvocation(
-            ("--effort", "high"), achieved=Effort.HIGH, notes="saturates: no tier above high"
+            (), achieved=Effort.STANDARD, notes="codexloop has no CLI-level effort control"
         ),
     },
     session_verb="threads",
+    # Same reasoning as claudeloop's isolation_flags above: --sandbox and
+    # --approval aren't real codexloop run flags (confirmed via --help),
+    # and no verified container/VM mechanism exists for codexloop today.
     isolation_flags={
         IsolationLevel.WORKTREE: (),
-        IsolationLevel.CONTAINER: ("--sandbox", "container", "--approval", "never"),
-        IsolationLevel.VM: ("--sandbox", "vm", "--approval", "never"),
+        IsolationLevel.CONTAINER: (),
+        IsolationLevel.VM: (),
     },
     cost_per_mtok_in=2.0,
     cost_per_mtok_out=8.0,
     context_window=200_000,
     base_weight=2,
+    # `codexloop run` doesn't accept --cwd yet -- confirmed directly:
+    # `codexloop run <plan> --cwd <dir>` fails at argument parsing with
+    # "No such option: --cwd" before the process ever starts. build_argv()
+    # appending it unconditionally meant LoopProcessAdapter could never
+    # actually drive codexloop; caught by a real subprocess-level
+    # conformance test (tests/live/test_scripted_binary_conformance.py),
+    # not assumed. Safe without it: LoopProcessAdapter.start() already
+    # spawns the subprocess with the OS-level cwd set to the worktree
+    # (create_subprocess_exec(..., cwd=spec.worktree_path)), and codexloop's
+    # own bootstrap.py falls back to Path.cwd() when --cwd is absent.
+    supports_cwd_flag=False,
 )
 
 CURSORLOOP = EngineDescriptor(
@@ -126,10 +172,15 @@ CURSORLOOP = EngineDescriptor(
         Effort.MAX: EngineInvocation(("--model", "grok-xhigh"), achieved=Effort.MAX),
     },
     session_verb="agents",
+    # --hooks-policy isn't a real cursorloop run flag (confirmed via
+    # --help: the closest real flag, --managed-hooks/--no-managed-hooks, is
+    # about merging autonomy hooks.json, not container/VM sandboxing). No
+    # verified isolation mechanism exists for cursorloop today; same
+    # reasoning as claudeloop/codexloop's isolation_flags above.
     isolation_flags={
         IsolationLevel.WORKTREE: (),
-        IsolationLevel.CONTAINER: ("--hooks-policy", "container"),
-        IsolationLevel.VM: ("--hooks-policy", "vm"),
+        IsolationLevel.CONTAINER: (),
+        IsolationLevel.VM: (),
     },
     cost_per_mtok_in=2.5,
     cost_per_mtok_out=10.0,

@@ -4,6 +4,13 @@ from enum import StrEnum
 
 from vibey.domain.effort import Effort
 
+# The *loop runners' shared "graceful wind-down" exit code: the engine ran
+# out of window capacity mid-item and stopped cleanly after writing its
+# state, so the item hands off to another engine instead of failing
+# (handoff-protocol.md §3). A domain constant because the meaning belongs
+# to the protocol, not to any one subprocess adapter.
+EXIT_CODE_WIND_DOWN = 75
+
 
 class EngineId(StrEnum):
     CLAUDELOOP = "claudeloop"
@@ -55,6 +62,12 @@ class EngineDescriptor:
     cost_per_mtok_out: float
     context_window: int
     base_weight: int = 1
+    # Whether the engine's own `run`/`resume` CLI accepts a `--cwd` flag.
+    # False for an engine that doesn't have it yet (verified against the
+    # real installed binary, not assumed) -- build_argv() must not append a
+    # flag the binary would reject at argument parsing, before it ever gets
+    # a chance to run.
+    supports_cwd_flag: bool = True
 
     def invoke(self, effort: Effort) -> EngineInvocation:
         try:

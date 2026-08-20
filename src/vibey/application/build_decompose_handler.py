@@ -23,6 +23,7 @@ from vibey.application.worker import Failure, Outcome, Success
 from vibey.domain.job import FailureClass, idempotency_key
 from vibey.domain.phase import Phase
 from vibey.domain.plan import WorkItem, validate_decomposition
+from vibey.domain.worktree import branch_name
 
 
 class BuildDecomposeHandler:
@@ -38,7 +39,10 @@ class BuildDecomposeHandler:
         self._jobs = jobs
 
     async def handle(self, job: JobRecord) -> Outcome:
-        if job.kind != "build.decompose":
+        # "build.plan" is the review fast loop-back's spelling of the same
+        # work (review_triage_handler.py enqueues it at cycle+1); both kinds
+        # decompose the cycle's accepted spec.
+        if job.kind not in ("build.decompose", "build.plan"):
             return Failure(FailureClass.VIBEY, "expected build.decompose job")
         spec = await self._specs.load(job.project_id, job.cycle)
         if spec is None:
@@ -83,7 +87,16 @@ class BuildDecomposeHandler:
                         project_id, cycle, "build.implement", item.item_id
                     ),
                     work_item_id=item.item_id,
-                    payload={"title": item.title, "verification": asdict(item.verification)},
+                    payload={
+                        "title": item.title,
+                        "verification": asdict(item.verification),
+                        # Item branches stack on already-integrated code when
+                        # any exists (the worktree manager falls back to HEAD
+                        # before the first integrate): every item branching
+                        # from the empty base rewrote the same module in
+                        # parallel and guaranteed add/add merge conflicts.
+                        "base_ref": branch_name(cycle, "integration"),
+                    },
                     requirement={"effort": item.est_effort.name.lower()},
                     depends_on=depends_on,
                 )

@@ -15,6 +15,8 @@ from vibey.application.interfaces.azure import (
     AzureDiscoveryResult,
     AzureExecutionResult,
     AzureResourceStatus,
+    DeploymentConsentStore,
+    DeploymentSpecStore,
 )
 from vibey.application.interfaces.build import (
     BudgetSource,
@@ -23,6 +25,7 @@ from vibey.application.interfaces.build import (
     GateResult,
     GateRunner,
     IntegrationBranch,
+    IntegrationLock,
     MergeOutcome,
     VerifyWorktrees,
     WorkPlanProducer,
@@ -38,6 +41,7 @@ from vibey.application.interfaces.design import (
 from vibey.application.interfaces.engines import (
     EngineAdapter,
     EngineHealthRepository,
+    RotationCursorRepository,
 )
 from vibey.application.interfaces.gates import (
     HumanGateRepository,
@@ -46,6 +50,8 @@ from vibey.application.interfaces.ledger import (
     BriefProducer,
     BuildLedger,
     DesignLedger,
+    HandoffStore,
+    LedgerReader,
     PhaseLedger,
 )
 from vibey.application.interfaces.observability import (
@@ -59,6 +65,7 @@ from vibey.application.interfaces.queue import (
     Defer,
     Failure,
     JobHandler,
+    JobHandlerFactory,
     JobReadyNotifier,
     JobRepository,
     Outcome,
@@ -83,6 +90,8 @@ __all__ = [
     "AutomatedFinding",
     "AutomatedReviewRunner",
     "AzureClientPort",
+    "DeploymentConsentStore",
+    "DeploymentSpecStore",
     "AzureDiscoveryResult",
     "AzureExecutionResult",
     "AzureResourceStatus",
@@ -100,14 +109,19 @@ __all__ = [
     "DesignSpecRepository",
     "EngineAdapter",
     "EngineHealthRepository",
+    "RotationCursorRepository",
     "Failure",
     "GateResult",
     "GateRunner",
+    "HandoffStore",
     "HumanGateRepository",
     "IntegrationBranch",
+    "IntegrationLock",
     "JobHandler",
+    "JobHandlerFactory",
     "JobReadyNotifier",
     "JobRepository",
+    "LedgerReader",
     "MergeOutcome",
     "Outcome",
     "Park",

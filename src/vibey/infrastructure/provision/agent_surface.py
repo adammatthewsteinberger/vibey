@@ -11,7 +11,7 @@ never lands in a commit -- exactly ADR-0011's "Bad, but" tradeoff.
 
 The marketplace skill directories (`.claude/skills/`, `.agents/skills/`,
 `.cursor/rules/`, `.agent/`) from ADR-0011's table are not materialized here:
-there is no `vibe-engineering-skills` marketplace available in this build
+there is no `vibey-skills` (formerly `vibe-engineering-skills`) marketplace available in this build
 environment to pull skill content from. Only the four router files -- the
 part that's genuinely self-contained -- are provisioned. Replace this
 docstring note, not the emitter's signature, once real marketplace access
@@ -40,6 +40,27 @@ class ProvisionError(VibeyError):
         super().__init__(f"{' '.join(argv)} failed: {stderr.strip()}")
 
 
+# Generated-artifact patterns registered alongside the router files in the
+# shared .git/info/exclude. Engine sessions commit with broad adds; without
+# these, compiled caches and coverage data land in item branches and their
+# binary add/add merge conflicts send integration into repair storms --
+# caught live in the greeter demo. The engines' own state dirs and vibey's
+# worktree/context tree are machinery, never product.
+_ARTIFACT_PATTERNS = (
+    "__pycache__/",
+    "*.pyc",
+    ".coverage",
+    "*.egg-info/",
+    ".pytest_cache/",
+    "htmlcov/",
+    ".vibey/",
+    ".claudeloop/",
+    ".codexloop/",
+    ".cursorloop/",
+    ".agyloop/",
+)
+
+
 class AgentSurfaceProvisioner:
     def __init__(self, *, executor: CommandExecutor | None = None) -> None:
         self._executor = executor or CleanGitEnvSubprocessExecutor()
@@ -56,7 +77,13 @@ class AgentSurfaceProvisioner:
                 written.append(path)
 
         if written:
-            await self._exclude(worktree_path, [path.name for path in written])
+            # First provision of a repo always writes routers, so the
+            # artifact patterns ride along here -- preserving the
+            # zero-git-calls property of an already-correct worktree.
+            await self._exclude(
+                worktree_path,
+                [path.name for path in written] + list(_ARTIFACT_PATTERNS),
+            )
         return tuple(written)
 
     async def _exclude(self, worktree_path: Path, names: Sequence[str]) -> None:

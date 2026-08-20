@@ -702,3 +702,653 @@ def test_deploy_inspect_no_spec_events(tmp_path: Path) -> None:
     res = runner.invoke(app, ["deploy", "inspect", str(pid)])
     assert res.exit_code == 0, res.output
     assert "default" in res.output
+
+
+# ── doctor command ────────────────────────────────────────────────────────────
+
+
+def test_doctor_basic_lists_all_engines() -> None:
+    res = runner.invoke(app, ["doctor"])
+    assert res.exit_code == 0, res.output
+    assert "claudeloop" in res.output
+
+
+def test_doctor_specific_engine() -> None:
+    res = runner.invoke(app, ["doctor", "--engine", "claudeloop"])
+    assert res.exit_code == 0, res.output
+    assert "claudeloop" in res.output
+
+
+def test_doctor_unknown_engine() -> None:
+    res = runner.invoke(app, ["doctor", "--engine", "nonexistent"])
+    assert res.exit_code == 1
+
+
+def test_doctor_no_detail_skips_detail_line() -> None:
+    from unittest.mock import AsyncMock, patch
+
+    from vibey.application.dto import PreflightResult
+
+    fake_result = PreflightResult(installed=True, auth_ok=True, version="1.0.0", detail="")
+    with patch(
+        "vibey.infrastructure.engines.loop_process_adapter.LoopProcessAdapter.preflight",
+        new=AsyncMock(return_value=fake_result),
+    ):
+        res = runner.invoke(app, ["doctor", "--engine", "claudeloop"])
+    assert res.exit_code == 0, res.output
+    assert "detail:" not in res.output
+    assert "installed" in res.output
+
+
+def test_doctor_shows_detail_when_present() -> None:
+    from unittest.mock import AsyncMock, patch
+
+    from vibey.application.dto import PreflightResult
+
+    fake_result = PreflightResult(
+        installed=False, auth_ok=False, version=None, detail="claude not found in PATH"
+    )
+    with patch(
+        "vibey.infrastructure.engines.loop_process_adapter.LoopProcessAdapter.preflight",
+        new=AsyncMock(return_value=fake_result),
+    ):
+        res = runner.invoke(app, ["doctor", "--engine", "claudeloop"])
+    assert res.exit_code == 0, res.output
+    assert "detail:" in res.output
+    assert "claude not found in PATH" in res.output
+
+
+def test_doctor_with_conformance() -> None:
+    from unittest.mock import AsyncMock, patch
+
+    from vibey.application.dto import ConformanceCheckResult, ConformanceReport, PreflightResult
+    from vibey.domain.engine import EngineId
+
+    fake_report = ConformanceReport(
+        engine_id=EngineId.CLAUDELOOP,
+        checks=(
+            ConformanceCheckResult(name="preflight", ok=True),
+            ConformanceCheckResult(name="start_stop", ok=True),
+        ),
+    )
+    # preflight() must also be mocked: the CLI only calls run_conformance
+    # when preflight.installed is True, and a CI runner has no engine
+    # binaries on PATH -- leaving this real makes the test pass only on a
+    # machine that happens to have claudeloop installed.
+    with (
+        patch(
+            "vibey.infrastructure.engines.loop_process_adapter.LoopProcessAdapter.preflight",
+            new=AsyncMock(
+                return_value=PreflightResult(installed=True, version="0.5.5", auth_ok=True)
+            ),
+        ),
+        patch(
+            "vibey.application.conformance.run_conformance",
+            new=AsyncMock(return_value=fake_report),
+        ),
+    ):
+        res = runner.invoke(app, ["doctor", "--conformance", "--engine", "claudeloop"])
+    assert res.exit_code == 0, res.output
+    assert "PASS" in res.output
+
+
+def test_doctor_with_conformance_failure() -> None:
+    from unittest.mock import AsyncMock, patch
+
+    from vibey.application.dto import ConformanceCheckResult, ConformanceReport, PreflightResult
+    from vibey.domain.engine import EngineId
+
+    fake_report = ConformanceReport(
+        engine_id=EngineId.CLAUDELOOP,
+        checks=(
+            ConformanceCheckResult(name="preflight", ok=True),
+            ConformanceCheckResult(name="start_stop", ok=False, detail="timed out"),
+        ),
+    )
+    with (
+        patch(
+            "vibey.infrastructure.engines.loop_process_adapter.LoopProcessAdapter.preflight",
+            new=AsyncMock(
+                return_value=PreflightResult(installed=True, version="0.5.5", auth_ok=True)
+            ),
+        ),
+        patch(
+            "vibey.application.conformance.run_conformance",
+            new=AsyncMock(return_value=fake_report),
+        ),
+    ):
+        res = runner.invoke(app, ["doctor", "--conformance", "--engine", "claudeloop"])
+    assert res.exit_code == 1
+    assert "FAIL" in res.output
+    assert "timed out" in res.output
+
+
+# ── worker command ────────────────────────────────────────────────────────────
+
+
+@pytest.fixture()
+def _fast_engine_preflight():  # type: ignore[no-untyped-def]
+    """The worker's startup preflight sweep would otherwise spawn real
+    engine subprocesses (doctor runs) in every worker CLI test."""
+    from unittest.mock import AsyncMock, patch
+
+    from vibey.application.dto import PreflightResult
+
+    with patch(
+        "vibey.infrastructure.engines.loop_process_adapter.LoopProcessAdapter.preflight",
+        new=AsyncMock(return_value=PreflightResult(installed=True, version="1.0.0", auth_ok=True)),
+    ):
+        yield
+
+
+@pytest.mark.usefixtures("_fast_engine_preflight")
+def test_worker_once_no_job(tmp_path: Path) -> None:
+    async def seed_empty() -> None:
+        async with build_app() as resources:
+            await resources.projects.create("empty-worker", tmp_path, max_cycles=1, config={})
+
+    asyncio.run(seed_empty())
+    from unittest.mock import AsyncMock, patch
+
+    with patch("vibey.infrastructure.db.notifier.PostgresJobReadyNotifier") as mock_notifier_cls:
+        mock_notifier = AsyncMock()
+        mock_notifier_cls.return_value = mock_notifier
+        res = runner.invoke(app, ["worker", "--once"])
+    assert res.exit_code == 0, res.output
+    assert "no ready job" in res.output
+
+
+@pytest.mark.usefixtures("_fast_engine_preflight")
+def test_worker_once_with_job(tmp_path: Path) -> None:
+    async def seed() -> UUID:
+        async with build_app() as resources:
+            p = await resources.projects.create("worker-proj", tmp_path, max_cycles=1, config={})
+            from vibey.domain.job import idempotency_key
+
+            await resources.jobs.enqueue(
+                EnqueueRequest(
+                    project_id=p.project_id,
+                    cycle=p.cycle,
+                    phase=Phase.INTAKE,
+                    kind="test.work",
+                    idempotency_key=idempotency_key(p.project_id, p.cycle, "test.work", "1"),
+                    requirement={},
+                )
+            )
+            return p.project_id
+
+    asyncio.run(seed())
+    from unittest.mock import AsyncMock, patch
+
+    with patch("vibey.infrastructure.db.notifier.PostgresJobReadyNotifier") as mock_notifier_cls:
+        mock_notifier = AsyncMock()
+        mock_notifier_cls.return_value = mock_notifier
+        res = runner.invoke(app, ["worker", "--once"])
+    assert res.exit_code == 0, res.output
+    assert "processed one job" in res.output
+
+
+@pytest.mark.usefixtures("_fast_engine_preflight")
+def test_worker_unknown_kind_burns_an_attempt(tmp_path: Path) -> None:
+    """The dispatcher rejects unknown kinds as VIBEY failures -- the poison
+    path is now a feature to assert, not the stub's silent ack."""
+
+    async def seed() -> UUID:
+        async with build_app() as resources:
+            p = await resources.projects.create("poison-proj", tmp_path, max_cycles=1, config={})
+            from vibey.domain.job import idempotency_key
+
+            job = await resources.jobs.enqueue(
+                EnqueueRequest(
+                    project_id=p.project_id,
+                    cycle=p.cycle,
+                    phase=Phase.INTAKE,
+                    kind="test.work",
+                    idempotency_key=idempotency_key(p.project_id, p.cycle, "test.work", "1"),
+                    requirement={},
+                )
+            )
+            return job.id
+
+    job_id = asyncio.run(seed())
+    from unittest.mock import AsyncMock, patch
+
+    with patch("vibey.infrastructure.db.notifier.PostgresJobReadyNotifier") as mock_notifier_cls:
+        mock_notifier_cls.return_value = AsyncMock()
+        res = runner.invoke(app, ["worker", "--once"])
+    assert res.exit_code == 0, res.output
+    assert "processed one job" in res.output
+
+    async def inspect() -> tuple[int, str]:
+        async with build_app() as resources:
+            job = await resources.jobs.get(job_id)
+            assert job is not None
+            assert job.last_error is not None
+            return job.attempts, str(job.last_error)
+
+    attempts, error = asyncio.run(inspect())
+    assert attempts == 1
+    assert "no handler registered" in error
+
+
+@pytest.mark.usefixtures("_fast_engine_preflight")
+def test_worker_no_projects() -> None:
+    from unittest.mock import AsyncMock, patch
+
+    with patch("vibey.infrastructure.db.notifier.PostgresJobReadyNotifier") as mock_notifier_cls:
+        mock_notifier = AsyncMock()
+        mock_notifier_cls.return_value = mock_notifier
+        res = runner.invoke(app, ["worker", "--once"])
+    assert res.exit_code == 1
+    assert "no projects found" in res.output
+
+
+@pytest.mark.usefixtures("_fast_engine_preflight")
+def test_worker_continuous_processes_then_waits(tmp_path: Path) -> None:
+    async def seed() -> None:
+        async with build_app() as resources:
+            p = await resources.projects.create("cont-worker", tmp_path, max_cycles=1, config={})
+            from vibey.domain.job import idempotency_key as idem_key
+
+            await resources.jobs.enqueue(
+                EnqueueRequest(
+                    project_id=p.project_id,
+                    cycle=p.cycle,
+                    phase=Phase.INTAKE,
+                    kind="test.work",
+                    idempotency_key=idem_key(p.project_id, p.cycle, "test.work", "1"),
+                    requirement={},
+                )
+            )
+
+    asyncio.run(seed())
+    from unittest.mock import AsyncMock, patch
+
+    with patch("vibey.infrastructure.db.notifier.PostgresJobReadyNotifier") as mock_notifier_cls:
+        mock_notifier = AsyncMock()
+        mock_notifier.wait_for_job_ready = AsyncMock(side_effect=KeyboardInterrupt)
+        mock_notifier_cls.return_value = mock_notifier
+        res = runner.invoke(app, ["worker"])
+    assert "processed one job" in res.output
+
+
+@pytest.mark.usefixtures("_fast_engine_preflight")
+def test_worker_invalid_engine() -> None:
+    res = runner.invoke(app, ["worker", "--engines", "nonexistent"])
+    assert res.exit_code == 2
+
+
+@pytest.mark.usefixtures("_fast_engine_preflight")
+def test_worker_invalid_provider() -> None:
+    res = runner.invoke(app, ["worker", "--provider", "nonexistent"])
+    assert res.exit_code == 2
+    assert "provider must be" in res.output
+
+
+@pytest.mark.usefixtures("_fast_engine_preflight")
+def test_worker_project_flag_selects_that_project(tmp_path: Path) -> None:
+    async def seed() -> UUID:
+        async with build_app() as resources:
+            older = await resources.projects.create(
+                "older-proj", tmp_path / "older", max_cycles=1, config={}
+            )
+            await resources.projects.create(
+                "newer-proj", tmp_path / "newer", max_cycles=1, config={}
+            )
+            return older.project_id
+
+    older_id = asyncio.run(seed())
+    from unittest.mock import AsyncMock, patch
+
+    with patch("vibey.infrastructure.db.notifier.PostgresJobReadyNotifier") as mock_notifier_cls:
+        mock_notifier_cls.return_value = AsyncMock()
+        res = runner.invoke(app, ["worker", "--once", "--project", str(older_id)])
+    assert res.exit_code == 0, res.output
+    assert "project=older-proj" in res.output
+    assert "no ready job" in res.output
+
+
+@pytest.mark.usefixtures("_fast_engine_preflight")
+def test_worker_unknown_project_exits_1(tmp_path: Path) -> None:
+    from unittest.mock import AsyncMock, patch
+    from uuid import uuid4
+
+    async def seed() -> None:
+        async with build_app() as resources:
+            await resources.projects.create("some-proj", tmp_path, max_cycles=1, config={})
+
+    asyncio.run(seed())
+    with patch("vibey.infrastructure.db.notifier.PostgresJobReadyNotifier") as mock_notifier_cls:
+        mock_notifier_cls.return_value = AsyncMock()
+        res = runner.invoke(app, ["worker", "--once", "--project", str(uuid4())])
+    assert res.exit_code == 1
+    assert "no projects found" in res.output
+
+
+@pytest.mark.usefixtures("_fast_engine_preflight")
+def test_worker_engines_allow_list_with_claudeloop(tmp_path: Path) -> None:
+    async def seed() -> None:
+        async with build_app() as resources:
+            await resources.projects.create("eng-proj", tmp_path, max_cycles=1, config={})
+
+    asyncio.run(seed())
+    from unittest.mock import AsyncMock, patch
+
+    with patch("vibey.infrastructure.db.notifier.PostgresJobReadyNotifier") as mock_notifier_cls:
+        mock_notifier_cls.return_value = AsyncMock()
+        res = runner.invoke(app, ["worker", "--once", "--engines", "claudeloop,agyloop"])
+    assert res.exit_code == 0, res.output
+    assert "no ready job" in res.output
+
+
+@pytest.mark.usefixtures("_fast_engine_preflight")
+def test_worker_engines_allow_list_without_claudeloop(tmp_path: Path) -> None:
+    """The implementer falls back to the first allowed engine when
+    claudeloop isn't in the allow list."""
+
+    async def seed() -> None:
+        async with build_app() as resources:
+            await resources.projects.create("eng2-proj", tmp_path, max_cycles=1, config={})
+
+    asyncio.run(seed())
+    from unittest.mock import AsyncMock, patch
+
+    with patch("vibey.infrastructure.db.notifier.PostgresJobReadyNotifier") as mock_notifier_cls:
+        mock_notifier_cls.return_value = AsyncMock()
+        res = runner.invoke(app, ["worker", "--once", "--engines", "agyloop"])
+    assert res.exit_code == 0, res.output
+    assert "no ready job" in res.output
+
+
+@pytest.mark.usefixtures("_fast_engine_preflight")
+def test_worker_provider_claudeloop_constructs_live_providers(tmp_path: Path) -> None:
+    """--provider claudeloop builds the live design provider without any
+    subprocess spawn at construction time."""
+
+    async def seed() -> None:
+        async with build_app() as resources:
+            await resources.projects.create("live-prov-proj", tmp_path, max_cycles=1, config={})
+
+    asyncio.run(seed())
+    from unittest.mock import AsyncMock, patch
+
+    with patch("vibey.infrastructure.db.notifier.PostgresJobReadyNotifier") as mock_notifier_cls:
+        mock_notifier_cls.return_value = AsyncMock()
+        res = runner.invoke(app, ["worker", "--once", "--provider", "claudeloop"])
+    assert res.exit_code == 0, res.output
+    assert "provider=claudeloop" in res.output
+    assert "no ready job" in res.output
+
+
+@pytest.mark.usefixtures("_fast_engine_preflight")
+def test_worker_parallelism_spawns_gathered_loops(tmp_path: Path) -> None:
+    """-j 2 continuous takes the gather branch; the mocked notifier's
+    KeyboardInterrupt ends the run once both loops go idle."""
+
+    async def seed() -> None:
+        async with build_app() as resources:
+            await resources.projects.create("par-proj", tmp_path, max_cycles=1, config={})
+
+    asyncio.run(seed())
+    from unittest.mock import AsyncMock, patch
+
+    with patch("vibey.infrastructure.db.notifier.PostgresJobReadyNotifier") as mock_notifier_cls:
+        mock_notifier = AsyncMock()
+        mock_notifier.wait_for_job_ready = AsyncMock(side_effect=KeyboardInterrupt)
+        mock_notifier_cls.return_value = mock_notifier
+        res = runner.invoke(app, ["worker", "-j", "2"])
+    assert "parallelism=2" in res.output
+
+
+# ── watch state_fetcher coverage ──────────────────────────────────────────────
+
+
+def test_watch_state_fetcher_is_invoked(tmp_path: Path) -> None:
+    from unittest.mock import AsyncMock, patch
+
+    pid = asyncio.run(_seed_status_project(tmp_path))
+    fetcher_called = False
+
+    with patch("vibey.tui.dashboard.VibeyDashboardApp") as mock_app_cls:
+
+        def capture_init(**kwargs: object) -> AsyncMock:
+            fetcher = kwargs.get("state_fetcher")
+
+            async def run_async_calls_fetcher() -> None:
+                nonlocal fetcher_called
+                if fetcher is not None:
+                    await fetcher()
+                    fetcher_called = True
+
+            m = AsyncMock()
+            m.run_async = run_async_calls_fetcher
+            return m
+
+        mock_app_cls.side_effect = capture_init
+        res = runner.invoke(app, ["watch", str(pid)])
+        assert res.exit_code == 0, res.output
+    assert fetcher_called
+
+
+@pytest.mark.usefixtures("_fast_engine_preflight")
+def test_worker_warns_about_engines_without_conformance(tmp_path: Path) -> None:
+    """The sweep records preflight but never grants conformance -- until
+    doctor --conformance --record runs, engine-driven jobs can't select."""
+
+    async def seed() -> None:
+        async with build_app() as resources:
+            await resources.projects.create("sweep-proj", tmp_path, max_cycles=1, config={})
+
+    asyncio.run(seed())
+    from unittest.mock import AsyncMock, patch
+
+    with patch("vibey.infrastructure.db.notifier.PostgresJobReadyNotifier") as mock_notifier_cls:
+        mock_notifier_cls.return_value = AsyncMock()
+        res = runner.invoke(app, ["worker", "--once"])
+    assert res.exit_code == 0, res.output
+    assert "no recorded conformance" in res.output
+    assert "doctor --conformance --record" in res.output
+
+    async def check() -> int:
+        async with build_app() as resources:
+            latest = await resources.projects.get_latest()
+            assert latest is not None
+            records = await resources.engine_health_service.list_for_project(latest.project_id)
+            assert all(r.installed for r in records)
+            assert all(not r.conformance_ok for r in records)
+            return len(records)
+
+    assert asyncio.run(check()) == 4
+
+
+@pytest.mark.usefixtures("_fast_engine_preflight")
+def test_worker_stays_quiet_when_every_engine_has_conformance(tmp_path: Path) -> None:
+    from vibey.application.dto import PreflightResult
+
+    async def seed() -> None:
+        async with build_app() as resources:
+            project = await resources.projects.create(
+                "quiet-sweep-proj", tmp_path, max_cycles=1, config={}
+            )
+            good = PreflightResult(installed=True, version="1.0.0", auth_ok=True)
+            for engine_id in resources.engine_adapters:
+                await resources.engine_health_service.update_from_preflight(
+                    project.project_id, engine_id, good, conformance_ok=True
+                )
+
+    asyncio.run(seed())
+    from unittest.mock import AsyncMock, patch
+
+    with patch("vibey.infrastructure.db.notifier.PostgresJobReadyNotifier") as mock_notifier_cls:
+        mock_notifier_cls.return_value = AsyncMock()
+        res = runner.invoke(app, ["worker", "--once"])
+    assert res.exit_code == 0, res.output
+    assert "no recorded conformance" not in res.output
+
+
+def test_doctor_record_persists_preflight_only(tmp_path: Path) -> None:
+    from unittest.mock import AsyncMock, patch
+
+    from vibey.application.dto import PreflightResult
+
+    async def seed() -> None:
+        async with build_app() as resources:
+            await resources.projects.create("doc-rec-proj", tmp_path, max_cycles=1, config={})
+
+    asyncio.run(seed())
+    with patch(
+        "vibey.infrastructure.engines.loop_process_adapter.LoopProcessAdapter.preflight",
+        new=AsyncMock(return_value=PreflightResult(installed=True, version="9.9.9", auth_ok=True)),
+    ):
+        res = runner.invoke(app, ["doctor", "--record", "--engine", "claudeloop"])
+    assert res.exit_code == 0, res.output
+    assert "recorded preflight for claudeloop" in res.output
+
+    async def check() -> None:
+        async with build_app() as resources:
+            latest = await resources.projects.get_latest()
+            assert latest is not None
+            record = await resources.engine_health_repo.get(latest.project_id, "claudeloop")
+            assert record is not None
+            assert record.version == "9.9.9"
+            assert record.conformance_ok is False
+
+    asyncio.run(check())
+
+
+def test_doctor_record_with_conformance_grants_eligibility(tmp_path: Path) -> None:
+    from unittest.mock import AsyncMock, patch
+
+    from vibey.application.dto import (
+        ConformanceCheckResult,
+        ConformanceReport,
+        PreflightResult,
+    )
+
+    async def seed() -> None:
+        async with build_app() as resources:
+            await resources.projects.create("doc-conf-proj", tmp_path, max_cycles=1, config={})
+
+    asyncio.run(seed())
+    from vibey.domain.engine import EngineId
+
+    ok_report = ConformanceReport(
+        engine_id=EngineId.CLAUDELOOP,
+        checks=(ConformanceCheckResult(name="binary", ok=True),),
+    )
+    with (
+        patch(
+            "vibey.infrastructure.engines.loop_process_adapter.LoopProcessAdapter.preflight",
+            new=AsyncMock(
+                return_value=PreflightResult(installed=True, version="9.9.9", auth_ok=True)
+            ),
+        ),
+        patch(
+            "vibey.application.conformance.run_conformance",
+            new=AsyncMock(return_value=ok_report),
+        ),
+    ):
+        res = runner.invoke(app, ["doctor", "--conformance", "--record", "--engine", "claudeloop"])
+    assert res.exit_code == 0, res.output
+    assert "recorded engine_health for claudeloop" in res.output
+
+    async def check() -> None:
+        async with build_app() as resources:
+            latest = await resources.projects.get_latest()
+            assert latest is not None
+            record = await resources.engine_health_repo.get(latest.project_id, "claudeloop")
+            assert record is not None
+            assert record.conformance_ok is True
+
+    asyncio.run(check())
+
+
+def test_doctor_record_without_projects_exits_1() -> None:
+    from unittest.mock import AsyncMock, patch
+
+    from vibey.application.dto import PreflightResult
+
+    with patch(
+        "vibey.infrastructure.engines.loop_process_adapter.LoopProcessAdapter.preflight",
+        new=AsyncMock(return_value=PreflightResult(installed=True, version="1.0.0", auth_ok=True)),
+    ):
+        res = runner.invoke(app, ["doctor", "--record", "--engine", "claudeloop"])
+    assert res.exit_code == 1
+    assert "no projects found" in res.output
+
+
+def test_doctor_record_specific_project(tmp_path: Path) -> None:
+    from unittest.mock import AsyncMock, patch
+
+    from vibey.application.dto import PreflightResult
+
+    async def seed() -> UUID:
+        async with build_app() as resources:
+            older = await resources.projects.create(
+                "rec-older", tmp_path / "older", max_cycles=1, config={}
+            )
+            await resources.projects.create(
+                "rec-newer", tmp_path / "newer", max_cycles=1, config={}
+            )
+            return older.project_id
+
+    older_id = asyncio.run(seed())
+    with patch(
+        "vibey.infrastructure.engines.loop_process_adapter.LoopProcessAdapter.preflight",
+        new=AsyncMock(return_value=PreflightResult(installed=True, version="1.0.0", auth_ok=True)),
+    ):
+        res = runner.invoke(
+            app, ["doctor", "--record", "--engine", "claudeloop", "--project", str(older_id)]
+        )
+    assert res.exit_code == 0, res.output
+
+    async def check() -> None:
+        async with build_app() as resources:
+            record = await resources.engine_health_repo.get(older_id, "claudeloop")
+            assert record is not None
+
+    asyncio.run(check())
+
+
+def test_worker_rejects_unknown_azure_mode() -> None:
+    res = runner.invoke(app, ["worker", "--azure", "gcp"])
+    assert res.exit_code == 2
+    assert "memory" in res.output and "az" in res.output
+
+
+def test_worker_azure_az_requires_a_logged_in_cli() -> None:
+    from unittest.mock import patch
+
+    class _NotLoggedIn:
+        returncode = 1
+        stdout = ""
+        stderr = "Please run 'az login'"
+
+    with patch("vibey.cli.main.subprocess.run", return_value=_NotLoggedIn()):
+        res = runner.invoke(app, ["worker", "--azure", "az"])
+    assert res.exit_code == 1
+    assert "az login" in res.output
+
+
+@pytest.mark.usefixtures("_fast_engine_preflight")
+def test_worker_azure_az_builds_the_real_adapter_when_logged_in(tmp_path: Path) -> None:
+    from unittest.mock import AsyncMock, patch
+
+    async def seed() -> None:
+        async with build_app() as resources:
+            await resources.projects.create("az-proj", tmp_path, max_cycles=1, config={})
+
+    asyncio.run(seed())
+
+    class _LoggedIn:
+        returncode = 0
+        stdout = ""
+        stderr = ""
+
+    with (
+        patch("vibey.cli.main.subprocess.run", return_value=_LoggedIn()),
+        patch("vibey.infrastructure.db.notifier.PostgresJobReadyNotifier") as notifier_cls,
+    ):
+        notifier_cls.return_value = AsyncMock()
+        res = runner.invoke(app, ["worker", "--azure", "az", "--once"])
+    assert res.exit_code == 0, res.output

@@ -11,6 +11,7 @@ from uuid import UUID
 import asyncpg
 
 from vibey.application.dto import EnqueueRequest, JobRecord
+from vibey.domain.engine import EngineId
 from vibey.domain.job import JobState
 from vibey.domain.phase import Phase
 
@@ -231,6 +232,37 @@ class PostgresJobRepository:
                 """
             )
             return _rowcount(result)
+
+    async def assign_engine(self, job_id: UUID, *, owner: str, engine_id: EngineId) -> bool:
+        async with self._pool.acquire() as conn:
+            result = await conn.execute(
+                """
+                UPDATE job SET assigned_engine = $3, updated_at = now()
+                WHERE id = $1 AND lease_owner = $2 AND state = 'leased'
+                """,
+                job_id,
+                owner,
+                engine_id.value,
+            )
+            return _rowcount(result) == 1
+
+    async def count_unsettled(
+        self, project_id: UUID, *, cycle: int, phase: Phase, exclude: UUID | None = None
+    ) -> int:
+        async with self._pool.acquire() as conn:
+            count = await conn.fetchval(
+                """
+                SELECT count(*) FROM job
+                WHERE project_id = $1 AND cycle = $2 AND phase = $3
+                  AND state NOT IN ('succeeded', 'failed', 'cancelled')
+                  AND ($4::uuid IS NULL OR id <> $4)
+                """,
+                project_id,
+                cycle,
+                phase.value,
+                exclude,
+            )
+            return int(count)
 
     async def queue_depth(self, project_id: UUID) -> dict[JobState, int]:
         async with self._pool.acquire() as conn:

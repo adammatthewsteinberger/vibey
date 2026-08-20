@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import subprocess  # nosec B404 - fixed argv, never shell=True
 from pathlib import Path
 from typing import Annotated
 from uuid import UUID
@@ -123,16 +124,34 @@ def new_project(
     name: str,
     repo: Annotated[Path, typer.Option("--repo")] = Path("."),
     max_cycles: Annotated[int, typer.Option("--max-cycles", min=1)] = 10,
+    max_cycle_dollars: Annotated[
+        float | None,
+        typer.Option(
+            "--max-cycle-dollars",
+            min=0.01,
+            help="Cap engine spend per cycle; exceeding it parks a "
+            "budget_exhausted gate instead of starting more sessions",
+        ),
+    ] = None,
+    max_cycle_turns: Annotated[
+        int | None,
+        typer.Option("--max-cycle-turns", min=1, help="Cap engine turns per cycle"),
+    ] = None,
 ) -> None:
     """Create a project and enqueue its first DESIGN interview."""
 
     async def create() -> tuple[str, str]:
+        config: dict[str, object] = {"project": {"name": name, "repo": str(repo)}}
+        if max_cycle_dollars is not None:
+            config["max_cycle_dollars"] = max_cycle_dollars
+        if max_cycle_turns is not None:
+            config["max_cycle_turns"] = max_cycle_turns
         async with build_app() as resources:
             project = await resources.projects.create(
                 name,
                 repo,
                 max_cycles=max_cycles,
-                config={"project": {"name": name, "repo": str(repo)}},
+                config=config,
             )
         return str(project.project_id), await _enqueue_design(project.project_id)
 
@@ -167,16 +186,68 @@ def _parse_question_answers(items: tuple[str, ...]) -> dict[str, object]:
 
 
 @app.command("answer")
-def answer(gate_id: UUID, answers: list[str]) -> None:
-    """Answer a parked gate with one or more QUESTION_ID=ANSWER values."""
+def answer(
+    gate_id: UUID,
+    answers: Annotated[list[str] | None, typer.Argument()] = None,
+    choice: Annotated[
+        str | None,
+        typer.Option("--choice", help='Answer a choice gate: sends {"choice": VALUE}'),
+    ] = None,
+    verdict: Annotated[
+        str | None,
+        typer.Option("--verdict", help='Answer a verdict gate: sends {"verdict": VALUE}'),
+    ] = None,
+    raw: Annotated[
+        str | None,
+        typer.Option("--raw", help="Answer with an arbitrary JSON object"),
+    ] = None,
+    defaults: Annotated[
+        bool,
+        typer.Option(
+            "--defaults",
+            help="Interview gates: accept every question's default "
+            "(combinable with positional pairs, which win)",
+        ),
+    ] = False,
+) -> None:
+    """Answer a parked gate: QUESTION_ID=ANSWER pairs, --choice, --verdict, or --raw.
+
+    Interview gates take the positional pairs or --defaults (question keys
+    are model-minted and vary per run; --defaults needs none); review gates
+    take --verdict (accept/changes/cancel/approve/request_changes);
+    deployment and triage gates take --choice; --raw covers any other shape.
+    """
+    modes = [m for m in (answers, choice, verdict, raw) if m]
+    if defaults and (choice or verdict or raw):
+        typer.echo("--defaults only combines with positional QUESTION_ID=ANSWER pairs")
+        raise typer.Exit(2)
+    if len(modes) != 1 and not defaults:
+        typer.echo("provide exactly one of: QUESTION_ID=ANSWER pairs, --choice, --verdict, --raw")
+        raise typer.Exit(2)
+
+    payload: dict[str, object]
+    if choice is not None:
+        payload = {"choice": choice}
+    elif verdict is not None:
+        payload = {"verdict": verdict}
+    elif raw is not None:
+        try:
+            decoded = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            typer.echo(f"--raw must be valid JSON: {exc}")
+            raise typer.Exit(2) from exc
+        if not isinstance(decoded, dict):
+            typer.echo("--raw must be a JSON object")
+            raise typer.Exit(2)
+        payload = decoded
+    else:
+        payload = _parse_question_answers(tuple(answers or ()))
+        if defaults:
+            payload["accept_defaults"] = True
 
     async def submit() -> None:
         async with build_app() as resources:
-            await resources.gates.answer(
-                gate_id,
-                answer=_parse_question_answers(tuple(answers)),
-                answered_by="cli",
-            )
+            await resources.gates.answer(gate_id, answer=payload, answered_by="cli")
 
     asyncio.run(submit())
     typer.echo(f"answered {gate_id}")
@@ -343,6 +414,7 @@ def watch_dashboard(
     """Live dashboard monitoring current phase, queue, circuits, worktrees, and ledger tail."""
     from vibey.infrastructure.db.engine_health_repository import PostgresEngineHealthRepository
     from vibey.tui.dashboard import (
+        DashboardState,
         VibeyDashboardApp,
         VibeyReplayApp,
         build_replay_states,
@@ -380,7 +452,19 @@ def watch_dashboard(
                     project_id=project.project_id,
                 )
 
-                tui_app = VibeyDashboardApp(initial_state=initial_state)
+                async def _fetch_state() -> DashboardState:
+                    return await fetch_dashboard_state(
+                        projects=resources.projects,
+                        jobs=resources.jobs,
+                        health=health_repo,
+                        ledger=resources.ledger,
+                        project_id=project.project_id,
+                    )
+
+                tui_app = VibeyDashboardApp(
+                    initial_state=initial_state,
+                    state_fetcher=_fetch_state,
+                )
                 await tui_app.run_async()
 
     asyncio.run(run_dashboard())
@@ -786,3 +870,280 @@ def deploy_rollback(
             typer.echo(f"Initiated rollback for {project.name} to previous stable revision.")
 
     asyncio.run(run_rollback())
+
+
+@app.command("doctor")
+def doctor(
+    conformance: Annotated[
+        bool, typer.Option("--conformance", help="Run the 9-check conformance suite")
+    ] = False,
+    engine: Annotated[
+        str | None,
+        typer.Option("--engine", help="Specific engine to check (default: all installed)"),
+    ] = None,
+    record: Annotated[
+        bool,
+        typer.Option(
+            "--record",
+            help="Persist preflight (and conformance, with --conformance) to engine_health",
+        ),
+    ] = False,
+    record_project: Annotated[
+        UUID | None,
+        typer.Option("--project", help="Project to record health for (default: latest)"),
+    ] = None,
+) -> None:
+    """Check engine health, auth status, and optionally run conformance."""
+    from vibey.application.conformance import run_conformance
+    from vibey.infrastructure.engines.classify import CREDITS_FIXTURES
+    from vibey.infrastructure.engines.descriptors import ALL_DESCRIPTORS, BY_ENGINE_ID
+    from vibey.infrastructure.engines.loop_process_adapter import LoopProcessAdapter
+
+    async def run_doctor() -> None:
+        import tempfile
+        from uuid import uuid4
+
+        if engine is not None:
+            from vibey.domain.engine import EngineId
+
+            try:
+                eid = EngineId(engine)
+            except ValueError as exc:
+                typer.echo(f"Unknown engine: {engine}")
+                raise typer.Exit(1) from exc
+            descriptors = [BY_ENGINE_ID[eid]]
+        else:
+            descriptors = list(ALL_DESCRIPTORS)
+
+        all_ok = True
+
+        record_project_id: UUID | None = None
+        if record:
+            async with build_app() as resources:
+                if record_project is not None:
+                    target = await resources.projects.get(record_project)
+                else:
+                    target = await resources.projects.get_latest()
+            if target is None:
+                typer.echo("no projects found; create one with `vibey new` first")
+                raise typer.Exit(1)
+            record_project_id = target.project_id
+
+        for desc in descriptors:
+            adapter = LoopProcessAdapter(descriptor=desc)
+            preflight = await adapter.preflight()
+
+            status = "installed" if preflight.installed else "NOT INSTALLED"
+            version = preflight.version or "?"
+            auth = "auth OK" if preflight.auth_ok else "auth FAIL"
+            typer.echo(f"{desc.engine_id.value:<12} {status:<14} v{version:<10} {auth}")
+
+            if preflight.detail:
+                typer.echo(f"  detail: {preflight.detail}")
+
+            if conformance and preflight.installed:
+                from vibey.domain.capacity import CreditsExhausted
+
+                capacity_fixtures = [
+                    ("credits", CREDITS_FIXTURES[desc.engine_id], CreditsExhausted)
+                ]
+                # Use a unique scratch directory per conformance run to avoid
+                # session-lock collisions in shared state
+                conformance_id = uuid4().hex[:8]
+                unique_worktree = str(
+                    Path(tempfile.gettempdir()) / f"vibey-conformance-{conformance_id}"
+                )
+                report = await run_conformance(
+                    adapter,
+                    capacity_fixtures=capacity_fixtures,
+                    trivial_worktree=unique_worktree,
+                )
+                for check in report.checks:
+                    mark = "PASS" if check.ok else "FAIL"
+                    detail = f" — {check.detail}" if check.detail else ""
+                    typer.echo(f"  {mark} {check.name}{detail}")
+                if not report.ok:
+                    all_ok = False
+
+                if record_project_id is not None:
+                    async with build_app() as resources:
+                        await resources.engine_health_service.update_from_preflight(
+                            record_project_id, desc.engine_id, preflight, conformance_ok=report.ok
+                        )
+                    typer.echo(f"  recorded engine_health for {desc.engine_id.value}")
+            elif record_project_id is not None:
+                async with build_app() as resources:
+                    await resources.engine_health_service.record_preflight(
+                        record_project_id, desc.engine_id, preflight
+                    )
+                typer.echo(f"  recorded preflight for {desc.engine_id.value}")
+
+        if conformance and not all_ok:
+            raise typer.Exit(1)
+
+    asyncio.run(run_doctor())
+
+
+@app.command("worker")
+def worker(
+    engines_opt: Annotated[
+        str | None,
+        typer.Option("--engines", help="Comma-separated list of engines to use"),
+    ] = None,
+    parallelism: Annotated[int, typer.Option("--parallelism", "-j", min=1, max=16)] = 1,
+    once: Annotated[
+        bool,
+        typer.Option("--once", help="Process one job and exit"),
+    ] = False,
+    provider: Annotated[
+        str,
+        typer.Option("--provider", help="Design/decompose providers: scripted or claudeloop"),
+    ] = "scripted",
+    max_turns: Annotated[int, typer.Option("--max-turns", min=1)] = 25,
+    max_dollars: Annotated[float, typer.Option("--max-dollars", min=0.01, max=10)] = 2.0,
+    project_opt: Annotated[
+        UUID | None,
+        typer.Option("--project", help="Project id (default: the latest project)"),
+    ] = None,
+    azure: Annotated[
+        str,
+        typer.Option(
+            "--azure",
+            help="Azure client for the deploy stage set: 'memory' (safe default, "
+            "no real infrastructure) or 'az' (the real Azure CLI; requires "
+            "`az login` and mutates real resources on consented deploys)",
+        ),
+    ] = "memory",
+) -> None:
+    """Long-running worker: LISTEN vibey_job_ready, dispatch across all phases."""
+    from datetime import timedelta
+
+    from vibey.application.worker import WorkerLoop
+    from vibey.bootstrap import build_full_worker, database_url
+    from vibey.domain.engine import EngineId
+    from vibey.infrastructure.db.notifier import PostgresJobReadyNotifier
+    from vibey.infrastructure.engines.scripted_decompose import ScriptedWorkPlanProducer
+
+    allow_list: frozenset[EngineId] | None = None
+    if engines_opt:
+        try:
+            allow_list = frozenset(EngineId(e.strip()) for e in engines_opt.split(","))
+        except ValueError as exc:
+            typer.echo(f"Invalid engine: {exc}")
+            raise typer.Exit(2) from exc
+    if provider not in ("scripted", "claudeloop"):
+        typer.echo("provider must be 'scripted' or 'claudeloop'")
+        raise typer.Exit(2)
+    if azure not in ("memory", "az"):
+        typer.echo("--azure must be 'memory' or 'az'")
+        raise typer.Exit(2)
+    azure_client = None
+    if azure == "az":
+        from vibey.infrastructure.azure.az_cli import AzCliClientAdapter
+
+        login_check = subprocess.run(  # nosec B603 B607 - fixed argv, never shell=True
+            ["az", "account", "show", "-o", "none"], capture_output=True, text=True
+        )
+        if login_check.returncode != 0:
+            typer.echo("--azure az requires a logged-in Azure CLI: run `az login` first")
+            raise typer.Exit(1)
+        azure_client = AzCliClientAdapter()
+
+    async def run_worker() -> None:
+        from vibey.application.interfaces import WorkPlanProducer
+        from vibey.bootstrap import preflight_sweep
+        from vibey.infrastructure.engines.claudeloop_decompose import ClaudeLoopWorkPlanProducer
+
+        async with build_app() as resources:
+            if project_opt is not None:
+                project = await resources.projects.get(project_opt)
+            else:
+                project = await resources.projects.get_latest()
+            if project is None:
+                typer.echo("no projects found; create one with `vibey new` first")
+                raise typer.Exit(1)
+
+            design_provider: DesignProvider
+            decomposer: WorkPlanProducer
+            if provider == "claudeloop":
+                process = ClaudeLoopProcess(
+                    executor=AsyncSubprocessExecutor(),
+                    max_turns=max_turns,
+                    max_dollars=max_dollars,
+                )
+                design_provider = ClaudeLoopDesignProvider(
+                    process=process,
+                    worktree_path=project.repo_path,
+                )
+                decomposer = ClaudeLoopWorkPlanProducer(
+                    process=process,
+                    worktree_path=project.repo_path,
+                )
+            else:
+                design_provider = ScriptedDesignProvider()
+                decomposer = ScriptedWorkPlanProducer()
+
+            adapters = dict(resources.engine_adapters)
+            if allow_list is not None:
+                adapters = {eid: a for eid, a in adapters.items() if eid in allow_list}
+
+            ineligible = await preflight_sweep(
+                resources=resources, project_id=project.project_id, adapters=adapters
+            )
+            if ineligible:
+                names = ", ".join(sorted(e.value for e in ineligible))
+                typer.echo(
+                    f"warning: no recorded conformance for {names} -- engine-driven jobs "
+                    "will not select them until `vibey doctor --conformance --record` passes"
+                )
+
+            count = max(1, min(parallelism, len(adapters) * 2, os.cpu_count() or 1))
+            loops = [
+                build_full_worker(
+                    resources=resources,
+                    project=project,
+                    design_provider=design_provider,
+                    visual_provider=ScriptedVisualProvider(),
+                    decomposer=decomposer,
+                    owner=f"worker-{os.getpid()}-{i}",
+                    engine_adapters=adapters,
+                    allow_list=allow_list,
+                    azure_client=azure_client,
+                )
+                for i in range(count)
+            ]
+
+            notifier = PostgresJobReadyNotifier(database_url())
+            await notifier.connect()
+
+            typer.echo(
+                f"worker started: project={project.name} "
+                f"engines={engines_opt or 'all'} parallelism={count} provider={provider}"
+            )
+
+            async def drive(loop_: WorkerLoop) -> None:
+                while True:
+                    worked = await loop_.run_once(project.project_id)
+                    if worked:
+                        typer.echo("processed one job")
+                        if once:
+                            return
+                        continue
+                    if once:
+                        typer.echo("no ready job")
+                        return
+                    await resources.jobs.reap()
+                    await notifier.wait_for_job_ready(
+                        project.project_id, timeout=timedelta(seconds=5)
+                    )
+
+            try:
+                if once or count == 1:
+                    await drive(loops[0])
+                else:
+                    await asyncio.gather(*(drive(loop_) for loop_ in loops))
+            finally:
+                await notifier.close()
+
+    with guard():
+        asyncio.run(run_worker())

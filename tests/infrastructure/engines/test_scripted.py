@@ -1,8 +1,7 @@
 import json
+from collections.abc import AsyncIterator
 from pathlib import Path
 from uuid import uuid4
-
-import pytest
 
 from vibey.application.dto import RunSpec
 from vibey.domain.effort import Effort
@@ -12,7 +11,6 @@ from vibey.domain.phase import Phase
 from vibey.infrastructure.engines.descriptors import ALL_DESCRIPTORS, CLAUDELOOP
 from vibey.infrastructure.engines.scripted import ScriptedEngine
 from vibey.infrastructure.engines.tailer import (
-    UnknownEventKind,
     translate_event,
     translate_run_iter,
 )
@@ -216,23 +214,22 @@ async def test_attribute_returns_a_failure_class(tmp_path: Path) -> None:
     assert isinstance(fc, FailureClass)
 
 
-def test_translate_event_raises_on_unknown_kind() -> None:
+def test_translate_event_returns_none_on_unknown_kind() -> None:
     from datetime import UTC, datetime
 
     from vibey.application.dto import EngineEvent
 
     event = EngineEvent(kind="TotallyUnknownKind", at=datetime.now(UTC), payload={})
-    with pytest.raises(UnknownEventKind) as exc_info:
-        translate_event(
-            event,
-            project_id=uuid4(),
-            cycle=1,
-            phase=Phase.BUILD,
-            engine_id=CLAUDELOOP.engine_id,
-            job_id=None,
-            correlation_id=uuid4(),
-        )
-    assert exc_info.value.kind == "TotallyUnknownKind"
+    result = translate_event(
+        event,
+        project_id=uuid4(),
+        cycle=1,
+        phase=Phase.BUILD,
+        engine_id=CLAUDELOOP.engine_id,
+        job_id=None,
+        correlation_id=uuid4(),
+    )
+    assert result is None
 
 
 async def test_scripted_available_run_factory(tmp_path: Path) -> None:
@@ -243,9 +240,101 @@ async def test_scripted_available_run_factory(tmp_path: Path) -> None:
     assert engine.descriptor == CLAUDELOOP
 
 
+def test_unknown_event_kind_stores_kind_and_formats_message() -> None:
+    from vibey.infrastructure.engines.tailer import UnknownEventKind
+
+    err = UnknownEventKind("BrandNewKind")
+    assert err.kind == "BrandNewKind"
+    assert "BrandNewKind" in str(err)
+
+
+async def test_translate_run_iter_skips_unrecognized_kinds() -> None:
+    from datetime import UTC, datetime
+
+    from vibey.application.dto import EngineEvent
+
+    async def _mixed_events() -> AsyncIterator[EngineEvent]:
+        yield EngineEvent(kind="SessionSeeded", at=datetime.now(UTC), payload={})
+        yield EngineEvent(kind="CompletelyFakeKind", at=datetime.now(UTC), payload={})
+        yield EngineEvent(kind="TurnCompleted", at=datetime.now(UTC), payload={})
+
+    drafts = [
+        d
+        async for d in translate_run_iter(
+            _mixed_events(),
+            project_id=uuid4(),
+            cycle=1,
+            phase=Phase.BUILD,
+            engine_id=CLAUDELOOP.engine_id,
+            job_id=None,
+            correlation_id=uuid4(),
+        )
+    ]
+    assert len(drafts) == 2
+    assert drafts[0].kind == EventKind.SESSION_SEEDED
+    assert drafts[1].kind == EventKind.TURN_COMPLETED
+
+
 async def test_all_four_descriptors_produce_a_valid_run_directory(tmp_path: Path) -> None:
     for descriptor in ALL_DESCRIPTORS:
         engine = ScriptedEngine(descriptor=descriptor, base_dir=tmp_path)
         handle = await engine.start(_spec(tmp_path / f"worktree-{descriptor.engine_id}"))
         assert (handle.run_dir / "meta.json").exists()
         assert descriptor.state_dir in str(handle.run_dir)
+
+
+async def test_per_run_scripts_and_exit_codes_are_consumed_in_order(tmp_path: Path) -> None:
+    """Run 1 winds down (exit 75, no verdict); run 2 completes normally --
+    the shape the wind-down E2E scripts on a single engine."""
+    wind_down_script: list[dict[str, object]] = [
+        {"kind": "SessionSeeded", "at": "2026-01-01T00:00:00+00:00", "payload": {"s": "d"}}
+    ]
+    engine = ScriptedEngine(
+        descriptor=CLAUDELOOP,
+        base_dir=tmp_path,
+        scripts=[wind_down_script],
+        exit_code_script=[75, None],
+        stop_remaining=("resume from the snapshot",),
+    )
+
+    first = await engine.start(_spec(tmp_path / "wt1"))
+    first_events = [e async for e in engine.tail(first)]
+    assert [e.kind for e in first_events] == ["SessionSeeded"]
+    assert engine.run_exit_code(first) == 75
+
+    stop = await engine.stop(first)
+    assert stop.remaining_work == ("resume from the snapshot",)
+
+    second = await engine.start(_spec(tmp_path / "wt2"))
+    second_events = [e async for e in engine.tail(second)]
+    assert any(e.kind == "VerdictRendered" for e in second_events)
+    assert engine.run_exit_code(second) is None
+
+
+async def test_exit_codes_past_the_script_end_report_none(tmp_path: Path) -> None:
+    engine = ScriptedEngine(descriptor=CLAUDELOOP, base_dir=tmp_path, exit_code_script=[75])
+
+    first = await engine.start(_spec(tmp_path / "wt1"))
+    second = await engine.start(_spec(tmp_path / "wt2"))
+
+    assert engine.run_exit_code(first) == 75
+    assert engine.run_exit_code(second) is None
+
+
+async def test_fixed_script_still_covers_runs_after_the_scripts_queue_drains(
+    tmp_path: Path,
+) -> None:
+    fixed: list[dict[str, object]] = [
+        {"kind": "SessionSeeded", "at": "2026-01-01T00:00:00+00:00", "payload": {"s": "x"}}
+    ]
+    per_run: list[dict[str, object]] = [
+        {"kind": "TurnCompleted", "at": "2026-01-01T00:00:00+00:00", "payload": {}}
+    ]
+    engine = ScriptedEngine(
+        descriptor=CLAUDELOOP, base_dir=tmp_path, script=fixed, scripts=[per_run]
+    )
+
+    first = await engine.start(_spec(tmp_path / "wt1"))
+    assert [e.kind async for e in engine.tail(first)] == ["TurnCompleted"]
+    second = await engine.start(_spec(tmp_path / "wt2"))
+    assert [e.kind async for e in engine.tail(second)] == ["SessionSeeded"]

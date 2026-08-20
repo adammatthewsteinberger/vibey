@@ -207,3 +207,74 @@ async def test_review_demo_handler_generates_all_artifacts_and_enqueues_collect(
     assert collect_job is not None
     assert collect_job.phase == Phase.REVIEW
     assert collect_job.requirement.get("effort") == "high"
+
+
+class _FixedReviewer:
+    def __init__(self, findings: tuple = ()) -> None:  # type: ignore[type-arg]
+        self.findings = findings
+
+    async def run_automated_reviews(self, project_id: UUID, cycle: int):  # type: ignore[no-untyped-def]
+        return self.findings
+
+
+def _finding_ledger_event(
+    kind: EventKind, finding_id: str, *, automated: bool = True
+) -> LedgerEvent:
+    payload: dict[str, object] = {"finding_id": finding_id}
+    if kind is EventKind.FINDING_RAISED and automated:
+        payload["automated"] = True
+    return LedgerEvent(
+        event_id=uuid4(),
+        project_id=uuid4(),
+        cycle=1,
+        phase=Phase.REVIEW,
+        seq=1,
+        kind=kind,
+        engine_id=None,
+        job_id=uuid4(),
+        causation_id=None,
+        correlation_id=uuid4(),
+        provenance=Provenance.TRUSTED,
+        produced_at=NOW,
+        payload=payload,
+        digest="abc",
+    )
+
+
+async def test_fresh_scan_supersedes_stale_automated_findings() -> None:
+    """A stale worktree's dead-code finding looped an accepted review
+    back into BUILD live: anything still true is re-raised by the fresh
+    scan, so everything older is superseded. User findings are never
+    touched."""
+    spec = DesignSpec(
+        objective="x",
+        constraints=(),
+        non_goals=(),
+        criteria=(),
+        nfrs=(),
+        walking_skeleton="ws",
+    )
+    events = (
+        _finding_ledger_event(EventKind.FINDING_RAISED, "f_code_1_stale111"),
+        _finding_ledger_event(EventKind.FINDING_RAISED, "f_code_1_fixed222"),
+        _finding_ledger_event(EventKind.FINDING_RESOLVED, "f_code_1_fixed222"),
+        _finding_ledger_event(EventKind.FINDING_RAISED, "f_user_1_human333", automated=False),
+    )
+    ledger = FakeReviewLedger(events=events)
+    handler = ReviewDemoHandler(
+        specs=FakeSpecRepository(spec=spec),
+        ledger=ledger,
+        artifacts=FakeReviewArtifactWriter(),
+        jobs=FakeJobRepository(),
+        clock=FixedClock(),
+        automated_reviewer=_FixedReviewer(),
+    )
+
+    outcome = await handler.handle(_make_job())
+
+    assert isinstance(outcome, Success)
+    resolutions = [
+        payload for kind, payload in ledger.appended if kind is EventKind.FINDING_RESOLVED
+    ]
+    assert [p["finding_id"] for p in resolutions] == ["f_code_1_stale111"]
+    assert "superseded" in str(resolutions[0]["resolution"])

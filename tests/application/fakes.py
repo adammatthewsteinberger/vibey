@@ -7,6 +7,7 @@ from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 from vibey.application.dto import EnqueueRequest, HumanGateRecord, HumanGateRequest, JobRecord
+from vibey.domain.engine import EngineId
 from vibey.domain.job import JobState
 from vibey.domain.phase import Phase
 
@@ -125,6 +126,37 @@ class FakeJobRepository:
 
     async def reap(self) -> int:
         return 0
+
+    async def assign_engine(self, job_id: UUID, *, owner: str, engine_id: EngineId) -> bool:
+        self.calls.append("assign_engine")
+        job = self._jobs.get(job_id)
+        if job is None or job.lease_owner != owner or job.state is not JobState.LEASED:
+            return False
+        self._jobs[job_id] = _with(job, assigned_engine=engine_id.value)
+        return True
+
+    async def count_unsettled(
+        self, project_id: UUID, *, cycle: int, phase: Phase, exclude: UUID | None = None
+    ) -> int:
+        terminal = {JobState.SUCCEEDED, JobState.FAILED, JobState.CANCELLED}
+        return sum(
+            1
+            for job in self._jobs.values()
+            if job.project_id == project_id
+            and job.cycle == cycle
+            and job.phase is phase
+            and job.state not in terminal
+            and job.id != exclude
+        )
+
+    async def queue_depth(self, project_id: UUID) -> Mapping[str, int]:
+        from collections import Counter
+
+        counts: Counter[str] = Counter()
+        for job in self._jobs.values():
+            if job.project_id == project_id:
+                counts[job.state] += 1
+        return dict(counts)
 
     async def get(self, job_id: UUID) -> JobRecord | None:
         return self._jobs.get(job_id)

@@ -481,3 +481,226 @@ async def test_deploy_acceptance_invalid_spec_returns_failure() -> None:
     )
     outcome = await handler.handle(job)
     assert isinstance(outcome, Failure)
+
+
+@pytest.mark.asyncio
+async def test_deploy_interview_with_jobs_enqueues_synthesize() -> None:
+    from dataclasses import replace
+
+    from tests.application.fakes import FakeJobRepository
+
+    ledger = FakeDeployLedger()
+    gates = FakeHumanGateRepository()
+    jobs = FakeJobRepository()
+    handler = DeployInterviewHandler(ledger=ledger, gates=gates, clock=FakeClock(), jobs=jobs)
+    job = replace(make_job(uuid4()), phase=Phase.DEPLOY_DESIGN, kind="deploy.interview")
+
+    first = await handler.handle(job)
+    assert isinstance(first, Park)
+    gate = await gates.latest_for_job(job.id)
+    assert gate is not None
+    await gates.answer(gate.gate_id, answer={"choice": "accept_defaults"}, answered_by="user")
+
+    outcome = await handler.handle(job)
+
+    assert isinstance(outcome, Success)
+    synth = [j for j in jobs._jobs.values() if j.kind == "deploy.synthesize"]
+    assert len(synth) == 1
+    assert synth[0].phase is Phase.DEPLOY_DESIGN
+
+
+@pytest.mark.asyncio
+async def test_deploy_synthesize_with_jobs_enqueues_spec() -> None:
+    from dataclasses import replace
+
+    from tests.application.fakes import FakeJobRepository
+
+    jobs = FakeJobRepository()
+    handler = DeploySynthesizeHandler(ledger=FakeDeployLedger(), clock=FakeClock(), jobs=jobs)
+    job = replace(make_job(uuid4()), phase=Phase.DEPLOY_DESIGN, kind="deploy.synthesize")
+
+    outcome = await handler.handle(job)
+
+    assert isinstance(outcome, Success)
+    spec_jobs = [j for j in jobs._jobs.values() if j.kind == "deploy.spec"]
+    assert len(spec_jobs) == 1
+    assert spec_jobs[0].phase is Phase.DEPLOY_DESIGN
+
+
+class FakeSpecStore:
+    def __init__(self) -> None:
+        self.saved: list[object] = []
+
+    async def save_spec(self, project_id, spec):  # type: ignore[no-untyped-def]
+        self.saved.append(spec)
+
+
+class FakeConsentStore:
+    def __init__(self) -> None:
+        self.saved: list[object] = []
+
+    async def save_consent(self, project_id, consent):  # type: ignore[no-untyped-def]
+        self.saved.append(consent)
+
+
+@pytest.mark.asyncio
+async def test_synthesize_builds_and_persists_a_valid_spec_from_answers() -> None:
+    from dataclasses import replace
+
+    from vibey.domain.ledger import LedgerEvent
+
+    interview_answer = {"environment": "prod", "region": "westeurope", "sku": "dedicated"}
+    job = replace(make_job(uuid4()), phase=Phase.DEPLOY_DESIGN, kind="deploy.synthesize")
+    ledger = FakeDeployLedger()
+    payload = {"stage": "deploy_elicitation", "answer": interview_answer}
+    ledger.events.append(
+        LedgerEvent(
+            event_id=uuid4(),
+            project_id=job.project_id,
+            seq=1,
+            cycle=1,
+            phase=Phase.DEPLOY_DESIGN,
+            kind=EventKind.ANSWER_GIVEN,
+            engine_id=None,
+            job_id=uuid4(),
+            causation_id=None,
+            correlation_id=uuid4(),
+            provenance=Provenance.TRUSTED,
+            produced_at=datetime(2026, 8, 19, tzinfo=UTC),
+            payload=payload,
+            digest=digest_event(payload),
+        )
+    )
+    store = FakeSpecStore()
+    handler = DeploySynthesizeHandler(ledger=ledger, clock=FakeClock(), jobs=None, spec_store=store)
+
+    outcome = await handler.handle(job)
+
+    assert isinstance(outcome, Success)
+    assert len(store.saved) == 1
+    spec = store.saved[0]
+    assert spec.target_scope.environment == "prod"
+    assert spec.target_scope.region == "westeurope"
+    assert spec.topology.sku == "dedicated"
+    assert spec.validate() == []
+
+
+@pytest.mark.asyncio
+async def test_synthesize_rejects_answers_that_produce_an_invalid_spec() -> None:
+    from dataclasses import replace
+
+    from vibey.domain.ledger import LedgerEvent
+
+    bad_answer = {"tenant_id": "   "}
+    job = replace(make_job(uuid4()), phase=Phase.DEPLOY_DESIGN, kind="deploy.synthesize")
+    ledger = FakeDeployLedger()
+    payload = {"stage": "deploy_elicitation", "answer": bad_answer}
+    ledger.events.append(
+        LedgerEvent(
+            event_id=uuid4(),
+            project_id=job.project_id,
+            seq=1,
+            cycle=1,
+            phase=Phase.DEPLOY_DESIGN,
+            kind=EventKind.ANSWER_GIVEN,
+            engine_id=None,
+            job_id=uuid4(),
+            causation_id=None,
+            correlation_id=uuid4(),
+            provenance=Provenance.TRUSTED,
+            produced_at=datetime(2026, 8, 19, tzinfo=UTC),
+            payload=payload,
+            digest=digest_event(payload),
+        )
+    )
+    store = FakeSpecStore()
+    handler = DeploySynthesizeHandler(ledger=ledger, clock=FakeClock(), spec_store=store)
+
+    outcome = await handler.handle(job)
+
+    assert isinstance(outcome, Failure)
+    assert "invalid" in outcome.detail
+    assert store.saved == []
+
+
+@pytest.mark.asyncio
+async def test_acceptance_persists_the_consent_it_grants() -> None:
+    from dataclasses import replace
+
+    from tests.application.fakes import FakeJobRepository
+
+    gates = FakeHumanGateRepository()
+    consent_store = FakeConsentStore()
+    spec = _valid_spec()
+    handler = DeployAcceptanceHandler(
+        ledger=FakeDeployLedger(),
+        gates=gates,
+        jobs=FakeJobRepository(),
+        projects=object(),
+        clock=FakeClock(),
+        spec_provider=lambda _pid: spec,
+        consent_store=consent_store,
+    )
+    job = replace(make_job(uuid4()), phase=Phase.DEPLOY_DESIGN, kind="deploy.accept")
+
+    first = await handler.handle(job)
+    assert not isinstance(first, Success)
+    gate = await gates.latest_for_job(job.id)
+    assert gate is not None
+    await gates.answer(
+        gate.gate_id,
+        answer={"verdict": "accept", "explicit_mutation_authorized": True},
+        answered_by="user",
+    )
+
+    outcome = await handler.handle(job)
+
+    assert isinstance(outcome, Success)
+    assert len(consent_store.saved) == 1
+    consent = consent_store.saved[0]
+    assert consent.target_scope_digest == spec.scope_digest()
+    assert consent.matches_spec(spec) is True
+
+
+@pytest.mark.asyncio
+async def test_synthesize_skips_foreign_stages_and_non_mapping_answers() -> None:
+    from dataclasses import replace
+
+    from vibey.domain.ledger import LedgerEvent
+
+    job = replace(make_job(uuid4()), phase=Phase.DEPLOY_DESIGN, kind="deploy.synthesize")
+    ledger = FakeDeployLedger()
+    for seq, payload in enumerate(
+        (
+            {"stage": "design_interview", "answer": {"unrelated": "x"}},
+            {"stage": "deploy_elicitation", "answer": "accept_defaults"},
+        ),
+        start=1,
+    ):
+        ledger.events.append(
+            LedgerEvent(
+                event_id=uuid4(),
+                project_id=job.project_id,
+                seq=seq,
+                cycle=1,
+                phase=Phase.DEPLOY_DESIGN,
+                kind=EventKind.ANSWER_GIVEN,
+                engine_id=None,
+                job_id=uuid4(),
+                causation_id=None,
+                correlation_id=uuid4(),
+                provenance=Provenance.TRUSTED,
+                produced_at=datetime(2026, 8, 19, tzinfo=UTC),
+                payload=payload,
+                digest=digest_event(payload),
+            )
+        )
+    store = FakeSpecStore()
+    handler = DeploySynthesizeHandler(ledger=ledger, clock=FakeClock(), spec_store=store)
+
+    outcome = await handler.handle(job)
+
+    assert isinstance(outcome, Success)
+    assert len(store.saved) == 1
+    # neither event contributed answers, so the defaults stand
+    assert store.saved[0].target_scope.environment == "dev"

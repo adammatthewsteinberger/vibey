@@ -13,7 +13,9 @@ from vibey.application.dto import (
     HumanGateRequest,
     JobRecord,
 )
+from vibey.domain.engine import EngineId
 from vibey.domain.job import FailureClass, JobState
+from vibey.domain.phase import Phase
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,6 +38,11 @@ class Park:
 class Defer:
     retry_at: datetime
     detail: str
+    capacity: bool = False
+    """True only when the deferral is a real engine capacity signal.
+    Caught live: verify-repair waits are also Defers, and recording them
+    as capacity rejections opened both engines' circuits and stalled the
+    whole project. Only a capacity-classed Defer may open a circuit."""
 
 
 # What a handler is allowed to say happened. Part of the JobHandler seam's
@@ -47,6 +54,16 @@ Outcome = Success | Failure | Park | Defer
 @runtime_checkable
 class JobHandler(Protocol):
     async def handle(self, job: JobRecord) -> Outcome: ...
+
+
+@runtime_checkable
+class JobHandlerFactory(Protocol):
+    """Builds a handler per claimed job, for kinds whose collaborators are
+    job-scoped: BUILD handlers need worktree/integration managers bound to
+    `job.cycle` and (later) an engine selected per attempt, so a single
+    handler instance constructed at worker start cannot serve them."""
+
+    async def create(self, job: JobRecord) -> JobHandler: ...
 
 
 @runtime_checkable
@@ -95,6 +112,22 @@ class JobRepository(Protocol):
     async def reap(self) -> int:
         """Reclaims jobs whose lease has expired. Returns the count
         reclaimed."""
+        ...
+
+    async def assign_engine(self, job_id: UUID, *, owner: str, engine_id: EngineId) -> bool:
+        """Durably records which engine this attempt selected. Guarded by the
+        lease so a zombie worker whose lease expired (and whose job was
+        reclaimed by someone else) can never overwrite the new owner's
+        selection. On a retry, the previous attempt's value is the
+        "previous engine" input to forced-rotation exclusion."""
+        ...
+
+    async def count_unsettled(
+        self, project_id: UUID, *, cycle: int, phase: Phase, exclude: UUID | None = None
+    ) -> int:
+        """Counts this cycle+phase's jobs not yet in a terminal state
+        (succeeded/failed/cancelled). `exclude` lets the caller ask "am I the
+        last one?" from inside its own still-leased job."""
         ...
 
     async def queue_depth(self, project_id: UUID) -> Mapping[JobState, int]:

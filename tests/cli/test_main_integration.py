@@ -208,3 +208,138 @@ def test_visual_with_no_subcommand_shows_help() -> None:
 
     assert result.exit_code == 0, result.output
     assert "accept" in result.output.lower() or "waive" in result.output.lower()
+
+
+def _raise_test_gate(tmp_path: Path, name: str) -> UUID:
+    async def seed() -> UUID:
+        from vibey.application.dto import HumanGateRequest
+
+        async with build_app() as resources:
+            project = await resources.projects.create(name, tmp_path, max_cycles=1, config={})
+            gate = await resources.gates.raise_gate(
+                project.project_id,
+                None,
+                HumanGateRequest(
+                    kind="review_verdict",
+                    prompt="Accept?",
+                    options=("accept", "changes"),
+                    default_answer="accept",
+                ),
+            )
+            return gate.gate_id
+
+    return asyncio.run(seed())
+
+
+def _gate_answer(gate_id: UUID) -> dict[str, object]:
+    async def load() -> dict[str, object]:
+        async with build_app() as resources:
+            gate = await resources.gates.get(gate_id)
+            assert gate is not None and gate.answer is not None
+            return dict(gate.answer)
+
+    return asyncio.run(load())
+
+
+def test_answer_verdict_flag_sends_verdict_shape(tmp_path: Path) -> None:
+    gate_id = _raise_test_gate(tmp_path, "verdict-proj")
+
+    result = runner.invoke(app, ["answer", str(gate_id), "--verdict", "accept"])
+
+    assert result.exit_code == 0, result.output
+    assert _gate_answer(gate_id) == {"verdict": "accept"}
+
+
+def test_answer_choice_flag_sends_choice_shape(tmp_path: Path) -> None:
+    gate_id = _raise_test_gate(tmp_path, "choice-proj")
+
+    result = runner.invoke(app, ["answer", str(gate_id), "--choice", "local_only"])
+
+    assert result.exit_code == 0, result.output
+    assert _gate_answer(gate_id) == {"choice": "local_only"}
+
+
+def test_answer_raw_flag_sends_arbitrary_object(tmp_path: Path) -> None:
+    gate_id = _raise_test_gate(tmp_path, "raw-proj")
+
+    result = runner.invoke(
+        app, ["answer", str(gate_id), "--raw", '{"verdict": "accept", "note": "ship it"}']
+    )
+
+    assert result.exit_code == 0, result.output
+    assert _gate_answer(gate_id) == {"verdict": "accept", "note": "ship it"}
+
+
+def test_answer_requires_exactly_one_mode() -> None:
+    none_given = runner.invoke(app, ["answer", str(UUID(int=1))])
+    assert none_given.exit_code == 2
+    assert "exactly one" in none_given.output
+
+    two_given = runner.invoke(app, ["answer", str(UUID(int=1)), "--choice", "x", "--verdict", "y"])
+    assert two_given.exit_code == 2
+    assert "exactly one" in two_given.output
+
+    pairs_plus_flag = runner.invoke(app, ["answer", str(UUID(int=1)), "q-1=a", "--choice", "x"])
+    assert pairs_plus_flag.exit_code == 2
+
+
+def test_answer_raw_rejects_invalid_json_and_non_objects() -> None:
+    bad_json = runner.invoke(app, ["answer", str(UUID(int=1)), "--raw", "{nope"])
+    assert bad_json.exit_code == 2
+    assert "valid JSON" in bad_json.output
+
+    non_object = runner.invoke(app, ["answer", str(UUID(int=1)), "--raw", '["a"]'])
+    assert non_object.exit_code == 2
+    assert "JSON object" in non_object.output
+
+
+def test_answer_defaults_flag_sends_accept_defaults(tmp_path: Path) -> None:
+    gate_id = _raise_test_gate(tmp_path, "defaults-proj")
+
+    result = runner.invoke(app, ["answer", str(gate_id), "--defaults"])
+
+    assert result.exit_code == 0, result.output
+    assert _gate_answer(gate_id) == {"answers": {}, "accept_defaults": True}
+
+
+def test_answer_defaults_combines_with_pairs_but_not_other_modes(tmp_path: Path) -> None:
+    gate_id = _raise_test_gate(tmp_path, "defaults-pairs-proj")
+
+    result = runner.invoke(app, ["answer", str(gate_id), "q-1=explicit", "--defaults"])
+
+    assert result.exit_code == 0, result.output
+    assert _gate_answer(gate_id) == {
+        "answers": {"q-1": "explicit"},
+        "accept_defaults": True,
+    }
+
+    with_choice = runner.invoke(app, ["answer", str(UUID(int=1)), "--defaults", "--choice", "x"])
+    assert with_choice.exit_code == 2
+    assert "only combines" in with_choice.output
+
+
+def test_new_project_stores_cycle_budget_caps_in_config(tmp_path: Path) -> None:
+    result = runner.invoke(
+        app,
+        [
+            "new",
+            "budgeted-proj",
+            "--repo",
+            str(tmp_path),
+            "--max-cycle-dollars",
+            "15.5",
+            "--max-cycle-turns",
+            "200",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+
+    async def load():  # type: ignore[no-untyped-def]
+        async with build_app() as resources:
+            project = await resources.projects.get_latest()
+            assert project is not None
+            return project.config
+
+    config = asyncio.run(load())
+    assert config["max_cycle_dollars"] == 15.5
+    assert config["max_cycle_turns"] == 200
