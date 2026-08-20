@@ -63,13 +63,18 @@ The interview parks on human gates. In a second terminal:
 
 ```bash
 vibey status            # shows the parked gate and its questions
-vibey answer <gate-id> q-1="a CLI that greets the user by name" q-2="..."
+vibey answer <gate-id> system_description="a CLI that greets the user by name" --defaults
+vibey answer <gate-id> --defaults          # later stages: take every default
 ```
 
-Repeat until the interview completes and the design is accepted (decline
-the visual-design interstitial when offered — the greeter has no UI).
-`vibey watch` gives a live dashboard of the queue, circuits, and ledger
-tail while you go.
+Question keys are minted by the model and vary per run — read them from the
+gate prompt when you want to answer one explicitly. `--defaults` accepts
+every default (blocking questions included) and combines with explicit
+pairs, which win; it is the zero-touch path, so an unattended driver never
+needs to parse anything. Repeat until the interview completes and the
+design is accepted (decline the visual-design interstitial when offered —
+the greeter has no UI). `vibey watch` gives a live dashboard of the queue,
+circuits, and ledger tail while you go.
 
 ## 5. Watch BUILD rotate
 
@@ -116,9 +121,17 @@ The project records DONE(local). `vibey cost` shows what the demo spent;
 ## If something goes wrong
 
 - **"no recorded conformance" warning at worker startup** — step 1 was
-  skipped or failed; engine-driven jobs will sit ready but unselected.
+  skipped or failed; engine-driven jobs will sit ready but unselected. A
+  timing-flaky conformance FAIL is possible on a loaded machine: re-run
+  `vibey doctor --conformance --record --engine <name>` once.
 - **A job keeps deferring** — `vibey engines` will show an open circuit
   (capacity) or `vibey status` a pending backoff; both clear on their own.
+  An open circuit past its reset deadline half-opens automatically at the
+  next selection and closes itself on the first success.
+- **A `verify_repair_exhausted` / `integrate_repair_exhausted` gate** —
+  the item burned its bounded repair rounds. Grant more with
+  `vibey answer <gate-id> --raw '{"max_rounds": 6}'` (the prompt suggests
+  a value), or fix the branch by hand and answer anything to retry.
 - **A gate you don't recognize** — `vibey answer --raw '{"...": ...}'`
   covers any shape the typed flags don't.
 - Workers are disposable: kill the worker any time; leases expire and the
