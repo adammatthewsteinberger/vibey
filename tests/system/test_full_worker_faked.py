@@ -48,11 +48,7 @@ async def _use_test_database(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def _clean_git_env() -> dict[str, str]:
-    return {
-        k: v
-        for k, v in os.environ.items()
-        if not k.startswith(("GIT_", "PRE_COMMIT"))
-    }
+    return {k: v for k, v in os.environ.items() if not k.startswith(("GIT_", "PRE_COMMIT"))}
 
 
 def _git(repo: Path, *argv: str) -> None:
