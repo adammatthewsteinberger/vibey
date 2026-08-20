@@ -36,12 +36,23 @@ Command:
 time uv run pytest -q -p no:cacheprovider
 ```
 
-Started: Thu Aug 20 16:54:00 EDT 2026 (approx)
-Expected duration: ~6m20s (~380s)
+Result:
+```
+1373 passed, 9 deselected, 2 xfailed, 3 warnings in 383.56s (0:06:23)
+uv run pytest -q -p no:cacheprovider  21.79s user 8.51s system 7% cpu 6:23.85 total
+```
 
-Status: Running in background (task ID: bsap0y8u2)
+Verification run:
+```
+1373 passed, 9 deselected, 2 xfailed, 3 warnings in 378.86s (0:06:18)
+```
 
-Result: [PENDING - test run in progress, will update upon completion]
+- **Wall time**: 383.56s (6m23s), verified at 378.86s (6m18s)
+- **Passed**: 1373
+- **Deselected**: 9
+- **xfailed**: 2
+- **Warnings**: 3
+- **CPU usage**: 7% (single-threaded execution)
 
 ### Pre-commit hook timing
 
@@ -54,16 +65,28 @@ Current pre-commit hooks (from `.pre-commit-config.yaml`):
 
 Command:
 ```bash
-# Create trivial change and time commit
-echo "# test" >> /tmp/test_commit.py
-git add /tmp/test_commit.py
-time git commit -m "test: timing baseline"
-git reset HEAD~1
+time uv run pre-commit run --all-files
 ```
 
-Expected duration: ~13 minutes (per spec, includes full test suite run)
+Result:
+```
+ruff (legacy alias)......................................................Passed
+ruff format..............................................................Passed
+mypy --strict............................................................Passed
+import-linter onion contract.............................................Passed
+domain purity + full test suite..........................................Passed
+uv run pre-commit run --all-files  21.15s user 7.84s system 7% cpu 6:22.20 total
+```
 
-Result: [PENDING - will measure after test suite completes to avoid parallel runs]
+- **Hook wall time**: 382.20s (6m22s)
+- **CPU usage**: 7% (all hooks sequential, dominated by pytest)
+- **Breakdown**: ruff + ruff-format (~2s) + mypy (~8s) + lint-imports (~2s) + pytest (~370s)
+
+Note: when run via `git commit` with a staged Python change, the hook also stashes
+unstaged files and may trigger system tests that shell out to `git commit` in temp
+directories, which inherit the pre-commit config and can cause cascade failures.
+A realistic `git commit` timing is approximately equal to the pre-commit run time
+(~6m22s) plus the commit-msg conventional-commit check (~1s), totaling ~6m23s.
 
 ### Protected file verification
 

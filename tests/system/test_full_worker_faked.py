@@ -47,9 +47,20 @@ async def _use_test_database(monkeypatch: pytest.MonkeyPatch) -> None:
     await conn.close()
 
 
+def _clean_git_env() -> dict[str, str]:
+    return {
+        k: v
+        for k, v in os.environ.items()
+        if not k.startswith(("GIT_", "PRE_COMMIT"))
+    }
+
+
 def _git(repo: Path, *argv: str) -> None:
     subprocess.run(  # nosec B603
-        ("git", "-C", str(repo), *argv), check=True, capture_output=True
+        ("git", "-C", str(repo), *argv),
+        check=True,
+        capture_output=True,
+        env=_clean_git_env(),
     )
 
 
@@ -59,9 +70,14 @@ def _make_repo(root: Path) -> Path:
     repo = root / "repo"
     (repo / "src").mkdir(parents=True)
     (repo / "src" / "app.py").write_text("def main() -> int:\n    return 0\n")
-    subprocess.run(("git", "init", "-q", str(repo)), check=True)  # nosec B603
+    subprocess.run(  # nosec B603
+        ("git", "init", "-q", str(repo)),
+        check=True,
+        env=_clean_git_env(),
+    )
     _git(repo, "config", "user.email", "e2e@vibey.local")
     _git(repo, "config", "user.name", "vibey e2e")
+    _git(repo, "config", "core.hooksPath", "/dev/null")
     _git(repo, "add", ".")
     _git(repo, "commit", "-q", "-m", "init")
     return repo
