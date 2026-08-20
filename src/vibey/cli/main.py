@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import subprocess  # nosec B404 - fixed argv, never shell=True
 from pathlib import Path
 from typing import Annotated
 from uuid import UUID
@@ -1004,6 +1005,15 @@ def worker(
         UUID | None,
         typer.Option("--project", help="Project id (default: the latest project)"),
     ] = None,
+    azure: Annotated[
+        str,
+        typer.Option(
+            "--azure",
+            help="Azure client for the deploy stage set: 'memory' (safe default, "
+            "no real infrastructure) or 'az' (the real Azure CLI; requires "
+            "`az login` and mutates real resources on consented deploys)",
+        ),
+    ] = "memory",
 ) -> None:
     """Long-running worker: LISTEN vibey_job_ready, dispatch across all phases."""
     from datetime import timedelta
@@ -1024,6 +1034,20 @@ def worker(
     if provider not in ("scripted", "claudeloop"):
         typer.echo("provider must be 'scripted' or 'claudeloop'")
         raise typer.Exit(2)
+    if azure not in ("memory", "az"):
+        typer.echo("--azure must be 'memory' or 'az'")
+        raise typer.Exit(2)
+    azure_client = None
+    if azure == "az":
+        from vibey.infrastructure.azure.az_cli import AzCliClientAdapter
+
+        login_check = subprocess.run(  # nosec B603 B607 - fixed argv, never shell=True
+            ["az", "account", "show", "-o", "none"], capture_output=True, text=True
+        )
+        if login_check.returncode != 0:
+            typer.echo("--azure az requires a logged-in Azure CLI: run `az login` first")
+            raise typer.Exit(1)
+        azure_client = AzCliClientAdapter()
 
     async def run_worker() -> None:
         from vibey.application.interfaces import WorkPlanProducer
@@ -1084,6 +1108,7 @@ def worker(
                     owner=f"worker-{os.getpid()}-{i}",
                     engine_adapters=adapters,
                     allow_list=allow_list,
+                    azure_client=azure_client,
                 )
                 for i in range(count)
             ]
