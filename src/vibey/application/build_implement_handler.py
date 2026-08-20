@@ -30,7 +30,7 @@ from uuid import uuid4
 
 from vibey.application.build_engine_run import BuildLedger, run_and_record
 from vibey.application.build_verify_handler import granted_amount, granted_limit
-from vibey.application.dto import EnqueueRequest, HumanGateRequest, JobRecord, RunSpec
+from vibey.application.dto import EngineEvent, EnqueueRequest, HumanGateRequest, JobRecord, RunSpec
 from vibey.application.interfaces import (
     BudgetSource,
     BuildProvisioner,
@@ -48,6 +48,7 @@ from vibey.domain.effort import (
 from vibey.domain.engine import EXIT_CODE_WIND_DOWN, IsolationLevel
 from vibey.domain.errors import EscalationExhausted
 from vibey.domain.job import FailureClass, idempotency_key
+from vibey.domain.ledger import EventKind
 from vibey.domain.phase import Phase
 from vibey.domain.provision import ProvisionSpec
 
@@ -217,6 +218,30 @@ class BuildImplementHandler:
             )
         if not run_outcome.complete:
             return Failure(FailureClass.WORK, "engine run did not report completion")
+
+        repair_finding_id = str(job.payload.get("repair_finding_id", ""))
+        if repair_finding_id:
+            # A completed repair session closes its finding as a repair
+            # ticket; the follow-up verify decides whether the fix WORKED.
+            # Without this, a repair that lands but leaves gates failing
+            # keeps the finding open forever, and every later verify
+            # defers behind "repair in flight" instead of raising the
+            # next round -- the livelock the greeter4 live run exposed.
+            await self._ledger.record(
+                project_id=job.project_id,
+                cycle=job.cycle,
+                job_id=job.id,
+                engine_id=self._engine.descriptor.engine_id,
+                correlation_id=uuid4(),
+                event=EngineEvent(
+                    kind=EventKind.FINDING_RESOLVED.value,
+                    at=self._clock.now(),
+                    payload={
+                        "finding_id": repair_finding_id,
+                        "resolution": "repair session completed; awaiting re-verification",
+                    },
+                ),
+            )
 
         await self._jobs.enqueue(
             EnqueueRequest(
