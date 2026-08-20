@@ -123,16 +123,34 @@ def new_project(
     name: str,
     repo: Annotated[Path, typer.Option("--repo")] = Path("."),
     max_cycles: Annotated[int, typer.Option("--max-cycles", min=1)] = 10,
+    max_cycle_dollars: Annotated[
+        float | None,
+        typer.Option(
+            "--max-cycle-dollars",
+            min=0.01,
+            help="Cap engine spend per cycle; exceeding it parks a "
+            "budget_exhausted gate instead of starting more sessions",
+        ),
+    ] = None,
+    max_cycle_turns: Annotated[
+        int | None,
+        typer.Option("--max-cycle-turns", min=1, help="Cap engine turns per cycle"),
+    ] = None,
 ) -> None:
     """Create a project and enqueue its first DESIGN interview."""
 
     async def create() -> tuple[str, str]:
+        config: dict[str, object] = {"project": {"name": name, "repo": str(repo)}}
+        if max_cycle_dollars is not None:
+            config["max_cycle_dollars"] = max_cycle_dollars
+        if max_cycle_turns is not None:
+            config["max_cycle_turns"] = max_cycle_turns
         async with build_app() as resources:
             project = await resources.projects.create(
                 name,
                 repo,
                 max_cycles=max_cycles,
-                config={"project": {"name": name, "repo": str(repo)}},
+                config=config,
             )
         return str(project.project_id), await _enqueue_design(project.project_id)
 

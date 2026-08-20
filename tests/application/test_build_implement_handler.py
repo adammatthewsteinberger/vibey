@@ -487,3 +487,138 @@ def test_every_regular_prompt_carries_the_house_rules() -> None:
 
     seeded = _render_prompt("item-1", {"seed_prompt": "resume from the brief"})
     assert "House rules:" not in seeded
+
+
+# ── the escalation ladder grant ──────────────────────────────────────────────
+
+
+async def test_an_answered_gate_extends_the_exhausted_ladder_at_top_effort(
+    tmp_path: Path,
+) -> None:
+    """escalation_exhausted was the last dead-end park: answering
+    un-parked the job, attempts were still past the ladder, and it parked
+    again forever."""
+    from tests.application.fakes import FakeHumanGateRepository
+    from vibey.application.worker import Park
+    from vibey.domain.effort import Effort as _Effort
+
+    gates = FakeHumanGateRepository()
+    captured: dict[str, object] = {}
+
+    class _SpyEngine(ScriptedEngine):
+        async def start(self, spec):  # type: ignore[no-untyped-def]
+            captured["effort"] = spec.effort
+            return await super().start(spec)
+
+    engine = _SpyEngine(descriptor=CLAUDELOOP, base_dir=tmp_path / "engine")
+    handler = BuildImplementHandler(
+        worktrees=FakeWorktrees(tmp_path),
+        provisioner=FakeProvisioner(),
+        engine=engine,
+        ledger=FakeLedger(),
+        jobs=FakeJobRepository(),
+        clock=FixedClock(),
+        human_gates=gates,  # type: ignore[arg-type]
+    )
+    job = _job(attempts=8, payload={"title": "t"})
+
+    parked = await handler.handle(job)
+    assert isinstance(parked, Park)
+    assert parked.request.kind == "escalation_exhausted"
+    assert '"max_attempts"' in parked.request.prompt
+
+    gate = await gates.raise_gate(job.project_id, job.id, parked.request)
+    await gates.answer(gate.gate_id, answer={"max_attempts": 10}, answered_by="operator")
+    granted = await handler.handle(job)
+    assert isinstance(granted, Success)
+    assert captured["effort"] is _Effort.HIGH
+
+    # Past the granted bound it parks again.
+    beyond = _job(attempts=11, payload={"title": "t"})
+    gate2 = await gates.raise_gate(beyond.project_id, beyond.id, parked.request)
+    await gates.answer(gate2.gate_id, answer={"max_attempts": 10}, answered_by="operator")
+    reparked = await handler.handle(beyond)
+    assert isinstance(reparked, Park)
+
+
+async def test_exhausted_ladder_without_gates_parks_as_before(tmp_path: Path) -> None:
+    from vibey.application.worker import Park
+
+    engine = ScriptedEngine(descriptor=CLAUDELOOP, base_dir=tmp_path / "engine")
+    handler, _, _ = _handler(tmp_path, engine=engine, ledger=FakeLedger())
+
+    outcome = await handler.handle(_job(attempts=9))
+
+    assert isinstance(outcome, Park)
+    assert outcome.request.kind == "escalation_exhausted"
+
+
+# ── the cycle budget brake ───────────────────────────────────────────────────
+
+
+class _FixedBudgetSource:
+    def __init__(self, budget) -> None:  # type: ignore[no-untyped-def]
+        self._budget = budget
+
+    async def current(self, project_id, cycle):  # type: ignore[no-untyped-def]
+        return self._budget
+
+
+async def test_an_exhausted_cycle_budget_parks_before_any_session(tmp_path: Path) -> None:
+    """The runaway brake the repair storms proved missing: no session
+    starts once the cycle's recorded spend crosses its cap."""
+    from vibey.application.worker import Park
+    from vibey.domain.budget import BudgetLedger
+
+    budget = BudgetLedger(turns_spent=40, dollars_spent=12.5, max_turns=None, max_dollars=10.0)
+    engine = ScriptedEngine(descriptor=CLAUDELOOP, base_dir=tmp_path / "engine")
+    handler = BuildImplementHandler(
+        worktrees=FakeWorktrees(tmp_path),
+        provisioner=FakeProvisioner(),
+        engine=engine,
+        ledger=FakeLedger(),
+        jobs=FakeJobRepository(),
+        clock=FixedClock(),
+        budget_source=_FixedBudgetSource(budget),  # type: ignore[arg-type]
+    )
+
+    outcome = await handler.handle(_job(payload={"title": "t"}))
+
+    assert isinstance(outcome, Park)
+    assert outcome.request.kind == "budget_exhausted"
+    assert "$12.50" in outcome.request.prompt
+    assert '"max_dollars"' in outcome.request.prompt
+
+
+async def test_a_budget_grant_raises_the_cap_and_the_session_runs(tmp_path: Path) -> None:
+    from tests.application.fakes import FakeHumanGateRepository
+    from vibey.application.worker import Park
+    from vibey.domain.budget import BudgetLedger
+
+    budget = BudgetLedger(turns_spent=40, dollars_spent=12.5, max_turns=None, max_dollars=10.0)
+    gates = FakeHumanGateRepository()
+    engine = ScriptedEngine(descriptor=CLAUDELOOP, base_dir=tmp_path / "engine")
+    handler = BuildImplementHandler(
+        worktrees=FakeWorktrees(tmp_path),
+        provisioner=FakeProvisioner(),
+        engine=engine,
+        ledger=FakeLedger(),
+        jobs=FakeJobRepository(),
+        clock=FixedClock(),
+        budget_source=_FixedBudgetSource(budget),  # type: ignore[arg-type]
+        human_gates=gates,  # type: ignore[arg-type]
+    )
+    job = _job(payload={"title": "t"})
+
+    parked = await handler.handle(job)
+    assert isinstance(parked, Park)
+
+    gate = await gates.raise_gate(job.project_id, job.id, parked.request)
+    await gates.answer(gate.gate_id, answer={"max_dollars": 30}, answered_by="operator")
+    granted = await handler.handle(job)
+    assert isinstance(granted, Success)
+
+    # A grant below the spend still parks (turns grant path too).
+    await gates.answer(gate.gate_id, answer={"max_dollars": 11, "max_turns": 30}, answered_by="op")
+    still_parked = await handler.handle(job)
+    assert isinstance(still_parked, Park)

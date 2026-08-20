@@ -12,6 +12,7 @@ from uuid import UUID
 
 import asyncpg
 
+from vibey.application.budget_source import LedgerBudgetSource
 from vibey.application.build_decompose_handler import BuildDecomposeHandler
 from vibey.application.build_implement_handler import BuildImplementHandler
 from vibey.application.build_integrate_handler import BuildIntegrateHandler
@@ -267,6 +268,19 @@ def build_full_worker(
         owner=owner,
         allow_list=allow_list,
     )
+    # The runaway brake: caps come from the project's own config
+    # (max_cycle_dollars / max_cycle_turns, set at `vibey new`). Without
+    # either, spend stays uncapped -- opting in is explicit, never a
+    # silent default that would surprise existing projects.
+    raw_dollars = project.config.get("max_cycle_dollars")
+    raw_turns = project.config.get("max_cycle_turns")
+    budget_source: LedgerBudgetSource | None = None
+    if isinstance(raw_dollars, int | float) or isinstance(raw_turns, int):
+        budget_source = LedgerBudgetSource(
+            resources.ledger,
+            max_dollars=float(raw_dollars) if isinstance(raw_dollars, int | float) else None,
+            max_turns=raw_turns if isinstance(raw_turns, int) else None,
+        )
     wind_down = WindDownOrchestrator(
         ledger=resources.ledger,
         handoff_service=RotationHandoffService(resources.engine_selector, allow_list=allow_list),
@@ -294,6 +308,8 @@ def build_full_worker(
             jobs=resources.jobs,
             clock=clock,
             wind_down=wind_down,
+            human_gates=resources.gates,
+            budget_source=budget_source,
         )
         return _recording(handler, adapter)
 

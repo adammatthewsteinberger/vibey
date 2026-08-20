@@ -59,24 +59,49 @@ def gate_output_tail(result: GateResult, *, limit: int = 1500) -> str:
     return "\n".join(parts) or "(no output)"
 
 
-def granted_max_rounds(answer: Mapping[str, object]) -> int | None:
-    """A human's round-grant from an answered exhausted-repair gate:
-    ``--raw '{"max_rounds": 6}'`` or the positional-pair form
-    ``max_rounds=6``. Without this contract the exhausted park was a dead
-    end -- answering un-parked the job, the bound re-tripped, and it
-    parked again forever unless the human fixed the branch by hand."""
+def granted_limit(answer: Mapping[str, object], key: str) -> int | None:
+    """A human's limit-grant from an answered exhausted gate:
+    ``--raw '{"<key>": 6}'`` or the positional-pair form ``<key>=6``.
+    Without this contract an exhausted park was a dead end -- answering
+    un-parked the job, the bound re-tripped, and it parked again forever
+    unless the human fixed the underlying state by hand."""
     sources: list[Mapping[str, object]] = [answer]
     nested = answer.get("answers")
     if isinstance(nested, Mapping):
         sources.append(nested)
     for source in sources:
-        raw = source.get("max_rounds")
+        raw = source.get(key)
         if isinstance(raw, bool):
             continue
         if isinstance(raw, int):
             return raw
         if isinstance(raw, str) and raw.isdigit():
             return int(raw)
+    return None
+
+
+def granted_max_rounds(answer: Mapping[str, object]) -> int | None:
+    """The exhausted-repair gates' grant key (see granted_limit)."""
+    return granted_limit(answer, "max_rounds")
+
+
+def granted_amount(answer: Mapping[str, object], key: str) -> float | None:
+    """Like granted_limit, for fractional grants (budget dollars)."""
+    sources: list[Mapping[str, object]] = [answer]
+    nested = answer.get("answers")
+    if isinstance(nested, Mapping):
+        sources.append(nested)
+    for source in sources:
+        raw = source.get(key)
+        if isinstance(raw, bool):
+            continue
+        if isinstance(raw, int | float):
+            return float(raw)
+        if isinstance(raw, str):
+            try:
+                return float(raw)
+            except ValueError:
+                continue
     return None
 
 
