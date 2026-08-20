@@ -1,5 +1,61 @@
 # Changelog
 
+## [0.1.1](https://github.com/adammatthewsteinberger/vibey/compare/vibey-v0.1.0...vibey-v0.1.1) (2026-08-20)
+
+
+### Features
+
+* budget brake and escalation grants -- the last dead-end parks ([#56](https://github.com/adammatthewsteinberger/vibey/issues/56)) ([138483c](https://github.com/adammatthewsteinberger/vibey/commit/138483c430e60c7190ab9c1d132ad50352f9fe17))
+* **e1:** live engine adapters, rotation wiring, full worker, two-mode harness ([#17](https://github.com/adammatthewsteinberger/vibey/issues/17)) ([3d05a8a](https://github.com/adammatthewsteinberger/vibey/commit/3d05a8ae2204fb0d50ca97010002f6edb3934862))
+* make per-job engine rotation live in the worker (Phase 4) ([#41](https://github.com/adammatthewsteinberger/vibey/issues/41)) ([074d279](https://github.com/adammatthewsteinberger/vibey/commit/074d279621081f2b4b5d8545c68ce6b385dc5b0d))
+* paid live worker test, and the two real-engine bugs it caught ([#44](https://github.com/adammatthewsteinberger/vibey/issues/44)) ([c3885f7](https://github.com/adammatthewsteinberger/vibey/commit/c3885f7173b8d82bd3399715f808e05f5cc700fb))
+* prevent parallel-item merge conflicts and stale-finding loop-backs ([#49](https://github.com/adammatthewsteinberger/vibey/issues/49)) ([812fdd7](https://github.com/adammatthewsteinberger/vibey/commit/812fdd7930d1ad1e82e92c649a3123d22b8ff598))
+* real Azure deploy path via the az CLI, behind an explicit flag ([#57](https://github.com/adammatthewsteinberger/vibey/issues/57)) ([a254f23](https://github.com/adammatthewsteinberger/vibey/commit/a254f23dca57f4f5d8fa8ef30e132d169aa98986))
+* serialize concurrent integrates with a Postgres advisory lock (Phase 6) ([#43](https://github.com/adammatthewsteinberger/vibey/issues/43)) ([f9e519b](https://github.com/adammatthewsteinberger/vibey/commit/f9e519bfe87661174472e7cce1271d0519581a22))
+* turn deterministic verify failures into a bounded repair loop ([#48](https://github.com/adammatthewsteinberger/vibey/issues/48)) ([f793e8b](https://github.com/adammatthewsteinberger/vibey/commit/f793e8bb46ae9c1f43f42109d5f303ff95cec857))
+* verification discipline in prompts, and a race-proof conformance verdict check ([#54](https://github.com/adammatthewsteinberger/vibey/issues/54)) ([b98bf81](https://github.com/adammatthewsteinberger/vibey/commit/b98bf815cd737c44c36de4a1a94fd4a7b0014ccf))
+* wire wind-down handoff into the worker (Phase 5) ([#42](https://github.com/adammatthewsteinberger/vibey/issues/42)) ([021f6d2](https://github.com/adammatthewsteinberger/vibey/commit/021f6d28c37f5a93b8b978c9f518b78a4caeef4f))
+* worker phase 0 -- rotation-blocking bug fix, phase-aware ledger, queue primitives ([#37](https://github.com/adammatthewsteinberger/vibey/issues/37)) ([028cc6f](https://github.com/adammatthewsteinberger/vibey/commit/028cc6f4e45e7ce681e8c9a0be9a3bb5b9109fb0))
+* worker phase 1 -- vibey worker dispatches for real through every phase handler ([#38](https://github.com/adammatthewsteinberger/vibey/issues/38)) ([92e4c1c](https://github.com/adammatthewsteinberger/vibey/commit/92e4c1c5a7258592b6b0c28aa0c1d9600a208dfc))
+* worker phase 2 -- close the job chain end to end, DONE(local) reachable ([#39](https://github.com/adammatthewsteinberger/vibey/issues/39)) ([20eb081](https://github.com/adammatthewsteinberger/vibey/commit/20eb08139742deddda43ddbdf2fbc4becce06c41))
+* worker phase 3 -- deployment spec/consent persistence, DONE(deployed) reachable ([#40](https://github.com/adammatthewsteinberger/vibey/issues/40)) ([f89a46d](https://github.com/adammatthewsteinberger/vibey/commit/f89a46d42360c67161431c1e05771367579f26cf))
+* zero-touch answer contracts for interview and exhausted-repair gates ([#53](https://github.com/adammatthewsteinberger/vibey/issues/53)) ([4d40202](https://github.com/adammatthewsteinberger/vibey/commit/4d40202c15d3b43c315f1f440bb0ad974c853785))
+
+
+### Bug Fixes
+
+* a completed repair session resolves its finding, breaking the repair livelock ([#59](https://github.com/adammatthewsteinberger/vibey/issues/59)) ([c4ef91d](https://github.com/adammatthewsteinberger/vibey/commit/c4ef91dac043ff539958ea3027d95272e4d77b01))
+* a gate command that cannot start is a failing gate, not a vibey failure ([#61](https://github.com/adammatthewsteinberger/vibey/issues/61)) ([b708c7d](https://github.com/adammatthewsteinberger/vibey/commit/b708c7d34de727a0015ea21a3634f6d922b96ccd))
+* a positive rotation weight must never round down to zero ([#51](https://github.com/adammatthewsteinberger/vibey/issues/51)) ([7e3d463](https://github.com/adammatthewsteinberger/vibey/commit/7e3d463fcc3e07ca7dac5de7fa693ba75511b38f))
+* bound the integrate repair loop and give repairs actionable merge instructions ([#52](https://github.com/adammatthewsteinberger/vibey/issues/52)) ([6b186cc](https://github.com/adammatthewsteinberger/vibey/commit/6b186cc08acff70937617764bc25ad9b94b1cab4))
+* budget brake now reads the real spend engines write on TurnCompleted ([#58](https://github.com/adammatthewsteinberger/vibey/issues/58)) ([d3248e4](https://github.com/adammatthewsteinberger/vibey/commit/d3248e44e0c2225e226e3a6130abc61b8e548912))
+* four autonomy blockers from the live demo's observability class ([#46](https://github.com/adammatthewsteinberger/vibey/issues/46)) ([39c6388](https://github.com/adammatthewsteinberger/vibey/commit/39c6388c642bcb5315146efb1d4dfa5e0c0e2688))
+* implement help_text so the flags conformance check can run at all, fix two broken descriptors it found ([#33](https://github.com/adammatthewsteinberger/vibey/issues/33)) ([c923345](https://github.com/adammatthewsteinberger/vibey/commit/c923345d0d805a62b00b7378cfdd25797765d063))
+* isolate engine sessions from the orchestrator's Python environment ([#47](https://github.com/adammatthewsteinberger/vibey/issues/47)) ([dc254ee](https://github.com/adammatthewsteinberger/vibey/commit/dc254ee0a77f309a3a5a394a24a7170435b0ad6b))
+* map claudeloop's real event_type strings, same fabrication as agyloop's ([#32](https://github.com/adammatthewsteinberger/vibey/issues/32)) ([89ff3fc](https://github.com/adammatthewsteinberger/vibey/commit/89ff3fc132285b9636109f52c1093e01f1e878a6))
+* normalize model-produced work item ids to the worktree shape ([#45](https://github.com/adammatthewsteinberger/vibey/issues/45)) ([f688918](https://github.com/adammatthewsteinberger/vibey/commit/f6889185cae4d9d8ce259054f4af5ed14397bdaf))
+* only capacity Defers open circuits, and open circuits actually probe ([#50](https://github.com/adammatthewsteinberger/vibey/issues/50)) ([717c797](https://github.com/adammatthewsteinberger/vibey/commit/717c7971bd6569384c434ebfb405567fc8a26f82))
+* reassert core.bare=false after land.sh removes the last worktree ([#31](https://github.com/adammatthewsteinberger/vibey/issues/31)) ([f6ae923](https://github.com/adammatthewsteinberger/vibey/commit/f6ae9231a6b7d09f81fa14a544b333f483c6e6db))
+* replace codexloop/cursorloop's fabricated LOOP_EVENT_MAP entries with source-verified vocabulary ([#34](https://github.com/adammatthewsteinberger/vibey/issues/34)) ([1bac413](https://github.com/adammatthewsteinberger/vibey/commit/1bac413dfb67529ae4ff9be69a0b590594031b13))
+* replace vague conformance prompt with trivially-completable task ([#23](https://github.com/adammatthewsteinberger/vibey/issues/23)) ([b21cd57](https://github.com/adammatthewsteinberger/vibey/commit/b21cd57777ba0bf78da28aefdbd19807b062121d))
+* root LoopProcessAdapter run_dir under the run's own worktree, not adapter base_dir ([#21](https://github.com/adammatthewsteinberger/vibey/issues/21)) ([48fd270](https://github.com/adammatthewsteinberger/vibey/commit/48fd27023fff6eb82046ccff4acba38cbdd5841f))
+* stop overriding claudeloop's --permission-mode to acceptEdits ([#12](https://github.com/adammatthewsteinberger/vibey/issues/12)) ([b383ae9](https://github.com/adammatthewsteinberger/vibey/commit/b383ae9f0f9de9c4d65070b71ecccd43e31efd9a))
+* two production-blocking bugs found by a real subprocess conformance test ([#36](https://github.com/adammatthewsteinberger/vibey/issues/36)) ([9088919](https://github.com/adammatthewsteinberger/vibey/commit/9088919bd2b2970d40ae5aa7a9f738a4fb7cd1f9))
+
+
+### Documentation
+
+* fifteen expansion runbooks -- the platform buildout, dogfooded through vibey itself ([#60](https://github.com/adammatthewsteinberger/vibey/issues/60)) ([8bc4484](https://github.com/adammatthewsteinberger/vibey/commit/8bc44843e835f74ba9aefcf3344678bba42558a7))
+* **provision:** refer to the marketplace by its new name, vibey-skills ([#26](https://github.com/adammatthewsteinberger/vibey/issues/26)) ([3abeeb4](https://github.com/adammatthewsteinberger/vibey/commit/3abeeb4b822a54c585104fa34b8860e491536afb))
+* queue agyloop SDK harness handshake investigation (c3) ([#24](https://github.com/adammatthewsteinberger/vibey/issues/24)) ([373bdfe](https://github.com/adammatthewsteinberger/vibey/commit/373bdfe97e2008f124c7494cb7c6af26a63009e3))
+* queue dogfooded investigation of the real-engine conformance timeout ([#22](https://github.com/adammatthewsteinberger/vibey/issues/22)) ([1479cc6](https://github.com/adammatthewsteinberger/vibey/commit/1479cc65f23bea7bcc16e0c99a58f66bfe8c6846))
+* queue investigation of LoopProcessAdapter still failing against a healthy agyloop ([#25](https://github.com/adammatthewsteinberger/vibey/issues/25)) ([538d9ee](https://github.com/adammatthewsteinberger/vibey/commit/538d9ee596e3b5d481b382b9ab31070c6c0c24b7))
+* queue loop_events.py agyloop event-type mapping fix ([#28](https://github.com/adammatthewsteinberger/vibey/issues/28)) ([e6c90f2](https://github.com/adammatthewsteinberger/vibey/commit/e6c90f20ef07de93ed15cfa099bde26484520226))
+* rename e1-loop-event-map plan to match run.sh's REPO-suffix convention ([#29](https://github.com/adammatthewsteinberger/vibey/issues/29)) ([c4df145](https://github.com/adammatthewsteinberger/vibey/commit/c4df14583894e44b5cc380c182f398ab107a5ea0))
+* strengthen E1 plan against premature Done declarations ([#13](https://github.com/adammatthewsteinberger/vibey/issues/13)) ([95b1e8c](https://github.com/adammatthewsteinberger/vibey/commit/95b1e8c4464005cbc0e03e4fb1fd8d47b87384d8))
+* teach the runbook the zero-touch contracts ([#55](https://github.com/adammatthewsteinberger/vibey/issues/55)) ([9df8690](https://github.com/adammatthewsteinberger/vibey/commit/9df8690e793eb15548b28e0bfa67bf4ef3292ac7))
+* update loop_events.py verification status now that both sinks are wired ([#35](https://github.com/adammatthewsteinberger/vibey/issues/35)) ([301b3f5](https://github.com/adammatthewsteinberger/vibey/commit/301b3f53d059561240eb3cb5a8fd0b909220fbd0))
+
 ## [0.1.0](https://github.com/adammatthewsteinberger/vibey/compare/vibey-v0.1.0...vibey-v0.1.0) (2026-08-16)
 
 
