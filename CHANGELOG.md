@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.2](https://github.com/adammatthewsteinberger/vibey/compare/vibey-v0.1.1...vibey-v0.1.2) (2026-08-20)
+
+
+### Documentation
+
+* engagement refresh -- README, community files, license, templates ([#65](https://github.com/adammatthewsteinberger/vibey/issues/65)) ([48ce5ac](https://github.com/adammatthewsteinberger/vibey/commit/48ce5ac706c9b26cc036ab24d63ecd83828fdae6))
+
+
+### Miscellaneous Chores
+
+* cut 0.1.2 -- ship the engagement refresh to PyPI ([541e820](https://github.com/adammatthewsteinberger/vibey/commit/541e820fe2d68ac3496cec2f4f7eac34f784bcc3))
+
 ## [0.1.1](https://github.com/adammatthewsteinberger/vibey/compare/vibey-v0.1.0...vibey-v0.1.1) (2026-08-20)
 
 
