@@ -1,6 +1,6 @@
 # Expansion master plan
 
-Fifteen workstreams that take vibey from "conducts four session runners on
+Sixteen workstreams that take vibey from "conducts four session runners on
 one MacBook" to a multi-cloud, multi-surface, self-maintaining delivery
 platform — **built by vibey itself**. This document sequences them; each
 numbered runbook in this directory is a self-contained execution plan
@@ -50,6 +50,8 @@ Phase E — products
   07-store-submissions         # App Store / Play Store
   09-package-managers          # pip/brew/apt/yum/npm/...
   10-keep-awake                # desktop no-sleep contract
+  15-agent-surface-sync        # one customization set across every IDE/bot
+                               # (standalone — can start any time)
 Phase F — ecosystem
   04-docs-scraper              # integration docs drift watcher
   11-openclaw-moltbook         # OpenClaw AgentSkill + Moltbook presence
@@ -70,6 +72,7 @@ parallel vibey projects when engine capacity allows.
 | 01 jira | A Jira Cloud site (free tier) + API token / OAuth app |
 | 11 openclaw | An OpenClaw install; Moltbook agent registration (claim tweet is a human step) |
 | 09 packages | PyPI token; npm token; Homebrew tap repo; optionally packagecloud/OBS accounts for apt/yum |
+| 15 surface sync | Nothing to start; a private git remote for the store if multi-machine sync is wanted |
 
 Everything else runs on what the MacBook already has.
 
