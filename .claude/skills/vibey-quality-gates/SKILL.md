@@ -88,18 +88,28 @@ dependencies.
 uv run pip-audit
 ```
 
-## Pre-commit hook
+## Hook diet
 
-All seven gates (plus the Conventional Commits check) run automatically via
-pre-commit. Install once:
+The seven gates are split across two git hook stages for fast commits:
+
+**Pre-commit stage** (runs on every `git commit`):
+- ruff check + ruff format (changed files only)
+- Full parallel test suite (`uv run pytest`)
+
+**Pre-push stage** (runs on every `git push`):
+- mypy --strict
+- lint-imports
+- Per-layer 100% coverage gates (pytest --cov + four reports)
+- bandit
+- pip-audit
+
+**Commit-msg stage**: Conventional Commits enforcement.
+
+Install all three hook types once:
 
 ```bash
-pre-commit install
+pre-commit install && pre-commit install --hook-type pre-push && pre-commit install --hook-type commit-msg
 ```
-
-The commit-msg hook rejects non-Conventional Commits. The pre-commit hook
-runs ruff, mypy, lint-imports, and the full test suite before allowing a
-commit.
 
 ## What each gate catches
 
