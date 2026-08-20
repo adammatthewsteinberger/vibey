@@ -1308,3 +1308,47 @@ def test_doctor_record_specific_project(tmp_path: Path) -> None:
             assert record is not None
 
     asyncio.run(check())
+
+
+def test_worker_rejects_unknown_azure_mode() -> None:
+    res = runner.invoke(app, ["worker", "--azure", "gcp"])
+    assert res.exit_code == 2
+    assert "memory" in res.output and "az" in res.output
+
+
+def test_worker_azure_az_requires_a_logged_in_cli() -> None:
+    from unittest.mock import patch
+
+    class _NotLoggedIn:
+        returncode = 1
+        stdout = ""
+        stderr = "Please run 'az login'"
+
+    with patch("vibey.cli.main.subprocess.run", return_value=_NotLoggedIn()):
+        res = runner.invoke(app, ["worker", "--azure", "az"])
+    assert res.exit_code == 1
+    assert "az login" in res.output
+
+
+@pytest.mark.usefixtures("_fast_engine_preflight")
+def test_worker_azure_az_builds_the_real_adapter_when_logged_in(tmp_path: Path) -> None:
+    from unittest.mock import AsyncMock, patch
+
+    async def seed() -> None:
+        async with build_app() as resources:
+            await resources.projects.create("az-proj", tmp_path, max_cycles=1, config={})
+
+    asyncio.run(seed())
+
+    class _LoggedIn:
+        returncode = 0
+        stdout = ""
+        stderr = ""
+
+    with (
+        patch("vibey.cli.main.subprocess.run", return_value=_LoggedIn()),
+        patch("vibey.infrastructure.db.notifier.PostgresJobReadyNotifier") as notifier_cls,
+    ):
+        notifier_cls.return_value = AsyncMock()
+        res = runner.invoke(app, ["worker", "--azure", "az", "--once"])
+    assert res.exit_code == 0, res.output
