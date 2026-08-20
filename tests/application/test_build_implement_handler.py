@@ -93,12 +93,41 @@ async def test_successful_run_provisions_and_records_events_and_succeeds(tmp_pat
     assert worktrees.created == ["item-1"]
     assert provisioner.calls == [tmp_path / "item-1"]
     assert any(event.kind == "VerdictRendered" for event in ledger.recorded)
+    # A plain implement (not a repair) resolves nothing.
+    assert not any(event.kind == "FindingResolved" for event in ledger.recorded)
 
     enqueued = await jobs.claim(job.project_id, owner="t", lease=timedelta(seconds=5))
     assert enqueued is not None
     assert enqueued.kind == "build.verify"
     assert enqueued.work_item_id == "item-1"
     assert enqueued.requirement["implementer_engine_id"] == "claudeloop"
+
+
+async def test_completed_repair_resolves_its_finding_so_reverify_can_count_rounds(
+    tmp_path: Path,
+) -> None:
+    """A repair that lands but leaves gates failing must not livelock: the
+    completed repair session closes its finding as a repair ticket, so the
+    follow-up verify raises the next round instead of deferring forever
+    behind "repair in flight" (the greeter4 live-validation finding)."""
+    engine = ScriptedEngine(descriptor=CLAUDELOOP, base_dir=tmp_path / "engine")
+    ledger = FakeLedger()
+    handler, _, _ = _handler(tmp_path, engine=engine, ledger=ledger)
+
+    job = _job(
+        payload={
+            "title": "fix the gates",
+            "repair_finding_id": "f_verify_item-1_deadbeef",
+            "repair_detail": "pytest exited 1",
+        }
+    )
+    outcome = await handler.handle(job)
+
+    assert isinstance(outcome, Success)
+    resolved = [event for event in ledger.recorded if event.kind == "FindingResolved"]
+    assert len(resolved) == 1
+    assert resolved[0].payload["finding_id"] == "f_verify_item-1_deadbeef"
+    assert "awaiting re-verification" in str(resolved[0].payload["resolution"])
 
 
 async def test_rejects_wrong_kind_and_missing_work_item_id() -> None:
