@@ -25,6 +25,7 @@ dev = [
     "pytest>=8.3",
     "pytest-asyncio>=0.24",
     "pytest-cov>=6.0",
+    "pytest-xdist>=3.5",
     "hypothesis>=6.115",
     "ruff>=0.8",
     "mypy>=1.13",
@@ -40,7 +41,7 @@ packages = ["src/vibey"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
-addopts = "-m 'not paid'"
+addopts = "-m 'not paid' -n auto --maxprocesses=8"
 markers = [
     "integration: requires a running Postgres reachable via VIBEY_TEST_DATABASE_URL",
     "slow: takes more than a couple seconds to run",
