@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: googleapis/release-please-action@v4
+        id: release
         with:
           # Repo default branch is develop (gitflow), but releases must
           # target main only — without this, release-please opens its
@@ -20,3 +21,28 @@ jobs:
           target-branch: main
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+
+      # release-please bumps pyproject.toml's version but knows nothing
+      # about uv.lock, so every release PR fails the lockfile-sync CI
+      # gate until someone runs `uv lock` by hand (first seen on the
+      # 0.1.1 PR #62). Do it here, on the release PR's branch, the
+      # moment the PR is created or updated.
+      - uses: actions/checkout@v4
+        if: ${{ steps.release.outputs.prs_created == 'true' }}
+        with:
+          ref: ${{ fromJSON(steps.release.outputs.pr).headBranchName }}
+
+      - uses: astral-sh/setup-uv@v5
+        if: ${{ steps.release.outputs.prs_created == 'true' }}
+
+      - name: Sync uv.lock with the release version bump
+        if: ${{ steps.release.outputs.prs_created == 'true' }}
+        run: |
+          uv lock
+          if ! git diff --quiet uv.lock; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add uv.lock
+            git commit -m "chore: sync uv.lock with the release version bump"
+            git push
+          fi
