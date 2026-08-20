@@ -126,6 +126,13 @@ class GitWorktreeManager:
 
     async def _prune(self) -> None:
         await self._git("worktree", "prune")
+        # Removing/pruning worktrees can leave the primary checkout marked
+        # core.bare=true (observed live during the expansion-13 build;
+        # same class as scripts/fleet/land.sh's guard). The primary
+        # checkout is never actually bare, so reasserting is always safe --
+        # and _prune() runs inside every mutating path (create, ensure,
+        # remove, reclaim_orphans), so no lifecycle escapes the guard.
+        await self._git("config", "core.bare", "false")
 
     async def _git(self, *args: str) -> None:
         argv = ("git", "-C", str(self._repo_root), *args)
