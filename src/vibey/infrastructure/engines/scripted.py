@@ -90,6 +90,8 @@ class ScriptedEngine:
             }
             for flags in self.descriptor.isolation_flags.values():
                 all_flags.update(flags)
+            if self.descriptor.plan_flag is not None:
+                all_flags.add(self.descriptor.plan_flag)
             self.help_text = " ".join(sorted(all_flags))
 
     async def preflight(self) -> PreflightResult:

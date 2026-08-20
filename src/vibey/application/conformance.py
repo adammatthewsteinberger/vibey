@@ -102,11 +102,23 @@ async def run_conformance(
             ConformanceCheckResult("flags", ok=False, detail="adapter exposes no help text")
         )
     else:
+        # Only flag NAMES are checkable against --help. Values are not: an
+        # option declared `--model <str>` accepts anything and enumerates
+        # nothing, so requiring its values to appear in help text failed
+        # cursorloop for model names that were never going to be listed
+        # (while passing others only by the accident of their values being
+        # words that appear elsewhere in the text). A wrong value is caught
+        # by the scripted run below; a wrong flag name is caught here.
         claimed_flags = {
-            flag for invocation in descriptor.effort_projection.values() for flag in invocation.argv
+            token
+            for invocation in descriptor.effort_projection.values()
+            for token in invocation.argv
+            if token.startswith("-")
         }
         for flags in descriptor.isolation_flags.values():
-            claimed_flags.update(flags)
+            claimed_flags.update(f for f in flags if f.startswith("-"))
+        if descriptor.plan_flag is not None:
+            claimed_flags.add(descriptor.plan_flag)
         missing = sorted(f for f in claimed_flags if f not in help_text)
         checks.append(
             ConformanceCheckResult(

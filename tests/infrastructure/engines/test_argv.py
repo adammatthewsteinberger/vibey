@@ -47,7 +47,10 @@ def test_new_run_uses_a_positional_plan_file_and_includes_run_id_flag(
     descriptor,
 ) -> None:  # type: ignore[no-untyped-def]
     argv = build_argv(descriptor, _spec(Effort.LOW))
-    assert argv[2] == f"{WORKTREE}/.vibey/plans/{RUN_ID}.md"
+    plan_index = 3 if descriptor.plan_flag is not None else 2
+    if descriptor.plan_flag is not None:
+        assert argv[2] == descriptor.plan_flag
+    assert argv[plan_index] == f"{WORKTREE}/.vibey/plans/{RUN_ID}.md"
     assert "--run-id" in argv
     run_id_index = argv.index("--run-id")
     assert argv[run_id_index + 1] == str(RUN_ID)
@@ -90,3 +93,21 @@ def test_isolation_flags_included_for_container(descriptor) -> None:  # type: ig
     argv = build_argv(descriptor, spec)
     for flag in descriptor.isolation_flags[IsolationLevel.CONTAINER]:
         assert flag in argv
+
+
+def test_plan_flag_engines_pass_the_plan_as_a_flag_not_a_positional() -> None:
+    """cursorloop's `run` requires `--plan <path>`; the other three take a
+    bare positional. Passing a positional to cursorloop killed every run at
+    argument parsing (live finding: no run dir, no events, no snapshot)."""
+    from vibey.infrastructure.engines.descriptors import CLAUDELOOP, CURSORLOOP
+
+    spec = _spec(Effort.STANDARD)
+
+    cursor_argv = build_argv(CURSORLOOP, spec)
+    assert cursor_argv[1:3] == ("run", "--plan")
+    assert cursor_argv[3].endswith(".md")
+
+    claude_argv = build_argv(CLAUDELOOP, spec)
+    assert claude_argv[1] == "run"
+    assert claude_argv[2].endswith(".md")
+    assert "--plan" not in claude_argv
