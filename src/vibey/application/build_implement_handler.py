@@ -24,20 +24,27 @@ inventory->plan chaining use.
 """
 
 from collections.abc import Mapping
+from dataclasses import replace
 from datetime import timedelta
 from uuid import uuid4
 
 from vibey.application.build_engine_run import BuildLedger, run_and_record
+from vibey.application.build_verify_handler import granted_amount, granted_limit
 from vibey.application.dto import EnqueueRequest, HumanGateRequest, JobRecord, RunSpec
 from vibey.application.interfaces import (
     BudgetSource,
     BuildProvisioner,
     BuildWorktrees,
 )
-from vibey.application.ports import Clock, EngineAdapter, JobRepository
+from vibey.application.ports import Clock, EngineAdapter, HumanGateRepository, JobRepository
 from vibey.application.wind_down import WindDownOrchestrator
 from vibey.application.worker import Defer, Failure, Outcome, Park, Success
-from vibey.domain.effort import PHASE_BASE_EFFORT, effort_for_attempt, forces_rotation
+from vibey.domain.effort import (
+    BUILD_LADDER_EXHAUSTED,
+    PHASE_BASE_EFFORT,
+    effort_for_attempt,
+    forces_rotation,
+)
 from vibey.domain.engine import EXIT_CODE_WIND_DOWN, IsolationLevel
 from vibey.domain.errors import EscalationExhausted
 from vibey.domain.job import FailureClass, idempotency_key
@@ -61,6 +68,7 @@ class BuildImplementHandler:
         capacity_backoff: timedelta = timedelta(minutes=5),
         budget_source: BudgetSource | None = None,
         wind_down: WindDownOrchestrator | None = None,
+        human_gates: HumanGateRepository | None = None,
     ) -> None:
         self._worktrees = worktrees
         self._provisioner = provisioner
@@ -72,6 +80,7 @@ class BuildImplementHandler:
         self._capacity_backoff = capacity_backoff
         self._budget_source = budget_source
         self._wind_down = wind_down
+        self._human_gates = human_gates
 
     async def handle(self, job: JobRecord) -> Outcome:
         if job.kind != "build.implement":
@@ -83,21 +92,64 @@ class BuildImplementHandler:
         try:
             effort = effort_for_attempt(base_effort, job.attempts)
         except EscalationExhausted:
-            return Park(
-                HumanGateRequest(
-                    kind="escalation_exhausted",
-                    prompt=(
-                        f"work item {job.work_item_id!r} exhausted the escalation ladder "
-                        f"after {job.attempts} attempts; how should it proceed?"
-                    ),
+            # An answered gate can extend the ladder: further attempts run
+            # at the ladder's top effort until the granted bound. Without
+            # this contract the park was a dead end -- answering un-parked
+            # the job, attempts were still past the ladder, and it parked
+            # again forever.
+            granted = None
+            if self._human_gates is not None:
+                gate = await self._human_gates.latest_for_job(job.id)
+                if gate is not None and gate.answer is not None:
+                    granted = granted_limit(gate.answer, "max_attempts")
+            if granted is None or job.attempts > granted:
+                return Park(
+                    HumanGateRequest(
+                        kind="escalation_exhausted",
+                        prompt=(
+                            f"work item {job.work_item_id!r} exhausted the escalation "
+                            f"ladder after {job.attempts} attempts. Grant more by "
+                            f"answering --raw '{{\"max_attempts\": {job.attempts + 3}}}' "
+                            "(they run at the ladder's top effort), or fix the item by "
+                            "hand and answer anything to let the next verify pass."
+                        ),
+                    )
                 )
-            )
+            effort = effort_for_attempt(base_effort, BUILD_LADDER_EXHAUSTED)
 
-        if self._budget_source is not None and job.attempts > 1:
-            projected = job.payload.get("projected_cost_per_attempt")
-            if isinstance(projected, int | float):
-                budget = await self._budget_source.current(job.project_id, job.cycle)
-                if budget.would_exceed(float(projected)):
+        if self._budget_source is not None:
+            budget = await self._budget_source.current(job.project_id, job.cycle)
+            if budget.any_exhausted and self._human_gates is not None:
+                # An answered budget gate can raise the caps -- otherwise
+                # the park is a dead end (retrying re-trips it forever).
+                gate = await self._human_gates.latest_for_job(job.id)
+                if gate is not None and gate.answer is not None:
+                    dollars = granted_amount(gate.answer, "max_dollars")
+                    turns = granted_limit(gate.answer, "max_turns")
+                    budget = replace(
+                        budget,
+                        max_dollars=dollars if dollars is not None else budget.max_dollars,
+                        max_turns=turns if turns is not None else budget.max_turns,
+                    )
+            if budget.any_exhausted:
+                # The runaway brake: no engine session starts once the
+                # cycle's ledger-recorded spend crosses its cap. The repair
+                # storms burned real money because this check didn't exist.
+                cap = f"${budget.max_dollars:.2f}" if budget.max_dollars is not None else "-"
+                return Park(
+                    HumanGateRequest(
+                        kind="budget_exhausted",
+                        prompt=(
+                            f"cycle budget exhausted: ${budget.dollars_spent:.2f} spent "
+                            f"of {cap} cap ({budget.turns_spent} turns). Raise the cap "
+                            'by answering --raw \'{"max_dollars": '
+                            f"{budget.dollars_spent + 10:.0f}}}', or stop here."
+                        ),
+                    )
+                )
+            if job.attempts > 1:
+                projected = job.payload.get("projected_cost_per_attempt")
+                if isinstance(projected, int | float) and budget.would_exceed(float(projected)):
                     cap = f"${budget.max_dollars:.2f}" if budget.max_dollars is not None else "?"
                     return Park(
                         HumanGateRequest(
@@ -113,7 +165,10 @@ class BuildImplementHandler:
 
         previous_engine_id = job.payload.get("previous_engine_id")
         if previous_engine_id is not None and job.attempts > 1:
-            previous_effort = effort_for_attempt(base_effort, job.attempts - 1)
+            # Clamp: granted attempts past the ladder all sit at its top.
+            previous_effort = effort_for_attempt(
+                base_effort, min(job.attempts - 1, BUILD_LADDER_EXHAUSTED)
+            )
             if forces_rotation(previous_effort, effort):
                 current_id = self._engine.descriptor.engine_id.value
                 if current_id == previous_engine_id:

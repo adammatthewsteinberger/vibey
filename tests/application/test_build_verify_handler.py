@@ -446,3 +446,13 @@ def test_granted_max_rounds_parses_both_forms_and_rejects_junk() -> None:
     assert granted_max_rounds({"max_rounds": True}) is None
     assert granted_max_rounds({"max_rounds": "lots"}) is None
     assert granted_max_rounds({"resolution": "fixed by hand"}) is None
+
+
+def test_granted_amount_parses_floats_and_rejects_junk() -> None:
+    from vibey.application.build_verify_handler import granted_amount
+
+    assert granted_amount({"max_dollars": 12.5}, "max_dollars") == 12.5
+    assert granted_amount({"answers": {"max_dollars": "7.25"}}, "max_dollars") == 7.25
+    assert granted_amount({"max_dollars": True}, "max_dollars") is None
+    assert granted_amount({"max_dollars": "plenty"}, "max_dollars") is None
+    assert granted_amount({"unrelated": 1}, "max_dollars") is None

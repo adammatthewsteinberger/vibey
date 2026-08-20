@@ -316,3 +316,30 @@ def test_answer_defaults_combines_with_pairs_but_not_other_modes(tmp_path: Path)
     with_choice = runner.invoke(app, ["answer", str(UUID(int=1)), "--defaults", "--choice", "x"])
     assert with_choice.exit_code == 2
     assert "only combines" in with_choice.output
+
+
+def test_new_project_stores_cycle_budget_caps_in_config(tmp_path: Path) -> None:
+    result = runner.invoke(
+        app,
+        [
+            "new",
+            "budgeted-proj",
+            "--repo",
+            str(tmp_path),
+            "--max-cycle-dollars",
+            "15.5",
+            "--max-cycle-turns",
+            "200",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+
+    async def load():  # type: ignore[no-untyped-def]
+        async with build_app() as resources:
+            project = await resources.projects.get_latest()
+            assert project is not None
+            return project.config
+
+    config = asyncio.run(load())
+    assert config["max_cycle_dollars"] == 15.5
+    assert config["max_cycle_turns"] == 200
