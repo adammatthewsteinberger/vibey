@@ -41,14 +41,15 @@ uv run mypy --strict src/vibey
 
 ## Gate 4: pytest per-layer coverage (100%)
 
-Four separate gates, one per layer. Each must hit **100% branch coverage** or
-the build fails.
+One test run produces a combined `.coverage` file; four per-layer reports
+enforce 100% branch coverage. Each must pass or the build fails.
 
 ```bash
-uv run pytest -q -p no:cacheprovider --cov=vibey.domain --cov-branch --cov-report=term-missing --cov-fail-under=100
-uv run pytest -q -p no:cacheprovider --cov=vibey.application --cov-branch --cov-report=term-missing --cov-fail-under=100
-uv run pytest -q -p no:cacheprovider --cov=vibey.infrastructure --cov-branch --cov-report=term-missing --cov-fail-under=100
-uv run pytest -q -p no:cacheprovider --cov=vibey.cli --cov-branch --cov-report=term-missing --cov-fail-under=100
+uv run pytest -q -p no:cacheprovider --cov=vibey --cov-branch --cov-report=
+uv run coverage report --include='src/vibey/domain/*' --fail-under=100
+uv run coverage report --include='src/vibey/application/*' --fail-under=100
+uv run coverage report --include='src/vibey/infrastructure/*' --fail-under=100
+uv run coverage report --include='src/vibey/cli/*' --fail-under=100
 ```
 
 **Why per-layer, not aggregate?** Because `domain/` is the safety-critical

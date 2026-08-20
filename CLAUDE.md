@@ -84,11 +84,12 @@ uv run ruff check .
 uv run ruff format --check .
 uv run mypy --strict src/vibey
 
-# Per-layer 100% coverage gates
-uv run pytest -q -p no:cacheprovider --cov=vibey.domain --cov-branch --cov-fail-under=100
-uv run pytest -q -p no:cacheprovider --cov=vibey.application --cov-branch --cov-fail-under=100
-uv run pytest -q -p no:cacheprovider --cov=vibey.infrastructure --cov-branch --cov-fail-under=100
-uv run pytest -q -p no:cacheprovider --cov=vibey.cli --cov-branch --cov-fail-under=100
+# Single test run with coverage, then per-layer 100% gates
+uv run pytest -q -p no:cacheprovider --cov=vibey --cov-branch --cov-report=
+uv run coverage report --include='src/vibey/domain/*' --fail-under=100
+uv run coverage report --include='src/vibey/application/*' --fail-under=100
+uv run coverage report --include='src/vibey/infrastructure/*' --fail-under=100
+uv run coverage report --include='src/vibey/cli/*' --fail-under=100
 
 uv run lint-imports
 uv run bandit -q -r src/vibey

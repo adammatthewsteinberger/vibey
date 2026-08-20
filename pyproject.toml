@@ -69,8 +69,6 @@ module = "asyncpg.*"
 ignore_missing_imports = true
 
 [tool.coverage.run]
-source = ["src/vibey"]
+source = ["vibey"]
 branch = true
-
-[tool.coverage.report]
-fail_under = 100
+parallel = true

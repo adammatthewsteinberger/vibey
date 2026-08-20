@@ -7,14 +7,15 @@ alwaysApply: false
 
 ## Coverage floors — not targets
 
-Every layer carries a **100% branch coverage floor**, enforced in CI as four
-separate gates:
+Every layer carries a **100% branch coverage floor**, enforced in CI as one
+test run and four per-layer reports:
 
 ```bash
-uv run pytest -q -p no:cacheprovider --cov=vibey.domain --cov-branch --cov-fail-under=100
-uv run pytest -q -p no:cacheprovider --cov=vibey.application --cov-branch --cov-fail-under=100
-uv run pytest -q -p no:cacheprovider --cov=vibey.infrastructure --cov-branch --cov-fail-under=100
-uv run pytest -q -p no:cacheprovider --cov=vibey.cli --cov-branch --cov-fail-under=100
+uv run pytest -q -p no:cacheprovider --cov=vibey --cov-branch --cov-report=
+uv run coverage report --include='src/vibey/domain/*' --fail-under=100
+uv run coverage report --include='src/vibey/application/*' --fail-under=100
+uv run coverage report --include='src/vibey/infrastructure/*' --fail-under=100
+uv run coverage report --include='src/vibey/cli/*' --fail-under=100
 ```
 
 The build **fails** if any layer drops below 100%. This is not aspirational.
