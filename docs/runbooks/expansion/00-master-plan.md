@@ -39,6 +39,8 @@ Phase A — foundation (unblocks everything else)
   06-engine-live-confirmation  # more live engines = more parallel capacity
 Phase B — scale-out
   05-server-mode-kubernetes    # minikube/helm/keda/kopf + AKS/EKS/GKE
+  16-loop-runner-containers    # each *loop repo gets its own image/chart;
+                               # feeds 05's vibey-engines image
 Phase C — integration surfaces
   12-integration-surfaces      # MCP/API/webhooks/skills/SDKs, all repos
   01-jira-integration          # rides on 12's webhook + API plumbing
@@ -68,6 +70,7 @@ parallel vibey projects when engine capacity allows.
 | 06 engines | `CURSOR_API_KEY`; a codexloop session to capture real `events.jsonl` output; Copilot CLI installed + `gh auth` for 02 |
 | 03 clouds | `az login` + subscription; AWS free-tier account + access key; GCP free-tier project + service-account JSON |
 | 05 k8s | Docker Desktop or colima; minikube; (cloud phases reuse 03's tenants) |
+| 16 runner containers | A registry namespace + `packages:write` token; the same LLM API keys as 05; deploy keys for private target repos |
 | 07 stores | Apple Developer account + App Store Connect API key; Google Play Console account + service account |
 | 01 jira | A Jira Cloud site (free tier) + API token / OAuth app |
 | 11 openclaw | An OpenClaw install; Moltbook agent registration (claim tweet is a human step) |
