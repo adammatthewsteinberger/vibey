@@ -1,0 +1,55 @@
+{{- if .Values.keda.enabled }}
+{{- $fullName := include "vibey.fullname" . }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ $fullName }}-worker
+  labels: {{- include "vibey.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    name: {{ $fullName }}-worker
+  minReplicaCount: {{ .Values.keda.minReplicas }}
+  maxReplicaCount: {{ .Values.keda.maxReplicas }}
+  pollingInterval: {{ .Values.keda.pollingInterval }}
+  # Engine sessions are long. A short cooldown would scale in a worker
+  # that is minutes into a paid turn, so this defaults far above KEDA's
+  # own 300s only when the operator raises it deliberately.
+  cooldownPeriod: {{ .Values.keda.cooldownPeriod }}
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleDown:
+          # Smooths HPA-driven scale-down between minReplicas and max, so
+          # a brief dip in claimable work does not shed the whole pool.
+          #
+          # It does NOT govern the N->0 transition: KEDA's deactivation
+          # path sets the replica count directly and bypasses this
+          # behavior entirely -- measured on minikube going 4->0 in a
+          # single step. Do not read this policy as protection against
+          # losing several in-flight sessions at once. That protection is
+          # the worker's own SIGTERM drain (finish the job in hand, claim
+          # no more) bounded by terminationGracePeriodSeconds below.
+          policies:
+            - type: Pods
+              value: 1
+              periodSeconds: 300
+  triggers:
+    - type: postgresql
+      metadata:
+        # The claimable-work query, deliberately identical in spirit to
+        # JobRepository.claim's SELECT arm: ready, due now, and not
+        # blocked behind an unsatisfied dependency. Scaling on total
+        # queue depth instead would spin up workers for jobs nothing can
+        # claim yet.
+        query: >-
+          SELECT count(*) FROM job j
+          WHERE j.state = 'ready'
+            AND j.run_after <= now()
+            AND NOT EXISTS (
+              SELECT 1 FROM job_dependency d
+              JOIN job p ON p.id = d.depends_on_job_id
+              WHERE d.job_id = j.id AND p.state <> 'succeeded'
+            )
+        targetQueryValue: "1"
+        connectionFromEnv: VIBEY_PG_URL
+  {{- end }}

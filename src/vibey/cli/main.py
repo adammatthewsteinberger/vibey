@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import signal
 import subprocess  # nosec B404 - fixed argv, never shell=True
 from pathlib import Path
 from typing import Annotated
@@ -10,7 +11,7 @@ import typer
 
 from vibey import __version__
 from vibey.application.design_acceptance import DesignAcceptanceService
-from vibey.application.dto import EnqueueRequest
+from vibey.application.dto import EnqueueRequest, ProjectRecord
 from vibey.application.visual_acceptance import VisualAcceptanceService
 from vibey.bootstrap import (
     DesignProvider,
@@ -1005,6 +1006,18 @@ def worker(
         UUID | None,
         typer.Option("--project", help="Project id (default: the latest project)"),
     ] = None,
+    wait_for_project: Annotated[
+        float | None,
+        typer.Option(
+            "--wait-for-project",
+            min=1.0,
+            help=(
+                "Poll every N seconds for a project instead of exiting when none "
+                "exists. For long-lived deployments, where exiting means a "
+                "restart loop until someone creates one."
+            ),
+        ),
+    ] = None,
     azure: Annotated[
         str,
         typer.Option(
@@ -1055,10 +1068,22 @@ def worker(
         from vibey.infrastructure.engines.claudeloop_decompose import ClaudeLoopWorkPlanProducer
 
         async with build_app() as resources:
-            if project_opt is not None:
-                project = await resources.projects.get(project_opt)
-            else:
-                project = await resources.projects.get_latest()
+
+            async def _resolve_project() -> ProjectRecord | None:
+                if project_opt is not None:
+                    return await resources.projects.get(project_opt)
+                return await resources.projects.get_latest()
+
+            project = await _resolve_project()
+            # A one-shot CLI run should fail fast when there is nothing to
+            # work on. A long-lived deployment must not: exiting there is a
+            # restart loop that ends only when a human creates a project,
+            # and the crash counter makes a perfectly healthy worker look
+            # broken. Waiting is opt-in so the CLI default stays honest.
+            while project is None and wait_for_project is not None:
+                typer.echo(f"no project yet; polling every {wait_for_project:g}s")
+                await asyncio.sleep(wait_for_project)
+                project = await _resolve_project()
             if project is None:
                 typer.echo("no projects found; create one with `vibey new` first")
                 raise typer.Exit(1)
@@ -1116,13 +1141,32 @@ def worker(
             notifier = PostgresJobReadyNotifier(database_url())
             await notifier.connect()
 
+            # Kubernetes scale-in is SIGTERM, a wait, then SIGKILL. A
+            # worker that ignores SIGTERM keeps claiming jobs it cannot
+            # possibly finish: the kill lands mid-session, the lease is
+            # orphaned, and a paid turn is thrown away. Draining means
+            # exactly one thing -- finish the job in hand, claim no more --
+            # so the flag is read between jobs and nowhere else. Checking
+            # it mid-job would be the very truncation it exists to avoid.
+            #
+            # SIGTERM only, deliberately. Ctrl-C keeps its immediate-abort
+            # semantics: an operator who interrupts a foreground worker
+            # means now, not "in up to two hours".
+            draining = asyncio.Event()
+
+            def _begin_drain() -> None:
+                typer.echo("draining on SIGTERM: finishing in-flight job, claiming no more")
+                draining.set()
+
+            asyncio.get_running_loop().add_signal_handler(signal.SIGTERM, _begin_drain)
+
             typer.echo(
                 f"worker started: project={project.name} "
                 f"engines={engines_opt or 'all'} parallelism={count} provider={provider}"
             )
 
             async def drive(loop_: WorkerLoop) -> None:
-                while True:
+                while not draining.is_set():
                     worked = await loop_.run_once(project.project_id)
                     if worked:
                         typer.echo("processed one job")

@@ -1,0 +1,128 @@
+{{- $fullName := include "vibey.fullname" . }}
+{{- if .Values.serviceAccount.create }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "vibey.serviceAccountName" . }}
+  labels: {{- include "vibey.labels" . | nindent 4 }}
+  {{- with .Values.serviceAccount.annotations }}
+  annotations: {{- toYaml . | nindent 4 }}
+  {{- end }}
+---
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullName }}-worker
+  labels:
+    {{- include "vibey.labels" . | nindent 4 }}
+    app.kubernetes.io/component: worker
+spec:
+  replicas: {{ .Values.worker.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "vibey.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: worker
+  template:
+    metadata:
+      labels:
+        {{- include "vibey.labels" . | nindent 8 }}
+        app.kubernetes.io/component: worker
+    spec:
+      serviceAccountName: {{ include "vibey.serviceAccountName" . }}
+      # Long enough for an engine session to finish its current turn.
+      # Cutting a session mid-turn is not merely wasteful: the work is
+      # already paid for, and the ledger would carry a turn with no
+      # verdict.
+      terminationGracePeriodSeconds: {{ .Values.worker.terminationGracePeriodSeconds }}
+      securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if .Values.postgres.enabled }}
+      initContainers:
+        # The worker applies migrations itself at startup, but it cannot
+        # do that against a database that is not accepting connections
+        # yet. Waiting here keeps the failure mode "pod pending" rather
+        # than "CrashLoopBackOff with a stack trace".
+        - name: wait-for-postgres
+          image: {{ .Values.postgres.image }}
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h {{ $fullName }}-postgres -U {{ .Values.postgres.user }} -d {{ .Values.postgres.database }}; do
+                echo "waiting for postgres..."
+                sleep 2
+              done
+          securityContext: {{- toYaml .Values.securityContext | nindent 12 }}
+      {{- end }}
+      containers:
+        - name: worker
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - worker
+            {{- if .Values.worker.project }}
+            - --project
+            - {{ .Values.worker.project | quote }}
+            {{- end }}
+            - --provider
+            - {{ .Values.worker.provider | quote }}
+            {{- if .Values.worker.engines }}
+            - --engines
+            - {{ .Values.worker.engines | quote }}
+            {{- end }}
+            - -j
+            - {{ .Values.worker.parallelism | quote }}
+            {{- if .Values.worker.waitForProjectSeconds }}
+            # A worker that exits when no project exists restart-loops
+            # until a human creates one, and the crash counter makes a
+            # healthy deployment look broken.
+            - --wait-for-project
+            - {{ .Values.worker.waitForProjectSeconds | quote }}
+            {{- end }}
+          env:
+            - name: VIBEY_PG_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "vibey.dsnSecretName" . }}
+                  key: {{ include "vibey.dsnSecretKey" . }}
+            {{- range .Values.engineAuth.keys }}
+            - name: {{ .name }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.engineAuth.existingSecret }}
+                  key: {{ .key }}
+            {{- end }}
+          volumeMounts:
+            - name: worktrees
+              mountPath: /work
+          workingDir: /work
+          securityContext: {{- toYaml .Values.securityContext | nindent 12 }}
+          resources: {{- toYaml .Values.worker.resources | nindent 12 }}
+      volumes:
+        - name: worktrees
+          persistentVolumeClaim:
+            claimName: {{ $fullName }}-worktrees
+      {{- with .Values.nodeSelector }}
+      nodeSelector: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity: {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $fullName }}-worktrees
+  labels: {{- include "vibey.labels" . | nindent 4 }}
+spec:
+  accessModes: ["ReadWriteOnce"]
+  {{- if .Values.worker.worktrees.storageClass }}
+  storageClassName: {{ .Values.worker.worktrees.storageClass }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.worker.worktrees.size }}

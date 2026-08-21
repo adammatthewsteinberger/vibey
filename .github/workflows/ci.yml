@@ -84,3 +84,182 @@ jobs:
 
       - name: Gate 7 - pip-audit
         run: uv run pip-audit
+
+  image:
+    name: Container image (amd64 + arm64)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # arm64 is built under emulation. Slower than a native runner, but
+      # the alternative is discovering on a customer's Graviton node that
+      # the image was never built for it.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build amd64
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/docker/Dockerfile
+          platforms: linux/amd64
+          load: true
+          tags: vibey:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # The Dockerfile makes three claims in prose. Prose does not survive
+      # a refactor, so each one is asserted here: collapse the two stages
+      # or drop the USER line and this job fails instead of shipping.
+      - name: Image contract - entrypoint runs
+        run: |
+          out=$(docker run --rm vibey:ci --version)
+          echo "$out"
+          case "$out" in
+            "vibey "*) ;;
+            *) echo "::error::unexpected --version output: $out"; exit 1 ;;
+          esac
+
+      - name: Image contract - runs as non-root uid 10001
+        run: |
+          uid=$(docker run --rm --entrypoint id vibey:ci -u)
+          echo "uid=$uid"
+          test "$uid" = "10001"
+
+      # apt-get is deliberately absent from this list: it installs git in
+      # the runtime stage and needs root to do anything, while the chart
+      # runs the pod non-root with allowPrivilegeEscalation false. pip is
+      # the one that mattered -- uid 10001 owns a writable $HOME, so
+      # `pip install --user` would have worked until it was removed.
+      - name: Image contract - no compiler, no uv, no pip
+        run: |
+          docker run --rm --entrypoint sh vibey:ci -c '
+            status=0
+            for tool in uv pip pip3 gcc cc; do
+              if command -v "$tool" >/dev/null 2>&1; then
+                echo "$tool present in runtime layer"; status=1
+              fi
+            done
+            exit $status
+          '
+
+      - name: Image contract - migrations ship in the image
+        run: |
+          count=$(docker run --rm --entrypoint sh vibey:ci -c 'ls /app/migrations/*.sql | wc -l')
+          echo "migrations=$count"
+          test "$count" -gt 0
+
+      # Built last: under emulation this is the slow half, and there is no
+      # point paying for it when the amd64 contracts already failed.
+      - name: Build arm64
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/docker/Dockerfile
+          platforms: linux/arm64
+          push: false
+          tags: vibey:ci-arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  cluster-smoke:
+    name: Helm install on minikube
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: medyagh/setup-minikube@latest
+
+      - uses: azure/setup-helm@v4
+
+      - name: Build the image into minikube's daemon
+        run: |
+          eval $(minikube docker-env)
+          docker build -f deploy/docker/Dockerfile -t vibey:dev .
+
+      - name: helm install
+        run: |
+          helm install vibey deploy/helm/vibey \
+            -n vibey --create-namespace --wait --timeout 8m
+
+      # A fresh install into an empty namespace has no project. The worker
+      # must park and poll, not exit -- exiting is a restart loop that ends
+      # only when a human shows up, and the crash counter makes a healthy
+      # deployment look broken.
+      - name: Contract - a projectless worker parks instead of crash-looping
+        run: |
+          kubectl wait --for=condition=available \
+            deployment/vibey-vibey-worker -n vibey --timeout=5m
+          for _ in $(seq 1 20); do
+            kubectl logs -n vibey deployment/vibey-vibey-worker > /tmp/log 2>&1 || true
+            grep -q "no project yet; polling" /tmp/log && break
+            sleep 5
+          done
+          cat /tmp/log
+          grep -q "no project yet; polling" /tmp/log
+          restarts=$(kubectl get pods -n vibey -l app.kubernetes.io/component=worker \
+            -o jsonpath='{.items[0].status.containerStatuses[0].restartCount}')
+          echo "restarts=$restarts"
+          test "$restarts" = "0"
+
+      - name: Contract - the worker picks up a project created in-cluster
+        run: |
+          kubectl exec -n vibey deploy/vibey-vibey-worker -- \
+            vibey new demo --repo /work/demo --max-cycles 1
+          for _ in $(seq 1 24); do
+            kubectl logs -n vibey deployment/vibey-vibey-worker > /tmp/log 2>&1 || true
+            grep -q "worker started: project=demo" /tmp/log && break
+            sleep 5
+          done
+          cat /tmp/log
+          grep -q "worker started: project=demo" /tmp/log
+
+      # KEDA's operator runs in its own namespace and dials Postgres
+      # itself, so it is the only thing here that exercises the DSN from
+      # outside the release namespace. An unqualified DSN passes every
+      # other check in this file and fails this one -- which is exactly
+      # how it once shipped unnoticed.
+      - name: Contract - the ScaledObject reconciles against real Postgres
+        run: |
+          helm repo add kedacore https://kedacore.github.io/charts
+          helm install keda kedacore/keda -n keda --create-namespace --wait --timeout 5m
+          helm upgrade vibey deploy/helm/vibey -n vibey \
+            --set keda.enabled=true --wait --timeout 5m
+          ready=""
+          for _ in $(seq 1 24); do
+            ready=$(kubectl get scaledobject vibey-vibey-worker -n vibey \
+              -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || true)
+            [ "$ready" = "True" ] && break
+            sleep 5
+          done
+          kubectl get scaledobject -n vibey
+          test "$ready" = "True"
+
+      # terminationGracePeriodSeconds is 7200. Without the SIGTERM drain a
+      # scaled-in pod sits there for all of it, still holding connections
+      # and still claiming jobs, while kubectl reports it gone. 60s is a
+      # generous ceiling for an idle worker that genuinely drains.
+      - name: Contract - a worker drains promptly on SIGTERM
+        run: |
+          helm upgrade vibey deploy/helm/vibey -n vibey \
+            --set keda.enabled=false --wait --timeout 5m
+          pod=$(kubectl get pods -n vibey -l app.kubernetes.io/component=worker \
+            -o jsonpath='{.items[0].metadata.name}')
+          echo "deleting $pod"
+          start=$(date +%s)
+          kubectl delete pod "$pod" -n vibey --wait=true --timeout=5m
+          elapsed=$(( $(date +%s) - start ))
+          echo "terminated in ${elapsed}s (grace period allows 7200s)"
+          test "$elapsed" -lt 60
+
+      - name: Diagnostics on failure
+        if: failure()
+        run: |
+          kubectl get all -n vibey || true
+          kubectl describe pods -n vibey || true
+          kubectl logs -n vibey deployment/vibey-vibey-worker --tail=100 || true
+          kubectl logs -n keda deployment/keda-operator --tail=50 || true
