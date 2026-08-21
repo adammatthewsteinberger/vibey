@@ -893,6 +893,13 @@ def doctor(
         UUID | None,
         typer.Option("--project", help="Project to record health for (default: latest)"),
     ] = None,
+    cluster: Annotated[
+        bool,
+        typer.Option(
+            "--cluster",
+            help="In-cluster preflight instead: DSN, workspace, secrets, database, migrations",
+        ),
+    ] = False,
 ) -> None:
     """Check engine health, auth status, and optionally run conformance."""
     from vibey.application.conformance import run_conformance
@@ -981,6 +988,30 @@ def doctor(
 
         if conformance and not all_ok:
             raise typer.Exit(1)
+
+    async def run_cluster_doctor() -> None:
+        import shutil
+
+        from vibey.bootstrap import database_url, migrations_dir
+        from vibey.infrastructure.cluster_preflight import all_ok, run_cluster_preflight
+
+        checks = await run_cluster_preflight(
+            dsn=database_url(),
+            workspace=Path.cwd(),
+            migrations_dir=migrations_dir(),
+            environ=os.environ,
+            uid=os.getuid(),
+            which=shutil.which,
+        )
+        for check in checks:
+            mark = "PASS" if check.ok else "FAIL"
+            typer.echo(f"{mark} {check.name:<20} {check.detail}")
+        if not all_ok(checks):
+            raise typer.Exit(1)
+
+    if cluster:
+        asyncio.run(run_cluster_doctor())
+        return
 
     asyncio.run(run_doctor())
 

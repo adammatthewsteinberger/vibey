@@ -1421,3 +1421,44 @@ def test_worker_drains_on_sigterm_rather_than_claiming_more(tmp_path: Path) -> N
     assert "draining on SIGTERM" in res.output
     # The point of the flag: it stopped claiming. One idle wait, then out.
     assert notifier.wait_for_job_ready.await_count == 1
+
+
+def test_doctor_cluster_passes_against_a_migrated_database(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The in-cluster preflight is a different question from engine health:
+    it asks whether this deployment is wired correctly at all."""
+    from unittest.mock import patch
+
+    async def migrate() -> None:
+        async with build_app():
+            pass
+
+    asyncio.run(migrate())
+    monkeypatch.chdir(tmp_path)
+
+    # No engine binaries: the scripted-provider image, which is the state
+    # of the published image today and not a fault.
+    with patch("shutil.which", return_value=None):
+        res = runner.invoke(app, ["doctor", "--cluster"])
+
+    assert res.exit_code == 0, res.output
+    assert "PASS database" in res.output
+    assert "PASS migrations" in res.output
+
+
+def test_doctor_cluster_exits_nonzero_when_the_database_is_unreachable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A preflight that reported success against a database nobody reached
+    would be worse than no preflight."""
+    from unittest.mock import patch
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("VIBEY_PG_URL", "postgresql://nobody@127.0.0.1:1/nothing")
+
+    with patch("shutil.which", return_value=None):
+        res = runner.invoke(app, ["doctor", "--cluster"])
+
+    assert res.exit_code == 1
+    assert "FAIL database" in res.output

@@ -486,15 +486,22 @@ def database_url() -> str:
     return os.environ.get("VIBEY_PG_URL", f"postgresql://{getpass.getuser()}@localhost:5432/vibey")
 
 
+def migrations_dir() -> Path:
+    """Resolved relative to this file so it works from a source checkout and
+    from the image alike (/app/src/vibey/bootstrap.py -> /app/migrations).
+    Derived in one place because two copies of this arithmetic would drift
+    silently -- the image's layout depends on it."""
+    return Path(__file__).resolve().parents[2] / "migrations"
+
+
 @asynccontextmanager
 async def build_app(*, url: str | None = None) -> AsyncIterator[AppResources]:
     pool = await asyncpg.create_pool(url or database_url(), min_size=1, max_size=10)
     if pool is None:
         raise RuntimeError("asyncpg did not create a pool")
     try:
-        migrations_dir = Path(__file__).resolve().parents[2] / "migrations"
         async with pool.acquire() as conn:
-            await apply_migrations(conn, discover_migrations(migrations_dir))
+            await apply_migrations(conn, discover_migrations(migrations_dir()))
 
         projects = PostgresProjectRepository(pool)
         ledger = PostgresLedgerRepository(pool)
