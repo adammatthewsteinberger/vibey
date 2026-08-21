@@ -85,6 +85,22 @@ Orchestration hot paths (correctness-preserving):
 - Zero gate relaxation: 100% branch floors, protected tests, chaos and
   property tests all unchanged.
 
+### Front 1 delivery status (PR #70, validated 2026-08-21)
+
+Items 1–4 are **delivered and independently validated** — see
+`evidence/13-front1-validation.md`. Suite 383s → 135s (2.8×); the four
+per-layer floors now cost one instrumented run plus four
+`coverage report` calls, 136s against ~1530s before (**11.3×**), with
+every layer still at exactly 100% branch coverage.
+
+**Accepted deviation**: the suite lands at a 135s median against the
+≤120s "must" (and the ≤90s target above). Operator-accepted as a speed
+shortfall rather than a correctness one — determinism, per-layer
+granularity, crash recovery, and protected-file integrity all pass.
+**Closing this gap is the job of items 5 and 6 below**, which remain
+open; do not treat the ≤90s target as abandoned, only as deferred to
+them.
+
 ## Needs from operator
 
 Nothing.
