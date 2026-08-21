@@ -85,6 +85,7 @@ that silently trades correctness for speed.
 | Documentation comprehensiveness | docstring coverage, strict docs build, reference checker | an undocumented public symbol; a doc naming a flag or file that no longer exists; build warnings |
 | Debug logging & traceability | AST scan, log sampling, ledger-to-log round trip | an exception swallowed without a log; a line missing its correlation ids; a failed job whose causal chain cannot be reconstructed |
 | Surface parity | capability registry vs each surface's introspection | a capability reachable from the CLI but absent from the API, MCP, SDK, or emitting no webhook event |
+| Gate integrity | declared floors and scan configs vs baseline; suppression census | a coverage floor lowered; a new unjustified `# pragma: no cover`, `noqa`, `nosec`, or `type: ignore`; a path excluded from a scan |
 
 ### Making the two soft-sounding dimensions checkable
 
@@ -125,6 +126,43 @@ satisfied by a service that logs every loop iteration at INFO, so the
 floor and the ceiling are both stated.
 
 Advisory, never actioned: whether an individual message is well-worded.
+
+### Gate integrity: the produced code holds the same bar, and the bar does not move
+
+Everything the jobs produce must be **100% branch covered, fully linted,
+and clean under the standard security scans** — the same 7-gate bar vibey
+holds itself to, applied to the code it writes. That much CI already
+enforces at merge time.
+
+What CI cannot tell you is whether the gates still mean what they meant
+last month. The failure mode here is not a red build; it is a green one:
+
+- a coverage floor lowered from 100 to 95 "temporarily";
+- a `# pragma: no cover` on the branch nobody wanted to test;
+- a `# noqa` or `# nosec` added to silence a finding rather than fix it;
+- a `# type: ignore` hiding a real signature mismatch;
+- a directory quietly excluded from the scan's include path.
+
+Every one of those leaves CI green while the bar quietly moves, and an
+autonomous builder under deadline pressure has exactly the same incentive
+to reach for them that a tired human does. **So the loop watches the
+gates themselves, not only their outcome.** Two `must`s:
+
+1. The gates pass — coverage at 100% per layer, lint clean, security
+   scans clean.
+2. The gate *configuration* has not eroded against the recorded baseline,
+   and the suppression census has not grown without justification.
+
+Suppressions are not banned — a genuine false positive deserves one. They
+are **counted, diffed, and required to carry a reason**, the same
+exemption discipline surface parity uses. A suppression with a written
+justification is engineering; an anonymous one is the bar moving in the
+dark.
+
+This is also the dimension most worth running against vibey itself, since
+vibey is built by vibey: the four 100% floors, `import-linter`'s onion
+contracts, `bandit`, and `pip-audit` are exactly the configuration a
+future cycle could erode while every check stayed green.
 
 ### Surface parity: every capability reachable from every programmatic surface
 
@@ -225,6 +263,8 @@ judgement rather than by measurement.
    swallowed-exception AST scan, correlation-id sampling.
 5. Capability registry + per-surface introspection for the parity check
    (generalizes 12's existing MCP-to-API parity test to all five).
+6. Gate-integrity baseline: record declared floors, scan includes, and the
+   suppression census; diff each cycle and require justifications.
 5. kopf timer + `Fitness` condition + Events, at `record` only.
 6. Right-sizing recommendations for the chart's own resource requests.
 7. Ladder rungs behind `fitnessPolicy`, promoted one dimension at a time.
@@ -249,6 +289,10 @@ judgement rather than by measurement.
   is reported as a parity gap against API, MCP, SDK and webhook, and a
   `surface_exempt` reason suppresses it without editing the checker.
 - No GUI-related finding is ever produced, under any policy setting.
+- A coverage floor lowered from 100 to 95 in a config file is reported as
+  a gate-integrity breach even though every CI check still passes.
+- A newly added, unjustified `# nosec` is reported; the same suppression
+  with a written reason is not.
 - The round-trip probe reconstructs the full causal chain of a real failed
   job from logs and ledger alone, and fails when correlation ids are
   unbound on one entry path.
