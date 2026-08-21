@@ -107,6 +107,13 @@ LOOP_EVENT_MAP: dict[EngineId, dict[str, EventKind]] = {
         # event), so it gets the same BUDGET_SPENT treatment as
         # claudeloop/agyloop's capacity.forecast.
         "rate_limits.updated": EventKind.BUDGET_SPENT,
+        # codexloop's own wrapper-level terminal verdict (codexloop#35),
+        # the one event in its stream that is not raw codex vocabulary. It
+        # carries success/complete/reason and, on success only, the done
+        # marker -- previously nothing published the marker at all, so a
+        # finished codexloop run was indistinguishable from an abandoned
+        # one to any reader of events.jsonl.
+        "run.verdict": EventKind.VERDICT_RENDERED,
         # "error" and "event_msg" deliberately left unmapped: both are
         # generic wrapper types whose real meaning depends on payload
         # contents this string-keyed map can't see (event_msg mostly

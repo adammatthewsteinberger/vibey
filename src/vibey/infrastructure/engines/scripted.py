@@ -73,6 +73,11 @@ class ScriptedEngine:
     stop_remaining: tuple[str, ...] = ()
     """What ``stop`` reports as StopSummary.remaining_work -- the scripted
     stand-in for a real engine's final-snapshot remaining list."""
+    meta_status: str = "running"
+    """meta.json's status field. A real engine flips this to a terminal
+    value ("finished"/"failed"/"stopped") as it exits; scripting it lets a
+    test exercise the paths that read terminal status without racing a
+    real process."""
     help_text: str | None = None
     """`<binary> run --help` output stand-in. Defaults to a string
     containing every flag the descriptor claims, so the conformance
@@ -111,7 +116,7 @@ class ScriptedEngine:
             "pid": 0,
             "cwd": str(spec.worktree_path),
             "session_id": spec.session_id or f"sess-{spec.run_id}",
-            "status": "running",
+            "status": self.meta_status,
             "phase": None,
             "attempt": 1,
             "waiting_until": None,
