@@ -19,9 +19,16 @@ spec:
     horizontalPodAutoscalerConfig:
       behavior:
         scaleDown:
-          # Never remove more than one worker at a time: each carries at
-          # most `parallelism` in-flight sessions, and losing several at
-          # once turns a drain into a stampede of orphaned leases.
+          # Smooths HPA-driven scale-down between minReplicas and max, so
+          # a brief dip in claimable work does not shed the whole pool.
+          #
+          # It does NOT govern the N->0 transition: KEDA's deactivation
+          # path sets the replica count directly and bypasses this
+          # behavior entirely -- measured on minikube going 4->0 in a
+          # single step. Do not read this policy as protection against
+          # losing several in-flight sessions at once. That protection is
+          # the worker's own SIGTERM drain (finish the job in hand, claim
+          # no more) bounded by terminationGracePeriodSeconds below.
           policies:
             - type: Pods
               value: 1

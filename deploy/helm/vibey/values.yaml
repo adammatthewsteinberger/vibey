@@ -49,6 +49,12 @@ postgres:
       cpu: 100m
       memory: 256Mi
 
+# Suffix for fully-qualified in-cluster DNS names. Only ever needs
+# changing on a cluster built with a non-default domain (kubeadm's
+# --service-dns-domain); the DSN is qualified with it so readers outside
+# this namespace -- KEDA's operator, notably -- can resolve Postgres.
+clusterDomain: cluster.local
+
 dsn:
   # When set, this Secret's key supplies VIBEY_PG_URL and the built-in
   # postgres block is ignored.

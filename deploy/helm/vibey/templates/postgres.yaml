@@ -10,7 +10,13 @@ stringData:
   # The queue is PostgreSQL and only PostgreSQL (ADR-0002: FOR UPDATE SKIP
   # LOCKED is the reason). Assembled once here so no template concatenates
   # its own copy.
-  dsn: postgresql://{{ .Values.postgres.user }}:{{ .Values.postgres.password }}@{{ $fullName }}-postgres:5432/{{ .Values.postgres.database }}
+  #
+  # Fully qualified deliberately. A bare Service name resolves only from
+  # inside this namespace, and the DSN has a second reader that is not in
+  # it: KEDA's operator lives in its own namespace and dials Postgres
+  # itself to evaluate the scaler query. A short name works for the worker
+  # and fails for the autoscaler.
+  dsn: postgresql://{{ .Values.postgres.user }}:{{ .Values.postgres.password }}@{{ $fullName }}-postgres.{{ .Release.Namespace }}.svc.{{ .Values.clusterDomain }}:5432/{{ .Values.postgres.database }}
   password: {{ .Values.postgres.password | quote }}
 ---
 apiVersion: v1
