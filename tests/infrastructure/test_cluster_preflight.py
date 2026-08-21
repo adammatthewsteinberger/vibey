@@ -124,7 +124,11 @@ async def test_database_check_reports_an_unreachable_host() -> None:
 
 
 async def test_migrations_report_applied_versions_after_bootstrap() -> None:
-    async with build_app():
+    # Explicit url: build_app() otherwise reads VIBEY_PG_URL, which this
+    # module does not set, and the fallback silently targets a database
+    # named after the current user -- which happens to work on a dev box
+    # with a trusting local Postgres and fails on CI.
+    async with build_app(url=_test_dsn()):
         pass
     conn = await asyncpg.connect(_test_dsn())
     try:
@@ -139,7 +143,11 @@ async def test_migrations_flag_a_version_the_database_has_not_seen(tmp_path: Pat
     """An image newer than its database is a real deployment state: the
     worker applies migrations at startup, so a pending one means startup
     did not finish."""
-    async with build_app():
+    # Explicit url: build_app() otherwise reads VIBEY_PG_URL, which this
+    # module does not set, and the fallback silently targets a database
+    # named after the current user -- which happens to work on a dev box
+    # with a trusting local Postgres and fails on CI.
+    async with build_app(url=_test_dsn()):
         pass
     for sql in sorted(migrations_dir().glob("*.sql")):
         (tmp_path / sql.name).write_text(sql.read_text())
@@ -188,7 +196,11 @@ async def test_migrations_on_a_database_with_no_schema_migration_table() -> None
 
 
 async def test_full_preflight_against_a_live_database(tmp_path: Path) -> None:
-    async with build_app():
+    # Explicit url: build_app() otherwise reads VIBEY_PG_URL, which this
+    # module does not set, and the fallback silently targets a database
+    # named after the current user -- which happens to work on a dev box
+    # with a trusting local Postgres and fails on CI.
+    async with build_app(url=_test_dsn()):
         pass
     checks = await run_cluster_preflight(
         dsn=_test_dsn(),
