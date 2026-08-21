@@ -18,33 +18,34 @@ the ScriptedEngine-only test in test_faked_conformance.py. That's a real,
 documented gap, not an oversight; see
 docs/plans/fleet-program-runbook.md's scripted/offline agent table.
 
-codexloop and cursorloop are xfail (strict) here, not skipped or passing --
-this real subprocess-level test found two genuine, previously-unknown bugs
-in those repos themselves, distinct from anything vibey's own code was
-doing wrong:
+cursorloop is xfail (strict) here, not skipped or passing -- this real
+subprocess-level test found genuine, previously-unknown bugs in those
+repos themselves, distinct from anything vibey's own code was doing
+wrong:
 
-- codexloop: `infrastructure/rundir.py` writes meta.json exactly once, at
-  run-directory creation, and never updates it again -- there is no
-  "status" field write anywhere in its codebase at all. It records
-  completion in `state.json`'s "reason" field instead. Every other engine
-  (claudeloop, agyloop, cursorloop) writes meta.json's status through
-  active/finished/failed/stopped -- the exact vocabulary
-  LoopProcessAdapter.tail() depends on for completion detection. Until
-  codexloop's own run-lifecycle code is fixed to match that contract,
-  vibey can spawn it and stream its raw events, but can never correctly
-  detect when it's done.
 - cursorloop: `infrastructure/agent/scripted.py`'s ScriptedAgentGateway
   raises IndexError on an unexpected second `send_turn` call --
   AutonomousRunner sends a "Continue exactly where you left off" follow-up
   prompt after a scripted "done" turn instead of recognizing the verdict
   as complete, crashing the run.
 
-Both are queued as real fleet plan files, not fixed inline here, since
-each requires understanding that engine's own control-flow in enough
-depth to place the fix correctly. `strict=True` means either xfail turns
-into a real failure the moment its underlying repo is out of sync with
-this comment (e.g. someone "fixes" it without updating this file) --
-that's intentional, not a bug in this test.
+Queued as a real fleet plan file, not fixed inline here, since it
+requires understanding that engine's own control-flow in enough depth to
+place the fix correctly. `strict=True` means the xfail turns into a real
+failure the moment its underlying repo is out of sync with this comment
+(e.g. someone "fixes" it without updating this file) -- that's
+intentional, not a bug in this test.
+
+codexloop was xfail here too, and is expected to PASS as of PR #72. The
+upstream gap it named is still real -- `infrastructure/rundir.py` writes
+meta.json exactly once, at run-directory creation, and never a terminal
+status, so `process_exited_without_terminal_status` still appears in this
+test's own logs and docs/plans/fleet/d0-meta-status-codexloop.md is still
+queued. What changed is that vibey stopped depending on it: codexloop#35
+added a `run.verdict` event and #72 maps it, so completion is detected
+through the verdict path instead of meta.json. The strict xfail is what
+surfaced the drift, turning into a failure the moment its premise stopped
+holding -- exactly as the paragraph above intends.
 
 Every test here skips (not fails) when its binary or fixture script isn't
 present on this machine -- mirroring test_paid_preflight.py's pattern --
@@ -72,10 +73,6 @@ _SCRIPTED_ENGINES: dict[EngineId, tuple[str, str]] = {
 }
 
 _KNOWN_BROKEN_UPSTREAM: dict[EngineId, str] = {
-    EngineId.CODEXLOOP: (
-        "codexloop never writes a terminal status to meta.json (see module "
-        "docstring) -- queued as docs/plans/fleet/d0-meta-status-codexloop.md"
-    ),
     EngineId.CURSORLOOP: (
         "ScriptedAgentGateway raises on an unexpected second send_turn "
         "(see module docstring) -- queued as "
