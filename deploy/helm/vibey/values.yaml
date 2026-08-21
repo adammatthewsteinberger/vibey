@@ -1,0 +1,91 @@
+# Default values target a local minikube install with an in-cluster
+# PostgreSQL. Cloud presets (values-aks/eks/gke.yaml) override the pieces
+# that differ; nothing here assumes a managed service.
+
+image:
+  repository: vibey
+  tag: dev
+  # Never for a locally-built image: minikube's daemon already has it, and
+  # Always would send kubelet hunting a registry that has never seen it.
+  pullPolicy: Never
+
+worker:
+  replicas: 1
+  # Engine sessions run for minutes to hours. Scale-in must not sever one
+  # mid-turn: the pod stops claiming immediately, then drains.
+  terminationGracePeriodSeconds: 7200
+  parallelism: 2
+  provider: scripted
+  engines: ""
+  # A worker without --project silently binds to whichever project was
+  # created last; in a cluster that is a footgun, so the chart requires it
+  # to be set explicitly.
+  project: ""
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      memory: 2Gi
+  worktrees:
+    size: 5Gi
+    storageClass: ""
+
+postgres:
+  # Toggle off and point dsn.existingSecret at a managed instance
+  # (CloudNativePG, RDS, Cloud SQL, Azure Flexible Server).
+  enabled: true
+  image: postgres:17-alpine
+  database: vibey
+  user: vibey
+  # Dev-only default; cloud presets require existingSecret instead.
+  password: vibey
+  storage: 8Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+dsn:
+  # When set, this Secret's key supplies VIBEY_PG_URL and the built-in
+  # postgres block is ignored.
+  existingSecret: ""
+  existingSecretKey: dsn
+
+engineAuth:
+  # Interactive subscription login does not exist in a cluster, so engines
+  # authenticate by API key. Keys are read from a Secret, never values in
+  # this file.
+  existingSecret: ""
+  keys: []
+  # - name: ANTHROPIC_API_KEY
+  #   key: anthropic
+
+keda:
+  # Off by default: KEDA is a cluster-wide operator that may not be
+  # installed. The ScaledObject is inert without it.
+  enabled: false
+  minReplicas: 0
+  maxReplicas: 4
+  pollingInterval: 15
+  cooldownPeriod: 300
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  fsGroup: 10001
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  capabilities:
+    drop: ["ALL"]
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

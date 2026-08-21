@@ -1,0 +1,12 @@
+apiVersion: v2
+name: vibey
+description: A queue-based, six-phase conductor for autonomous software delivery
+type: application
+# Chart version tracks the chart's own shape; appVersion tracks the image.
+version: 0.1.0
+appVersion: "0.1.2"
+home: https://github.com/adammatthewsteinberger/vibey
+sources:
+  - https://github.com/adammatthewsteinberger/vibey
+maintainers:
+  - name: Adam Matthew Steinberger

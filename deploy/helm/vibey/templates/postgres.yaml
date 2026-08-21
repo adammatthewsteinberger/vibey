@@ -1,0 +1,93 @@
+{{- if .Values.postgres.enabled }}
+{{- $fullName := include "vibey.fullname" . }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $fullName }}-dsn
+  labels: {{- include "vibey.labels" . | nindent 4 }}
+type: Opaque
+stringData:
+  # The queue is PostgreSQL and only PostgreSQL (ADR-0002: FOR UPDATE SKIP
+  # LOCKED is the reason). Assembled once here so no template concatenates
+  # its own copy.
+  dsn: postgresql://{{ .Values.postgres.user }}:{{ .Values.postgres.password }}@{{ $fullName }}-postgres:5432/{{ .Values.postgres.database }}
+  password: {{ .Values.postgres.password | quote }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $fullName }}-postgres
+  labels: {{- include "vibey.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  ports:
+    - port: 5432
+      targetPort: postgres
+      name: postgres
+  selector:
+    app.kubernetes.io/name: {{ include "vibey.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: postgres
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $fullName }}-postgres
+  labels: {{- include "vibey.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ $fullName }}-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "vibey.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: postgres
+  template:
+    metadata:
+      labels:
+        {{- include "vibey.labels" . | nindent 8 }}
+        app.kubernetes.io/component: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: {{ .Values.postgres.image }}
+          ports:
+            - containerPort: 5432
+              name: postgres
+          env:
+            - name: POSTGRES_DB
+              value: {{ .Values.postgres.database }}
+            - name: POSTGRES_USER
+              value: {{ .Values.postgres.user }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $fullName }}-dsn
+                  key: password
+            # The default mount point is the volume root; initdb refuses a
+            # non-empty directory, and a PVC arrives with lost+found.
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "{{ .Values.postgres.user }}", "-d", "{{ .Values.postgres.database }}"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "{{ .Values.postgres.user }}", "-d", "{{ .Values.postgres.database }}"]
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources: {{- toYaml .Values.postgres.resources | nindent 12 }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: {{ .Values.postgres.storage }}
+{{- end }}
