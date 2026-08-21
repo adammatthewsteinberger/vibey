@@ -82,6 +82,129 @@ that silently trades correctness for speed.
 | Concurrency | lock waits, serialization points | a global lock on a hot path |
 | Dependency health | lockfile, upstream releases | abandoned or duplicated transitive deps (weight, not CVEs — `pip-audit` owns security) |
 | Delivery economics | ledger `cost_usd` per work item | spend per unit of delivered work drifting up |
+| Documentation comprehensiveness | docstring coverage, strict docs build, reference checker | an undocumented public symbol; a doc naming a flag or file that no longer exists; build warnings |
+| Debug logging & traceability | AST scan, log sampling, ledger-to-log round trip | an exception swallowed without a log; a line missing its correlation ids; a failed job whose causal chain cannot be reconstructed |
+| Surface parity | capability registry vs each surface's introspection | a capability reachable from the CLI but absent from the API, MCP, SDK, or emitting no webhook event |
+| Gate integrity | declared floors and scan configs vs baseline; suppression census | a coverage floor lowered; a new unjustified `# pragma: no cover`, `noqa`, `nosec`, or `type: ignore`; a path excluded from a scan |
+
+### Making the two soft-sounding dimensions checkable
+
+"Comprehensive documentation" and "good logging" are exactly the kind of
+phrases this runbook's meter discipline exists to reject. Both split
+cleanly into a meterable part and an advisory part, and only the first
+half is ever actioned.
+
+**Documentation.** Meterable: docstring coverage on the public API; a
+docs build that is clean under `--strict`; and — the highest-value of the
+three — a **stale-reference count**. Every file path, CLI flag, command,
+env var, and symbol named in the docs either still exists or it does not,
+and that is a scan, not an opinion. Documentation rots silently, and a
+guide naming a removed flag is worse than no guide: it actively misleads
+someone who trusts it. Advisory, never actioned: whether the prose is
+clear, well-organized, or pitched at the right reader.
+
+**Debug logging and traceability.** Meterable in three ways:
+
+1. **AST scan** — zero exception handlers that swallow without logging.
+   A bare `except: pass` is a hole in the record, and it is mechanically
+   detectable.
+2. **Sampling** — every line emitted inside a job carries its correlation
+   ids. vibey already has the mechanism: structlog is configured with
+   `merge_contextvars`, so the question is not whether ids *can* be
+   attached but whether every entry path actually binds them.
+3. **The round-trip, which is the real bar.** Given nothing but a failed
+   job's id, an automated probe must reconstruct the complete causal
+   chain — job to session to engine events to verdict — from logs and
+   ledger alone, without re-running anything. If it cannot, the logging is
+   insufficient no matter how many lines were emitted. Traceability is a
+   property of the record, not a count of log statements.
+
+Note this dimension is bounded on **both** sides. Too little logging
+costs an unreconstructable incident; too much costs money, I/O, and
+signal-to-noise in production. A `must` that only sets a floor will be
+satisfied by a service that logs every loop iteration at INFO, so the
+floor and the ceiling are both stated.
+
+Advisory, never actioned: whether an individual message is well-worded.
+
+### Gate integrity: the produced code holds the same bar, and the bar does not move
+
+Everything the jobs produce must be **100% branch covered, fully linted,
+and clean under the standard security scans** — the same 7-gate bar vibey
+holds itself to, applied to the code it writes. That much CI already
+enforces at merge time.
+
+What CI cannot tell you is whether the gates still mean what they meant
+last month. The failure mode here is not a red build; it is a green one:
+
+- a coverage floor lowered from 100 to 95 "temporarily";
+- a `# pragma: no cover` on the branch nobody wanted to test;
+- a `# noqa` or `# nosec` added to silence a finding rather than fix it;
+- a `# type: ignore` hiding a real signature mismatch;
+- a directory quietly excluded from the scan's include path.
+
+Every one of those leaves CI green while the bar quietly moves, and an
+autonomous builder under deadline pressure has exactly the same incentive
+to reach for them that a tired human does. **So the loop watches the
+gates themselves, not only their outcome.** Two `must`s:
+
+1. The gates pass — coverage at 100% per layer, lint clean, security
+   scans clean.
+2. The gate *configuration* has not eroded against the recorded baseline,
+   and the suppression census has not grown without justification.
+
+Suppressions are not banned — a genuine false positive deserves one. They
+are **counted, diffed, and required to carry a reason**, the same
+exemption discipline surface parity uses. A suppression with a written
+justification is engineering; an anonymous one is the bar moving in the
+dark.
+
+This is also the dimension most worth running against vibey itself, since
+vibey is built by vibey: the four 100% floors, `import-linter`'s onion
+contracts, `bandit`, and `pip-audit` are exactly the configuration a
+future cycle could erode while every check stayed green.
+
+### Surface parity: every capability reachable from every programmatic surface
+
+A capability that exists only behind the CLI is invisible to automation,
+and automation is the entire premise of this system. The moment someone
+adds a feature and wires only the surface they happened to be working in,
+the family of surfaces has silently forked. This dimension exists to make
+that a build failure rather than a discovery six months later.
+
+The `must`: **for every capability, all five surfaces are present.**
+
+- **API, CLI, MCP, SDK** are *invocation* surfaces — can the thing be
+  done? Parity here means the operation is exposed on each.
+- **Webhooks** are the *notification* surface — can the thing be observed
+  happening? Parity here means every significant state change the
+  capability produces is published as an event. Requiring a webhook to
+  "invoke" a capability would be a category error, so the check is
+  directional and stated as such.
+
+Runbook 12 makes this tractable rather than aspirational: the API is the
+root artifact, everything else is generated or derived from its OpenAPI
+schema, and a parity test already asserts every MCP tool maps to a
+documented API operation. This dimension generalizes that test to all
+five surfaces and, crucially, makes it **continuous** — 12 builds the
+surfaces once, this keeps them complete as capabilities land afterward.
+The capability registry is the application layer, which the API already
+mirrors 1:1.
+
+**Exemptions are explicit and recorded.** Not every capability belongs on
+every surface — an interactive TTY flow has no honest MCP form. A
+capability may declare `surface_exempt` with a reason, and the reason is
+reviewed like any other. Without that escape hatch the check becomes a
+nuisance, and a nuisance check gets muted.
+
+**GUIs are explicitly out of scope for this loop.** A graphical surface
+is a product decision with design cost, audience assumptions, and a
+maintenance burden that only the people planning the work can weigh. If a
+project wants a GUI it belongs in that project's plan, where it is
+designed deliberately. It is never something a reconciler raises as a
+missing surface — the five programmatic surfaces are the baseline that
+makes a capability automatable, and that is a different question from
+whether a human should have a screen for it.
 
 **Right-sizing is the most k8s-native of these** and the natural first
 deliverable: comparing a Deployment's declared `resources.requests`
@@ -136,7 +259,12 @@ judgement rather than by measurement.
 2. Pure fitness evaluator in `vibey/domain/`, property-tested.
 3. Baseline artifact: recording, reading, explicit re-baselining.
 4. Measurement collectors: benchmark, memory, `pg_stat_statements`,
-   metrics-server, image size.
+   metrics-server, image size, docstring coverage, stale-reference scan,
+   swallowed-exception AST scan, correlation-id sampling.
+5. Capability registry + per-surface introspection for the parity check
+   (generalizes 12's existing MCP-to-API parity test to all five).
+6. Gate-integrity baseline: record declared floors, scan includes, and the
+   suppression census; diff each cycle and require justifications.
 5. kopf timer + `Fitness` condition + Events, at `record` only.
 6. Right-sizing recommendations for the chart's own resource requests.
 7. Ladder rungs behind `fitnessPolicy`, promoted one dimension at a time.
@@ -154,6 +282,20 @@ judgement rather than by measurement.
   through BUILD → REVIEW and closes.
 - A seeded N+1 on a hot path is caught from `pg_stat_statements` rather
   than from someone reading the diff.
+- A doc referencing a deliberately removed CLI flag is caught by the
+  stale-reference scan, not by the next person to follow the guide.
+- A deliberately swallowed exception is caught by the AST scan.
+- A capability added to the application layer and wired only into the CLI
+  is reported as a parity gap against API, MCP, SDK and webhook, and a
+  `surface_exempt` reason suppresses it without editing the checker.
+- No GUI-related finding is ever produced, under any policy setting.
+- A coverage floor lowered from 100 to 95 in a config file is reported as
+  a gate-integrity breach even though every CI check still passes.
+- A newly added, unjustified `# nosec` is reported; the same suppression
+  with a written reason is not.
+- The round-trip probe reconstructs the full causal chain of a real failed
+  job from logs and ledger alone, and fails when correlation ids are
+  unbound on one entry path.
 - Right-sizing: a recommendation for the vibey worker's own requests,
   derived from measured usage over a real run, replacing the current
   judgement-based `250m` / `512Mi`.
