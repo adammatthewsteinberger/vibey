@@ -1386,3 +1386,38 @@ def test_worker_wait_for_project_polls_until_one_appears(tmp_path: Path) -> None
     assert res.exit_code == 0, res.output
     assert "no project yet; polling every 1s" in res.output
     assert slept.await_count == 1
+
+
+@pytest.mark.usefixtures("_fast_engine_preflight")
+def test_worker_drains_on_sigterm_rather_than_claiming_more(tmp_path: Path) -> None:
+    """Kubernetes scale-in is SIGTERM, a wait, then SIGKILL. Before this,
+    the worker ignored SIGTERM entirely: measured on minikube, a pod kept
+    processing jobs 77s after the signal and five 'terminated' pods still
+    held live Postgres connections while the Deployment reported 0/0.
+    Scale-to-zero freed nothing and the eventual SIGKILL would land
+    mid-session. The signal arrives here exactly where a real scale-in
+    delivers it -- while the worker sits idle waiting for the next job."""
+    import signal
+    from unittest.mock import AsyncMock, patch
+
+    async def seed() -> None:
+        async with build_app() as resources:
+            await resources.projects.create("drain", tmp_path, max_cycles=1, config={})
+
+    asyncio.run(seed())
+
+    async def sigterm(*_args: object, **_kwargs: object) -> None:
+        os.kill(os.getpid(), signal.SIGTERM)
+        # Let the loop's signal self-pipe deliver it before the next claim.
+        await asyncio.sleep(0.1)
+
+    with patch("vibey.infrastructure.db.notifier.PostgresJobReadyNotifier") as notifier_cls:
+        notifier = AsyncMock()
+        notifier.wait_for_job_ready = AsyncMock(side_effect=sigterm)
+        notifier_cls.return_value = notifier
+        res = runner.invoke(app, ["worker", "-j", "1"])
+
+    assert res.exit_code == 0, res.output
+    assert "draining on SIGTERM" in res.output
+    # The point of the flag: it stopped claiming. One idle wait, then out.
+    assert notifier.wait_for_job_ready.await_count == 1
