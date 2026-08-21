@@ -11,7 +11,8 @@ import typer
 
 from vibey import __version__
 from vibey.application.design_acceptance import DesignAcceptanceService
-from vibey.application.dto import EnqueueRequest, ProjectRecord
+from vibey.application.dto import ProjectRecord
+from vibey.application.project_kickoff import enqueue_design_interview
 from vibey.application.visual_acceptance import VisualAcceptanceService
 from vibey.bootstrap import (
     DesignProvider,
@@ -28,7 +29,6 @@ from vibey.domain.errors import (
     UnknownProvider,
     WrongPhase,
 )
-from vibey.domain.job import idempotency_key
 from vibey.domain.ledger import EventKind
 from vibey.domain.phase import Phase, VisualDecision
 from vibey.domain.spec import (
@@ -95,29 +95,15 @@ def main(
 
 
 async def _enqueue_design(project_id: UUID) -> str:
+    # The transition-and-enqueue logic lives in the application layer so the
+    # Kubernetes operator starts projects through the same path this does.
     async with build_app() as resources:
-        project = await resources.projects.get(project_id)
-        if project is None:
-            raise UnknownProject(f"unknown project {project_id}")
-        if project.phase is Phase.INTAKE:
-            project = await resources.projects.transition(
-                project_id, expected=Phase.INTAKE, to=Phase.DESIGN
-            )
-        if project.phase is not Phase.DESIGN:
-            raise WrongPhase(f"project is in {project.phase.value}, not design")
-        job = await resources.jobs.enqueue(
-            EnqueueRequest(
-                project_id=project_id,
-                cycle=project.cycle,
-                phase=Phase.DESIGN,
-                kind="design.interview",
-                idempotency_key=idempotency_key(
-                    project_id, project.cycle, "design.interview", "interactive"
-                ),
-                requirement={"effort": "high"},
-            )
+        job_id = await enqueue_design_interview(
+            projects=resources.projects,
+            jobs=resources.jobs,
+            project_id=project_id,
         )
-        return str(job.id)
+        return str(job_id)
 
 
 @app.command("new")
@@ -1014,6 +1000,29 @@ def doctor(
         return
 
     asyncio.run(run_doctor())
+
+
+@app.command("operator")
+def operator(
+    namespace: Annotated[
+        str | None,
+        typer.Option(
+            "--namespace",
+            help="Watch a single namespace (default: cluster-wide)",
+        ),
+    ] = None,
+) -> None:
+    """Run the Kubernetes operator: reconcile VibeyProject custom resources."""
+    # Imported here, not at module scope: kopf and the Kubernetes client are
+    # an optional extra, and `vibey worker` on a laptop should not require
+    # them to start.
+    try:
+        from vibey.infrastructure.operator import run as run_operator
+    except ImportError as exc:
+        typer.echo("operator support is not installed: pip install 'vibey[operator]'")
+        raise typer.Exit(1) from exc
+
+    run_operator(namespace=namespace)
 
 
 @app.command("worker")

@@ -70,6 +70,24 @@ engineAuth:
   # - name: ANTHROPIC_API_KEY
   #   key: anthropic
 
+operator:
+  # The kopf operator reconciling VibeyProject custom resources. Off by
+  # default: it is a cluster-scoped controller, and a chart that installs
+  # one without being asked is a surprise.
+  enabled: false
+  # Leave empty to watch cluster-wide.
+  watchNamespace: ""
+  # The CRD is a cluster-scoped object shared by every release. Turn this
+  # off when a second release installs into the same cluster, or when the
+  # CRD is applied out-of-band by whoever owns cluster-level resources.
+  installCRD: true
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 512Mi
+
 keda:
   # Off by default: KEDA is a cluster-wide operator that may not be
   # installed. The ScaledObject is inert without it.

@@ -214,6 +214,13 @@ class FakeHumanGateRepository:
         matching = [record for record in self.raised if record.job_id == job_id]
         return matching[-1] if matching else None
 
+    async def open_for_project(self, project_id: UUID) -> tuple[HumanGateRecord, ...]:
+        return tuple(
+            record
+            for record in self.raised
+            if record.project_id == project_id and record.answered_at is None
+        )
+
 
 def _with(job: JobRecord, **overrides: object) -> JobRecord:
     from dataclasses import replace

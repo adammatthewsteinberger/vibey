@@ -1,0 +1,21 @@
+"""Kubernetes operator for the VibeyProject custom resource (runbook 05 item 5)."""
+
+from vibey.infrastructure.operator.handlers import (
+    GROUP,
+    PLURAL,
+    VERSION,
+    apply_answers,
+    build_status,
+    ensure_project,
+    run,
+)
+
+__all__ = [
+    "GROUP",
+    "PLURAL",
+    "VERSION",
+    "apply_answers",
+    "build_status",
+    "ensure_project",
+    "run",
+]

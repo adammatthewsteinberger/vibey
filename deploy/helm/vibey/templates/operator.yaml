@@ -1,0 +1,111 @@
+{{- if .Values.operator.enabled }}
+{{- $fullName := include "vibey.fullname" . }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ $fullName }}-operator
+  labels: {{- include "vibey.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ $fullName }}-operator
+  labels: {{- include "vibey.labels" . | nindent 4 }}
+rules:
+  # kopf's own bookkeeping: peering for high-availability election, and
+  # events so parks show up in `kubectl describe`.
+  - apiGroups: [kopf.dev]
+    resources: [clusterkopfpeerings, kopfpeerings]
+    verbs: [list, watch, patch, get]
+  - apiGroups: [""]
+    resources: [events]
+    verbs: [create]
+  - apiGroups: [apiextensions.k8s.io]
+    resources: [customresourcedefinitions]
+    verbs: [list, watch]
+  - apiGroups: [""]
+    resources: [namespaces]
+    verbs: [list, watch]
+  # The resource this operator exists for. Deliberately no `delete`: the
+  # operator reconciles projects, it does not remove them, and a controller
+  # that cannot delete cannot delete the wrong thing.
+  - apiGroups: [vibey.dev]
+    resources: [vibeyprojects, vibeyprojects/status]
+    verbs: [list, watch, get, patch, update]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ $fullName }}-operator
+  labels: {{- include "vibey.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ $fullName }}-operator
+subjects:
+  - kind: ServiceAccount
+    name: {{ $fullName }}-operator
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullName }}-operator
+  labels:
+    {{- include "vibey.labels" . | nindent 4 }}
+    app.kubernetes.io/component: operator
+spec:
+  # Exactly one. kopf supports peering for HA, but two operators patching
+  # the same CR is a race with no upside at this scale.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "vibey.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: operator
+  template:
+    metadata:
+      labels:
+        {{- include "vibey.labels" . | nindent 8 }}
+        app.kubernetes.io/component: operator
+    spec:
+      serviceAccountName: {{ $fullName }}-operator
+      securityContext: {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if .Values.postgres.enabled }}
+      initContainers:
+        - name: wait-for-postgres
+          image: {{ .Values.postgres.image }}
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h {{ $fullName }}-postgres -U {{ .Values.postgres.user }} -d {{ .Values.postgres.database }}; do
+                echo "waiting for postgres..."
+                sleep 2
+              done
+          securityContext: {{- toYaml .Values.securityContext | nindent 12 }}
+      {{- end }}
+      containers:
+        - name: operator
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - operator
+            {{- if .Values.operator.watchNamespace }}
+            - --namespace
+            - {{ .Values.operator.watchNamespace | quote }}
+            {{- end }}
+          env:
+            - name: VIBEY_PG_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "vibey.dsnSecretName" . }}
+                  key: {{ include "vibey.dsnSecretKey" . }}
+          securityContext: {{- toYaml .Values.securityContext | nindent 12 }}
+          resources: {{- toYaml .Values.operator.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector: {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
