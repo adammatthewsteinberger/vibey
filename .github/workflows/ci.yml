@@ -164,3 +164,102 @@ jobs:
           tags: vibey:ci-arm64
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  cluster-smoke:
+    name: Helm install on minikube
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: medyagh/setup-minikube@latest
+
+      - uses: azure/setup-helm@v4
+
+      - name: Build the image into minikube's daemon
+        run: |
+          eval $(minikube docker-env)
+          docker build -f deploy/docker/Dockerfile -t vibey:dev .
+
+      - name: helm install
+        run: |
+          helm install vibey deploy/helm/vibey \
+            -n vibey --create-namespace --wait --timeout 8m
+
+      # A fresh install into an empty namespace has no project. The worker
+      # must park and poll, not exit -- exiting is a restart loop that ends
+      # only when a human shows up, and the crash counter makes a healthy
+      # deployment look broken.
+      - name: Contract - a projectless worker parks instead of crash-looping
+        run: |
+          kubectl wait --for=condition=available \
+            deployment/vibey-vibey-worker -n vibey --timeout=5m
+          for _ in $(seq 1 20); do
+            kubectl logs -n vibey deployment/vibey-vibey-worker > /tmp/log 2>&1 || true
+            grep -q "no project yet; polling" /tmp/log && break
+            sleep 5
+          done
+          cat /tmp/log
+          grep -q "no project yet; polling" /tmp/log
+          restarts=$(kubectl get pods -n vibey -l app.kubernetes.io/component=worker \
+            -o jsonpath='{.items[0].status.containerStatuses[0].restartCount}')
+          echo "restarts=$restarts"
+          test "$restarts" = "0"
+
+      - name: Contract - the worker picks up a project created in-cluster
+        run: |
+          kubectl exec -n vibey deploy/vibey-vibey-worker -- \
+            vibey new demo --repo /work/demo --max-cycles 1
+          for _ in $(seq 1 24); do
+            kubectl logs -n vibey deployment/vibey-vibey-worker > /tmp/log 2>&1 || true
+            grep -q "worker started: project=demo" /tmp/log && break
+            sleep 5
+          done
+          cat /tmp/log
+          grep -q "worker started: project=demo" /tmp/log
+
+      # KEDA's operator runs in its own namespace and dials Postgres
+      # itself, so it is the only thing here that exercises the DSN from
+      # outside the release namespace. An unqualified DSN passes every
+      # other check in this file and fails this one -- which is exactly
+      # how it once shipped unnoticed.
+      - name: Contract - the ScaledObject reconciles against real Postgres
+        run: |
+          helm repo add kedacore https://kedacore.github.io/charts
+          helm install keda kedacore/keda -n keda --create-namespace --wait --timeout 5m
+          helm upgrade vibey deploy/helm/vibey -n vibey \
+            --set keda.enabled=true --wait --timeout 5m
+          ready=""
+          for _ in $(seq 1 24); do
+            ready=$(kubectl get scaledobject vibey-vibey-worker -n vibey \
+              -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || true)
+            [ "$ready" = "True" ] && break
+            sleep 5
+          done
+          kubectl get scaledobject -n vibey
+          test "$ready" = "True"
+
+      # terminationGracePeriodSeconds is 7200. Without the SIGTERM drain a
+      # scaled-in pod sits there for all of it, still holding connections
+      # and still claiming jobs, while kubectl reports it gone. 60s is a
+      # generous ceiling for an idle worker that genuinely drains.
+      - name: Contract - a worker drains promptly on SIGTERM
+        run: |
+          helm upgrade vibey deploy/helm/vibey -n vibey \
+            --set keda.enabled=false --wait --timeout 5m
+          pod=$(kubectl get pods -n vibey -l app.kubernetes.io/component=worker \
+            -o jsonpath='{.items[0].metadata.name}')
+          echo "deleting $pod"
+          start=$(date +%s)
+          kubectl delete pod "$pod" -n vibey --wait=true --timeout=5m
+          elapsed=$(( $(date +%s) - start ))
+          echo "terminated in ${elapsed}s (grace period allows 7200s)"
+          test "$elapsed" -lt 60
+
+      - name: Diagnostics on failure
+        if: failure()
+        run: |
+          kubectl get all -n vibey || true
+          kubectl describe pods -n vibey || true
+          kubectl logs -n vibey deployment/vibey-vibey-worker --tail=100 || true
+          kubectl logs -n keda deployment/keda-operator --tail=50 || true
