@@ -110,7 +110,7 @@ uv run pip-audit
 | Implementation plan | `docs/plans/implementation-plan.md` |
 | System design and why each hard call was made | `docs/architecture/decisions/` (14 ADRs) |
 | User-facing docs | `docs/getting-started/`, `docs/guides/` |
-| Expansion workstreams (JIRA, clouds, k8s, clients, …) | `docs/runbooks/expansion/` (15 runbooks, `00-master-plan.md` first) |
+| Expansion workstreams (JIRA, clouds, k8s, clients, …) | `docs/runbooks/expansion/` (16 runbooks, `00-master-plan.md` first) |
 
 **Agent-surface maintenance:** when a skill/procedure changes, update
 Claude, Cursor, Codex, and Antigravity trees in the same PR.

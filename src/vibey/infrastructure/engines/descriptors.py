@@ -172,6 +172,12 @@ CURSORLOOP = EngineDescriptor(
         Effort.MAX: EngineInvocation(("--model", "grok-xhigh"), achieved=Effort.MAX),
     },
     session_verb="agents",
+    # cursorloop is the only engine whose `run` takes the plan as a flag
+    # rather than a positional (`cursorloop run --plan <path>`); confirmed
+    # against the installed 0.6.0 binary's --help. Passing it positionally
+    # made every cursorloop run die at argument parsing -- no run dir, no
+    # events, no snapshot -- which is exactly how conformance reported it.
+    plan_flag="--plan",
     # --hooks-policy isn't a real cursorloop run flag (confirmed via
     # --help: the closest real flag, --managed-hooks/--no-managed-hooks, is
     # about merging autonomy hooks.json, not container/VM sandboxing). No

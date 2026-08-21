@@ -14,6 +14,8 @@ def build_argv(descriptor: EngineDescriptor, spec: RunSpec) -> tuple[str, ...]:
         argv.append(spec.session_id)
     else:
         plan_path = spec.worktree_path / ".vibey" / "plans" / f"{spec.run_id}.md"
+        if descriptor.plan_flag is not None:
+            argv.append(descriptor.plan_flag)
         argv.append(str(plan_path))
         argv.extend(["--run-id", str(spec.run_id)])
 

@@ -249,3 +249,24 @@ async def test_create_uses_the_base_ref_when_it_exists(repo: Path) -> None:
     worktree = await manager.create("late-item", base_ref="vibey/1/integration")
 
     assert not (worktree / "integrated.txt").exists()
+
+
+async def test_lifecycle_reasserts_core_bare_false(repo: Path) -> None:
+    """Live finding from the expansion-13 build: worktree removal/prune can
+    leave the primary checkout marked core.bare=true, breaking git status,
+    checkout, and commit hooks there. Every mutating lifecycle path must
+    heal it -- the checkout is never actually bare."""
+    manager = GitWorktreeManager(repo, cycle=1)
+    await manager.create("item-1")
+
+    await _run("git", "-C", str(repo), "config", "core.bare", "true")
+    await manager.remove("item-1")
+
+    result = await _run("git", "-C", str(repo), "config", "core.bare")
+    assert result.stdout.strip() == "false"
+
+    await _run("git", "-C", str(repo), "config", "core.bare", "true")
+    await manager.create("item-2")
+
+    result = await _run("git", "-C", str(repo), "config", "core.bare")
+    assert result.stdout.strip() == "false"

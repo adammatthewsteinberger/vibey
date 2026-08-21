@@ -68,6 +68,13 @@ class EngineDescriptor:
     # flag the binary would reject at argument parsing, before it ever gets
     # a chance to run.
     supports_cwd_flag: bool = True
+    # How the engine's `run` verb takes the plan file. None means a bare
+    # positional path (claudeloop, codexloop, agyloop); a string is the flag
+    # the binary requires instead (cursorloop: `--plan`). Verified against
+    # each installed binary's own --help, never assumed -- passing a
+    # positional to a binary that wants a flag fails at argument parsing,
+    # before the session ever starts.
+    plan_flag: str | None = None
 
     def invoke(self, effort: Effort) -> EngineInvocation:
         try:
