@@ -84,3 +84,83 @@ jobs:
 
       - name: Gate 7 - pip-audit
         run: uv run pip-audit
+
+  image:
+    name: Container image (amd64 + arm64)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # arm64 is built under emulation. Slower than a native runner, but
+      # the alternative is discovering on a customer's Graviton node that
+      # the image was never built for it.
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build amd64
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/docker/Dockerfile
+          platforms: linux/amd64
+          load: true
+          tags: vibey:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # The Dockerfile makes three claims in prose. Prose does not survive
+      # a refactor, so each one is asserted here: collapse the two stages
+      # or drop the USER line and this job fails instead of shipping.
+      - name: Image contract - entrypoint runs
+        run: |
+          out=$(docker run --rm vibey:ci --version)
+          echo "$out"
+          case "$out" in
+            "vibey "*) ;;
+            *) echo "::error::unexpected --version output: $out"; exit 1 ;;
+          esac
+
+      - name: Image contract - runs as non-root uid 10001
+        run: |
+          uid=$(docker run --rm --entrypoint id vibey:ci -u)
+          echo "uid=$uid"
+          test "$uid" = "10001"
+
+      # apt-get is deliberately absent from this list: it installs git in
+      # the runtime stage and needs root to do anything, while the chart
+      # runs the pod non-root with allowPrivilegeEscalation false. pip is
+      # the one that mattered -- uid 10001 owns a writable $HOME, so
+      # `pip install --user` would have worked until it was removed.
+      - name: Image contract - no compiler, no uv, no pip
+        run: |
+          docker run --rm --entrypoint sh vibey:ci -c '
+            status=0
+            for tool in uv pip pip3 gcc cc; do
+              if command -v "$tool" >/dev/null 2>&1; then
+                echo "$tool present in runtime layer"; status=1
+              fi
+            done
+            exit $status
+          '
+
+      - name: Image contract - migrations ship in the image
+        run: |
+          count=$(docker run --rm --entrypoint sh vibey:ci -c 'ls /app/migrations/*.sql | wc -l')
+          echo "migrations=$count"
+          test "$count" -gt 0
+
+      # Built last: under emulation this is the slow half, and there is no
+      # point paying for it when the amd64 contracts already failed.
+      - name: Build arm64
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/docker/Dockerfile
+          platforms: linux/arm64
+          push: false
+          tags: vibey:ci-arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
