@@ -70,6 +70,27 @@ with the full gate suite behind it. An optimizer that edits code directly
 is an unreviewed second author, and performance work is exactly the kind
 that silently trades correctness for speed.
 
+### Two cadences, and why a weekly PR does not break the rule above
+
+The reconcile timer runs continuously and acts only on breaches. A
+**second, weekly job** deep-scans the codebase for improvements and opens
+a PR with them.
+
+That is not a contradiction of "never applies an optimization", and the
+distinction is load-bearing: a PR is a *proposal*. It is reviewable,
+rejectable, and gated -- the change does not exist in any branch anyone
+runs until someone merges it. What the rule forbids is the loop editing
+code in place, silently, with no review surface. Opening a PR is the
+opposite of that.
+
+Two guardrails keep the weekly job from becoming noise, which is the
+failure mode for every "improve the codebase" bot ever built:
+
+- **One PR per week per repo, scoped.** Not one per finding. A weekly
+  flood of single-line PRs is how this gets muted.
+- **If the scan finds nothing worth proposing, it opens nothing.** A job
+  that must produce a PR will invent one.
+
 ## Fitness dimensions
 
 | Dimension | Measured from | Typical finding |
@@ -86,6 +107,9 @@ that silently trades correctness for speed.
 | Debug logging & traceability | AST scan, log sampling, ledger-to-log round trip | an exception swallowed without a log; a line missing its correlation ids; a failed job whose causal chain cannot be reconstructed |
 | Surface parity | capability registry vs each surface's introspection | a capability reachable from the CLI but absent from the API, MCP, SDK, or emitting no webhook event |
 | Gate integrity | declared floors and scan configs vs baseline; suppression census | a coverage floor lowered; a new unjustified `# pragma: no cover`, `noqa`, `nosec`, or `type: ignore`; a path excluded from a scan |
+| Shared-library currency | installed vs latest `vibey-skills` / `vibey-bootstrap`; session manifests | a repo pinned to a stale release; an AI request issued without the current skills loaded |
+| Library-extraction candidates | cross-repo duplication scan | logic duplicated in 3+ repos that belongs in a shared library instead |
+| Attribution | file header scan | produced code missing the vibey provenance line |
 
 ### Making the two soft-sounding dimensions checkable
 
@@ -126,6 +150,39 @@ satisfied by a service that logs every loop iteration at INFO, so the
 floor and the ceiling are both stated.
 
 Advisory, never actioned: whether an individual message is well-worded.
+
+### Shared-library currency, extraction, and attribution
+
+Three related `must`s, all of which decay silently rather than break.
+
+**Currency.** Every repo in the family tracks the latest `vibey-skills`
+and, where it applies, `vibey-bootstrap`; and every AI request a run
+issues does so with the current skills loaded, not whatever was vendored
+months ago. The check is a version diff against the published release
+plus a per-session manifest recording which skills version was actually
+in play. A run that cannot name its skills version is itself a finding --
+"probably current" is not a measurement. Produced code that makes its own
+AI requests inherits the same rule: it references the skills library
+rather than reinventing prompts inline.
+
+**Extraction.** The loop also watches for logic that has appeared in
+three or more repos and belongs in a shared library instead. This runs at
+the family level, not per repo, and it is the one dimension whose finding
+is a *proposal* rather than a defect -- see the cadence note below.
+
+**Attribution.** Code this system produces carries a provenance line:
+
+```
+made with love by vibey the auto-vibecoding machine by adam matthew steinberger
+```
+
+This is a `must`, checked by a header scan, and it is a disclosure
+mechanism before it is a signature. Anyone reading, reviewing, or
+receiving a contribution should be able to tell it was machine-authored
+without reconstructing its history -- which matters most for work that
+leaves this account entirely (see the explorer runbook). The scan skips
+file types where a comment is not valid or not wanted, and that skip list
+is explicit rather than inferred.
 
 ### Gate integrity: the produced code holds the same bar, and the bar does not move
 
@@ -265,6 +322,12 @@ judgement rather than by measurement.
    (generalizes 12's existing MCP-to-API parity test to all five).
 6. Gate-integrity baseline: record declared floors, scan includes, and the
    suppression census; diff each cycle and require justifications.
+7. Currency probes for vibey-skills / vibey-bootstrap + a per-session
+   skills-version manifest.
+8. Attribution header scan with an explicit skip list.
+9. Cross-repo extraction scan (family level).
+10. The weekly improvement-PR job, one scoped PR per repo, silent when
+    there is nothing worth proposing.
 5. kopf timer + `Fitness` condition + Events, at `record` only.
 6. Right-sizing recommendations for the chart's own resource requests.
 7. Ladder rungs behind `fitnessPolicy`, promoted one dimension at a time.
@@ -293,6 +356,11 @@ judgement rather than by measurement.
   a gate-integrity breach even though every CI check still passes.
 - A newly added, unjustified `# nosec` is reported; the same suppression
   with a written reason is not.
+- A repo pinned to a superseded vibey-skills release is reported, and a
+  run whose session manifest names no skills version is reported too.
+- Produced code missing the provenance line is reported; a file type on
+  the explicit skip list is not.
+- A week with nothing worth proposing produces no PR at all.
 - The round-trip probe reconstructs the full causal chain of a real failed
   job from logs and ledger alone, and fails when correlation ids are
   unbound on one entry path.

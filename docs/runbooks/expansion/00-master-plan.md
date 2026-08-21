@@ -47,12 +47,19 @@ Phase C — integration surfaces
   18-production-fitness-reconciliation
                                # sibling loop on the same rails: is what
                                # the jobs produced fit for production?
+  19-monorepo-and-shared-libraries
+                               # submodule the family, adopt vibey-skills,
+                               # decide vibey-bootstrap's scope, extract
+                               # the (measured, small) shared core
   12-integration-surfaces      # MCP/API/webhooks/skills/SDKs, all repos
   01-jira-integration          # rides on 12's webhook + API plumbing
   02-copilotloop               # fifth engine
 Phase D — clouds
   03-multicloud-aws-gcp        # AWS + GCP adapters, live-verified + Azure live
 Phase E — products
+  20-vibey-pr-reviewer         # daily cross-account PR review, auto-merge
+                               # and auto-deploy behind an explicit stop list
+  21-vibey-explorer            # daily open-source discovery, build, and ship
   08-clients                   # RN mobile, Next.js web, desktop, TUI logs
   07-store-submissions         # App Store / Play Store
   09-package-managers          # pip/brew/apt/yum/npm/...
@@ -78,6 +85,9 @@ parallel vibey projects when engine capacity allows.
 | 16 runner containers | A registry namespace + `packages:write` token; the same LLM API keys as 05; deploy keys for private target repos |
 | 17 drift reconciliation | Nothing new — rides on 05's operator and 16's containers; needs a decision on the production `driftPolicy` ceiling |
 | 18 production fitness | metrics-server (or Prometheus) in-cluster; `pg_stat_statements` enabled on the target database; a decision on the `fitnessPolicy` ceiling |
+| 19 monorepo & libraries | The vibey-bootstrap scope decision (keep Azure-Functions-only, or broaden); confirmation that submodules rather than a merged monorepo is the intent |
+| 20 pr-reviewer | Account list + per-account credentials; per-repo policy (review / merge / merge+deploy); the deletion threshold; confirmation of the default-yes posture |
+| 21 explorer | GitHub account(s) + repo-create rights; the daily PR cap and staleness window; any ecosystems to exclude; discovery-source API access |
 | 07 stores | Apple Developer account + App Store Connect API key; Google Play Console account + service account |
 | 01 jira | A Jira Cloud site (free tier) + API token / OAuth app |
 | 11 openclaw | An OpenClaw install; Moltbook agent registration (claim tweet is a human step) |
