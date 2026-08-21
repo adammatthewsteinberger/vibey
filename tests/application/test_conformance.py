@@ -379,7 +379,7 @@ async def test_terminal_meta_status_is_accepted_as_completion_evidence(tmp_path:
 
 
 async def test_a_non_finished_meta_status_is_not_completion_evidence(tmp_path: Path) -> None:
-    """"failed" and "stopped" are terminal but are not completion."""
+    """ "failed" and "stopped" are terminal but are not completion."""
     engine = ScriptedEngine(
         descriptor=CLAUDELOOP,
         base_dir=tmp_path,
