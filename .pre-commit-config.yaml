@@ -8,23 +8,46 @@ repos:
 
   - repo: local
     hooks:
+      - id: test-suite
+        name: parallel test suite
+        entry: uv run pytest -q -p no:cacheprovider
+        language: system
+        pass_filenames: false
+
       - id: mypy
         name: mypy --strict
         entry: uv run mypy --strict src/vibey
         language: system
         pass_filenames: false
+        stages: [pre-push]
 
       - id: lint-imports
         name: import-linter onion contract
         entry: uv run lint-imports
         language: system
         pass_filenames: false
+        stages: [pre-push]
 
-      - id: domain-purity
-        name: domain purity + full test suite
-        entry: uv run pytest
+      - id: coverage-gates
+        name: per-layer 100% coverage gates
+        entry: bash -c 'uv run pytest -q -p no:cacheprovider --cov=vibey --cov-branch --cov-report= && uv run coverage report --include="src/vibey/domain/*" --fail-under=100 && uv run coverage report --include="src/vibey/application/*" --fail-under=100 && uv run coverage report --include="src/vibey/infrastructure/*" --fail-under=100 && uv run coverage report --include="src/vibey/cli/*" --fail-under=100'
         language: system
         pass_filenames: false
+        stages: [pre-push]
+
+      - id: bandit
+        name: bandit
+        entry: uv run bandit -q -r src/vibey
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+
+      - id: pip-audit
+        name: pip-audit
+        entry: uv run pip-audit
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
 
   - repo: https://github.com/compilerla/conventional-pre-commit
     rev: v3.4.0

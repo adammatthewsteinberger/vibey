@@ -40,14 +40,15 @@ uv run mypy --strict src/vibey
 
 ## Gate 4: pytest per-layer coverage (100%)
 
-Four separate gates, one per layer. Each must hit **100% branch coverage** or
-the build fails.
+One test run produces a combined `.coverage` file; four per-layer reports
+enforce 100% branch coverage. Each must pass or the build fails.
 
 ```bash
-uv run pytest -q -p no:cacheprovider --cov=vibey.domain --cov-branch --cov-report=term-missing --cov-fail-under=100
-uv run pytest -q -p no:cacheprovider --cov=vibey.application --cov-branch --cov-report=term-missing --cov-fail-under=100
-uv run pytest -q -p no:cacheprovider --cov=vibey.infrastructure --cov-branch --cov-report=term-missing --cov-fail-under=100
-uv run pytest -q -p no:cacheprovider --cov=vibey.cli --cov-branch --cov-report=term-missing --cov-fail-under=100
+uv run pytest -q -p no:cacheprovider --cov=vibey --cov-branch --cov-report=
+uv run coverage report --include='src/vibey/domain/*' --fail-under=100
+uv run coverage report --include='src/vibey/application/*' --fail-under=100
+uv run coverage report --include='src/vibey/infrastructure/*' --fail-under=100
+uv run coverage report --include='src/vibey/cli/*' --fail-under=100
 ```
 
 **Why per-layer, not aggregate?** Because `domain/` is the safety-critical
@@ -87,18 +88,28 @@ dependencies.
 uv run pip-audit
 ```
 
-## Pre-commit hook
+## Hook diet
 
-All seven gates (plus the Conventional Commits check) run automatically via
-pre-commit. Install once:
+The seven gates are split across two git hook stages for fast commits:
+
+**Pre-commit stage** (runs on every `git commit`):
+- ruff check + ruff format (changed files only)
+- Full parallel test suite (`uv run pytest`)
+
+**Pre-push stage** (runs on every `git push`):
+- mypy --strict
+- lint-imports
+- Per-layer 100% coverage gates (pytest --cov + four reports)
+- bandit
+- pip-audit
+
+**Commit-msg stage**: Conventional Commits enforcement.
+
+Install all three hook types once:
 
 ```bash
-pre-commit install
+pre-commit install && pre-commit install --hook-type pre-push && pre-commit install --hook-type commit-msg
 ```
-
-The commit-msg hook rejects non-Conventional Commits. The pre-commit hook
-runs ruff, mypy, lint-imports, and the full test suite before allowing a
-commit.
 
 ## What each gate catches
 
