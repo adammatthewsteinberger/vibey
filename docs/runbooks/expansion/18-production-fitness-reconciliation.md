@@ -82,6 +82,48 @@ that silently trades correctness for speed.
 | Concurrency | lock waits, serialization points | a global lock on a hot path |
 | Dependency health | lockfile, upstream releases | abandoned or duplicated transitive deps (weight, not CVEs — `pip-audit` owns security) |
 | Delivery economics | ledger `cost_usd` per work item | spend per unit of delivered work drifting up |
+| Documentation comprehensiveness | docstring coverage, strict docs build, reference checker | an undocumented public symbol; a doc naming a flag or file that no longer exists; build warnings |
+| Debug logging & traceability | AST scan, log sampling, ledger-to-log round trip | an exception swallowed without a log; a line missing its correlation ids; a failed job whose causal chain cannot be reconstructed |
+
+### Making the two soft-sounding dimensions checkable
+
+"Comprehensive documentation" and "good logging" are exactly the kind of
+phrases this runbook's meter discipline exists to reject. Both split
+cleanly into a meterable part and an advisory part, and only the first
+half is ever actioned.
+
+**Documentation.** Meterable: docstring coverage on the public API; a
+docs build that is clean under `--strict`; and — the highest-value of the
+three — a **stale-reference count**. Every file path, CLI flag, command,
+env var, and symbol named in the docs either still exists or it does not,
+and that is a scan, not an opinion. Documentation rots silently, and a
+guide naming a removed flag is worse than no guide: it actively misleads
+someone who trusts it. Advisory, never actioned: whether the prose is
+clear, well-organized, or pitched at the right reader.
+
+**Debug logging and traceability.** Meterable in three ways:
+
+1. **AST scan** — zero exception handlers that swallow without logging.
+   A bare `except: pass` is a hole in the record, and it is mechanically
+   detectable.
+2. **Sampling** — every line emitted inside a job carries its correlation
+   ids. vibey already has the mechanism: structlog is configured with
+   `merge_contextvars`, so the question is not whether ids *can* be
+   attached but whether every entry path actually binds them.
+3. **The round-trip, which is the real bar.** Given nothing but a failed
+   job's id, an automated probe must reconstruct the complete causal
+   chain — job to session to engine events to verdict — from logs and
+   ledger alone, without re-running anything. If it cannot, the logging is
+   insufficient no matter how many lines were emitted. Traceability is a
+   property of the record, not a count of log statements.
+
+Note this dimension is bounded on **both** sides. Too little logging
+costs an unreconstructable incident; too much costs money, I/O, and
+signal-to-noise in production. A `must` that only sets a floor will be
+satisfied by a service that logs every loop iteration at INFO, so the
+floor and the ceiling are both stated.
+
+Advisory, never actioned: whether an individual message is well-worded.
 
 **Right-sizing is the most k8s-native of these** and the natural first
 deliverable: comparing a Deployment's declared `resources.requests`
@@ -136,7 +178,8 @@ judgement rather than by measurement.
 2. Pure fitness evaluator in `vibey/domain/`, property-tested.
 3. Baseline artifact: recording, reading, explicit re-baselining.
 4. Measurement collectors: benchmark, memory, `pg_stat_statements`,
-   metrics-server, image size.
+   metrics-server, image size, docstring coverage, stale-reference scan,
+   swallowed-exception AST scan, correlation-id sampling.
 5. kopf timer + `Fitness` condition + Events, at `record` only.
 6. Right-sizing recommendations for the chart's own resource requests.
 7. Ladder rungs behind `fitnessPolicy`, promoted one dimension at a time.
@@ -154,6 +197,12 @@ judgement rather than by measurement.
   through BUILD → REVIEW and closes.
 - A seeded N+1 on a hot path is caught from `pg_stat_statements` rather
   than from someone reading the diff.
+- A doc referencing a deliberately removed CLI flag is caught by the
+  stale-reference scan, not by the next person to follow the guide.
+- A deliberately swallowed exception is caught by the AST scan.
+- The round-trip probe reconstructs the full causal chain of a real failed
+  job from logs and ledger alone, and fails when correlation ids are
+  unbound on one entry path.
 - Right-sizing: a recommendation for the vibey worker's own requests,
   derived from measured usage over a real run, replacing the current
   judgement-based `250m` / `512Mi`.
