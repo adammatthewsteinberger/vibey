@@ -5,6 +5,7 @@ conformance_ok = false and makes the engine ineligible for rotation
 (degraded, not broken); it never crashes the caller."""
 
 import asyncio
+import json
 import tempfile
 from collections.abc import Sequence
 from pathlib import Path
@@ -253,13 +254,37 @@ async def run_conformance(
     for event in events:
         if str(event.payload.get("done_marker", "")) == descriptor.done_marker:
             done_marker_found = True
+    # Second, independent path to the same fact. A verdict event is the
+    # richer signal, but it is not the only honest evidence a run
+    # finished: meta.json's terminal status is what tail() itself trusts
+    # to stop reading. An engine that records "finished" there without
+    # publishing a verdict event is complete, not non-conformant -- and
+    # requiring the event alone once marked a fully working engine
+    # ineligible for rotation. Only "finished" counts: "failed" and
+    # "stopped" are terminal but are not completion.
+    evidence = "verdict event"
+    if not done_marker_found:
+        meta_path = handle.run_dir / "meta.json"
+        if meta_path.exists():
+            try:
+                meta = json.loads(meta_path.read_text())
+            except json.JSONDecodeError:
+                meta = {}
+            if meta.get("status") == "finished":
+                done_marker_found = True
+                evidence = "meta.json status=finished"
     checks.append(
         ConformanceCheckResult(
             "done_marker",
             ok=done_marker_found,
-            detail=""
+            detail=f"via {evidence}"
+            if done_marker_found and evidence != "verdict event"
+            else ""
             if done_marker_found
-            else f"expected {descriptor.done_marker!r} in a verdict event",
+            else (
+                f"expected {descriptor.done_marker!r} in a verdict event, "
+                "and meta.json carries no terminal 'finished' status"
+            ),
         )
     )
 

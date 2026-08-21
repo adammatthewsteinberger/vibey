@@ -1381,3 +1381,31 @@ async def test_start_spawns_the_engine_with_an_isolated_env(
     assert isinstance(env, dict)
     assert "VIRTUAL_ENV" not in env
     assert "/orchestrator/.venv" not in env.get("PATH", "")
+
+
+async def test_tail_reads_codexloop_flat_events_keyed_by_type(tmp_path: Path) -> None:
+    """codexloop passes the wrapped codex CLI's stream through nearly
+    verbatim: the key is "type", not "event_type", and fields sit at the
+    top level with no payload envelope. Accepting only event_type/kind
+    dropped every codexloop event as "event_missing_type", which made its
+    whole LOOP_EVENT_MAP entry unreachable."""
+    adapter = LoopProcessAdapter(descriptor=CODEXLOOP)
+    run_dir = tmp_path / "cx-run"
+    run_dir.mkdir(parents=True)
+    handle = _make_handle(run_dir)
+
+    (run_dir / "events.jsonl").write_text(
+        '{"type":"thread.started","thread_id":"t-1"}\n'
+        '{"type":"run.verdict","success":true,"complete":true,'
+        '"done_marker":"CODEXLOOP_TASK_FULLY_COMPLETE"}\n'
+    )
+    (run_dir / "meta.json").write_text('{"status":"finished"}')
+
+    events = [event async for event in adapter.tail(handle)]
+
+    assert [e.kind for e in events] == ["SessionSeeded", "VerdictRendered"]
+    # A flat event is its own payload: dropping the non-"payload" fields
+    # would discard exactly what every consumer downstream reads.
+    assert events[0].payload["thread_id"] == "t-1"
+    assert events[1].payload["done_marker"] == "CODEXLOOP_TASK_FULLY_COMPLETE"
+    assert events[1].payload["complete"] is True

@@ -355,3 +355,84 @@ async def test_late_verdict_is_found_by_the_bounded_re_tail(tmp_path: Path) -> N
     marker = next(c for c in report.checks if c.name == "done_marker")
     assert marker.ok is True
     assert adapter.drains >= 2
+
+
+async def test_terminal_meta_status_is_accepted_as_completion_evidence(tmp_path: Path) -> None:
+    """A verdict event is the richer signal but not the only honest
+    evidence a run finished: meta.json's terminal status is what tail()
+    itself trusts to stop reading. Requiring the event alone once marked a
+    fully working engine ineligible for rotation."""
+    engine = ScriptedEngine(
+        descriptor=CLAUDELOOP,
+        base_dir=tmp_path,
+        script=[
+            {"kind": "SessionSeeded", "at": "2026-01-01T00:00:00+00:00", "payload": {}},
+        ],
+        meta_status="finished",
+    )
+
+    report = await run_conformance(engine)
+
+    done_marker_check = next(c for c in report.checks if c.name == "done_marker")
+    assert done_marker_check.ok is True
+    assert "meta.json" in done_marker_check.detail
+
+
+async def test_a_non_finished_meta_status_is_not_completion_evidence(tmp_path: Path) -> None:
+    """"failed" and "stopped" are terminal but are not completion."""
+    engine = ScriptedEngine(
+        descriptor=CLAUDELOOP,
+        base_dir=tmp_path,
+        script=[
+            {"kind": "SessionSeeded", "at": "2026-01-01T00:00:00+00:00", "payload": {}},
+        ],
+        meta_status="failed",
+    )
+
+    report = await run_conformance(engine)
+
+    done_marker_check = next(c for c in report.checks if c.name == "done_marker")
+    assert done_marker_check.ok is False
+
+
+class _MetaMangling(ScriptedEngine):
+    """Scripted engine whose meta.json is missing or unreadable after start —
+    the states a crashed or half-written run leaves behind."""
+
+    mode: str = "missing"
+
+    async def start(self, spec):  # type: ignore[no-untyped-def]
+        handle = await super().start(spec)
+        meta = handle.run_dir / "meta.json"
+        if self.mode == "missing":
+            meta.unlink()
+        else:
+            meta.write_text("{not json")
+        return handle
+
+
+async def test_absent_meta_json_leaves_the_done_marker_check_failing(tmp_path: Path) -> None:
+    engine = _MetaMangling(
+        descriptor=CLAUDELOOP,
+        base_dir=tmp_path,
+        script=[{"kind": "SessionSeeded", "at": "2026-01-01T00:00:00+00:00", "payload": {}}],
+    )
+    engine.mode = "missing"
+
+    report = await run_conformance(engine)
+
+    assert next(c for c in report.checks if c.name == "done_marker").ok is False
+
+
+async def test_unreadable_meta_json_is_treated_as_no_evidence_not_a_crash(tmp_path: Path) -> None:
+    """A half-written meta.json must fail the check, never the suite."""
+    engine = _MetaMangling(
+        descriptor=CLAUDELOOP,
+        base_dir=tmp_path,
+        script=[{"kind": "SessionSeeded", "at": "2026-01-01T00:00:00+00:00", "payload": {}}],
+    )
+    engine.mode = "corrupt"
+
+    report = await run_conformance(engine)
+
+    assert next(c for c in report.checks if c.name == "done_marker").ok is False

@@ -308,8 +308,16 @@ class LoopProcessAdapter:
                         continue
                     try:
                         raw = json.loads(line)
-                        # Real loop events have 'event_type' field, not 'kind'
-                        event_type = raw.get("event_type") or raw.get("kind")
+                        # claudeloop/agyloop write {"event_type": ..., "payload": {...}}.
+                        # codexloop passes the wrapped codex CLI's own stream
+                        # through nearly verbatim, where the key is "type" and
+                        # the fields sit at the top level with no payload
+                        # envelope. Accepting only event_type/kind meant every
+                        # codexloop event was dropped as "event_missing_type" --
+                        # its whole entry in LOOP_EVENT_MAP was unreachable, and
+                        # conformance failures downstream (no verdict, no
+                        # completion) were really this one parse gap.
+                        event_type = raw.get("event_type") or raw.get("kind") or raw.get("type")
                         if not event_type:
                             logger.warning(
                                 "event_missing_type",
@@ -343,7 +351,18 @@ class LoopProcessAdapter:
                         # true/false state this code can't read here. A
                         # missing or falsy "success" must never enrich, or a
                         # failed run could report a false done_marker match.
-                        payload = dict(raw.get("payload", {}))
+                        # A flat event (codexloop's shape) is its own payload:
+                        # success/complete/done_marker/usage live at the top
+                        # level, so an empty dict here would discard exactly
+                        # the fields every consumer downstream reads.
+                        if "payload" in raw:
+                            payload = dict(raw.get("payload", {}))
+                        else:
+                            payload = {
+                                k: v
+                                for k, v in raw.items()
+                                if k not in {"event_type", "kind", "type", "at", "timestamp", "ts"}
+                            }
                         if (
                             kind == EventKind.VERDICT_RENDERED
                             and "done_marker" not in payload
