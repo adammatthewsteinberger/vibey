@@ -21,6 +21,9 @@ worker:
   # created last; in a cluster that is a footgun, so the chart requires it
   # to be set explicitly.
   project: ""
+  # Poll instead of exiting when no project exists yet. A Deployment is
+  # long-lived: exiting is a restart loop, not a useful error.
+  waitForProjectSeconds: 15
   resources:
     requests:
       cpu: 250m

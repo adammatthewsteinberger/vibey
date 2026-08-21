@@ -1352,3 +1352,37 @@ def test_worker_azure_az_builds_the_real_adapter_when_logged_in(tmp_path: Path) 
         notifier_cls.return_value = AsyncMock()
         res = runner.invoke(app, ["worker", "--azure", "az", "--once"])
     assert res.exit_code == 0, res.output
+
+
+def test_worker_without_wait_still_exits_when_no_project_exists() -> None:
+    """The one-shot CLI default stays honest: nothing to work on is an
+    error, not a hang."""
+    res = runner.invoke(app, ["worker"])
+
+    assert res.exit_code == 1
+    assert "no projects found" in res.output
+
+
+@pytest.mark.usefixtures("_fast_engine_preflight")
+def test_worker_wait_for_project_polls_until_one_appears(tmp_path: Path) -> None:
+    """A long-lived deployment must not exit when no project exists yet:
+    exiting is a restart loop that ends only when a human creates one, and
+    the crash counter makes a healthy worker look broken (observed on a
+    real minikube install before this flag). The project is created from
+    inside the sleep, exactly as it would be while a Deployment waits."""
+    from unittest.mock import AsyncMock, patch
+
+    async def create_project(_seconds: float) -> None:
+        async with build_app() as resources:
+            await resources.projects.create("late", tmp_path, max_cycles=1, config={})
+
+    with (
+        patch("vibey.cli.main.asyncio.sleep", new=AsyncMock(side_effect=create_project)) as slept,
+        patch("vibey.infrastructure.db.notifier.PostgresJobReadyNotifier") as notifier_cls,
+    ):
+        notifier_cls.return_value = AsyncMock()
+        res = runner.invoke(app, ["worker", "--wait-for-project", "1", "--once"])
+
+    assert res.exit_code == 0, res.output
+    assert "no project yet; polling every 1s" in res.output
+    assert slept.await_count == 1

@@ -73,6 +73,13 @@ spec:
             {{- end }}
             - -j
             - {{ .Values.worker.parallelism | quote }}
+            {{- if .Values.worker.waitForProjectSeconds }}
+            # A worker that exits when no project exists restart-loops
+            # until a human creates one, and the crash counter makes a
+            # healthy deployment look broken.
+            - --wait-for-project
+            - {{ .Values.worker.waitForProjectSeconds | quote }}
+            {{- end }}
           env:
             - name: VIBEY_PG_URL
               valueFrom:
