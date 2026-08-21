@@ -44,6 +44,9 @@ Phase B — scale-out
 Phase C — integration surfaces
   17-plan-drift-reconciliation # kopf control loop keeping bots on plan,
                                # in all five repos; needs 05's operator
+  18-production-fitness-reconciliation
+                               # sibling loop on the same rails: is what
+                               # the jobs produced fit for production?
   12-integration-surfaces      # MCP/API/webhooks/skills/SDKs, all repos
   01-jira-integration          # rides on 12's webhook + API plumbing
   02-copilotloop               # fifth engine
@@ -74,6 +77,7 @@ parallel vibey projects when engine capacity allows.
 | 05 k8s | Docker Desktop or colima; minikube; (cloud phases reuse 03's tenants) |
 | 16 runner containers | A registry namespace + `packages:write` token; the same LLM API keys as 05; deploy keys for private target repos |
 | 17 drift reconciliation | Nothing new — rides on 05's operator and 16's containers; needs a decision on the production `driftPolicy` ceiling |
+| 18 production fitness | metrics-server (or Prometheus) in-cluster; `pg_stat_statements` enabled on the target database; a decision on the `fitnessPolicy` ceiling |
 | 07 stores | Apple Developer account + App Store Connect API key; Google Play Console account + service account |
 | 01 jira | A Jira Cloud site (free tier) + API token / OAuth app |
 | 11 openclaw | An OpenClaw install; Moltbook agent registration (claim tweet is a human step) |

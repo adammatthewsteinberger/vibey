@@ -24,6 +24,12 @@ still working the plan it was given?" A conductor-level reconciler cannot
 see inside a two-hour session, and a session-level one cannot see the
 project. Both are needed and neither substitutes for the other.
 
+This loop answers "did the bots build what was planned?". Its sibling,
+`18-production-fitness-reconciliation.md`, answers "is what they built
+fit to run in production?" -- built on the same rails, and a separate
+question, since code can match its plan exactly and still allocate
+unboundedly and cost three times what it should.
+
 ## Why this is not just monitoring
 
 The distinction that makes this worth building is Kubernetes':
