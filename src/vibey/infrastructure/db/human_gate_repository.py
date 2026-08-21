@@ -89,6 +89,18 @@ class PostgresHumanGateRepository:
             row = await conn.fetchrow("SELECT * FROM human_gate WHERE gate_id = $1", gate_id)
             return _row_to_record(row) if row is not None else None
 
+    async def open_for_project(self, project_id: UUID) -> tuple[HumanGateRecord, ...]:
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                """
+                SELECT * FROM human_gate
+                WHERE project_id = $1 AND answered_at IS NULL
+                ORDER BY raised_at ASC, gate_id ASC
+                """,
+                project_id,
+            )
+            return tuple(_row_to_record(r) for r in rows)
+
     async def latest_for_job(self, job_id: UUID) -> HumanGateRecord | None:
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow(

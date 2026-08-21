@@ -1,0 +1,123 @@
+{{- if .Values.operator.enabled }}
+{{- if .Values.operator.installCRD }}
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: vibeyprojects.vibey.dev
+  labels: {{- include "vibey.labels" . | nindent 4 }}
+  annotations:
+    # Keep the CRD when the release goes: custom resources outlive the
+    # operator that reconciles them, and deleting the definition deletes
+    # every VibeyProject with it. A project mid-BUILD is not something a
+    # `helm uninstall` should be able to erase by accident.
+    "helm.sh/resource-policy": keep
+spec:
+  group: vibey.dev
+  scope: Namespaced
+  names:
+    kind: VibeyProject
+    listKind: VibeyProjectList
+    plural: vibeyprojects
+    singular: vibeyproject
+    shortNames: [vp]
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      subresources:
+        # status is a subresource so the operator's constant status writes
+        # never collide with a human editing spec.answers.
+        status: {}
+      additionalPrinterColumns:
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
+        - name: Cycle
+          type: integer
+          jsonPath: .status.cycle
+        - name: Ready
+          type: string
+          jsonPath: .status.conditions[?(@.type=="Ready")].status
+        - name: Parked
+          type: string
+          jsonPath: .status.conditions[?(@.type=="Parked")].status
+        - name: Reason
+          type: string
+          jsonPath: .status.conditions[?(@.type=="Parked")].reason
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required: [repo]
+              properties:
+                repo:
+                  type: string
+                  description: Path or URL of the repository to conduct.
+                maxCycles:
+                  type: integer
+                  minimum: 1
+                  default: 10
+                maxCycleDollars:
+                  type: number
+                  minimum: 0.01
+                  description: >-
+                    Cap engine spend per cycle. Exceeding it parks a
+                    budget_exhausted gate rather than starting more sessions.
+                maxCycleTurns:
+                  type: integer
+                  minimum: 1
+                engines:
+                  type: array
+                  items:
+                    type: string
+                    enum: [claudeloop, codexloop, cursorloop, agyloop]
+                  description: Engine allow-list; empty means all eligible.
+                answers:
+                  type: object
+                  description: >-
+                    Answers to parked gates, keyed by gate id. Applied through
+                    the same application service `vibey answer` calls, so this
+                    is a second entry point and never a second code path.
+                    Keys naming a gate that is already answered are reported
+                    in status.ignoredAnswers rather than failing.
+                  additionalProperties:
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+            status:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+              properties:
+                projectId:
+                  type: string
+                phase:
+                  type: string
+                cycle:
+                  type: integer
+                maxCycles:
+                  type: integer
+                openGates:
+                  type: array
+                  items:
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                ignoredAnswers:
+                  type: array
+                  items:
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type: {type: string}
+                      status: {type: string}
+                      reason: {type: string}
+                      message: {type: string}
+{{- end }}
+{{- end }}

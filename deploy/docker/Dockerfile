@@ -28,11 +28,14 @@ ENV UV_COMPILE_BYTECODE=1 \
 # Dependency layer first: the lockfile changes far less often than source,
 # so this caches across almost every rebuild.
 COPY pyproject.toml uv.lock README.md ./
-RUN uv sync --frozen --no-install-project --no-dev
+# --extra operator: the same image serves the worker and the operator
+# Deployment, so kopf has to be present. Two images differing only by one
+# dependency would double the build and the registry for no benefit.
+RUN uv sync --frozen --no-install-project --no-dev --extra operator
 
 COPY src/ ./src/
 COPY migrations/ ./migrations/
-RUN uv sync --frozen --no-dev
+RUN uv sync --frozen --no-dev --extra operator
 
 
 FROM python:3.12-slim-bookworm AS runtime

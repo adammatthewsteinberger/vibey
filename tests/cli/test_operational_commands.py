@@ -1462,3 +1462,26 @@ def test_doctor_cluster_exits_nonzero_when_the_database_is_unreachable(
 
     assert res.exit_code == 1
     assert "FAIL database" in res.output
+
+
+def test_operator_command_runs_the_operator_scoped_to_a_namespace() -> None:
+    from unittest.mock import patch
+
+    with patch("vibey.infrastructure.operator.run") as run_operator:
+        res = runner.invoke(app, ["operator", "--namespace", "vibey"])
+
+    assert res.exit_code == 0, res.output
+    run_operator.assert_called_once_with(namespace="vibey")
+
+
+def test_operator_command_explains_itself_when_the_extra_is_not_installed() -> None:
+    """kopf is an optional extra, so the failure mode has to name the fix
+    rather than surfacing a raw ImportError traceback."""
+    import sys
+    from unittest.mock import patch
+
+    with patch.dict(sys.modules, {"vibey.infrastructure.operator": None}):
+        res = runner.invoke(app, ["operator"])
+
+    assert res.exit_code == 1
+    assert "vibey[operator]" in res.output

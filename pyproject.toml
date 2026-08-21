@@ -21,6 +21,13 @@ dependencies = [
 vibey = "vibey.cli.main:app"
 
 [project.optional-dependencies]
+# kopf pulls the whole Kubernetes client stack. Nobody running `vibey
+# worker` on a laptop needs it, so the operator is an extra rather than a
+# base dependency: `pip install vibey[operator]`.
+operator = [
+    "kopf>=1.37",
+    "kubernetes>=31.0",
+]
 dev = [
     "pytest>=8.3",
     "pytest-asyncio>=0.24",
@@ -33,6 +40,10 @@ dev = [
     "bandit>=1.8",
     "pip-audit>=2.7",
     "pre-commit>=4.0",
+    # The operator ships in the same package and carries the same 100%
+    # branch-coverage floor, so its dependencies must be present to test.
+    "kopf>=1.37",
+    "kubernetes>=31.0",
 ]
 
 [tool.hatch.build.targets.wheel]
