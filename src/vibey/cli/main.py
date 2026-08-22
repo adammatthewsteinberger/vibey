@@ -168,15 +168,35 @@ def new_project(
         int | None,
         typer.Option("--max-cycle-turns", min=1, help="Cap engine turns per cycle"),
     ] = None,
+    skills_context_mode: Annotated[
+        str,
+        typer.Option(
+            "--skills-context-mode",
+            help="Skills retrieval mode: off, shadow (measure only), or inject",
+        ),
+    ] = "off",
+    skills_context_budget: Annotated[
+        int,
+        typer.Option("--skills-context-budget", min=1_000, max=32_000),
+    ] = 6_000,
 ) -> None:
     """Create a project and enqueue its first DESIGN interview."""
 
     async def create() -> tuple[str, str]:
+        if skills_context_mode not in {"off", "shadow", "inject"}:
+            raise typer.BadParameter(
+                "must be off, shadow, or inject", param_hint="--skills-context-mode"
+            )
         config: dict[str, object] = {"project": {"name": name, "repo": str(repo)}}
         if max_cycle_dollars is not None:
             config["max_cycle_dollars"] = max_cycle_dollars
         if max_cycle_turns is not None:
             config["max_cycle_turns"] = max_cycle_turns
+        if skills_context_mode != "off":
+            config["skills_context"] = {
+                "mode": skills_context_mode,
+                "budget": skills_context_budget,
+            }
         async with build_app() as resources:
             project = await resources.projects.create(
                 name,

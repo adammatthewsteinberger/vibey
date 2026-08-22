@@ -20,6 +20,13 @@
 
 FROM ghcr.io/astral-sh/uv:0.9-python3.12-bookworm-slim AS build
 
+# The context-engine release is temporarily locked to an immutable Git commit
+# until it has a newly versioned wheel. Git remains confined to this disposable
+# build stage; only the resolved virtual environment is copied into runtime.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
@@ -29,19 +36,20 @@ ENV UV_COMPILE_BYTECODE=1 \
 # so this caches across almost every rebuild.
 COPY pyproject.toml uv.lock README.md ./
 # --extra operator: the same image serves the worker and the operator
-# Deployment, so kopf has to be present. Two images differing only by one
-# dependency would double the build and the registry for no benefit.
-RUN uv sync --frozen --no-install-project --no-dev --extra operator
+# Deployment, so kopf has to be present. --extra skills makes the optional
+# context compiler available when a VibeyProject enables it; its process is
+# never started for projects that leave the feature off.
+RUN uv sync --frozen --no-install-project --no-dev --extra operator --extra skills
 
 COPY src/ ./src/
 COPY migrations/ ./migrations/
-RUN uv sync --frozen --no-dev --extra operator
+RUN uv sync --frozen --no-dev --extra operator --extra skills
 
 
 FROM python:3.12-slim-bookworm AS runtime
 
-# git is a genuine runtime dependency, not a build-time one: BUILD phase
-# work happens in real git worktrees the worker creates itself.
+# Git is independently a genuine runtime dependency: BUILD phase work happens
+# in real git worktrees the worker creates itself.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends git ca-certificates \
     && rm -rf /var/lib/apt/lists/*

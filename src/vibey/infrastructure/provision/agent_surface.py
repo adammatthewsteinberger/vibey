@@ -10,13 +10,11 @@ Generated files are registered in the worktree's shared `.git/info/exclude`
 CLAUDE.md etc. is never clobbered in its working tree and generated content
 never lands in a commit -- exactly ADR-0011's "Bad, but" tradeoff.
 
-The marketplace skill directories (`.claude/skills/`, `.agents/skills/`,
-`.cursor/rules/`, `.agent/`) from ADR-0011's table are not materialized here:
-there is no `vibey-skills` (formerly `vibe-engineering-skills`) marketplace available in this build
-environment to pull skill content from. Only the four router files -- the
-part that's genuinely self-contained -- are provisioned. Replace this
-docstring note, not the emitter's signature, once real marketplace access
-exists.
+The router files remain the stable cross-engine surface. When a project enables
+`skills_context`, Vibey invokes the independently versioned `vibey-skills`
+process/JSON contract and appends its bounded packet to the engine plan; the
+generated index and packets live under `.vibey/` and are excluded below. The
+full marketplace is deliberately not copied into every worktree.
 """
 
 from collections.abc import Sequence

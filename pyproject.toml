@@ -28,6 +28,12 @@ operator = [
     "kopf>=1.37",
     "kubernetes>=31.0",
 ]
+skills = [
+    # Replace this source pin with vibey-skills>=2.18,<3 once the context
+    # engine is available in a versioned wheel. The published 2.17.0 wheel
+    # predates the index/packet CLI even though main still reports 2.17.0.
+    "vibey-skills @ git+https://github.com/adammatthewsteinberger/vibey-skills.git@5c605684f544b528acb3d3e03808d04715a670e3",
+]
 dev = [
     # Release automation and the provenance guardrails, shared by every repo
     # in the family. Stdlib-only by design, so adopting it in five places
@@ -52,6 +58,9 @@ dev = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/vibey"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
