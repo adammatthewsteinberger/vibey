@@ -51,6 +51,25 @@ jobs:
           name: dist
           path: dist/
 
+      # TestPyPI's `vibey` belongs to someone else, so the smoke-test build
+      # goes up as `vibey-dev`. Built SECOND and into a fresh dist/ on
+      # purpose: the artifact that reaches PyPI must be the one built from
+      # an unedited pyproject, never a renamed copy renamed back.
+      #
+      # The cost is that TestPyPI now verifies an equivalent build rather
+      # than the identical one -- they differ in the name field alone. That
+      # is weaker than vibey-gh's single-artifact design intends, and it is
+      # the best available when the name is taken.
+      - name: Build the TestPyPI artifact under its own name
+        run: |
+          sed -i '0,/^name = "vibey"$/s//name = "vibey-dev"/' pyproject.toml
+          rm -rf dist
+          python -m build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-testpypi
+          path: dist/
+
   testpypi:
     name: Publish to TestPyPI
     needs: build
@@ -60,7 +79,7 @@ jobs:
       id-token: write            # trusted publishing; no token is stored anywhere
     steps:
       - uses: actions/download-artifact@v4
-        with: { name: dist, path: dist }
+        with: { name: dist-testpypi, path: dist }
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
@@ -85,7 +104,7 @@ jobs:
             if pip install --no-cache-dir --quiet \
                  --index-url https://test.pypi.org/simple/ \
                  --extra-index-url https://pypi.org/simple/ \
-                 "vibey==${VERSION}"; then
+                 "vibey-dev==${VERSION}"; then
               break
             fi
             echo "not indexed yet (attempt $i); waiting"
