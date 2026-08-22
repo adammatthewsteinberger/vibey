@@ -36,6 +36,7 @@ from vibey.application.interfaces import (
     BudgetSource,
     BuildProvisioner,
     BuildWorktrees,
+    SkillsContextCompiler,
 )
 from vibey.application.ports import Clock, EngineAdapter, HumanGateRepository, JobRepository
 from vibey.application.wind_down import WindDownOrchestrator
@@ -71,6 +72,7 @@ class BuildImplementHandler:
         budget_source: BudgetSource | None = None,
         wind_down: WindDownOrchestrator | None = None,
         human_gates: HumanGateRepository | None = None,
+        skills_context: SkillsContextCompiler | None = None,
     ) -> None:
         self._worktrees = worktrees
         self._provisioner = provisioner
@@ -83,6 +85,7 @@ class BuildImplementHandler:
         self._budget_source = budget_source
         self._wind_down = wind_down
         self._human_gates = human_gates
+        self._skills_context = skills_context
 
     async def handle(self, job: JobRecord) -> Outcome:
         if job.kind != "build.implement":
@@ -184,12 +187,37 @@ class BuildImplementHandler:
         worktree_path = await self._worktrees.create(job.work_item_id, base_ref=base_ref)
         await self._provisioner.provision(worktree_path, self._provision_spec)
 
+        prompt = _render_prompt(job.work_item_id, job.payload)
+        # A wind-down seed is a gate-verified no-loss brief and must reach the
+        # next engine byte-for-byte. Retrieval resumes on ordinary and repair
+        # jobs; it never mutates this handoff contract.
+        seed = job.payload.get("seed_prompt")
+        if self._skills_context is not None and not (isinstance(seed, str) and seed):
+            context = await self._skills_context.compile(job=job, worktree_path=worktree_path)
+            await self._ledger.record(
+                project_id=job.project_id,
+                cycle=job.cycle,
+                job_id=job.id,
+                engine_id=None,
+                correlation_id=uuid4(),
+                event=EngineEvent(
+                    kind=EventKind.ARTIFACT_PRODUCED.value,
+                    at=self._clock.now(),
+                    payload={
+                        "artifact_type": "vibey_skills_context_packet",
+                        **context.provenance,
+                    },
+                ),
+            )
+            if context.should_inject:
+                prompt = f"{prompt.rstrip()}\n\n{context.markdown.lstrip()}"
+
         run_id = uuid4()
         handle = await self._engine.start(
             RunSpec(
                 run_id=run_id,
                 worktree_path=worktree_path,
-                prompt=_render_prompt(job.work_item_id, job.payload),
+                prompt=prompt,
                 effort=effort,
                 isolation=IsolationLevel.WORKTREE,
             )

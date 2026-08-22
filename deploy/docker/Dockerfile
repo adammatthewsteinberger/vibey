@@ -29,13 +29,14 @@ ENV UV_COMPILE_BYTECODE=1 \
 # so this caches across almost every rebuild.
 COPY pyproject.toml uv.lock README.md ./
 # --extra operator: the same image serves the worker and the operator
-# Deployment, so kopf has to be present. Two images differing only by one
-# dependency would double the build and the registry for no benefit.
-RUN uv sync --frozen --no-install-project --no-dev --extra operator
+# Deployment, so kopf has to be present. --extra skills makes the optional
+# context compiler available when a VibeyProject enables it; its process is
+# never started for projects that leave the feature off.
+RUN uv sync --frozen --no-install-project --no-dev --extra operator --extra skills
 
 COPY src/ ./src/
 COPY migrations/ ./migrations/
-RUN uv sync --frozen --no-dev --extra operator
+RUN uv sync --frozen --no-dev --extra operator --extra skills
 
 
 FROM python:3.12-slim-bookworm AS runtime

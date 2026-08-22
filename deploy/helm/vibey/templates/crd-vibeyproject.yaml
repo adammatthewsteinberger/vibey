@@ -77,6 +77,22 @@ spec:
                     type: string
                     enum: [claudeloop, codexloop, cursorloop, agyloop]
                   description: Engine allow-list; empty means all eligible.
+                skillsContext:
+                  type: object
+                  description: Optional deterministic vibey-skills retrieval policy.
+                  properties:
+                    mode:
+                      type: string
+                      enum: [off, shadow, inject]
+                      default: off
+                    budget:
+                      type: integer
+                      minimum: 1000
+                      maximum: 32000
+                      default: 6000
+                    timeout_seconds:
+                      type: number
+                      exclusiveMinimum: 0
                 answers:
                   type: object
                   description: >-

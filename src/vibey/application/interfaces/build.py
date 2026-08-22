@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol, runtime_checkable
@@ -36,6 +37,25 @@ class GateResult:
 @runtime_checkable
 class BudgetSource(Protocol):
     async def current(self, project_id: UUID, cycle: int) -> BudgetLedger: ...
+
+
+@dataclass(frozen=True, slots=True)
+class SkillsContextResult:
+    """A context-packet attempt, with raw task text deliberately absent."""
+
+    mode: str
+    status: str
+    markdown: str
+    provenance: Mapping[str, object]
+
+    @property
+    def should_inject(self) -> bool:
+        return self.mode == "inject" and self.status == "ok" and bool(self.markdown)
+
+
+@runtime_checkable
+class SkillsContextCompiler(Protocol):
+    async def compile(self, *, job: object, worktree_path: Path) -> SkillsContextResult: ...
 
 
 @runtime_checkable

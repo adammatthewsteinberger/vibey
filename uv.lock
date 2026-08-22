@@ -1959,6 +1959,9 @@ operator = [
     { name = "kopf" },
     { name = "kubernetes" },
 ]
+skills = [
+    { name = "vibey-skills" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -1983,8 +1986,9 @@ requires-dist = [
     { name = "tomli-w", specifier = ">=1.1" },
     { name = "typer", specifier = ">=0.15" },
     { name = "vibey-gh", marker = "extra == 'dev'", specifier = ">=1.2" },
+    { name = "vibey-skills", marker = "extra == 'skills'", git = "https://github.com/adammatthewsteinberger/vibey-skills.git?rev=5c605684f544b528acb3d3e03808d04715a670e3" },
 ]
-provides-extras = ["operator", "dev"]
+provides-extras = ["operator", "skills", "dev"]
 
 [[package]]
 name = "vibey-gh"
@@ -1994,6 +1998,11 @@ sdist = { url = "https://files.pythonhosted.org/packages/d6/ec/9ac6e223bbe80fc4b
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ff/6b/6a7c778e6fa4a7ce320afff4b7e59ad9e6dcd6f698fa990f3ac6b2e6b664/vibey_gh-1.2.0-py3-none-any.whl", hash = "sha256:e765aa89e0f9486385422db7690918695482a0c9656d56e88f587cd9ca983f31", size = 33389, upload-time = "2026-08-22T00:39:59.353Z" },
 ]
+
+[[package]]
+name = "vibey-skills"
+version = "2.17.0"
+source = { git = "https://github.com/adammatthewsteinberger/vibey-skills.git?rev=5c605684f544b528acb3d3e03808d04715a670e3#5c605684f544b528acb3d3e03808d04715a670e3" }
 
 [[package]]
 name = "virtualenv"
