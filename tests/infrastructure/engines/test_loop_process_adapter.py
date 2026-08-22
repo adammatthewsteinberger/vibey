@@ -21,6 +21,7 @@ from vibey.infrastructure.engines.loop_process_adapter import (
     EXIT_CODE_WIND_DOWN,
     LoopProcessAdapter,
     _active_processes,
+    _communicate,
 )
 
 
@@ -573,6 +574,93 @@ async def test_stop_handles_invalid_snapshot_json(tmp_path: Path) -> None:
 
     summary = await adapter.stop(handle)
     assert summary.remaining_work == ()
+
+
+async def test_communicate_reaps_an_already_exited_process_on_error() -> None:
+    from unittest.mock import AsyncMock
+
+    process = AsyncMock()
+    process.communicate.side_effect = RuntimeError("communication failed")
+    process.returncode = 1
+
+    with pytest.raises(RuntimeError, match="communication failed"):
+        await _communicate(process, timeout=1.0)
+
+    process.kill.assert_not_called()
+    process.wait.assert_awaited_once()
+
+
+async def test_stop_reaps_an_exited_registered_process(tmp_path: Path) -> None:
+    import asyncio
+    from unittest.mock import MagicMock
+
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
+    run_dir = tmp_path / "test-run"
+    run_dir.mkdir(parents=True)
+    (run_dir / "stop-summary.md").write_text("Stopped.")
+    handle = _make_handle(run_dir)
+    process = MagicMock()
+    process.returncode = 0
+    process.wait.return_value = asyncio.get_running_loop().create_future()
+    process.wait.return_value.set_result(0)
+    _active_processes[handle.run_id] = process
+
+    await adapter.stop(handle)
+
+    process.wait.assert_called_once_with()
+
+
+async def test_stop_waits_for_a_running_registered_process(tmp_path: Path) -> None:
+    import asyncio
+    from unittest.mock import AsyncMock, MagicMock, patch
+
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
+    run_dir = tmp_path / "test-run"
+    run_dir.mkdir(parents=True)
+    (run_dir / "stop-summary.md").write_text("Stopped.")
+    handle = _make_handle(run_dir)
+    process = MagicMock()
+    process.returncode = None
+    process.wait.return_value = asyncio.get_running_loop().create_future()
+    process.wait.return_value.set_result(0)
+    _active_processes[handle.run_id] = process
+
+    with patch("asyncio.wait_for", new=AsyncMock(return_value=0)) as wait_for:
+        await adapter.stop(handle)
+
+    wait_for.assert_awaited_once()
+    assert wait_for.await_args.kwargs == {"timeout": 2.0}
+    process.wait.assert_called_once_with()
+    process.terminate.assert_not_called()
+
+
+@pytest.mark.parametrize("second_wait_fails", [False, True])
+async def test_stop_terminates_a_process_that_does_not_exit(
+    tmp_path: Path, second_wait_fails: bool
+) -> None:
+    import asyncio
+    from unittest.mock import AsyncMock, MagicMock, patch
+
+    adapter = LoopProcessAdapter(descriptor=CLAUDELOOP)
+    run_dir = tmp_path / "test-run"
+    run_dir.mkdir(parents=True)
+    (run_dir / "stop-summary.md").write_text("Stopped.")
+    handle = _make_handle(run_dir)
+    process = MagicMock()
+    process.returncode = None
+    process.wait.return_value = asyncio.get_running_loop().create_future()
+    process.wait.return_value.set_result(0)
+    _active_processes[handle.run_id] = process
+    side_effect = [TimeoutError("still running")]
+    if second_wait_fails:
+        side_effect.append(RuntimeError("terminate failed"))
+    else:
+        side_effect.append(0)
+
+    with patch("asyncio.wait_for", new=AsyncMock(side_effect=side_effect)):
+        await adapter.stop(handle)
+
+    process.terminate.assert_called_once_with()
 
 
 async def test_start_raises_process_error_on_spawn_failure(tmp_path: Path) -> None:
