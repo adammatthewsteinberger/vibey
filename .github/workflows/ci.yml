@@ -249,7 +249,8 @@ jobs:
           helm upgrade vibey deploy/helm/vibey -n vibey \
             --set keda.enabled=false --wait --timeout 5m
           pod=$(kubectl get pods -n vibey -l app.kubernetes.io/component=worker \
-            -o jsonpath='{.items[0].metadata.name}')
+            -o custom-columns=NAME:.metadata.name,DEL:.metadata.deletionTimestamp --no-headers \
+            | awk '$2 == "<none>" {print $1}' | head -n 1)
           echo "deleting $pod"
           start=$(date +%s)
           kubectl delete pod "$pod" -n vibey --wait=true --timeout=5m
