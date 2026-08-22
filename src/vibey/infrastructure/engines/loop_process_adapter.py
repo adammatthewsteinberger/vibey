@@ -18,6 +18,7 @@ import shutil
 import subprocess  # nosec B404 - fixed argv, never shell=True
 import sys
 from collections.abc import AsyncIterator, Mapping
+from contextlib import suppress
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
@@ -51,6 +52,23 @@ _active_processes: dict[object, asyncio.subprocess.Process] = {}
 # process lifetime; --help is static for a given install, so there's
 # nothing to invalidate.
 _help_text_cache: dict[str, str] = {}
+
+
+async def _communicate(
+    process: asyncio.subprocess.Process, *, timeout: float
+) -> tuple[bytes, bytes]:
+    """Collect subprocess output and always reap a failed or timed-out child."""
+    communication = asyncio.create_task(process.communicate())
+    try:
+        return await asyncio.wait_for(communication, timeout=timeout)
+    except BaseException:
+        communication.cancel()
+        with suppress(asyncio.CancelledError, Exception):
+            await communication
+        if process.returncode is None:
+            process.kill()
+        await process.wait()
+        raise
 
 
 class ProcessError(VibeyError):
@@ -164,7 +182,7 @@ class LoopProcessAdapter:
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
-            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=10.0)
+            stdout, stderr = await _communicate(proc, timeout=10.0)
             version_output = (stdout or stderr).decode().strip()
             version = version_output.split()[-1] if version_output else None
         except (TimeoutError, Exception) as e:
@@ -185,7 +203,7 @@ class LoopProcessAdapter:
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
-            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=self.doctor_timeout)
+            stdout, stderr = await _communicate(proc, timeout=self.doctor_timeout)
             auth_ok = proc.returncode == 0
             if not auth_ok:
                 detail = (stderr or stdout).decode().strip()[:500]
@@ -517,7 +535,20 @@ class LoopProcessAdapter:
                 logger.debug("snapshot_remaining_work_failed", run_id=str(handle.run_id))
 
         # Clean up the process reference
-        _active_processes.pop(handle.run_id, None)
+        process = _active_processes.pop(handle.run_id, None)
+        if process is not None:
+            if process.returncode is None:
+                try:
+                    await asyncio.wait_for(process.wait(), timeout=2.0)
+                except TimeoutError:
+                    try:
+                        process.terminate()
+                        await asyncio.wait_for(process.wait(), timeout=1.0)
+                    # The process is already removed from the registry; termination is best-effort.
+                    except Exception:  # noqa: BLE001  # nosec B110
+                        pass
+            else:
+                await process.wait()
 
         return StopSummary(
             run_id=handle.run_id,
