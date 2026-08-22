@@ -20,6 +20,13 @@
 
 FROM ghcr.io/astral-sh/uv:0.9-python3.12-bookworm-slim AS build
 
+# The context-engine release is temporarily locked to an immutable Git commit
+# until it has a newly versioned wheel. Git remains confined to this disposable
+# build stage; only the resolved virtual environment is copied into runtime.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
@@ -41,8 +48,8 @@ RUN uv sync --frozen --no-dev --extra operator --extra skills
 
 FROM python:3.12-slim-bookworm AS runtime
 
-# git is a genuine runtime dependency, not a build-time one: BUILD phase
-# work happens in real git worktrees the worker creates itself.
+# Git is independently a genuine runtime dependency: BUILD phase work happens
+# in real git worktrees the worker creates itself.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends git ca-certificates \
     && rm -rf /var/lib/apt/lists/*
