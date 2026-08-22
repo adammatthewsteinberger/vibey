@@ -8,6 +8,7 @@ artifact parsing can be verified without launching or paying for a model run.
 import asyncio
 import json
 import re
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -45,20 +46,43 @@ class AsyncSubprocessExecutor:
         return CommandResult(process.returncode or 0, stdout.decode(), stderr.decode())
 
 
+# (turns, dollars) from one completed run. Async because the only real
+# implementation writes to the ledger.
+SpendRecorder = Callable[[int, float], Awaitable[None]]
+
+
 @dataclass(frozen=True, slots=True)
 class ClaudeLoopResult:
     run_id: str
     run_dir: Path
     response: str
+    # What the run actually cost. claudeloop writes a `cost_usd` on every
+    # turn.completed event; before this existed the design path read
+    # events.jsonl for the last assistant message and discarded the rest,
+    # so DESIGN spend never reached the ledger and the budget brake --
+    # which sums TurnCompleted and BudgetSpent -- computed zero for it.
+    turns: int = 0
+    cost_usd: float = 0.0
 
 
 class ClaudeLoopProcess:
-    def __init__(self, *, executor: CommandExecutor, max_turns: int, max_dollars: float) -> None:
+    def __init__(
+        self,
+        *,
+        executor: CommandExecutor,
+        max_turns: int,
+        max_dollars: float,
+        spend_recorder: SpendRecorder | None = None,
+    ) -> None:
         if max_turns < 1 or not 0 < max_dollars <= 10:
             raise ValueError("live runs require a positive turn cap and a dollar cap at most 10")
         self._executor = executor
         self._max_turns = max_turns
         self._max_dollars = max_dollars
+        # Optional so a caller with no ledger (conformance, tests) still
+        # works. Wired in production, because a run whose cost nothing
+        # records is a run the budget brake cannot see.
+        self._spend_recorder = spend_recorder
 
     async def run(self, spec: RunSpec, *, web_search: bool = False) -> ClaudeLoopResult:
         reusable = _find_reusable_result(spec)
@@ -83,12 +107,32 @@ class ClaudeLoopProcess:
                 raise capacity
             recovered = _reported_structured_result(spec.worktree_path, completed.stderr)
             if recovered is not None:
+                await self._record(recovered)
                 return recovered
             detail = completed.stderr.strip() or completed.stdout.strip()
             raise RuntimeError(f"claudeloop failed with exit {completed.returncode}: {detail}")
         run_id = _reported_run_id(completed.stderr)
         run_dir = spec.worktree_path / CLAUDELOOP.state_dir / "runs" / run_id
-        return ClaudeLoopResult(run_id, run_dir, _last_response(run_dir / "events.jsonl"))
+        events_path = run_dir / "events.jsonl"
+        turns, dollars = _run_spend(events_path)
+        result = ClaudeLoopResult(run_id, run_dir, _last_response(events_path), turns, dollars)
+        await self._record(result)
+        return result
+
+    async def _record(self, result: ClaudeLoopResult) -> None:
+        """Report a completed run's spend, if anyone is listening.
+
+        Not called for a reused result: `_find_reusable_result` returns a
+        run that already happened, and charging its cost a second time
+        would make the brake trip on money nobody spent.
+        """
+        if self._spend_recorder is None:
+            return
+        if result.turns == 0 and result.cost_usd == 0.0:
+            # Not a spend event. Writing one would add rows the budget
+            # brake has to scan on every claim to learn nothing.
+            return
+        await self._spend_recorder(result.turns, result.cost_usd)
 
 
 def _reported_run_id(stderr: str) -> str:
@@ -138,6 +182,34 @@ def _reported_structured_result(worktree_path: Path, stderr: str) -> ClaudeLoopR
     return ClaudeLoopResult(run_id, run_dir, response)
 
 
+def _run_spend(events_path: Path) -> tuple[int, float]:
+    """Turns and dollars from a run's events.jsonl.
+
+    Deliberately reads the same file `_last_response` does: the cost was
+    always there, one line away from the text the design path took. Events
+    that carry no usable cost count as turns with zero dollars rather than
+    failing the read -- a run whose accounting is partial must still report
+    the turns it took.
+    """
+    if not events_path.is_file():
+        return 0, 0.0
+    turns = 0
+    dollars = 0.0
+    for line in events_path.read_text().splitlines():
+        try:
+            record = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if record.get("event_type") != "turn.completed":
+            continue
+        turns += 1
+        payload = record.get("payload")
+        cost = payload.get("cost_usd") if isinstance(payload, dict) else None
+        if isinstance(cost, int | float) and not isinstance(cost, bool):
+            dollars += float(cost)
+    return turns, dollars
+
+
 def _last_response(events_path: Path) -> str:
     if not events_path.is_file():
         return ""
@@ -176,9 +248,11 @@ def _find_reusable_result(spec: RunSpec) -> ClaudeLoopResult | None:
                 continue
         except (FileNotFoundError, KeyError, json.JSONDecodeError, OSError):
             continue
-        response = _last_response(run_dir / "events.jsonl")
+        events_path = run_dir / "events.jsonl"
+        response = _last_response(events_path)
         if _looks_structured(response):
-            return ClaudeLoopResult(run_dir.name, run_dir, response)
+            turns, dollars = _run_spend(events_path)
+            return ClaudeLoopResult(run_dir.name, run_dir, response, turns, dollars)
     return None
 
 
