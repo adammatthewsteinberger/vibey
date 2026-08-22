@@ -497,3 +497,120 @@ async def test_find_reusable_skips_plan_outside_plans_root(tmp_path: Path) -> No
     )
     await process.run(spec(tmp_path))
     assert len(executor.calls) == 1
+
+
+def _events(run_dir: Path, lines: list[dict]) -> None:
+    run_dir.mkdir(parents=True, exist_ok=True)
+    (run_dir / "events.jsonl").write_text("\n".join(json.dumps(line) for line in lines))
+
+
+def _run_dir(tmp_path: Path, run_id: str) -> Path:
+    return tmp_path / ".claudeloop" / "runs" / run_id
+
+
+_RID = "9651ebf4-fe65-4193-96f2-177a36ce9cfa"
+
+
+async def test_a_completed_run_reports_the_spend_its_events_recorded(tmp_path: Path) -> None:
+    """The DESIGN path used to read events.jsonl for the last assistant
+    message and throw the rest away, so cost_usd -- sitting one line
+    further down the same file -- never reached the ledger and the budget
+    brake computed zero for the whole phase."""
+    _events(
+        _run_dir(tmp_path, _RID),
+        [
+            {"event_type": "turn.completed", "payload": {"cost_usd": 0.4416597}},
+            {"event_type": "turn.completed", "payload": {"cost_usd": 0.25}},
+            {"event_type": "chatter.assistant", "payload": {"text": "done"}},
+        ],
+    )
+    process = ClaudeLoopProcess(
+        executor=FakeExecutor(CommandResult(0, "", f"Run id: {_RID}")),
+        max_turns=5,
+        max_dollars=10,
+    )
+    result = await process.run(spec(tmp_path))
+
+    assert result.turns == 2
+    assert result.cost_usd == pytest.approx(0.6916597)
+
+
+async def test_the_recorder_receives_the_spend_so_the_brake_can_see_it(tmp_path: Path) -> None:
+    _events(
+        _run_dir(tmp_path, _RID),
+        [{"event_type": "turn.completed", "payload": {"cost_usd": 1.5}}],
+    )
+    seen: list[tuple[int, float]] = []
+
+    async def recorder(turns: int, dollars: float) -> None:
+        seen.append((turns, dollars))
+
+    process = ClaudeLoopProcess(
+        executor=FakeExecutor(CommandResult(0, "", f"Run id: {_RID}")),
+        max_turns=5,
+        max_dollars=10,
+        spend_recorder=recorder,
+    )
+    await process.run(spec(tmp_path))
+
+    assert seen == [(1, 1.5)]
+
+
+async def test_a_turn_without_usable_cost_still_counts_as_a_turn(tmp_path: Path) -> None:
+    """A run whose accounting is partial must still report the turns it
+    took; silently dropping them would understate spend."""
+    _events(
+        _run_dir(tmp_path, _RID),
+        [
+            {"event_type": "turn.completed", "payload": {}},
+            {"event_type": "turn.completed", "payload": {"cost_usd": "not a number"}},
+            {"event_type": "turn.completed", "payload": {"cost_usd": True}},
+            {"event_type": "turn.completed"},
+            {"not json at all": 1},
+            {"event_type": "sdk.message", "payload": {"total_cost_usd": 99.0}},
+        ],
+    )
+    process = ClaudeLoopProcess(
+        executor=FakeExecutor(CommandResult(0, "", f"Run id: {_RID}")),
+        max_turns=5,
+        max_dollars=10,
+    )
+    result = await process.run(spec(tmp_path))
+
+    # Four turn.completed events, none with a usable cost. sdk.message's
+    # total_cost_usd is a running total, not a turn cost -- counting it
+    # would double every run.
+    assert result.turns == 4
+    assert result.cost_usd == 0.0
+
+
+async def test_a_run_with_no_events_file_reports_no_spend(tmp_path: Path) -> None:
+    process = ClaudeLoopProcess(
+        executor=FakeExecutor(CommandResult(0, "", f"Run id: {_RID}")),
+        max_turns=5,
+        max_dollars=10,
+    )
+    (tmp_path / ".claudeloop" / "runs" / _RID).mkdir(parents=True)
+    result = await process.run(spec(tmp_path))
+
+    assert (result.turns, result.cost_usd) == (0, 0.0)
+
+
+async def test_a_free_run_is_not_reported_to_the_recorder(tmp_path: Path) -> None:
+    """Zero turns and zero dollars is not a spend event; writing one would
+    add noise to the ledger the brake has to scan."""
+    seen: list[tuple[int, float]] = []
+
+    async def recorder(turns: int, dollars: float) -> None:
+        seen.append((turns, dollars))
+
+    _events(_run_dir(tmp_path, _RID), [{"event_type": "chatter.assistant", "payload": {}}])
+    process = ClaudeLoopProcess(
+        executor=FakeExecutor(CommandResult(0, "", f"Run id: {_RID}")),
+        max_turns=5,
+        max_dollars=10,
+        spend_recorder=recorder,
+    )
+    await process.run(spec(tmp_path))
+
+    assert seen == []

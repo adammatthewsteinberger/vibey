@@ -1486,3 +1486,29 @@ def test_operator_command_explains_itself_when_the_extra_is_not_installed() -> N
 
     assert res.exit_code == 1
     assert "vibey[operator]" in res.output
+
+
+async def test_recorded_spend_is_visible_to_the_budget_brake(tmp_path: Path) -> None:
+    """The bug this guards: DESIGN spend reached no ledger, so
+    LedgerBudgetSource summed zero for the phase and the project's cap --
+    however large or small -- could never trip. Measured live before the
+    fix: 83 QuestionAsked events across eight projects and not one
+    TurnCompleted or BudgetSpent, while a single design turn had cost
+    $0.44.
+    """
+    from vibey.application.budget_source import LedgerBudgetSource
+    from vibey.cli.main import _build_spend_recorder
+    from vibey.domain.phase import Phase
+
+    async with build_app() as resources:
+        project = await resources.projects.create("brake", tmp_path, max_cycles=1, config={})
+        record = _build_spend_recorder(
+            resources.ledger, project.project_id, project.cycle, Phase.DESIGN
+        )
+        await record(2, 0.6916597)
+
+        source = LedgerBudgetSource(resources.ledger, max_dollars=200.0)
+        ledger = await source.current(project.project_id, project.cycle)
+
+    assert ledger.turns_spent == 2
+    assert ledger.dollars_spent == pytest.approx(0.6916597)

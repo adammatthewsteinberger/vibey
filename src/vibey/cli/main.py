@@ -4,9 +4,10 @@ import json
 import os
 import signal
 import subprocess  # nosec B404 - fixed argv, never shell=True
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import typer
 
@@ -24,6 +25,7 @@ from vibey.bootstrap import (
     build_visual_worker,
 )
 from vibey.cli.errors import guard
+from vibey.domain.engine import EngineId
 from vibey.domain.errors import (
     InvalidAnswer,
     UnknownProject,
@@ -40,10 +42,12 @@ from vibey.domain.spec import (
     NonFunctionalRequirement,
 )
 from vibey.domain.verbosity import resolve_log_plan
+from vibey.infrastructure.db.ledger_repository import PostgresLedgerRepository
 from vibey.infrastructure.engines.claudeloop_design import ClaudeLoopDesignProvider
 from vibey.infrastructure.engines.claudeloop_process import (
     AsyncSubprocessExecutor,
     ClaudeLoopProcess,
+    SpendRecorder,
 )
 from vibey.infrastructure.engines.scripted_design import ScriptedDesignProvider
 from vibey.infrastructure.engines.scripted_visual import ScriptedVisualProvider
@@ -105,6 +109,45 @@ async def _enqueue_design(project_id: UUID) -> str:
             project_id=project_id,
         )
         return str(job_id)
+
+
+def _build_spend_recorder(
+    ledger: PostgresLedgerRepository, project_id: UUID, cycle: int, phase: Phase
+) -> SpendRecorder:
+    """Record a live run's spend where the budget brake can see it.
+
+    LedgerBudgetSource sums TurnCompleted and BudgetSpent. The BUILD path
+    gets TurnCompleted for free because LoopProcessAdapter tails the
+    engine's events.jsonl into the ledger. The DESIGN path runs claudeloop
+    directly and read that same file only for the last assistant message,
+    so its spend reached nothing -- the brake computed $0 for DESIGN and
+    could never trip, whatever cap the project carried. BudgetSpent with
+    explicit dollars/turns is the vendor-neutral shape the brake already
+    counts, so this needs no new event kind and no new counting logic.
+    """
+    from vibey.domain.ledger import Provenance, digest_event
+    from vibey.infrastructure.engines.tailer import LedgerEventDraft
+
+    async def record(turns: int, dollars: float) -> None:
+        payload: dict[str, object] = {"turns": turns, "dollars": dollars}
+        await ledger.append(
+            LedgerEventDraft(
+                project_id=project_id,
+                cycle=cycle,
+                phase=phase,
+                kind=EventKind.BUDGET_SPENT,
+                engine_id=EngineId.CLAUDELOOP,
+                job_id=None,
+                causation_id=None,
+                correlation_id=uuid4(),
+                provenance=Provenance.TRUSTED,
+                produced_at=datetime.now(UTC),
+                payload=payload,
+                digest=digest_event(payload),
+            )
+        )
+
+    return record
 
 
 @app.command("new")
@@ -266,6 +309,9 @@ async def _work_once(project_id: UUID, provider: str, max_turns: int, max_dollar
                 executor=AsyncSubprocessExecutor(),
                 max_turns=max_turns,
                 max_dollars=max_dollars,
+                spend_recorder=_build_spend_recorder(
+                    resources.ledger, project.project_id, project.cycle, project.phase
+                ),
             )
             design_provider = ClaudeLoopDesignProvider(
                 process=process,
@@ -1136,6 +1182,9 @@ def worker(
                     executor=AsyncSubprocessExecutor(),
                     max_turns=max_turns,
                     max_dollars=max_dollars,
+                    spend_recorder=_build_spend_recorder(
+                        resources.ledger, project.project_id, project.cycle, project.phase
+                    ),
                 )
                 design_provider = ClaudeLoopDesignProvider(
                     process=process,
