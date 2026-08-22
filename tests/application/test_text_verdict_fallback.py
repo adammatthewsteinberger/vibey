@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 from datetime import UTC, datetime
 
 from vibey.application.text_verdict_fallback import extract_verdict_from_text

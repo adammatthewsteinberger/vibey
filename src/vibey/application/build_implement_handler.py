@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Durable ``build.implement`` handler (M6 task 6.4): engine selection
 (single injected adapter for now -- full rotation wiring is a later task,
 same position design.interview's "interviewer" was in after M5), worktree

@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Faked-mode conformance: all four engines pass the 9-check suite using
 ScriptedEngine (no subprocess, no network, no API key).
 

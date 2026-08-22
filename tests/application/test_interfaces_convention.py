@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Every application-layer Protocol lives in `application/interfaces/`.
 
 The convention is only worth having if it cannot quietly erode: a Protocol

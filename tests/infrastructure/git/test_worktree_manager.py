@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Real-git integration tests -- no mocking of git itself, per this
 project's own rule about not faking the property that matters. Runs
 against a real repo created fresh in tmp_path for every test."""

@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 import hashlib
 from dataclasses import dataclass
 from datetime import datetime, timedelta

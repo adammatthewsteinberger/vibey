@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Shared fixtures for contract tests — provides both Postgres and project_id."""
 
 import getpass

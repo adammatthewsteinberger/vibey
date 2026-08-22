@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Port parity: every Fake satisfies its Protocol at the structural level.
 
 Modelled after codexloop/tests/application/test_ports.py — a parametrized

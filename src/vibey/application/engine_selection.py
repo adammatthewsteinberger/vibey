@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Per-job engine selection: the first production caller of the rotation
 stack (EngineSelector / EngineHealthService), invoked by the composition
 root's BUILD factories at dispatch time -- rotation happens only at job

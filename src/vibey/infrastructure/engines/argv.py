@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """descriptor + effort + isolation -> command line. The only place a
 RunSpec's abstract intent becomes a concrete argv for a specific vendor
 binary."""

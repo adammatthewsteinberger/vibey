@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """The Azure control-plane seam used by the deployment stage set."""
 
 from __future__ import annotations

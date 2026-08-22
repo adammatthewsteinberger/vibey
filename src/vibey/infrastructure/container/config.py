@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Configuration options and data structures for hardened container isolation (Milestone 9)."""
 
 from collections.abc import Mapping, Sequence

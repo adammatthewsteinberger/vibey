@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """The operator's decisions, tested without a cluster.
 
 That is the whole point of keeping this module pure: whether a project is

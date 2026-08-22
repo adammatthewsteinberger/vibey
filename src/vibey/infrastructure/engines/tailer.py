@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Run-directory tailer: events.jsonl -> vibey LedgerEvents.
 
 The runner's own event vocabulary (EngineEvent.kind) is deliberately the

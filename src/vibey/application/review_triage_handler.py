@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Durable ``review.triage`` handler (M7 task 7.4 & 7.5).
 
 Performs severity x ambiguity classification on open findings:

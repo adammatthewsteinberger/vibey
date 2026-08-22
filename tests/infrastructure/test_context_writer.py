@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 from pathlib import Path
 
 from vibey.infrastructure.context_writer import write_context_artifacts

@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Immutable DeploymentSpec, consent verification, and failure routing policy.
 
 Milestone 10 task 10.2.

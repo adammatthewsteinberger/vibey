@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """structlog configuration with separate transports.
 
 Three sinks, so one operator's need does not crowd out another's:

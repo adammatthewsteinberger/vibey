@@ -1,0 +1,4 @@
+#!/bin/sh
+# Chained from .githooks/pre-push by vibey-gh: the full 7-gate sweep.
+command -v pre-commit >/dev/null 2>&1 || exit 0
+exec pre-commit run --hook-stage pre-push --all-files

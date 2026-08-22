@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Faked-mode conformance against REAL installed binaries, not ScriptedEngine.
 
 test_faked_conformance.py only ever exercises the in-memory ScriptedEngine

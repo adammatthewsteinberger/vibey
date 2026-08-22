@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Paid-mode worker BUILD path: one real claudeloop session through the
 production dispatch stack -- rotation-selected engine, real worktree, real
 subprocess, durable assigned_engine, and the verify follow-up enqueued

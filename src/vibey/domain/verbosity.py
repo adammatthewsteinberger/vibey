@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Resolving how loud the process should be, from CLI flags.
 
 Pure: no logging library, no I/O. The ladder is a domain decision because it

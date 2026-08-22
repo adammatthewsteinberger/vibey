@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Live dashboard TUI implemented with Textual."""
 
 from collections.abc import Callable, Mapping, Sequence

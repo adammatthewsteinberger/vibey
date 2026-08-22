@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Durable ``review.collect`` handler (M7 task 7.2).
 
 Holds the review conversation:

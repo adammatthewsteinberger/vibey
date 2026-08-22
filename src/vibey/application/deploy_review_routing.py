@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Phase ⑥ DEPLOY REVIEW loop routing handler (Milestone 10 task 10.11)."""
 
 from collections.abc import Callable

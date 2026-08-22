@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Tests for application/engine_health_service.py — the business logic
 wrapper around EngineHealthRepository."""
 

@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Untrusted-provenance prompt defense and delimiter shielding (Milestone 9 task 9.4)."""
 
 import re

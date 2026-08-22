@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Tests for infrastructure/engines/loop_process_adapter.py.
 
 Tests the LoopProcessAdapter's file-based operations (snapshot, send_prompt,

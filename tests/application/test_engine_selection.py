@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Per-job selection inputs, the selecting provider, and outcome recording."""
 
 from dataclasses import replace

@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Ambient effects the application needs faked -- currently just time."""
 
 from __future__ import annotations

@@ -1,0 +1,8 @@
+#!/bin/sh
+# vibey-gh owns core.hooksPath, which means .git/hooks/ is no longer consulted
+# and the pre-commit framework's own hooks would silently stop running. That is
+# a worse failure than any this repo's gates catch, because everything keeps
+# looking green. This file, plus the .local chain points beside it, put the
+# framework back in the path.
+command -v pre-commit >/dev/null 2>&1 || exit 0
+exec pre-commit run --hook-stage pre-commit

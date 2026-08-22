@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Build and render the accepted DESIGN output without performing I/O."""
 
 from collections.abc import Sequence

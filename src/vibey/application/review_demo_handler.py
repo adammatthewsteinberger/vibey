@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Durable ``review.demo`` handler (M7 tasks 7.1 & 7.3).
 
 Produces the review demo artifacts under ``.vibey/runs/<cycle>/review/``:

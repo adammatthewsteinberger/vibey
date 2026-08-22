@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Phase ④ DEPLOY DESIGN interview and synthesis handlers (Milestone 10 task 10.3).
 
 The `jobs` collaborators are keyword-only with a None default on both

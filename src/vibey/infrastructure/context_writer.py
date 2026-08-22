@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Filesystem adapter for accepted DESIGN artifacts."""
 
 from collections.abc import Mapping

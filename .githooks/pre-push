@@ -1,0 +1,69 @@
+#!/bin/sh
+# Installed by `vibey-gh install` — do not edit; edit the template in vibey-gh.
+#
+# THE GATE. A repository that has adopted the vibey GitHub automation must keep it
+# installed and working. If the tooling is missing, or the fingerprints it enforces are
+# not intact, the push is refused — to any branch, local or remote.
+#
+# The point is not ceremony. Provenance that can be skipped whenever it is inconvenient
+# is provenance nobody can rely on, so the check has to sit on the last action before
+# code leaves the machine.
+#
+# Escape hatch: `git push --no-verify` still works, because a hook that cannot be
+# bypassed in an emergency gets uninstalled instead. CI applies the same rule server-side,
+# so skipping here only defers the failure rather than avoiding it.
+
+set -e
+
+red() { printf '\033[0;31m%s\033[0m\n' "$1"; }
+
+
+# Resolve the CLI. `vibey-gh` on PATH is the normal case, but a project virtualenv that
+# has not been activated is just as normal — and a gate that reports "not installed"
+# when the tool IS installed is a gate people learn to bypass. Look where it actually
+# lives before giving up. Hooks run from the top of the working tree.
+vibey_gh() {
+  if command -v vibey-gh >/dev/null 2>&1; then
+    vibey-gh "$@"
+  elif [ -n "${VIRTUAL_ENV:-}" ] && [ -x "${VIRTUAL_ENV}/bin/vibey-gh" ]; then
+    "${VIRTUAL_ENV}/bin/vibey-gh" "$@"
+  elif [ -x ".venv/bin/vibey-gh" ]; then
+    ./.venv/bin/vibey-gh "$@"
+  elif [ -x "venv/bin/vibey-gh" ]; then
+    ./venv/bin/vibey-gh "$@"
+  elif python3 -c "import vibey_gh.cli" >/dev/null 2>&1; then
+    python3 -m vibey_gh.cli "$@"
+  elif python3 -c "import vibey_bootstrap.gh.cli" >/dev/null 2>&1; then
+    python3 -m vibey_bootstrap.gh.cli "$@"   # pre-split layout
+  else
+    return 127
+  fi
+}
+
+if ! vibey_gh trailer-key >/dev/null 2>&1; then
+  red "✖ push refused: the vibey GitHub automation is not installed."
+  echo
+  echo "  This repository requires it for provenance and release automation."
+  echo
+  echo "      pip install vibey-gh"
+  echo "      vibey-gh install"
+  echo
+  echo "  Then push again. To bypass once: git push --no-verify"
+  exit 1
+fi
+
+if ! vibey_gh check --quiet; then
+  red "✖ push refused: the provenance fingerprints are not intact."
+  echo
+  echo "      vibey-gh check          # see what is missing"
+  echo "      vibey-gh check --apply  # add the missing file headers"
+  echo
+  echo "  Commit trailers are added automatically by the commit-msg hook."
+  echo "  To bypass once: git push --no-verify"
+  exit 1
+fi
+
+# Chain to a pre-existing project hook, so adopting this does not discard local checks.
+if [ -x "$(dirname "$0")/pre-push.local" ]; then
+  "$(dirname "$0")/pre-push.local" "$@"
+fi

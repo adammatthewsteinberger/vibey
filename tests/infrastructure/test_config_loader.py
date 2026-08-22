@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 from pathlib import Path
 
 from vibey.infrastructure.config_loader import load_config_from_path

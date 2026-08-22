@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Agent-surface provisioning content rules (M6 task 6.3, ADR-0011): one
 source of truth, materialized into every engine's router file, idempotently.
 

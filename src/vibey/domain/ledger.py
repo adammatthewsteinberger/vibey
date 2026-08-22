@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """The append-only, vendor-neutral event ledger (ADR-0003). This module is
 pure projection logic over an in-memory event sequence -- persistence lives
 in infrastructure/."""

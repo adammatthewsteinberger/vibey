@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Cycle-scoped JSON persistence and final context publication for DESIGN specs."""
 
 import json

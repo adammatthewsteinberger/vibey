@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Postgres repository for rotation_cursor table.
 
 The rotation_cursor table persists the SWRR (smooth weighted round robin) state

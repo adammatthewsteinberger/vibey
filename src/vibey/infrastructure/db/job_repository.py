@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Postgres-backed JobRepository: the durable, crash-safe work queue.
 Every method here is a thin, faithful translation of the SQL in
 docs/plans/data-model.md section 3.4 -- no cleverness, so the queue's

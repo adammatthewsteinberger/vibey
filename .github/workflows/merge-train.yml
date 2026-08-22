@@ -1,0 +1,78 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
+name: Merge train
+
+# Weekly: merge every pull request into the integration branch that is READY.
+#
+# Readiness is mechanical and is decided by `vibey-gh merge-train` — not a draft, no
+# conflicts, checks green, no changes requested — plus the trust rule: work from the owner
+# or their own bots merges on a green build, work from anyone else additionally needs an
+# approving review. The logic lives in the library, where it is unit-tested, rather than
+# in this file where it would not be.
+#
+# A pull request held ONLY on that approval is labelled `needs-human-review` and the owner
+# is mentioned on it, once — because otherwise the contribution just sits there and nobody
+# finds out. Repeating the mention weekly would train the owner to ignore it, so an
+# existing notification is detected before another is posted. A draft or a red build gets
+# neither: that is the contributor's to fix, and paging anyone about it is noise.
+#
+# The run also writes a markdown table to the job summary, so a week that merged nothing
+# still says what it looked at.
+#
+# PERMISSIONS. A branch ruleset that requires an approving review cannot be satisfied by
+# the default GITHUB_TOKEN, and GitHub Actions is usually not a bypass actor. Supply a
+# repository secret `AUTOMERGE_TOKEN` belonging to someone with the admin role. Without
+# one this job reports every pull request as blocked rather than merging anything.
+#
+# Use a real token rather than adding GitHub Actions to the bypass list: a push made with
+# GITHUB_TOKEN does not trigger further workflows, so a release chain downstream of this
+# would silently stop.
+
+on:
+  schedule:
+    - cron: "17 7 * * 1"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Report what would be merged without merging it"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: merge-train
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    name: Merge train
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the tooling
+        run: |
+          set -euo pipefail
+          if grep -qE '^name = "vibey-(gh|bootstrap)"' pyproject.toml 2>/dev/null; then
+            python -m pip install --quiet -e .
+          else
+            python -m pip install --quiet vibey-gh
+          fi
+
+      - name: Merge what is ready
+        env:
+          GH_TOKEN: ${{ secrets.AUTOMERGE_TOKEN || github.token }}
+        run: |
+          set -euo pipefail
+          # No `tee` into the job summary: the command writes its own markdown table
+          # there. Piping stdout in as well would append the plain log lines too, which
+          # are not markdown and render as one run-on paragraph above the table.
+          vibey-gh merge-train ${{ inputs.dry_run && '--dry-run' || '' }}

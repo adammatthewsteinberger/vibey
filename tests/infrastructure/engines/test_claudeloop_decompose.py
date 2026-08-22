@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """ClaudeLoopWorkPlanProducer: strict-JSON decoding and fail-fast validation."""
 
 import json

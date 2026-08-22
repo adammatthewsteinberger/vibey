@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """SubprocessGateRunner: real subprocesses, and the greeter4 live finding --
 a gate command whose binary does not exist is a FAILING GATE (127, so the
 repair loop can tell the engine to fix its own command), never an exception

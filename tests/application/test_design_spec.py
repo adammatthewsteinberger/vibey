@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 from datetime import UTC, datetime
 
 from vibey.application.design import DesignEvent

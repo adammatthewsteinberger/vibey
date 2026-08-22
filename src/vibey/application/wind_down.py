@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Wind-down orchestration: what happens when a build engine exits with
 EXIT_CODE_WIND_DOWN instead of finishing (handoff-protocol.md §3, §6).
 

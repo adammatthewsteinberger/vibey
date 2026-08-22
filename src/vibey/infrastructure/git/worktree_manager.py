@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Real git-worktree lifecycle for BUILD work items (M6 task 6.2).
 
 Every mutating call is preceded by a self-healing step (`git worktree

@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """The append-only event ledger, backed by the append_event() Postgres
 function (migrations/0002_event.sql) which claims a gapless per-project seq
 inside the same transaction as the insert -- the property rule R6 of the

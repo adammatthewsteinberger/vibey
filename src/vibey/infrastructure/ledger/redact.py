@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Redaction on write, ported in spirit from the *loop family: secrets must
 never reach the ledger column, because the ledger is replicated into every
 receiving worktree's .vibey/handoff/ledger.jsonl and read by whichever

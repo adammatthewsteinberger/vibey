@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Hardened OCI container runtime isolation."""
 
 from vibey.infrastructure.container.config import ContainerConfig, ContainerResult

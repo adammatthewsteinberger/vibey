@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """The append-only event ledger, per phase, plus the handoff brief producer."""
 
 from __future__ import annotations

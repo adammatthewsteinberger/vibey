@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """The optional visual-design interstitial."""
 
 from __future__ import annotations

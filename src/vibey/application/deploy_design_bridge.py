@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Bridges the REVIEW-side deployment opt-in onto the deploy stage set.
 
 ``ReviewDeploymentChoiceHandler`` -- deliberately unchanged; the protected

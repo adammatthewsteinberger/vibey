@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Engine health service: wraps PostgresEngineHealthRepository with
 business logic for updating health records based on conformance, capacity
 states, and selection outcomes.

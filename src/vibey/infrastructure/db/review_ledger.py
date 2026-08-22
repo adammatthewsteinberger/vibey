@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Adapter between interactive-phase application events and the durable
 event ledger. Defaults to REVIEW; the deploy stage set constructs additional
 instances with their own phase so DEPLOY_* events are never mislabeled as

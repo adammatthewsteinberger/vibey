@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Azure application port and mutation consent contracts (Milestone 10 task 10.4)."""
 
 from __future__ import annotations

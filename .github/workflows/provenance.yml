@@ -1,0 +1,67 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
+name: Provenance
+
+# Server-side half of the provenance rule. The pre-push hook is the fast, local half, but
+# a hook lives in a clone: it can be skipped with --no-verify, and a fresh clone that
+# never ran `vibey-gh install` has no hook at all. This job is what makes the rule hold
+# for everyone, so make it a REQUIRED status check on every protected branch.
+#
+# It runs on every branch, not just pull requests, so an unfingerprinted commit is caught
+# where it is pushed rather than at merge time.
+#
+# The job name below — "Provenance" — is the context you add to the branch ruleset.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: provenance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  provenance:
+    name: Provenance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Needed to walk the commits a pull request adds.
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # A repository that IS the tooling installs itself; everyone else takes the
+      # published package. Self-describing, so the same template works in both places.
+      - name: Install the tooling
+        run: |
+          set -euo pipefail
+          if grep -qE '^name = "vibey-(gh|bootstrap)"' pyproject.toml 2>/dev/null; then
+            echo "this repository provides the tooling — installing from source"
+            python -m pip install --quiet -e .
+          else
+            python -m pip install --quiet vibey-gh
+          fi
+
+      # --ci skips the core.hooksPath assertion, which is per-clone local git config that
+      # no runner can satisfy. The hook FILES are repository state and are still checked.
+      # The base SHA goes through env: rather than into the shell, so there is no
+      # injection surface even though it comes from github.event.
+      - name: Check provenance
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          if [ -n "${BASE_SHA:-}" ]; then
+            git fetch --quiet --depth=50 origin "${BASE_SHA}" 2>/dev/null || true
+            vibey-gh check --ci --commits "${BASE_SHA}..HEAD"
+          else
+            vibey-gh check --ci
+          fi

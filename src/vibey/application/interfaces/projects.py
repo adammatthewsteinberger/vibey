@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Reading a project and moving it between phases."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Data transfer objects crossing the application/infrastructure boundary.
 Unlike domain/ types these may be mutated by callers and are not required to
 be pure -- they are shapes, not behavior."""

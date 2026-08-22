@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Shared fakes for vibey test suites.
 
 Re-exports from application/fakes.py (the original home) plus new

@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Root test configuration — per-worker database via PostgreSQL template pattern.
 
 Session startup creates ``vibey_test_template`` (migrated once, reused across

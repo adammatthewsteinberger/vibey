@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path

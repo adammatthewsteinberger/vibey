@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 import pytest
 
 from vibey.domain.worktree import branch_name, validate_item_id, worktree_subpath
