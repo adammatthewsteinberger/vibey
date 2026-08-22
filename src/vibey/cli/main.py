@@ -527,11 +527,13 @@ def recover(
         try:
             if all_projects:
                 result = await conn.execute(
-                    "UPDATE job SET state = 'ready', lease_owner = NULL, lease_expires_at = NULL, assigned_engine = NULL WHERE state = 'leased'"
+                    "UPDATE job SET state = 'ready', lease_owner = NULL, lease_expires_at = NULL, "
+                    "assigned_engine = NULL WHERE state = 'leased'"
                 )
             else:
                 result = await conn.execute(
-                    "UPDATE job SET state = 'ready', lease_owner = NULL, lease_expires_at = NULL, assigned_engine = NULL WHERE state = 'leased' AND project_id = $1",
+                    "UPDATE job SET state = 'ready', lease_owner = NULL, lease_expires_at = NULL, "
+                    "assigned_engine = NULL WHERE state = 'leased' AND project_id = $1",
                     project_id,
                 )
 

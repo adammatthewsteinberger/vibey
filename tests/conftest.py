@@ -43,7 +43,8 @@ def _worker_id() -> str:
 
 
 def _worker_db_name() -> str:
-    return f"vibey_test_{_worker_id()}"
+    run_id = os.environ.get("PYTEST_XDIST_TESTRUNUID", "main")
+    return f"vibey_test_{_worker_id()}_{run_id}"
 
 
 async def _setup(base_dsn: str) -> str:

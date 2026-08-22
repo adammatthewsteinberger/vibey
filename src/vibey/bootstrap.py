@@ -2,7 +2,6 @@
 """Composition root: the only module that wires concrete adapters to ports."""
 
 import asyncio
-import getpass
 import os
 from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
 from contextlib import asynccontextmanager
@@ -56,6 +55,7 @@ from vibey.application.visual_handler import VisualInventoryHandler, VisualPlanH
 from vibey.application.wind_down import WindDownOrchestrator
 from vibey.application.worker import WorkerLoop
 from vibey.domain.engine import EngineId
+from vibey.domain.errors import VibeyError
 from vibey.domain.phase import Phase
 from vibey.infrastructure.azure.adapter import InMemoryAzureClientAdapter
 from vibey.infrastructure.build.automated_review_runner import SubprocessAutomatedReviewRunner
@@ -483,8 +483,37 @@ def build_full_worker(
     )
 
 
+class DatabaseNotConfigured(VibeyError):
+    """VIBEY_PG_URL is unset and there is no safe default to invent."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            "VIBEY_PG_URL is not set. vibey will not guess a database.\n"
+            "  export VIBEY_PG_URL=postgresql://user@localhost:5432/vibey"
+        )
+
+
 def database_url() -> str:
-    return os.environ.get("VIBEY_PG_URL", f"postgresql://{getpass.getuser()}@localhost:5432/vibey")
+    """The DSN, or an error -- never a guess.
+
+    This used to fall back to postgresql://<user>@localhost:5432/vibey. That
+    is not the resolution order the architecture describes (an explicit DSN,
+    then a Compose service, then a managed cluster under .vibey/pgdata); it
+    was an undocumented shortcut that resolved to whatever database happened
+    to be named `vibey` on the machine.
+
+    It cost real data integrity. Eight autonomous BUILD jobs ran the test
+    suite in their worktrees with VIBEY_PG_URL unset; every test that called
+    build_app() without an explicit url took this fallback and wrote to the
+    PRODUCTION database, creating 78 projects in eleven minutes. Nothing
+    failed, because a silent default cannot fail -- that is the whole
+    problem with it. Refusing is the fix: a tool that writes to a database
+    should be told which one.
+    """
+    url = os.environ.get("VIBEY_PG_URL")
+    if not url:
+        raise DatabaseNotConfigured
+    return url
 
 
 def migrations_dir() -> Path:
