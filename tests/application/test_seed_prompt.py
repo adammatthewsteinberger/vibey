@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 from vibey.application.seed_prompt import closable_ids_in_brief, render_seed_prompt
 from vibey.domain.handoff import (
     ArtifactRef,

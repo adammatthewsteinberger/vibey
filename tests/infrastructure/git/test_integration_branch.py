@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Real-git integration tests for IntegrationBranch -- no mocking, same
 rule as the rest of infrastructure/git/'s tests."""
 

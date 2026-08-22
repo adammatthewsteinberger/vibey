@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Filesystem writer for Phase 3 REVIEW artifacts."""
 
 from collections.abc import Mapping, Sequence

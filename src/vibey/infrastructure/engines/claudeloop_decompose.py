@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Live ClaudeLoop implementation of the WorkPlanProducer port.
 
 Modeled on ClaudeLoopDesignProvider: model text crosses this boundary only

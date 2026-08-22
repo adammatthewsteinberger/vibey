@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Phase 3 collaborators: automated review and artifact writing."""
 
 from __future__ import annotations

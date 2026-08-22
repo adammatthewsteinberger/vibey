@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Enforces that vibey.domain contains no I/O, no async, and no wall-clock
 reads. Every violation is a static AST check, not a runtime behavior test,
 so a planted violation fails even if the offending code path is never

@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Infrastructure runner for automated security and code review checks."""
 
 from collections.abc import Sequence

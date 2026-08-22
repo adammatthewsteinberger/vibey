@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Delivery-stage-set system tests (M7 task 7.9 and M10 task 10.13).
 
 Validates the full deterministic, offline delivery stage set:

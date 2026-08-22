@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """WindDownOrchestrator: the full no-loss pipeline behind exit code 75."""
 
 from dataclasses import replace

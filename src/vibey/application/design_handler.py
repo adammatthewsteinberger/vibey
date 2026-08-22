@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Durable ``design.interview`` handler for the seven-stage protocol."""
 
 from collections.abc import Mapping, Sequence

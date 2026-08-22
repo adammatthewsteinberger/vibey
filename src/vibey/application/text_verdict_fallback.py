@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """TRIVIAL-effort extraction fallback (handoff-protocol.md §3.3): for
 engines that cannot produce structured output, a cheap extraction pass
 parses the free-text turn into the same verdict schema structured engines

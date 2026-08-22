@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Tests for infrastructure/db/rotation_cursor_repository.py against real Postgres.
 
 Requires VIBEY_TEST_DATABASE_URL (or defaults to localhost vibey_test).

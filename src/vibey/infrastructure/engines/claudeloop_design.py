@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Live ClaudeLoop implementation of the three DESIGN provider ports.
 
 Model text crosses this boundary only through strict JSON decoders. Research

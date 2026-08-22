@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Event type translation: loop event_type vocabulary → vibey EventKind.
 
 Real loop events.jsonl files use dotted event_type strings ("chatter.assistant",

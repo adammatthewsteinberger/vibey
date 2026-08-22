@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """OpenTelemetry tracing and metrics instrumentation (Milestone 8 task 8.3)."""
 
 from collections import defaultdict

@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """A git-invoking subprocess executor that strips GIT_* environment
 variables, shared by every module in infrastructure/git/ and infrastructure/
 provision/ that shells out to `git`.

@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """The no-loss gate: a pure predicate that a handoff brief has not dropped
 anything the ledger says is still open (ADR-0004). No I/O, no model call."""
 

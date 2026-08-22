@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Shared BUILD-entry trigger, used by both acceptance services once a
 project lands in Phase.BUILD (DESIGN -> BUILD directly, or VISUAL_DESIGN ->
 BUILD after the visual plan is settled)."""

@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Operator handlers against a real database.
 
 The handlers are thin, but the things they must get right -- creating a

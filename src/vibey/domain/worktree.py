@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Pure naming rules for BUILD work-item worktrees (M6 task 6.2).
 
 No I/O here -- just the deterministic path/branch scheme the infrastructure

@@ -1953,6 +1953,7 @@ dev = [
     { name = "pytest-cov" },
     { name = "pytest-xdist" },
     { name = "ruff" },
+    { name = "vibey-gh" },
 ]
 operator = [
     { name = "kopf" },
@@ -1981,8 +1982,18 @@ requires-dist = [
     { name = "textual", specifier = ">=0.86" },
     { name = "tomli-w", specifier = ">=1.1" },
     { name = "typer", specifier = ">=0.15" },
+    { name = "vibey-gh", marker = "extra == 'dev'", specifier = ">=1.2" },
 ]
 provides-extras = ["operator", "dev"]
+
+[[package]]
+name = "vibey-gh"
+version = "1.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/d6/ec/9ac6e223bbe80fc4b5cadc89dc4adaf05524ff66115f3b476e63f183c4d8/vibey_gh-1.2.0.tar.gz", hash = "sha256:d999284af096f36a804d3b4e49373b9833d53f95687e2f8a6314439036da0d97", size = 35739, upload-time = "2026-08-22T00:40:00.452Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ff/6b/6a7c778e6fa4a7ce320afff4b7e59ad9e6dcd6f698fa990f3ac6b2e6b664/vibey_gh-1.2.0-py3-none-any.whl", hash = "sha256:e765aa89e0f9486385422db7690918695482a0c9656d56e88f587cd9ca983f31", size = 33389, upload-time = "2026-08-22T00:39:59.353Z" },
+]
 
 [[package]]
 name = "virtualenv"

@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """LoopProcessAdapter: real subprocess runner implementing the full EngineAdapter
 protocol.
 

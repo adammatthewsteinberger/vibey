@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """``design.research`` handler with forced untrusted provenance."""
 
 from vibey.application.design import research_event

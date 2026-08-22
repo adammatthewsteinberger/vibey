@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Paid-mode preflight: runs `<engine> --version` and `<engine> doctor`
 against real installed binaries. Requires actual API keys in the
 environment for auth checks to pass.

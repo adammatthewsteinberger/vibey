@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 from vibey.domain.effort import Effort, triage_required_effort
 from vibey.domain.projections import DecisionLogEntry
 from vibey.domain.review import (

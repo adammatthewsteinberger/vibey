@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Deterministic WorkPlanProducer: the faked half of the two-mode harness.
 
 Emits the walking skeleton first (no dependencies, per phase-protocols.md

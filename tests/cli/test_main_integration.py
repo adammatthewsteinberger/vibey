@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Real-Postgres integration tests for the CLI's async command bodies.
 
 ``tests/cli/test_main.py`` monkeypatches ``_enqueue_design``/``_work_once`` and

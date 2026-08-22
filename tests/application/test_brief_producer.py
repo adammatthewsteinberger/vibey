@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """DeterministicBriefProducer: the production floor producer."""
 
 from datetime import UTC, datetime

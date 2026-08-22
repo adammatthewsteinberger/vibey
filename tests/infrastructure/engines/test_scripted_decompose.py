@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """ScriptedWorkPlanProducer: deterministic, structurally valid by construction."""
 
 from vibey.domain.effort import Effort

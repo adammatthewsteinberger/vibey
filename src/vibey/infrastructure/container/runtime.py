@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Hardened OCI container runtime wrapper for Docker / Podman execution (Milestone 9 task 9.1)."""
 
 import asyncio

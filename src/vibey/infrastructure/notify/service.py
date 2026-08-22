@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Composite notification service coordinating desktop alerts and signed webhooks."""
 
 import asyncio

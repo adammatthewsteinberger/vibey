@@ -1,0 +1,165 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
+name: Release
+
+# develop publishes a dev build to TestPyPI; main publishes the real thing to PyPI.
+# TestPyPI comes first on the main path because a PyPI version is immutable — it can
+# never be reused, even after a yank — so the only chance to catch a bad artifact is
+# before it is uploaded.
+on:
+  push:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Stamp a dev version on develop
+        if: github.ref == 'refs/heads/develop'
+        run: |
+          python -m pip install --quiet vibey-gh
+          # An index version is immutable, so a develop build cannot reuse the release
+          # version; the dev suffix makes each push distinct and sorts it BEFORE the
+          # release it anticipates, which is the correct relationship.
+          vibey-gh version --dev "${GITHUB_RUN_NUMBER}" --apply
+
+      - id: v
+        # Indented inside the block scalar on purpose: a heredoc body written at column 0
+        # would terminate the scalar and the workflow would not parse at all.
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import pathlib
+          import tomllib
+
+          data = tomllib.loads(pathlib.Path("pyproject.toml").read_text())
+          print("version=" + data["project"]["version"])
+          PY
+
+      - run: python -m pip install --quiet build && python -m build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  testpypi:
+    name: Publish to TestPyPI
+    needs: build
+    runs-on: ubuntu-latest
+    environment: testpypi
+    permissions:
+      id-token: write            # trusted publishing; no token is stored anywhere
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: dist, path: dist }
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          skip-existing: true
+
+  verify:
+    name: Verify the TestPyPI artifact
+    needs: [build, testpypi]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Install that exact version from TestPyPI and run it
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          set -euo pipefail
+          # --no-cache-dir: pip caches the simple index, and a cached index can never
+          # show an upload made seconds ago.
+          for i in $(seq 1 20); do
+            if pip install --no-cache-dir --quiet \
+                 --index-url https://test.pypi.org/simple/ \
+                 --extra-index-url https://pypi.org/simple/ \
+                 "vibey==${VERSION}"; then
+              break
+            fi
+            echo "not indexed yet (attempt $i); waiting"
+            sleep 30
+          done
+          # A real invocation, not an import: the console script and its
+          # entry point are the part a user actually touches.
+          test "$(vibey --version)" = "vibey ${VERSION}"
+          echo "installed ${VERSION} from TestPyPI and it runs"
+
+  pypi:
+    name: Publish to PyPI
+    needs: [build, verify]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: dist, path: dist }
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
+
+  realign:
+    name: Realign develop with main
+    needs: [build, pypi]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    # The workflow default is contents: read, which is right for the publishing jobs and
+    # wrong for this one — it pushes. Without this the push is a 403 that reads like a
+    # ruleset refusal and is not one.
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Same reason as the promotion: checkout's extraheader beats a remote URL, so
+          # the force-with-lease push needs the token here.
+          token: ${{ secrets.AUTOMERGE_TOKEN || github.token }}
+
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+
+      # vibey-gh is a dev dependency here, not a runtime one, so install it
+      # directly rather than pulling the whole project to reach one CLI.
+      - run: python -m pip install --quiet vibey-gh
+
+      # main is rebase-merged, so its commits are rewritten copies with new SHAs and
+      # develop can never be fast-forwarded onto it. `realign` converges them only when
+      # the two TREES are identical, so it cannot discard work — if develop has anything
+      # main does not, it says so and stops.
+      # Needs a token with the admin role. develop's ruleset has a non_fast_forward rule
+      # and GitHub Actions is not one of its bypass actors, so the default GITHUB_TOKEN
+      # cannot force-push there no matter what `permissions` says. Skipping is honest
+      # when the secret is absent; failing every release for a missing optional secret
+      # trains people to ignore a red release.
+      #
+      # Nothing downstream depends on this. Promotion compares the branches by CONTENT,
+      # and neither ruleset uses a strict up-to-date policy, so a divergent develop does
+      # not block the next release — it is tidiness, not a gate.
+      - name: Realign
+        env:
+          HAS_TOKEN: ${{ secrets.AUTOMERGE_TOKEN != '' }}
+        run: |
+          set -euo pipefail
+          if [ "${HAS_TOKEN}" != "true" ]; then
+            echo "::notice::AUTOMERGE_TOKEN is not set, so develop cannot be realigned \
+          from here. Harmless: promotion compares by content, so a divergent develop does \
+          not block a release. To realign by hand: git push --force-with-lease origin main:develop"
+            exit 0
+          fi
+          git config user.name "vibey[bot]"
+          git config user.email "adam@matthewsteinberger.com"
+          vibey-gh realign

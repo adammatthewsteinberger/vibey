@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Bounded ClaudeLoop subprocess boundary for live DESIGN work.
 
 Every invocation has explicit turn and dollar ceilings and disables automatic

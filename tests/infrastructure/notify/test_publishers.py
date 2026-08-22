@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """The two notification transports, including the paths that fire without an
 injected seam -- those are the ones that run in production."""
 

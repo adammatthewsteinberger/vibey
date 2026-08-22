@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Adapter between BUILD application events (raw EngineAdapter output) and
 the durable event ledger. Translation lives here, not in application/,
 because infrastructure/engines/tailer.py is off-limits to application/ under

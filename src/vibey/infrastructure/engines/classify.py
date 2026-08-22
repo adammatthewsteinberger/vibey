@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Vendor error -> vibey's CapacityState, and exit code + tail -> FailureClass
 (rotation-and-engines.md §6.2-6.3).
 

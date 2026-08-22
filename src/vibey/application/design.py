@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Phase 1 DESIGN protocol primitives.
 
 The application owns interactive turn-taking. Engines may propose the question

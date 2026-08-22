@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """The vendor runner seam. Every *loop CLI shape lives behind this."""
 
 from __future__ import annotations

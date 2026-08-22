@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Infrastructure-internal seams.
 
 These are not application ports -- nothing outside infrastructure/ implements

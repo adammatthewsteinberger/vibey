@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Renders a HandoffBrief into the seed prompt text handed to the incoming
 engine's first turn (handoff-protocol.md §4.1's "the brief below is a
 summary for convenience" seed text). Every closable id from the brief must

@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """The lease -> execute -> ack loop. Workers are stateless: all durable
 state lives in JobRepository, so a worker can die at any point and a reaped
 job is simply claimed by someone else (non-negotiable #6: every handler must

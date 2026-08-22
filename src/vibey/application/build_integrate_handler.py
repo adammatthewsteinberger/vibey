@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Durable ``build.integrate`` handler (M6 task 6.8): merges one verified
 work item's branch into the shared integration branch, runs the full gate
 suite against the merged result, and never rolls back the whole phase for

@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Inherited from the *loop family, unchanged in spirit and in the one rule
 that matters: a credits balance has no clock."""
 

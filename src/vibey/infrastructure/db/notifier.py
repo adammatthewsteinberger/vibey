@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """LISTEN/NOTIFY wakeup for job-ready events, with a timeout that doubles as
 the 5-second poll fallback: a missed or coalesced notification costs
 latency, never correctness, because the worker loop re-polls the queue on

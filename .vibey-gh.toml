@@ -1,0 +1,29 @@
+# vibey-gh: provenance guardrails for this repository.
+#
+# All bundled workflows are managed here: this repository has moved off
+# release-please entirely, so vibey-gh owns provenance, version derivation,
+# the merge train, and promotion. Omitting `workflows` means "all of them",
+# which is the right answer once there is no second release system to
+# collide with.
+
+[fingerprint]
+# Defaults already read "Made with love by Vibey, the auto-vibecoding
+# machine by Adam Matthew Steinberger", so text and trailer are inherited.
+sources = [
+  "src/**/*.py",
+  "tests/**/*.py",
+  ".github/workflows/*.yml",
+]
+
+[version]
+files         = ["pyproject.toml", "src/vibey/__init__.py"]
+content_paths = ["src/vibey/"]
+code_paths    = ["src/vibey/"]
+
+[branches]
+integration = "develop"
+release     = "main"
+
+[merge_train]
+owner           = "adammatthewsteinberger"
+trusted_authors = ["adammatthewsteinberger", "claude[bot]", "github-actions[bot]", "vibey[bot]"]

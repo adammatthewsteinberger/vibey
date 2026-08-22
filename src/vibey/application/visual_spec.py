@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Render the accepted VISUAL_DESIGN inventory without performing I/O."""
 
 from vibey.domain.visual import VisualInventory

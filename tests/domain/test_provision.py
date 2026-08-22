@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 from vibey.domain.provision import (
     BEGIN_MARKER,
     END_MARKER,

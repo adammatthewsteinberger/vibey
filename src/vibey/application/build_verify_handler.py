@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Durable ``build.verify`` handler (M6 task 6.5): the project's own gates,
 acceptance-criterion coverage, and a diff review by an engine that must
 differ from the implementer -- deliberately a separate job from a different

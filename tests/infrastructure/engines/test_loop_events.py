@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Tests for loop_events.py event type mapping."""
 
 from vibey.domain.engine import EngineId

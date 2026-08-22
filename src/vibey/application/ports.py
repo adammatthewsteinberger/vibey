@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Backwards-compatible re-export of `application.interfaces`.
 
 The Protocols moved into `application/interfaces/` so every seam lives in one

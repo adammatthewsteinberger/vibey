@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Typed notification events for human gates, phase changes, and budget thresholds."""
 
 from collections.abc import Mapping

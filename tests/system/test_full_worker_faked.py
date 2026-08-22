@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Faked full-worker E2E (worker-orchestration plan, milestone test A).
 
 A real project travels INTAKE -> DESIGN -> BUILD -> REVIEW -> DONE(local)
