@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 import asyncio
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4

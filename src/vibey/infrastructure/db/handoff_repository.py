@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Persists every handoff attempt, including its violations, so gate
 quality is queryable (data-model.md §3.7): "how often does claudeloop ->
 codexloop need two attempts?" is a query, not a guess."""

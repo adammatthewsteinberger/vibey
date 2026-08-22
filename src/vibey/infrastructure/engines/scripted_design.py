@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Offline deterministic DESIGN provider used by integration/system tests.
 
 This is deliberately not presented as a live model-backed interview or web

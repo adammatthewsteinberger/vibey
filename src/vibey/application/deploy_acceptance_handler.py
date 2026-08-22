@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Phase ④ DEPLOY DESIGN acceptance handler and consent guard (Milestone 10 task 10.3)."""
 
 from collections.abc import Callable

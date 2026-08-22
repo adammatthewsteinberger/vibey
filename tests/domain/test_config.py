@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 import pytest
 
 from vibey.domain.config import ConfigError, load_config_from_string

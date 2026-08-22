@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Engine rotation: eligibility filtering and nginx's Smooth Weighted Round
 Robin over the eligible set (ADR-0005)."""
 

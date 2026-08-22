@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Offline deterministic VisualInventory producer used by integration tests.
 
 Not presented as a live model-backed screen inventory -- exercises the same

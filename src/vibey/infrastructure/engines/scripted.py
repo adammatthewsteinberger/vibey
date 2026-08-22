@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """ScriptedEngine: a fake runner that writes the real run-directory shape
 (architecture doc §8.1 / rotation-and-engines.md §8.1) without spawning a
 process or touching the network. Every later test in M3+ that needs "an

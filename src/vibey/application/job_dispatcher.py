@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Routes claimed jobs to kind-specific application handlers.
 
 Two registries: `handlers` for kinds whose collaborators are worker-lifetime

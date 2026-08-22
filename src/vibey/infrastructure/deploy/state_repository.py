@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """File-backed deployment spec/consent state, bound to one project's repo.
 
 Mirrors FileDesignSpecRepository's shape but binds the repo path at

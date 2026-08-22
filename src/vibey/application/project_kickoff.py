@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Starting a project's DESIGN interview, in one place.
 
 This used to live as a private helper inside the CLI, which was fine while

@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """The visual-design interstitial's inventory (M5 task 5.7).
 
 A ``VisualInventory`` is the screen/state matrix a ``visual.inventory`` job

@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Fixtures shared by all tests/live/ tests.
 
 Faked mode (marker: @pytest.mark.live) uses ScriptedEngine with real

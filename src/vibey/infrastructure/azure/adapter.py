@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Concrete Azure adapters implementing AzureClientPort (Milestone 10 task 10.4)."""
 
 from datetime import UTC, datetime

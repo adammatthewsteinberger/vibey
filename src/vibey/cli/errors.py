@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Turning exceptions into something an operator can act on.
 
 Every CLI command runs inside ``asyncio.run(...)``, so an unhandled error

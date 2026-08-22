@@ -1,0 +1,78 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
+name: Promote
+
+# The other half of the flow. The merge train fills the integration branch; this moves it
+# to the release branch, which is what publishes.
+#
+# It follows the merge train's SUCCESS rather than a clock, so a week's work is promoted
+# as soon as it is all in. The cron is a backstop for the weeks the train has nothing to
+# merge and so never completes, and for anything that arrives by another route.
+#
+# The decisions live in `vibey-gh promote`, where they are unit-tested: compare the
+# branches by CONTENT rather than commit count, derive the version before opening
+# anything, wait for the checks, then merge. A hand-written version of this workflow gets
+# at least one of those wrong.
+#
+# PERMISSIONS. A ruleset requiring an approving review cannot be satisfied by the default
+# GITHUB_TOKEN. Supply `AUTOMERGE_TOKEN` (a token belonging to someone with the admin
+# role) or the job will open the pull request and report that it could not merge it —
+# which is a safe place to stop.
+
+on:
+  workflow_run:
+    workflows: ["Merge train"]
+    types: [completed]
+  schedule:
+    - cron: "17 8 * * 1"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Report what would be promoted without opening or merging anything"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: promote
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    name: Promote
+    # A merge train that failed leaves the integration branch in an unknown state.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # checkout's extraheader beats a remote URL, so the push of the version bump
+          # needs the token HERE or it authenticates as the default bot and is refused.
+          token: ${{ secrets.AUTOMERGE_TOKEN || github.token }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the tooling
+        run: |
+          set -euo pipefail
+          if grep -qE '^name = "vibey-(gh|bootstrap)"' pyproject.toml 2>/dev/null; then
+            python -m pip install --quiet -e .
+          else
+            python -m pip install --quiet vibey-gh
+          fi
+
+      - name: Promote
+        env:
+          GH_TOKEN: ${{ secrets.AUTOMERGE_TOKEN || github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name "vibey[bot]"
+          git config user.email "adam@matthewsteinberger.com"
+          vibey-gh promote ${{ inputs.dry_run && '--dry-run' || '' }}

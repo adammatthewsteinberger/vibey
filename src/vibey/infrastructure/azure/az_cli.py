@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """AzCliClientAdapter: the real AzureClientPort, over the `az` CLI.
 
 Deliberately never a default -- bootstrap keeps the in-memory adapter

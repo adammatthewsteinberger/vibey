@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Materialize a runner's positional Markdown plan from a ``RunSpec``."""
 
 import os

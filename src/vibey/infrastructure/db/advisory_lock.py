@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Postgres advisory lock scoped to (project_id, cycle) -- the
 IntegrationLock implementation that lets multiple workers safely share one
 integration branch.

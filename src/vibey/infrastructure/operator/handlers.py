@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """kopf handlers for the VibeyProject custom resource.
 
 Deliberately thin. Every decision worth testing lives in

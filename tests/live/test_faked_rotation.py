@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Faked-mode rotation: forced-rotation scenario where an engine wind-down
 triggers selection of a different engine, exercising the full rotation
 stack without subprocesses.

@@ -1,0 +1,11 @@
+#!/bin/sh
+# vibey-gh owns core.hooksPath, so .git/hooks is never consulted again and the
+# pre-commit framework's hooks would silently stop running -- a worse failure
+# than any gate they enforce, because everything keeps looking green.
+#
+# Delegates to the framework's OWN generated hook rather than calling
+# `pre-commit run`: that script knows where its environment lives, and a git
+# hook does not inherit an activated virtualenv, so re-invoking by name finds
+# the wrong tools or none at all.
+[ -x ".git/hooks/commit-msg" ] || exit 0
+exec ".git/hooks/commit-msg" "$@"

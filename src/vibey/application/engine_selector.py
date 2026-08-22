@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Engine selector: the first production caller of domain/rotation.select().
 
 Combines engine health records, rotation cursor state, and job requirements

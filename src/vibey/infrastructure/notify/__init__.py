@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Notification facilities for desktop alerts and webhooks."""
 
 from vibey.infrastructure.notify.desktop import DesktopNotifier

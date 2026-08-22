@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Projection from vibey's own state onto Kubernetes status conditions.
 
 Pure by design: no kopf, no Kubernetes client, no I/O. The operator is

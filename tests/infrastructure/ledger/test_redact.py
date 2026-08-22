@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 from vibey.infrastructure.ledger.redact import REDACTED, contains_secret, redact_payload
 
 

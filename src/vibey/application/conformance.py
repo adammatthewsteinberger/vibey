@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """`vibey doctor --conformance`: the 9 checks from
 rotation-and-engines.md §8.2, run against whatever EngineAdapter is handed
 in -- ScriptedEngine in CI, a real adapter locally. A failing check sets

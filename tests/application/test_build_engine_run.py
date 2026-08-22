@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """run_and_record's optional exit-code channel."""
 
 from collections.abc import AsyncIterator

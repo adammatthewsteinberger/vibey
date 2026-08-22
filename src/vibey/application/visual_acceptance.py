@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Accepts or waives the VISUAL_DESIGN interstitial (M5 task 5.13).
 
 `vibey visual accept` / `vibey visual waive` are the `VISUAL_DESIGN -> BUILD`

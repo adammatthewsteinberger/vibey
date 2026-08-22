@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """The -v ladder. Same meaning in every runner, so it is tested identically."""
 
 from __future__ import annotations

@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Durable ``review.deployment_choice`` handler (M7 task 7.7 & 7.8).
 
 Presents the explicit deployment opt-in / opt-out choice gate:

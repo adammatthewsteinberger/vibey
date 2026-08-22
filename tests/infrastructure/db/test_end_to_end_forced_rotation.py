@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """4.11: the milestone this whole design exists for, demonstrated rather
 than asserted. A mid-item CapacityRejected kills engine A; work continues
 on engine B; every closable id open when A died is present, verbatim, in

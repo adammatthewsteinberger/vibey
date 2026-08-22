@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Synthesis and final publication handlers for DESIGN."""
 
 from vibey.application.design_handler import DesignLedger

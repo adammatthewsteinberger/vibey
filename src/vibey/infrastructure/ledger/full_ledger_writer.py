@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """FullLedger writer: <worktree>/.vibey/handoff/ledger.jsonl, one JSON
 object per line ordered by seq -- the complete, unabridged history handed
 to every receiving engine (handoff-protocol.md §4.1). The digest in the

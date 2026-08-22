@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Application interfaces -- every seam implemented by infrastructure/ and
 never imported from it.
 

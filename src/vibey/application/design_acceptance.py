@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Accepts a synthesized DESIGN spec using real ledger-derived guard evidence.
 
 `vibey design accept` is also the explicit `DESIGN -> VISUAL_DESIGN` / `DESIGN

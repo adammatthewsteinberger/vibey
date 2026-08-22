@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """The durable job queue and the handler seam a worker drives."""
 
 from __future__ import annotations

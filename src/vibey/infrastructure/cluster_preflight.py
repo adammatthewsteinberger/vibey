@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """In-cluster preflight: the wiring checks a deployed worker cannot make
 for itself, but which decide whether it will work at all.
 

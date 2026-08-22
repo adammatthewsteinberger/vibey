@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Pure projections over a replayed event range (architecture-and-roadmap.md
 §4): OpenItems, DecisionLog, CostReport, Deltas, and Q&A. Projections are derived and
 disposable -- any of them can be rebuilt by replaying the log, which is

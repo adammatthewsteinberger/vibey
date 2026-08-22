@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 from vibey.domain.deployment import ChangeAction, CostBoundary
 from vibey.infrastructure.azure.iac import IacValidator
 

@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Scope-bound mutation guard for Phase 2 implementation isolation (Milestone 9 task 9.3)."""
 
 import posixpath

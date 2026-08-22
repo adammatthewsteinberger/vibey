@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Parsing and validation of the vibey.toml schema.
 
 Pure: this module accepts already-loaded TOML text or a dict and returns

@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Durable ``visual.inventory`` / ``visual.plan`` handlers.
 
 Task 5.7/5.8 scaffolding: an inventory producer fills the screen/state matrix

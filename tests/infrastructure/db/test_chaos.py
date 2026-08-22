@@ -1,3 +1,4 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """The single most important test in M2 (implementation-plan.md 2.8).
 
 The plan calls for 8 workers processing 500 jobs while a random worker is
