@@ -33,7 +33,7 @@ from vibey.application.dto import (
     StopSummary,
 )
 from vibey.domain.capacity import CapacityState
-from vibey.domain.engine import EXIT_CODE_WIND_DOWN, EngineDescriptor
+from vibey.domain.engine import EXIT_CODE_WIND_DOWN, EngineDescriptor, EngineId
 from vibey.domain.errors import VibeyError
 from vibey.domain.job import FailureClass
 from vibey.domain.ledger import EventKind
@@ -52,6 +52,15 @@ _active_processes: dict[object, asyncio.subprocess.Process] = {}
 # process lifetime; --help is static for a given install, so there's
 # nothing to invalidate.
 _help_text_cache: dict[str, str] = {}
+
+
+def _render_plan(descriptor: EngineDescriptor, prompt: str) -> str:
+    """Render a vendor-compatible work plan without dropping prompt detail."""
+    if descriptor.engine_id is not EngineId.CODEXLOOP:
+        return prompt
+
+    summary = next((line.strip() for line in prompt.splitlines() if line.strip()), "Complete task")
+    return f"# Work Plan\n\n- [ ] {summary}\n\n## Instructions\n\n{prompt}\n"
 
 
 async def _communicate(
@@ -238,7 +247,7 @@ class LoopProcessAdapter:
             plan_dir = spec.worktree_path / ".vibey" / "plans"
             plan_dir.mkdir(parents=True, exist_ok=True)
             plan_path = plan_dir / f"{spec.run_id}.md"
-            plan_path.write_text(spec.prompt)
+            plan_path.write_text(_render_plan(self.descriptor, spec.prompt))
 
         # Build argv using existing argv.py
         argv = build_argv(self.descriptor, spec)

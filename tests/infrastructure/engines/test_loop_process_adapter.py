@@ -22,6 +22,7 @@ from vibey.infrastructure.engines.loop_process_adapter import (
     LoopProcessAdapter,
     _active_processes,
     _communicate,
+    _render_plan,
 )
 
 
@@ -200,6 +201,23 @@ async def test_preflight_not_installed(tmp_path: Path) -> None:
 def test_adapter_works_with_any_descriptor() -> None:
     adapter = LoopProcessAdapter(descriptor=CODEXLOOP)
     assert adapter.descriptor.engine_id == EngineId.CODEXLOOP
+
+
+def test_render_plan_adds_codexloop_checkbox_without_losing_prompt() -> None:
+    prompt = "Implement work item ws\n\nRun every verification gate."
+
+    rendered = _render_plan(CODEXLOOP, prompt)
+
+    assert rendered.startswith("# Work Plan\n\n- [ ] Implement work item ws\n")
+    assert rendered.endswith(f"## Instructions\n\n{prompt}\n")
+
+
+def test_render_plan_preserves_other_engine_prompts() -> None:
+    assert _render_plan(CLAUDELOOP, "plain prompt") == "plain prompt"
+
+
+def test_render_plan_handles_an_empty_codexloop_prompt() -> None:
+    assert "- [ ] Complete task" in _render_plan(CODEXLOOP, "")
 
 
 def _make_fake_binary(tmp_path: Path, name: str, script: str) -> Path:
