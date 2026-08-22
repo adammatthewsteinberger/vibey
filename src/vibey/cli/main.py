@@ -504,6 +504,50 @@ def watch_dashboard(
     asyncio.run(run_dashboard())
 
 
+@app.command("recover")
+def recover(
+    project_id: Annotated[
+        UUID | None, typer.Option("--project", help="Optional project ID to recover")
+    ] = None,
+    all_projects: Annotated[
+        bool, typer.Option("--all", help="Recover jobs for all projects")
+    ] = False,
+) -> None:
+    """Recover stuck leased jobs, setting them back to ready state."""
+    import asyncpg
+
+    from vibey.bootstrap import database_url
+
+    async def run_recover() -> None:
+        if not project_id and not all_projects:
+            typer.echo("Must specify either --project <id> or --all")
+            raise typer.Exit(1)
+
+        conn = await asyncpg.connect(database_url())
+        try:
+            if all_projects:
+                result = await conn.execute(
+                    "UPDATE job SET state = 'ready', lease_owner = NULL, lease_expires_at = NULL, "
+                    "assigned_engine = NULL WHERE state = 'leased'"
+                )
+            else:
+                result = await conn.execute(
+                    "UPDATE job SET state = 'ready', lease_owner = NULL, lease_expires_at = NULL, "
+                    "assigned_engine = NULL WHERE state = 'leased' AND project_id = $1",
+                    project_id,
+                )
+
+            import re
+
+            match = re.search(r"UPDATE (\\d+)", result)
+            count = match.group(1) if match else "0"
+            typer.echo(f"Recovered {count} stuck job(s).")
+        finally:
+            await conn.close()
+
+    asyncio.run(run_recover())
+
+
 @app.command("status")
 def status(
     project_id: Annotated[UUID | None, typer.Argument(help="Optional project ID")] = None,

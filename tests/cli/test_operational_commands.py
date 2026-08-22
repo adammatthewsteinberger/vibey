@@ -1512,3 +1512,36 @@ async def test_recorded_spend_is_visible_to_the_budget_brake(tmp_path: Path) -> 
 
     assert ledger.turns_spent == 2
     assert ledger.dollars_spent == pytest.approx(0.6916597)
+
+
+def test_recover_no_args() -> None:
+    result = runner.invoke(app, ["recover"])
+    assert result.exit_code == 1
+    assert "Must specify either --project <id> or --all" in result.stdout
+
+
+def test_recover_all_projects(tmp_path: Path) -> None:
+    async def seed() -> None:
+        async with build_app() as resources:
+            _ = resources
+
+    asyncio.run(seed())
+
+    result = runner.invoke(app, ["recover", "--all"])
+    assert result.exit_code == 0
+    assert "Recovered 0 stuck job(s)." in result.stdout
+
+
+def test_recover_with_project(tmp_path: Path) -> None:
+    async def seed() -> None:
+        async with build_app() as resources:
+            _ = resources
+
+    asyncio.run(seed())
+
+    import uuid
+
+    pid = str(uuid.uuid4())
+    result = runner.invoke(app, ["recover", "--project", pid])
+    assert result.exit_code == 0
+    assert "Recovered 0 stuck job(s)." in result.stdout
