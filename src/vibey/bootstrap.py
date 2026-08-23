@@ -75,7 +75,7 @@ from vibey.infrastructure.db.review_ledger import PostgresReviewLedger
 from vibey.infrastructure.db.rotation_cursor_repository import PostgresRotationCursorRepository
 from vibey.infrastructure.db.visual_inventory_repository import FileVisualInventoryRepository
 from vibey.infrastructure.deploy.state_repository import FileDeploymentStateRepository
-from vibey.infrastructure.engines.descriptors import ALL_DESCRIPTORS, BY_ENGINE_ID
+from vibey.infrastructure.engines.descriptors import BY_ENGINE_ID, DEFAULT_DESCRIPTORS, QWENLOOP
 from vibey.infrastructure.engines.loop_process_adapter import LoopProcessAdapter
 from vibey.infrastructure.git.integration_branch import IntegrationBranch
 from vibey.infrastructure.git.worktree_manager import GitWorktreeManager
@@ -230,6 +230,14 @@ async def preflight_sweep(
     )
 
 
+def _qwenloop_enabled(config: Mapping[str, object]) -> bool:
+    override = os.environ.get("VIBEY_FEATURE_QWENLOOP")
+    if override is not None:
+        return override.strip().lower() in {"1", "true", "yes", "on"}
+    features = config.get("features")
+    return isinstance(features, Mapping) and features.get("qwenloop") is True
+
+
 def build_full_worker(
     *,
     resources: AppResources,
@@ -253,7 +261,10 @@ def build_full_worker(
     sweep). `azure_client` defaults to the in-memory adapter -- real `az`
     wiring is an explicit later decision, never an accidental default.
     """
-    adapters = engine_adapters if engine_adapters is not None else resources.engine_adapters
+    adapters = dict(engine_adapters if engine_adapters is not None else resources.engine_adapters)
+    qwenloop_enabled = _qwenloop_enabled(project.config)
+    if qwenloop_enabled and EngineId.QWENLOOP not in adapters:
+        adapters[EngineId.QWENLOOP] = LoopProcessAdapter(descriptor=QWENLOOP)
     azure = azure_client if azure_client is not None else InMemoryAzureClientAdapter()
     clock = resources.clock
     repo_root = Path(project.repo_path)
@@ -268,6 +279,7 @@ def build_full_worker(
         clock=clock,
         owner=owner,
         allow_list=allow_list,
+        standby_engine=EngineId.QWENLOOP if qwenloop_enabled else None,
     )
     # The runaway brake: caps come from the project's own config
     # (max_cycle_dollars / max_cycle_turns, set at `vibey new`). Without
@@ -549,7 +561,7 @@ async def build_app(*, url: str | None = None) -> AsyncIterator[AppResources]:
 
         # Build engine adapters
         engine_adapters = {
-            desc.engine_id: LoopProcessAdapter(descriptor=desc) for desc in ALL_DESCRIPTORS
+            desc.engine_id: LoopProcessAdapter(descriptor=desc) for desc in DEFAULT_DESCRIPTORS
         }
 
         yield AppResources(

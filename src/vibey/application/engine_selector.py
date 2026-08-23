@@ -104,6 +104,11 @@ class EngineSelector:
 
         # Filter to eligible engines
         eligible_runtimes = eligible(runtimes, requirement=requirement, allow_list=allow_list)
+        # Local qwenloop is a standby tier: a zero-dollar local model must
+        # never crowd healthy paid engines out of ordinary SWRR rotation.
+        paid = tuple(item for item in eligible_runtimes if item.engine_id is not EngineId.QWENLOOP)
+        if paid:
+            eligible_runtimes = paid
         if not eligible_runtimes:
             raise NoEligibleEngine(f"No engines meet requirements for project {project_id}")
 

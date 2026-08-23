@@ -107,6 +107,7 @@ class SelectingEngineProvider:
         owner: str,
         allow_list: frozenset[EngineId] | None = None,
         backoff: timedelta = timedelta(minutes=5),
+        standby_engine: EngineId | None = None,
     ) -> None:
         self._selector = selector
         self._health = health
@@ -116,9 +117,20 @@ class SelectingEngineProvider:
         self._owner = owner
         self._allow_list = allow_list
         self._backoff = backoff
+        self._standby_engine = standby_engine
 
     async def select_for(self, job: JobRecord) -> EngineAdapter:
         inputs = selection_inputs_for_job(job)
+        if self._standby_engine is not None:
+            standby = self._adapters.get(self._standby_engine)
+            if standby is not None:
+                preflight = await standby.preflight()
+                await self._health.update_from_preflight(
+                    job.project_id,
+                    self._standby_engine,
+                    preflight,
+                    conformance_ok=preflight.installed and preflight.auth_ok,
+                )
         try:
             engine_id, _selection = await self._selector.select_engine(
                 job.project_id,

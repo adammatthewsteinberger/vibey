@@ -24,6 +24,7 @@ def test_router_file_names_match_adr_0011() -> None:
         "AGENTS.md",
         "CURSOR.md",
         "GEMINI.md",
+        "QWEN.md",
     }
 
 

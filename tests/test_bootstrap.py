@@ -7,7 +7,7 @@ from uuid import uuid4
 from tests.application.fakes import FakeHumanGateRepository, FakeJobRepository, make_job
 from vibey.application.design import DesignEvent
 from vibey.application.dto import ProjectRecord
-from vibey.bootstrap import build_design_worker, build_visual_worker
+from vibey.bootstrap import _qwenloop_enabled, build_design_worker, build_visual_worker
 from vibey.domain.job import JobState
 from vibey.domain.phase import Phase
 from vibey.infrastructure.engines.scripted_design import ScriptedDesignProvider
@@ -23,6 +23,18 @@ class FakeLedger:
 
     async def all_for_project(self, project_id):  # type: ignore[no-untyped-def]
         return tuple(self.events)
+
+
+def test_qwenloop_feature_resolution(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.delenv("VIBEY_FEATURE_QWENLOOP", raising=False)
+    assert not _qwenloop_enabled({})
+    assert _qwenloop_enabled({"features": {"qwenloop": True}})
+
+    monkeypatch.setenv("VIBEY_FEATURE_QWENLOOP", "true")
+    assert _qwenloop_enabled({})
+
+    monkeypatch.setenv("VIBEY_FEATURE_QWENLOOP", "false")
+    assert not _qwenloop_enabled({"features": {"qwenloop": True}})
 
 
 async def test_build_design_worker_composes_an_executable_interview(tmp_path: Path) -> None:

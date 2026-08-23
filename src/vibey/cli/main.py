@@ -981,7 +981,7 @@ def doctor(
     """Check engine health, auth status, and optionally run conformance."""
     from vibey.application.conformance import run_conformance
     from vibey.infrastructure.engines.classify import CREDITS_FIXTURES
-    from vibey.infrastructure.engines.descriptors import ALL_DESCRIPTORS, BY_ENGINE_ID
+    from vibey.infrastructure.engines.descriptors import BY_ENGINE_ID, DEFAULT_DESCRIPTORS
     from vibey.infrastructure.engines.loop_process_adapter import LoopProcessAdapter
 
     async def run_doctor() -> None:
@@ -998,7 +998,7 @@ def doctor(
                 raise typer.Exit(1) from exc
             descriptors = [BY_ENGINE_ID[eid]]
         else:
-            descriptors = list(ALL_DESCRIPTORS)
+            descriptors = list(DEFAULT_DESCRIPTORS)
 
         all_ok = True
 

@@ -117,6 +117,40 @@ def test_minimal_config_applies_defaults() -> None:
     assert config.phases.build.effort == "low"
     assert config.phases.review.effort == "high"
     assert config.deploy.enabled is False
+    assert config.features.qwenloop is False
+    assert config.qwenloop.backend == "auto"
+
+
+def test_qwenloop_feature_auto_includes_standby() -> None:
+    config = load_config_from_string(
+        '[project]\nname = "x"\n\n[features]\nqwenloop = true\n\n'
+        '[qwenloop]\nbackend = "llama.cpp"\n'
+    )
+    assert config.engines.enabled[-1] == "qwenloop"
+    assert config.qwenloop.backend == "llama.cpp"
+
+
+def test_qwenloop_request_requires_feature() -> None:
+    with pytest.raises(ConfigError, match="must be true"):
+        load_config_from_string('[project]\nname = "x"\n\n[engines]\nenabled = ["qwenloop"]\n')
+
+
+def test_invalid_qwenloop_config_is_rejected() -> None:
+    with pytest.raises(ConfigError):
+        load_config_from_string(
+            '[project]\nname = "x"\n\n[features]\nqwenloop = true\n\n'
+            '[qwenloop]\nbackend = "ollama"\n'
+        )
+    with pytest.raises(ConfigError, match="non-negative"):
+        load_config_from_string(
+            '[project]\nname = "x"\n\n[features]\nqwenloop = true\n\n'
+            "[qwenloop]\nidle_timeout_seconds = -1\n"
+        )
+    with pytest.raises(ConfigError, match="must be positive"):
+        load_config_from_string(
+            '[project]\nname = "x"\n\n[features]\nqwenloop = true\n\n'
+            "[qwenloop]\ncontext_window = 0\n"
+        )
 
 
 def test_missing_project_table_is_rejected() -> None:

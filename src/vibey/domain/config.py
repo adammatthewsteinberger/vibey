@@ -14,7 +14,8 @@ from vibey.domain.errors import VibeyError
 
 VALID_ISOLATION_LEVELS = ("worktree", "container", "vm")
 VALID_EFFORTS = ("trivial", "low", "standard", "high", "max")
-KNOWN_ENGINES = ("claudeloop", "codexloop", "cursorloop", "agyloop")
+DEFAULT_ENGINES = ("claudeloop", "codexloop", "cursorloop", "agyloop")
+KNOWN_ENGINES = (*DEFAULT_ENGINES, "qwenloop")
 
 
 class ConfigError(VibeyError):
@@ -50,7 +51,7 @@ class BudgetConfig:
 
 @dataclass(frozen=True, slots=True)
 class EnginesConfig:
-    enabled: tuple[str, ...] = KNOWN_ENGINES
+    enabled: tuple[str, ...] = DEFAULT_ENGINES
     weights: dict[str, int] = field(default_factory=dict)
 
 
@@ -81,6 +82,21 @@ class DeployConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class FeaturesConfig:
+    qwenloop: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class QwenloopConfig:
+    backend: str = "auto"
+    portable_profile: str = "qwen2.5-coder-14b-q5-k-m"
+    nvidia_profile: str = "qwen2.5-coder-14b-bf16"
+    idle_timeout_seconds: int = 900
+    startup_timeout_seconds: int = 180
+    context_window: int = 32_768
+
+
+@dataclass(frozen=True, slots=True)
 class VibeyConfig:
     project: ProjectConfig
     isolation: IsolationConfig = field(default_factory=IsolationConfig)
@@ -89,6 +105,8 @@ class VibeyConfig:
     phases: PhasesConfig = field(default_factory=PhasesConfig)
     provision: ProvisionConfig = field(default_factory=ProvisionConfig)
     deploy: DeployConfig = field(default_factory=DeployConfig)
+    features: FeaturesConfig = field(default_factory=FeaturesConfig)
+    qwenloop: QwenloopConfig = field(default_factory=QwenloopConfig)
 
 
 def parse_toml_string(text: str) -> dict[str, Any]:
@@ -151,7 +169,7 @@ def _parse_budget(data: dict[str, Any]) -> BudgetConfig:
 
 def _parse_engines(data: dict[str, Any]) -> EnginesConfig:
     table = _optional(data, "engines", "engines", dict, {})
-    enabled = tuple(_optional(table, "enabled", "engines.enabled", list, list(KNOWN_ENGINES)))
+    enabled = tuple(_optional(table, "enabled", "engines.enabled", list, list(DEFAULT_ENGINES)))
     for engine in enabled:
         if engine not in KNOWN_ENGINES:
             raise ConfigError("engines.enabled", f"unknown engine {engine!r}")
@@ -199,19 +217,80 @@ def _parse_deploy(data: dict[str, Any]) -> DeployConfig:
     )
 
 
+def _parse_features(data: dict[str, Any]) -> FeaturesConfig:
+    table = _optional(data, "features", "features", dict, {})
+    return FeaturesConfig(qwenloop=_optional(table, "qwenloop", "features.qwenloop", bool, False))
+
+
+def _parse_qwenloop(data: dict[str, Any]) -> QwenloopConfig:
+    table = _optional(data, "qwenloop", "qwenloop", dict, {})
+    backend = _optional(table, "backend", "qwenloop.backend", str, "auto")
+    if backend not in {"auto", "llama.cpp", "vllm"}:
+        raise ConfigError("qwenloop.backend", "must be one of ('auto', 'llama.cpp', 'vllm')")
+    result = QwenloopConfig(
+        backend=backend,
+        portable_profile=_optional(
+            table, "portable_profile", "qwenloop.portable_profile", str, "qwen2.5-coder-14b-q5-k-m"
+        ),
+        nvidia_profile=_optional(
+            table, "nvidia_profile", "qwenloop.nvidia_profile", str, "qwen2.5-coder-14b-bf16"
+        ),
+        idle_timeout_seconds=_optional(
+            table, "idle_timeout_seconds", "qwenloop.idle_timeout_seconds", int, 900
+        ),
+        startup_timeout_seconds=_optional(
+            table, "startup_timeout_seconds", "qwenloop.startup_timeout_seconds", int, 180
+        ),
+        context_window=_optional(table, "context_window", "qwenloop.context_window", int, 32_768),
+    )
+    if result.idle_timeout_seconds < 0:
+        raise ConfigError("qwenloop.idle_timeout_seconds", "must be non-negative")
+    if result.startup_timeout_seconds <= 0 or result.context_window <= 0:
+        raise ConfigError("qwenloop", "startup_timeout_seconds and context_window must be positive")
+    return result
+
+
 def parse_config(data: dict[str, Any]) -> VibeyConfig:
     """Validate an already-parsed TOML dict and build a VibeyConfig.
 
     Raises ConfigError on the first violation found.
     """
+    features = _parse_features(data)
+    engines = _parse_engines(data)
+    phase_engines = (
+        *(
+            _optional(
+                _optional(data, "phases", "phases", dict, {}), "design", "phases.design", dict, {}
+            ).get("engines")
+            or []
+        ),
+        *(
+            _optional(
+                _optional(data, "phases", "phases", dict, {}), "build", "phases.build", dict, {}
+            ).get("engines")
+            or []
+        ),
+        *(
+            _optional(
+                _optional(data, "phases", "phases", dict, {}), "review", "phases.review", dict, {}
+            ).get("engines")
+            or []
+        ),
+    )
+    if not features.qwenloop and ("qwenloop" in engines.enabled or "qwenloop" in phase_engines):
+        raise ConfigError("features.qwenloop", "must be true before qwenloop can be requested")
+    if features.qwenloop and "enabled" not in _optional(data, "engines", "engines", dict, {}):
+        engines = EnginesConfig(enabled=(*engines.enabled, "qwenloop"), weights=engines.weights)
     return VibeyConfig(
         project=_parse_project(data),
         isolation=_parse_isolation(data),
         budget=_parse_budget(data),
-        engines=_parse_engines(data),
+        engines=engines,
         phases=_parse_phases(data),
         provision=_parse_provision(data),
         deploy=_parse_deploy(data),
+        features=features,
+        qwenloop=_parse_qwenloop(data),
     )
 
 

@@ -162,6 +162,13 @@ LOOP_EVENT_MAP: dict[EngineId, dict[str, EventKind]] = {
         "capacity.forecast": EventKind.BUDGET_SPENT,
         "finished": EventKind.VERDICT_RENDERED,
     },
+    EngineId.QWENLOOP: {
+        "run.started": EventKind.SESSION_SEEDED,
+        "text_delta": EventKind.TURN_COMPLETED,
+        "tool_result": EventKind.TOOL_INVOKED,
+        "completed": EventKind.VERDICT_RENDERED,
+        "failed": EventKind.VERDICT_RENDERED,
+    },
 }
 
 

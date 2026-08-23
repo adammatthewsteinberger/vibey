@@ -38,9 +38,9 @@ def test_argv_matches_golden_file(descriptor, effort) -> None:  # type: ignore[n
     assert shlex.join(argv) == expected
 
 
-def test_exactly_twenty_golden_files_exist() -> None:
+def test_exactly_twenty_five_golden_files_exist() -> None:
     files = sorted(GOLDEN_DIR.glob("*.txt"))
-    assert len(files) == 20
+    assert len(files) == 25
 
 
 @pytest.mark.parametrize("descriptor", ALL_DESCRIPTORS, ids=lambda d: d.engine_id.value)
