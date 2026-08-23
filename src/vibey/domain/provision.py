@@ -18,12 +18,13 @@ END_MARKER = "<!-- vibey:end -->"
 
 
 class RouterFile(StrEnum):
-    """The four surfaces from ADR-0011's table, one per engine family."""
+    """Agent guidance surfaces, including qwenloop's local-agent router."""
 
     CLAUDE = "CLAUDE.md"
     AGENTS = "AGENTS.md"
     CURSOR = "CURSOR.md"
     GEMINI = "GEMINI.md"
+    QWEN = "QWEN.md"
 
 
 @dataclass(frozen=True, slots=True)

@@ -18,6 +18,7 @@ class EngineId(StrEnum):
     CODEXLOOP = "codexloop"
     CURSORLOOP = "cursorloop"
     AGYLOOP = "agyloop"
+    QWENLOOP = "qwenloop"
 
 
 class Capability(StrEnum):

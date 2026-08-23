@@ -12,6 +12,7 @@ Each engine reads different guidance files:
 | Codex / `codexloop` | `AGENTS.md`, `.agents/skills/` |
 | Cursor / `cursorloop` | `CURSOR.md`, `.cursor/rules/` |
 | Antigravity / `agyloop` | `GEMINI.md`, `.agent/` |
+| Local Qwen / `qwenloop` | `QWEN.md`, `.agents/skills/` |
 
 If these disagree, rotating engines silently changes the project's rules mid-build:
 item 3 is written to one style guide and item 4 to another, and the diff review

@@ -20,7 +20,7 @@ import asyncpg
 
 from vibey.domain.engine import EngineId
 from vibey.infrastructure.db.migrator import discover_migrations
-from vibey.infrastructure.engines.descriptors import ALL_DESCRIPTORS
+from vibey.infrastructure.engines.descriptors import DEFAULT_DESCRIPTORS
 
 
 @dataclass(frozen=True, slots=True)
@@ -104,7 +104,7 @@ def check_engine_auth(
     """An engine binary present with no credentials is the misconfiguration
     worth catching. No binaries at all is the scripted-only image, which is
     a deliberate state today, not a fault."""
-    installed = [d for d in ALL_DESCRIPTORS if which(d.binary) is not None]
+    installed = [d for d in DEFAULT_DESCRIPTORS if which(d.binary) is not None]
     if not installed:
         return ClusterCheck(
             "engine-auth", True, "no engine binaries installed (scripted-provider image)"

@@ -116,11 +116,28 @@ def _classify_agyloop(raw: Mapping[str, object]) -> CapacityState:
     return Available()
 
 
+def _classify_qwenloop(raw: Mapping[str, object]) -> CapacityState:
+    """Normalize qwenloop's local lifecycle states.
+
+    The credits shape exists only for shared conformance testing; qwenloop's
+    runtime never emits it for a local resource or configuration failure.
+    """
+    state = raw.get("local_state")
+    if state == "credits_exhausted":
+        return CreditsExhausted(can_purchase=False)
+    if state == "busy":
+        return WindowExhausted(resets_at=_parse_dt(raw.get("retry_at")), rate_limit_type="local")
+    if state == "configuration_error":
+        return AuthenticationFailed(detail=str(raw.get("detail", "")))
+    return Available()
+
+
 _CLASSIFIERS = {
     EngineId.CLAUDELOOP: _classify_claudeloop,
     EngineId.CODEXLOOP: _classify_codexloop,
     EngineId.CURSORLOOP: _classify_cursorloop,
     EngineId.AGYLOOP: _classify_agyloop,
+    EngineId.QWENLOOP: _classify_qwenloop,
 }
 
 
@@ -141,6 +158,7 @@ CREDITS_FIXTURES: dict[EngineId, dict[str, object]] = {
         "quota_metric": "billing.generate_content",
         "billing_exhausted": True,
     },
+    EngineId.QWENLOOP: {"local_state": "credits_exhausted"},
 }
 
 WINDOW_FIXTURES: dict[EngineId, dict[str, object]] = {
@@ -160,6 +178,7 @@ WINDOW_FIXTURES: dict[EngineId, dict[str, object]] = {
         "quota_metric": "generate_content_free_tier_requests",
         "retry_after": "30s",
     },
+    EngineId.QWENLOOP: {"local_state": "busy", "retry_at": "2026-01-01T00:05:00+00:00"},
 }
 
 AUTH_FIXTURES: dict[EngineId, dict[str, object]] = {
@@ -167,6 +186,7 @@ AUTH_FIXTURES: dict[EngineId, dict[str, object]] = {
     EngineId.CODEXLOOP: {"error": {"code": "invalid_api_key", "message": "bad key"}},
     EngineId.CURSORLOOP: {"status": 401, "type": "unauthorized", "message": "bad token"},
     EngineId.AGYLOOP: {"grpc_status": "UNAUTHENTICATED", "detail": "adc not found"},
+    EngineId.QWENLOOP: {"local_state": "configuration_error", "detail": "model missing"},
 }
 
 AVAILABLE_FIXTURES: dict[EngineId, dict[str, object]] = {
@@ -174,6 +194,7 @@ AVAILABLE_FIXTURES: dict[EngineId, dict[str, object]] = {
     EngineId.CODEXLOOP: {},
     EngineId.CURSORLOOP: {"status": 200},
     EngineId.AGYLOOP: {"grpc_status": "OK"},
+    EngineId.QWENLOOP: {"local_state": "available"},
 }
 
 

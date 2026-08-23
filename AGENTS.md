@@ -65,8 +65,10 @@ explicit opt-in; declining deployment records a successful local completion.
 
 - **Queue backend:** PostgreSQL, never SQLite. `FOR UPDATE SKIP LOCKED` is
   the reason; see ADR-0002.
-- **Engines:** `claudeloop`, `codexloop`, `cursorloop`, `agyloop` — four
-  autonomous session runners. `domain/rotation.py::select()` implements
+- **Engines:** `claudeloop`, `codexloop`, `cursorloop`, and `agyloop` are the
+  default paid-engine pool. `qwenloop` is a default-off local standby that is
+  considered only when enabled and no eligible paid engine is available.
+  `domain/rotation.py::select()` implements
   smooth-weighted round-robin selection (ADR-0005); check whether
   production wiring (an `EngineSelector` calling it from a real dispatch
   path) has landed before describing rotation as an active runtime

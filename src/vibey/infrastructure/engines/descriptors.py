@@ -237,6 +237,39 @@ AGYLOOP = EngineDescriptor(
     base_weight=1,
 )
 
-ALL_DESCRIPTORS: tuple[EngineDescriptor, ...] = (CLAUDELOOP, CODEXLOOP, CURSORLOOP, AGYLOOP)
+QWENLOOP = EngineDescriptor(
+    engine_id=EngineId.QWENLOOP,
+    binary="qwenloop",
+    min_version="0.1.0",
+    state_dir=".qwenloop",
+    done_marker="QWENLOOP_TASK_FULLY_COMPLETE",
+    auth_env=(),
+    capabilities=frozenset(Capability),
+    effort_projection={
+        Effort.TRIVIAL: EngineInvocation(("--max-turns", "8"), achieved=Effort.TRIVIAL),
+        Effort.LOW: EngineInvocation(("--max-turns", "16"), achieved=Effort.LOW),
+        Effort.STANDARD: EngineInvocation(("--max-turns", "40"), achieved=Effort.STANDARD),
+        Effort.HIGH: EngineInvocation(("--max-turns", "64"), achieved=Effort.HIGH),
+        Effort.MAX: EngineInvocation(("--max-turns", "96"), achieved=Effort.MAX),
+    },
+    session_verb="sessions",
+    isolation_flags={
+        IsolationLevel.WORKTREE: (),
+        IsolationLevel.CONTAINER: (),
+        IsolationLevel.VM: (),
+    },
+    cost_per_mtok_in=0.0,
+    cost_per_mtok_out=0.0,
+    context_window=32_768,
+    base_weight=1,
+)
+
+DEFAULT_DESCRIPTORS: tuple[EngineDescriptor, ...] = (
+    CLAUDELOOP,
+    CODEXLOOP,
+    CURSORLOOP,
+    AGYLOOP,
+)
+ALL_DESCRIPTORS: tuple[EngineDescriptor, ...] = (*DEFAULT_DESCRIPTORS, QWENLOOP)
 
 BY_ENGINE_ID: dict[EngineId, EngineDescriptor] = {d.engine_id: d for d in ALL_DESCRIPTORS}

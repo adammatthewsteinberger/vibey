@@ -134,6 +134,13 @@ class _Adapter:
         self.descriptor = BY_ENGINE_ID[engine_id]
 
 
+class _StandbyAdapter(_Adapter):
+    async def preflight(self):  # type: ignore[no-untyped-def]
+        from vibey.application.dto import PreflightResult
+
+        return PreflightResult(installed=True, version="0.1.0", auth_ok=True)
+
+
 async def _provider(
     engines: list[EngineId],
     *,
@@ -200,6 +207,59 @@ async def test_selected_engine_without_a_configured_adapter_defers() -> None:
         await provider.select_for(job)
 
     assert "no configured adapter" in excinfo.value.detail
+
+
+async def test_enabled_qwenloop_preflights_then_falls_back() -> None:
+    repo = FakeEngineHealthRepository()
+    project_id = uuid4()
+    health = EngineHealthService(repo)
+    jobs = FakeJobRepository()
+    standby = _StandbyAdapter(EngineId.QWENLOOP)
+    provider = SelectingEngineProvider(
+        selector=EngineSelector(
+            health_service=health,
+            cursor_repository=FakeRotationCursorRepository(),
+            descriptors=BY_ENGINE_ID,
+        ),
+        health=health,
+        adapters={EngineId.QWENLOOP: standby},
+        jobs=jobs,
+        clock=FixedClock(),
+        owner="w1",
+        standby_engine=EngineId.QWENLOOP,
+    )
+    job = replace(make_job(project_id, attempts=1), project_id=project_id)
+    selected = await provider.select_for(job)
+    assert selected is standby
+    record = await health.get_or_create(project_id, EngineId.QWENLOOP)
+    assert record.installed and record.conformance_ok
+
+
+async def test_missing_standby_adapter_does_not_block_paid_selection() -> None:
+    repo = FakeEngineHealthRepository()
+    project_id = uuid4()
+    await repo.upsert(_healthy_record(project_id, EngineId.CLAUDELOOP))
+    health = EngineHealthService(repo)
+    paid = _Adapter(EngineId.CLAUDELOOP)
+    provider = SelectingEngineProvider(
+        selector=EngineSelector(
+            health_service=health,
+            cursor_repository=FakeRotationCursorRepository(),
+            descriptors=BY_ENGINE_ID,
+        ),
+        health=health,
+        adapters={EngineId.CLAUDELOOP: paid},
+        jobs=FakeJobRepository(),
+        clock=FixedClock(),
+        owner="w1",
+        standby_engine=EngineId.QWENLOOP,
+    )
+
+    selected = await provider.select_for(
+        replace(make_job(project_id, attempts=1), project_id=project_id)
+    )
+
+    assert selected is paid
 
 
 # ── RotationRecordingHandler ─────────────────────────────────────────────────
