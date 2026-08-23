@@ -28,6 +28,8 @@ from vibey.application.interfaces.build import (
     IntegrationBranch,
     IntegrationLock,
     MergeOutcome,
+    SkillsContextCompiler,
+    SkillsContextResult,
     VerifyWorktrees,
     WorkPlanProducer,
 )
@@ -98,6 +100,8 @@ __all__ = [
     "AzureResourceStatus",
     "BriefProducer",
     "BudgetSource",
+    "SkillsContextCompiler",
+    "SkillsContextResult",
     "BuildLedger",
     "BuildProvisioner",
     "BuildWorktrees",

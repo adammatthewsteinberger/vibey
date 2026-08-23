@@ -82,6 +82,7 @@ from vibey.infrastructure.git.worktree_manager import GitWorktreeManager
 from vibey.infrastructure.ledger.full_ledger_writer import write_full_ledger
 from vibey.infrastructure.provision.agent_surface import AgentSurfaceProvisioner
 from vibey.infrastructure.review_artifact_writer import FileReviewArtifactWriter
+from vibey.infrastructure.skills_context import compiler_from_config
 
 
 @dataclass(frozen=True, slots=True)
@@ -302,6 +303,7 @@ def build_full_worker(
         clock=clock,
         write_ledger=write_full_ledger,
     )
+    skills_context = compiler_from_config(project.config, repo_path=repo_root)
 
     def _recording(handler: JobHandler, adapter: EngineAdapter) -> JobHandler:
         return RotationRecordingHandler(
@@ -323,6 +325,7 @@ def build_full_worker(
             wind_down=wind_down,
             human_gates=resources.gates,
             budget_source=budget_source,
+            skills_context=skills_context,
         )
         return _recording(handler, adapter)
 

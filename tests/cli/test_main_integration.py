@@ -331,6 +331,10 @@ def test_new_project_stores_cycle_budget_caps_in_config(tmp_path: Path) -> None:
             "15.5",
             "--max-cycle-turns",
             "200",
+            "--skills-context-mode",
+            "shadow",
+            "--skills-context-budget",
+            "4000",
         ],
     )
     assert result.exit_code == 0, result.output
@@ -344,3 +348,20 @@ def test_new_project_stores_cycle_budget_caps_in_config(tmp_path: Path) -> None:
     config = asyncio.run(load())
     assert config["max_cycle_dollars"] == 15.5
     assert config["max_cycle_turns"] == 200
+    assert config["skills_context"] == {"mode": "shadow", "budget": 4000}
+
+
+def test_new_project_rejects_unknown_skills_context_mode(tmp_path: Path) -> None:
+    result = runner.invoke(
+        app,
+        [
+            "new",
+            "bad-context-mode",
+            "--repo",
+            str(tmp_path),
+            "--skills-context-mode",
+            "surprise",
+        ],
+    )
+    assert result.exit_code != 0
+    assert "off, shadow, or inject" in result.output

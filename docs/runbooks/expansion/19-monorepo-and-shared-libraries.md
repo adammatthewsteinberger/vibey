@@ -18,7 +18,7 @@ The family on GitHub is seven repos:
 | `codexloop` | 0.3.1 | session runner |
 | `cursorloop` | 0.6.0 | session runner |
 | `agyloop` | 0.4.1 | session runner |
-| `vibey-skills` | **v2.14.0** | Claude Code plugin marketplace: 18 plugins / 71 Agent Skills. On PyPI |
+| `vibey-skills` | **v2.17.0** | Versioned Agent Skills marketplace and deterministic context-packet engine. On PyPI |
 | `vibey-bootstrap` | **v4.0.0** | Azure Functions cross-cutting layer: App Config + Key Vault + App Insights, Service Bus, scaffold CLI. On PyPI |
 
 Two findings change the shape of this work, and both came from looking

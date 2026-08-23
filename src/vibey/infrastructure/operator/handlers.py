@@ -47,6 +47,11 @@ def _project_config(name: str, spec: Mapping[str, Any]) -> dict[str, object]:
         config["max_cycle_turns"] = spec["maxCycleTurns"]
     if spec.get("engines"):
         config["engines"] = list(spec["engines"])
+    if spec.get("skillsContext") is not None:
+        context = spec["skillsContext"]
+        if not isinstance(context, Mapping):
+            raise ValueError("spec.skillsContext must be an object")
+        config["skills_context"] = dict(context)
     return config
 
 

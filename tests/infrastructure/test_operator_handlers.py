@@ -84,6 +84,7 @@ async def test_spec_carries_budget_caps_into_project_config(tmp_path: Path) -> N
                 "maxCycleDollars": 5.0,
                 "maxCycleTurns": 40,
                 "engines": ["claudeloop"],
+                "skillsContext": {"mode": "shadow", "budget": 4000},
             },
             known_project_id=None,
         )
@@ -92,6 +93,9 @@ async def test_spec_carries_budget_caps_into_project_config(tmp_path: Path) -> N
     assert stored.config["max_cycle_dollars"] == 5.0
     assert stored.config["max_cycle_turns"] == 40
     assert stored.config["engines"] == ["claudeloop"]
+    assert stored.config["skills_context"] == {"mode": "shadow", "budget": 4000}
+    with pytest.raises(ValueError, match="skillsContext must be an object"):
+        handlers._project_config("demo", {"skillsContext": "shadow"})
 
 
 async def test_answers_from_the_cr_go_through_the_shared_gate_service(tmp_path: Path) -> None:

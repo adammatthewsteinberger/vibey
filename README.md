@@ -46,6 +46,21 @@ uv tool install claudeloop     # at least one engine; add codexloop, cursorloop,
 vibey doctor                   # pre-flight: database, engines, auth
 ```
 
+To add deterministic, budgeted context packets from the independently versioned
+`vibey-skills` marketplace, install the optional extra and enable it per project:
+
+```bash
+uv tool install 'vibey[skills]'
+vibey new my-app --repo ~/src/my-app \
+  --skills-context-mode shadow --skills-context-budget 6000
+```
+
+`shadow` builds and records packet provenance without changing agent prompts.
+After observing results, switch the project config to `inject` to append successful
+packets to BUILD prompts. Missing tools, timeouts, low-confidence retrieval, and
+insufficient budgets all fall back to the original prompt. The feature is off by
+default, and wind-down prompts are never modified.
+
 ## Quickstart
 
 ```bash

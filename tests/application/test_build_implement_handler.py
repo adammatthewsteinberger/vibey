@@ -9,6 +9,7 @@ import pytest
 from tests.application.fakes import FakeJobRepository, make_job
 from vibey.application.build_implement_handler import BuildImplementHandler
 from vibey.application.dto import EngineEvent
+from vibey.application.interfaces import SkillsContextResult
 from vibey.application.worker import Defer, Failure, Park, Success
 from vibey.domain.job import FailureClass
 from vibey.domain.provision import ProvisionSpec
@@ -479,6 +480,84 @@ async def test_seed_prompt_in_the_payload_reaches_the_engine_verbatim(tmp_path: 
 
     assert _render_prompt("item-1", {"seed_prompt": seed}) == seed
     assert "Implement work item" in _render_prompt("item-1", {"seed_prompt": ""})
+
+
+class _FakeSkillsContext:
+    def __init__(self, *, mode: str, status: str = "ok") -> None:
+        self.mode = mode
+        self.status = status
+        self.calls = 0
+
+    async def compile(self, *, job: object, worktree_path: Path) -> SkillsContextResult:
+        del job, worktree_path
+        self.calls += 1
+        return SkillsContextResult(
+            mode=self.mode,
+            status=self.status,
+            markdown="# Vibey Skills Context Packet\n\nRetrieved guidance.\n",
+            provenance={
+                "mode": self.mode,
+                "status": self.status,
+                "skills_release": "2.17.0",
+                "query_sha256": "query",
+            },
+        )
+
+
+class _PromptCapturingEngine(ScriptedEngine):
+    prompt = ""
+
+    async def start(self, spec):  # type: ignore[no-untyped-def]
+        self.prompt = spec.prompt
+        return await super().start(spec)
+
+
+@pytest.mark.parametrize(("mode", "contains_context"), (("shadow", False), ("inject", True)))
+async def test_skills_context_shadow_and_inject_modes(
+    tmp_path: Path, mode: str, contains_context: bool
+) -> None:
+    engine = _PromptCapturingEngine(descriptor=CLAUDELOOP, base_dir=tmp_path / "engine")
+    ledger = FakeLedger()
+    context = _FakeSkillsContext(mode=mode)
+    handler = BuildImplementHandler(
+        worktrees=FakeWorktrees(tmp_path),
+        provisioner=FakeProvisioner(),
+        engine=engine,
+        ledger=ledger,
+        jobs=FakeJobRepository(),
+        clock=FixedClock(),
+        skills_context=context,
+    )
+
+    outcome = await handler.handle(_job(payload={"title": "do the thing"}))
+
+    assert isinstance(outcome, Success)
+    assert ("Retrieved guidance." in engine.prompt) is contains_context
+    artifacts = [event for event in ledger.recorded if event.kind == "ArtifactProduced"]
+    assert len(artifacts) == 1
+    assert artifacts[0].payload["mode"] == mode
+    assert artifacts[0].payload["skills_release"] == "2.17.0"
+
+
+async def test_skills_context_never_mutates_a_wind_down_seed(tmp_path: Path) -> None:
+    engine = _PromptCapturingEngine(descriptor=CLAUDELOOP, base_dir=tmp_path / "engine")
+    context = _FakeSkillsContext(mode="inject")
+    handler = BuildImplementHandler(
+        worktrees=FakeWorktrees(tmp_path),
+        provisioner=FakeProvisioner(),
+        engine=engine,
+        ledger=FakeLedger(),
+        jobs=FakeJobRepository(),
+        clock=FixedClock(),
+        skills_context=context,
+    )
+    seed = "Objective: resume without losing [q-77]."
+
+    outcome = await handler.handle(_job(payload={"seed_prompt": seed}))
+
+    assert isinstance(outcome, Success)
+    assert engine.prompt == seed
+    assert context.calls == 0
 
 
 def test_render_prompt_frames_a_repair_without_weakening_checks() -> None:
