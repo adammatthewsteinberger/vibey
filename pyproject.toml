@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "vibey"
-version = "0.1.2"
+version = "0.2.0"
 description = "A queue-based, six-phase conductor with optional visual design and Azure deployment."
 readme = "README.md"
 requires-python = ">=3.12"
