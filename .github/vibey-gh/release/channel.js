@@ -56,7 +56,7 @@
       `<a href="__REPOSITORY_URL__/tree/__RELEASE_SHA__">__REPOSITORY__@__SHORT_SHA__</a>`,
       `<span>branch / __RELEASE_BRANCH__</span>`,
       `<span>channel / __RELEASE_CHANNEL__</span>`,
-      `<span>Made with ❤️ by <a href="https://adammatthewsteinberger.github.io/vibey/">Vibey</a>, Developed by <a href="https://hire.adam.matthewsteinberger.com/">Adam Matthew Steinberger</a> (<a href="https://github.com/adammatthewsteinberger/">@adammatthewsteinberger</a>).</span>`,
+      `<span>Made with ❤️ by <a href="https://adammatthewsteinberger.github.io/vibey/">Vibey</a>, Developed by <a href="https://vibewithadam.matthewsteinberger.com/">Adam Matthew Steinberger</a> (<a href="https://github.com/adammatthewsteinberger/">@adammatthewsteinberger</a>).</span>`,
     ].join('<span aria-hidden="true">·</span>');
     footer.append(provenance);
   }
