@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        <link rel="canonical" href="https://adammatthewsteinberger.github.io/vibey/runbooks/expansion/13-cost-performance/">
+        <link rel="shortcut icon" href="../../../img/favicon.ico">
+        <title>Runbook: cost &amp; performance — insanely optimized, tests and runtime - vibey</title>
+        <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../../../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../../../css/brands.min.css" rel="stylesheet">
+        <link href="../../../css/solid.min.css" rel="stylesheet">
+        <link href="../../../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../../../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <link href="../../../stylesheets/vibey.css" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="../../..">vibey</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href="../../.." class="nav-link">Home</a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Guides</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../../../guides/kubernetes/" class="dropdown-item">Kubernetes</a>
+</li>
+                                    
+<li>
+    <a href="../../../guides/greeter-live-demo/" class="dropdown-item">Greeter live demo</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Architecture</a>
+                                <ul class="dropdown-menu">
+                                    
+  <li class="dropdown-submenu">
+    <a href="#" class="dropdown-item">Decision records</a>
+    <ul class="dropdown-menu">
+            
+<li>
+    <a href="../../../architecture/decisions/0001-orchestrate-do-not-reimplement/" class="dropdown-item">0001 — Orchestrate do not reimplement</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0002-postgres-not-sqlite/" class="dropdown-item">0002 — Postgres not sqlite</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0003-event-sourced-ledger/" class="dropdown-item">0003 — Event sourced ledger</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0004-no-loss-gate-on-handoff/" class="dropdown-item">0004 — No loss gate on handoff</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0005-smooth-weighted-round-robin/" class="dropdown-item">0005 — Smooth weighted round robin</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0006-normalized-effort-ladder/" class="dropdown-item">0006 — Normalized effort ladder</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0007-rotate-at-boundaries/" class="dropdown-item">0007 — Rotate at boundaries</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0008-worktree-isolation/" class="dropdown-item">0008 — Worktree isolation</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0009-human-gates-are-parked-jobs/" class="dropdown-item">0009 — Human gates are parked jobs</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0010-review-loopback-routing/" class="dropdown-item">0010 — Review loopback routing</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0011-agent-surface-provisioning/" class="dropdown-item">0011 — Agent surface provisioning</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0012-deploy-is-a-separate-cli/" class="dropdown-item">0012 — Deploy is a separate cli</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0013-deployment-is-a-three-phase-stage-set/" class="dropdown-item">0013 — Deployment is a three phase stage set</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0014-optional-visual-design-and-deployment-opt-in/" class="dropdown-item">0014 — Optional visual design and deployment opt in</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0015-qwenloop-standby/" class="dropdown-item">0015 — Qwenloop standby</a>
+</li>
+    </ul>
+  </li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#properdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a href="https://github.com/adammatthewsteinberger/vibey/edit/main/docs/runbooks/expansion/13-cost-performance.md" class="nav-link">Edit on adammatthewsteinberger/vibey
+                                    </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#runbook-cost-performance-insanely-optimized-tests-and-runtime" class="nav-link">Runbook: cost &amp; performance — insanely optimized, tests and runtime</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#goal" class="nav-link">Goal</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#front-1-the-testci-loop" class="nav-link">Front 1: the test/CI loop</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#front-2-runtime-cost-performance" class="nav-link">Front 2: runtime cost &amp; performance</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#verification" class="nav-link">Verification</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#needs-from-operator" class="nav-link">Needs from operator</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#risks" class="nav-link">Risks</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="runbook-cost-performance-insanely-optimized-tests-and-runtime">Runbook: cost &amp; performance — insanely optimized, tests and runtime<a class="headerlink" href="#runbook-cost-performance-insanely-optimized-tests-and-runtime" title="Permanent link">&para;</a></h1>
+<h2 id="goal">Goal<a class="headerlink" href="#goal" title="Permanent link">&para;</a></h2>
+<p>Drive both dollars-per-delivered-work-item and seconds-per-feedback-loop
+as low as they can go without sacrificing a single gate. Two fronts: the
+test/CI loop (developer + dogfooding velocity) and the runtime (engine
+spend + orchestration efficiency).</p>
+<h2 id="front-1-the-testci-loop">Front 1: the test/CI loop<a class="headerlink" href="#front-1-the-testci-loop" title="Permanent link">&para;</a></h2>
+<p>Current pain (measured this week): the full suite is ~6:20, the commit
+hook runs it <strong>twice</strong> (~13 min per commit), CI repeats it, and the four
+per-layer coverage gates re-run the whole suite four more times
+sequentially (~25 min locally). Concurrent suites deadlock on the shared
+<code>vibey_test</code> database (observed: DROP SCHEMA deadlock), forcing
+serialization.</p>
+<p>Work items, in expected-impact order:</p>
+<ol>
+<li><strong>Per-worker test databases</strong> — template-database pattern: migrate
+   once into <code>vibey_test_template</code>, each xdist worker clones it
+   (<code>CREATE DATABASE ... TEMPLATE</code>) in milliseconds. Kills the
+   deadlock class entirely and unlocks parallelism.</li>
+<li><strong>pytest-xdist</strong> across the suite (<code>-n auto</code>): with per-worker DBs,
+   target ≤90s for the full suite on this machine.</li>
+<li><strong>One coverage run, four gates</strong>: run the suite once with
+   <code>--cov=vibey</code>, then enforce the four per-layer floors from the single
+   <code>.coverage</code> file (<code>coverage report --include=... --fail-under=100</code> ×4).
+   ~25 min → one suite run.</li>
+<li><strong>Commit hook diet</strong>: hook runs changed-file lints + the single
+   parallel suite once (not twice); the pre-push/CI stage owns the full
+   sweep. Target: commit ≤2 min.</li>
+<li><strong>CI caching</strong>: uv cache + hypothesis DB cache keyed on lockfile;
+   fail-fast lint stage before the test stage.</li>
+<li><strong>Perf regression guard</strong>: CI records suite duration; a PR that slows
+   the suite &gt;20% gets a visible warning label.</li>
+</ol>
+<h2 id="front-2-runtime-cost-performance">Front 2: runtime cost &amp; performance<a class="headerlink" href="#front-2-runtime-cost-performance" title="Permanent link">&para;</a></h2>
+<p>Engine spend (the real money):</p>
+<ol>
+<li><strong>Effort right-sizing audit</strong>: greeter4 ran implements at LOW→
+   <code>--preset low --effort medium</code>; measure verdict-quality-per-dollar per
+   tier per engine from ledger data (<code>cost_usd</code> by effort by outcome —
+   the data already exists) and tune <code>PHASE_BASE_EFFORT</code> + projections
+   empirically.</li>
+<li><strong>Cost-aware rotation</strong>: extend SWRR effective weight with a cost
+   penalty (cheaper engine wins ties at equal health/fidelity; ADR-0005
+   compatible — it's just weight shaping). <code>cost_usd_cycle</code> column
+   already exists in engine_health.</li>
+<li><strong>Prompt budget</strong>: seed prompts + house rules are resent every
+   session; measure and trim rendered prompt sizes; cache-stable prefix
+   ordering for engines whose APIs support prompt caching.</li>
+<li><strong>Repair-loop economics</strong>: rounds are bounded (PR #59); add
+   ledger-derived per-round cost reporting so parks show "3 rounds,
+   $4.10" — operators grant with eyes open.</li>
+</ol>
+<p>Orchestration hot paths (correctness-preserving):</p>
+<ol>
+<li><strong>Ledger scan elimination</strong>: <code>LedgerBudgetSource</code>, finding scans, and
+   round counters all do <code>all_for_project()</code> full scans per claim. Add
+   filtered reader queries (kind + cycle + finding-prefix pushed to SQL,
+   indexed) — O(events) → O(relevant). Indexes:
+   <code>(project_id, cycle, kind)</code>, plus a partial index on
+   <code>payload-&gt;&gt;'finding_id'</code>.</li>
+<li><strong>Claim batching</strong>: workers claim one job per wake; add
+   claim-up-to-K for cheap kinds (verify gates, integrates) while engine
+   kinds stay 1-per-worker.</li>
+<li><strong>Event tail latency</strong>: loop_process_adapter re-tails on a poll
+   interval; switch to fs-event-driven tailing (watchfiles) with poll
+   fallback.</li>
+<li><strong>Connection discipline</strong>: one shared pool sized to worker
+   parallelism; advisory-lock connections accounted; pool metrics into
+   the observability layer.</li>
+</ol>
+<h2 id="verification">Verification<a class="headerlink" href="#verification" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Measured before/after table committed with each item (suite wall time,
+  commit hook time, CI wall time, $/greeter-item, claims/sec on a
+  20-job queue, p95 event-tail latency).</li>
+<li>Hard targets: full suite ≤90s; commit ≤2 min; per-layer gates from one
+  run; greeter-class item median engine cost down ≥25% at equal verify
+  pass rate (measured across ≥10 items before/after effort retuning).</li>
+<li>Zero gate relaxation: 100% branch floors, protected tests, chaos and
+  property tests all unchanged.</li>
+</ul>
+<h3 id="front-1-delivery-status-pr-70-validated-2026-08-21">Front 1 delivery status (PR #70, validated 2026-08-21)<a class="headerlink" href="#front-1-delivery-status-pr-70-validated-2026-08-21" title="Permanent link">&para;</a></h3>
+<p>Items 1–4 are <strong>delivered and independently validated</strong> — see
+<code>evidence/13-front1-validation.md</code>. Suite 383s → 135s (2.8×); the four
+per-layer floors now cost one instrumented run plus four
+<code>coverage report</code> calls, 136s against ~1530s before (<strong>11.3×</strong>), with
+every layer still at exactly 100% branch coverage.</p>
+<p><strong>Accepted deviation</strong>: the suite lands at a 135s median against the
+≤120s "must" (and the ≤90s target above). Operator-accepted as a speed
+shortfall rather than a correctness one — determinism, per-layer
+granularity, crash recovery, and protected-file integrity all pass.
+<strong>Closing this gap is the job of items 5 and 6 below</strong>, which remain
+open; do not treat the ≤90s target as abandoned, only as deferred to
+them.</p>
+<h2 id="needs-from-operator">Needs from operator<a class="headerlink" href="#needs-from-operator" title="Permanent link">&para;</a></h2>
+<p>Nothing.</p>
+<h2 id="risks">Risks<a class="headerlink" href="#risks" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Parallel tests expose hidden shared state — fix the tests (isolation
+  is a correctness win), never mark-and-skip.</li>
+<li>Effort down-tuning can raise repair rounds — the $/delivered-item
+  metric (not $/session) is the optimization target, and the ledger
+  provides it.</li>
+</ul></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://properdocs.org/">ProperDocs</a>.</p>
+        </footer>
+        <script src="../../../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "../../..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../../../js/base.js"></script>
+        <script src="../../../javascripts/channel.js"></script>
+        <script src="../../../search/main.js"></script>
+
+        <div class="modal" id="properdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="properdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="properdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="properdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

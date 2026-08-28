@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        <link rel="canonical" href="https://adammatthewsteinberger.github.io/vibey/architecture/decisions/0014-optional-visual-design-and-deployment-opt-in/">
+        <link rel="shortcut icon" href="../../../img/favicon.ico">
+        <title>0014 — Optional visual design and deployment opt in - vibey</title>
+        <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../../../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../../../css/brands.min.css" rel="stylesheet">
+        <link href="../../../css/solid.min.css" rel="stylesheet">
+        <link href="../../../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../../../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <link href="../../../stylesheets/vibey.css" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="../../..">vibey</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href="../../.." class="nav-link">Home</a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Guides</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../../../guides/kubernetes/" class="dropdown-item">Kubernetes</a>
+</li>
+                                    
+<li>
+    <a href="../../../guides/greeter-live-demo/" class="dropdown-item">Greeter live demo</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle active" aria-current="page" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Architecture</a>
+                                <ul class="dropdown-menu">
+                                    
+  <li class="dropdown-submenu">
+    <a href="#" class="dropdown-item">Decision records</a>
+    <ul class="dropdown-menu">
+            
+<li>
+    <a href="../0001-orchestrate-do-not-reimplement/" class="dropdown-item">0001 — Orchestrate do not reimplement</a>
+</li>
+            
+<li>
+    <a href="../0002-postgres-not-sqlite/" class="dropdown-item">0002 — Postgres not sqlite</a>
+</li>
+            
+<li>
+    <a href="../0003-event-sourced-ledger/" class="dropdown-item">0003 — Event sourced ledger</a>
+</li>
+            
+<li>
+    <a href="../0004-no-loss-gate-on-handoff/" class="dropdown-item">0004 — No loss gate on handoff</a>
+</li>
+            
+<li>
+    <a href="../0005-smooth-weighted-round-robin/" class="dropdown-item">0005 — Smooth weighted round robin</a>
+</li>
+            
+<li>
+    <a href="../0006-normalized-effort-ladder/" class="dropdown-item">0006 — Normalized effort ladder</a>
+</li>
+            
+<li>
+    <a href="../0007-rotate-at-boundaries/" class="dropdown-item">0007 — Rotate at boundaries</a>
+</li>
+            
+<li>
+    <a href="../0008-worktree-isolation/" class="dropdown-item">0008 — Worktree isolation</a>
+</li>
+            
+<li>
+    <a href="../0009-human-gates-are-parked-jobs/" class="dropdown-item">0009 — Human gates are parked jobs</a>
+</li>
+            
+<li>
+    <a href="../0010-review-loopback-routing/" class="dropdown-item">0010 — Review loopback routing</a>
+</li>
+            
+<li>
+    <a href="../0011-agent-surface-provisioning/" class="dropdown-item">0011 — Agent surface provisioning</a>
+</li>
+            
+<li>
+    <a href="../0012-deploy-is-a-separate-cli/" class="dropdown-item">0012 — Deploy is a separate cli</a>
+</li>
+            
+<li>
+    <a href="../0013-deployment-is-a-three-phase-stage-set/" class="dropdown-item">0013 — Deployment is a three phase stage set</a>
+</li>
+            
+<li>
+    <a href="./" class="dropdown-item active" aria-current="page">0014 — Optional visual design and deployment opt in</a>
+</li>
+            
+<li>
+    <a href="../0015-qwenloop-standby/" class="dropdown-item">0015 — Qwenloop standby</a>
+</li>
+    </ul>
+  </li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#properdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a rel="prev" href="../0013-deployment-is-a-three-phase-stage-set/" class="nav-link">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a rel="next" href="../0015-qwenloop-standby/" class="nav-link">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="https://github.com/adammatthewsteinberger/vibey/edit/main/docs/architecture/decisions/0014-optional-visual-design-and-deployment-opt-in.md" class="nav-link">Edit on adammatthewsteinberger/vibey
+                                    </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#0014-optional-visual-design-and-deployment-opt-in-gates" class="nav-link">0014 — Optional visual design and deployment opt-in gates</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#context" class="nav-link">Context</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#decision" class="nav-link">Decision</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#safety-and-quality-gates" class="nav-link">Safety and quality gates</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#consequences" class="nav-link">Consequences</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#research-basis" class="nav-link">Research basis</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="0014-optional-visual-design-and-deployment-opt-in-gates">0014 — Optional visual design and deployment opt-in gates<a class="headerlink" href="#0014-optional-visual-design-and-deployment-opt-in-gates" title="Permanent link">&para;</a></h1>
+<p><strong>Status:</strong> accepted · <strong>Date:</strong> 2026-08-14 · <strong>Supersedes:</strong> the entry rule in ADR-0013</p>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
+<p>The six numbered phases currently describe an interactive design/build/review
+delivery set followed by an interactive/autonomous/interactive Azure deployment
+set. Two user choices were missing from that lifecycle:</p>
+<ol>
+<li>A team may want to review the complete screen and media direction before any
+   unattended code is written, but another team may want to go straight from the
+   product specification to BUILD.</li>
+<li>A team may want a local artifact and review demo without granting Vibey any
+   Azure deployment authority. Deployment must never be inferred from accepting
+   the built product.</li>
+</ol>
+<p>Media generation also changes faster than the numbered phase machine. A provider
+that supports image generation today may not support video tomorrow, may be
+region-limited, may require a separate consent boundary, or may be deprecated.
+The current OpenAI video documentation, for example, announces a September 24,
+2026 shutdown for the Sora 2 Videos API. A durable plan therefore needs a
+capability-based media port, not a permanent model-name dependency.</p>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<p>Keep six numbered phases and add two explicit, durable choices:</p>
+<h3 id="optional-pre-build-visual-design-interstitial">Optional pre-build visual-design interstitial<a class="headerlink" href="#optional-pre-build-visual-design-interstitial" title="Permanent link">&para;</a></h3>
+<p>After the user accepts Phase ① DESIGN, Vibey asks:</p>
+<blockquote>
+<p>“Do you want Vibey to plan and generate the visual, audio, and video assets
+for the screens in this run, then show them to you for approval before BUILD?”</p>
+</blockquote>
+<ul>
+<li><strong>No</strong> records <code>VisualDesignDeclined</code> and routes directly to Phase ② BUILD.</li>
+<li><strong>Yes</strong> enters an optional, unnumbered <code>VISUAL_DESIGN</code> interstitial. It is a
+  first-class queue stage with human gates, durable jobs, artifacts, budgets,
+  and loop-backs, but it does not renumber the six user-facing phases.</li>
+</ul>
+<p>The opt-in stage must:</p>
+<ol>
+<li>inventory every screen/route that will be created or changed, including
+   responsive variants and loading, empty, error, success, permission, offline,
+   and reduced-motion states;</li>
+<li>derive a design system contract (tokens, typography, spacing, color,
+   component patterns, interaction states, accessibility requirements, and
+   content tone) from the accepted spec and any existing repository design
+   context;</li>
+<li>create a media manifest for each required image, audio clip, video, icon,
+   illustration, animation, transcript, caption, alt description, and source or
+   rights constraint;</li>
+<li>generate candidate visual assets from structured prompts and the accepted
+   screen specs, using the media provider registry below;</li>
+<li>show a reviewable screen gallery/prototype, audio previews/transcripts, and
+   video storyboards/clips to the user; and</li>
+<li>enter BUILD only when every planned screen has an accepted screen spec and
+   each planned asset is accepted, replaced by a user-provided asset, or
+   explicitly waived by a durable user decision.</li>
+</ol>
+<p>An opted-in user may explicitly waive the remaining visual stage, but that is a
+recorded opt-out and BUILD must show the resulting missing-visual assumptions.
+Provider failure, budget exhaustion, or unavailable modality never silently
+becomes a placeholder asset: Vibey asks the user to retry, configure a provider,
+upload an asset, or waive the visual stage.</p>
+<h3 id="provider-agnostic-media-generation-and-per-modality-round-robin">Provider-agnostic media generation and per-modality round robin<a class="headerlink" href="#provider-agnostic-media-generation-and-per-modality-round-robin" title="Permanent link">&para;</a></h3>
+<p>Application code owns a <code>MediaProvider</code> port with capability discovery and
+idempotent operations such as <code>generate</code>, <code>poll_or_resume</code>, <code>download</code>,
+<code>estimate_cost</code>, and <code>moderate</code>. A provider advertises one or more of:
+<code>IMAGE</code>, <code>AUDIO</code>, and <code>VIDEO</code>, plus region, retention, input-reference,
+asynchronous-job, safety, and output-format capabilities.</p>
+<p>Provider selection is performed independently for each modality:</p>
+<pre><code class="language-text">eligible IMAGE providers → image cursor → next healthy provider
+eligible AUDIO providers → audio cursor → next healthy provider
+eligible VIDEO providers → video cursor → next healthy provider
+</code></pre>
+<p>Each cursor is persisted transactionally and advances only after a provider is
+actually selected. Eligibility filters capability, user policy, region/data
+residency, external-egress consent, budget, circuit state, and prompt/input
+compatibility. A provider cannot be selected merely to make the fairness metric
+look good, and one modality's cursor cannot starve another. Capacity exhaustion
+and rate limits use the existing circuit/queue semantics; the worker parks for a
+human or a provider window instead of sleeping while holding a lease.</p>
+<p>Vibey should try a configured local/self-hosted provider first when
+<code>media.mode = "local_first"</code>. Hosted providers are a fallback only when
+<code>media.allow_external = true</code> and the user has seen the destination, retention,
+cost, and data-handling terms. The initial registry may include OpenAI image/TTS,
+Google Veo, Azure AI Foundry models, ElevenLabs, and future providers, but those
+are examples discovered at runtime—not a fixed dependency or guarantee of
+availability. If no eligible provider can satisfy a modality, the human gate is
+the safe fallback.</p>
+<p>Every generation records modality, provider, model/version, prompt digest,
+reference-asset digests, seed/parameters when available, request/operation ID,
+cost, output digest, retention policy, moderation result, and user decision.
+Provider-specific API keys remain outside the ledger. Prompt and output content
+is redacted where necessary and retains provenance so a later engine cannot treat
+an external model's output as an instruction.</p>
+<h3 id="optional-deployment-choice">Optional deployment choice<a class="headerlink" href="#optional-deployment-choice" title="Permanent link">&para;</a></h3>
+<p>After Phase ③ REVIEW has no open product findings and the user accepts the build,
+Vibey asks:</p>
+<blockquote>
+<p>“Do you want Vibey to work on Azure deployment for this run?”</p>
+</blockquote>
+<ul>
+<li><strong>No</strong> records <code>DeploymentDeclined</code>, records <code>completion_mode = "local"</code>, and
+  transitions to terminal <code>DONE</code>. No Azure discovery, preflight, <code>what-if</code>, or
+  mutation job is enqueued. A later explicit deployment command may start a new
+  deployment attempt from the accepted artifacts.</li>
+<li><strong>Yes</strong> records <code>DeploymentOptedIn</code> and enters Phase ④ DEPLOY DESIGN. The
+  existing ④–⑥ contract, consent guard, autonomous execution, verification, and
+  demo rules from ADR-0013 apply unchanged.</li>
+</ul>
+<p>Deployment opt-in is asked again after any delivery loop that changes the built
+artifact or its acceptance criteria. A previous deployment consent cannot be
+reused for a changed artifact, target, scope, environment, or recovery policy.</p>
+<h2 id="safety-and-quality-gates">Safety and quality gates<a class="headerlink" href="#safety-and-quality-gates" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Human confirmation is required for the visual plan and all required generated
+  assets before opted-in BUILD begins.</li>
+<li>Visual review checks design-system consistency, contrast, keyboard/focus
+  behavior, semantic labels, alt text, transcripts/captions, reduced motion, and
+  screen-reader intent. AI-generated output is an accelerator, not a substitute
+  for accessibility review.</li>
+<li>Generated media is scanned by an available content-safety provider before it is
+  presented as accepted. A local or hosted provider's safety result is evidence,
+  not a replacement for user review.</li>
+<li>Audio previews disclose that the voice is AI-generated where the selected
+  provider requires it. Likeness, voice, copyrighted references, and uploaded
+  source assets require user authority and policy checks.</li>
+<li>Generation, download, moderation, and preview are asynchronous, idempotent
+  queue jobs. Large video jobs are never represented as a blocking worker call.</li>
+<li>Cost, token/character limits, file sizes, provider retention, and external
+  egress are visible before the user opts in and enforced during execution.</li>
+<li>Build inputs use immutable, content-addressed visual artifacts. A later
+  regeneration creates a new revision and never overwrites accepted evidence.</li>
+</ul>
+<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
+<p><strong>Good.</strong> Users can choose a fast spec-to-code path, a design-led multimodal path,
+or a local-only completion path without changing the core safety guarantees.</p>
+<p><strong>Good.</strong> Media providers can be rotated, replaced, or disabled per modality as
+  availability, pricing, regional policy, and model lifecycles change.</p>
+<p><strong>Bad.</strong> The phase graph, consent events, media manifest, provider registry,
+  cursor persistence, artifact review, and test matrix become larger. The visual
+  opt-in path and both deployment decisions need deterministic skip/accept tests.</p>
+<p><strong>Bad.</strong> A generated screen is not automatically a good screen. The plan must
+  require a human design review and an independent accessibility/evidence pass.</p>
+<h2 id="research-basis">Research basis<a class="headerlink" href="#research-basis" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="https://developers.openai.com/api/docs/guides/images-vision">OpenAI image and vision guide</a>
+  documents text/image input and image generation/editing, including the current
+  GPT Image family.</li>
+<li><a href="https://developers.openai.com/api/docs/guides/text-to-speech">OpenAI text-to-speech guide</a>
+  documents the speech endpoint and requires clear disclosure that the voice is
+  AI-generated.</li>
+<li><a href="https://developers.openai.com/api/docs/guides/video-generation">OpenAI video generation guide</a>
+  documents asynchronous video jobs but currently warns that the Sora 2 Videos
+  API is scheduled to shut down on September 24, 2026; Vibey therefore must not
+  hard-code it.</li>
+<li><a href="https://ai.google.dev/gemini-api/docs/veo">Google Veo generation documentation</a>
+  documents long-running video operations, native generated audio, safety
+  filtering, and SynthID watermarking.</li>
+<li><a href="https://learn.microsoft.com/en-us/azure/ai-foundry/foundry-models/concepts/models">Azure AI Foundry model catalog</a>
+  documents image, video, and audio model families and warns that availability
+  varies by region and cloud.</li>
+<li><a href="https://elevenlabs.io/docs/api-reference/text-to-speech/convert">ElevenLabs text-to-speech API</a>
+  documents a provider-neutral audio fallback with model/voice selection and
+  request/cost metadata.</li>
+<li><a href="https://learn.microsoft.com/en-us/azure/ai-services/content-safety/overview">Azure AI Content Safety</a>
+  documents image/text and AI-generated-content moderation capabilities.</li>
+</ul></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://properdocs.org/">ProperDocs</a>.</p>
+        </footer>
+        <script src="../../../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "../../..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../../../js/base.js"></script>
+        <script src="../../../javascripts/channel.js"></script>
+        <script src="../../../search/main.js"></script>
+
+        <div class="modal" id="properdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="properdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="properdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="properdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

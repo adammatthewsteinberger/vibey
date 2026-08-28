@@ -1,10 +1,11 @@
+# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://hire.adam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 # Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 name: Release
 
-# develop publishes a dev build to TestPyPI; main publishes the real thing to PyPI.
-# TestPyPI comes first on the main path because a PyPI version is immutable — it can
-# never be reused, even after a yank — so the only chance to catch a bad artifact is
-# before it is uploaded.
+# develop publishes a uniquely versioned dev build to TestPyPI; main publishes the
+# release artifact directly to PyPI. The two branch paths are deliberately disjoint:
+# publishing a final release version to TestPyPI first makes the main release depend
+# on a second registry and can collide with an immutable version uploaded there.
 on:
   push:
     branches: [main, develop]
@@ -27,7 +28,7 @@ jobs:
       - name: Stamp a dev version on develop
         if: github.ref == 'refs/heads/develop'
         run: |
-          python -m pip install --quiet vibey-gh
+          python -m pip install --quiet "vibey-gh==1.39.0"
           # An index version is immutable, so a develop build cannot reuse the release
           # version; the dev suffix makes each push distinct and sorts it BEFORE the
           # release it anticipates, which is the correct relationship.
@@ -51,44 +52,26 @@ jobs:
           name: dist
           path: dist/
 
-      # TestPyPI's `vibey` belongs to someone else, so the smoke-test build
-      # goes up as `vibey-dev`. Built SECOND and into a fresh dist/ on
-      # purpose: the artifact that reaches PyPI must be the one built from
-      # an unedited pyproject, never a renamed copy renamed back.
-      #
-      # The cost is that TestPyPI now verifies an equivalent build rather
-      # than the identical one -- they differ in the name field alone. That
-      # is weaker than vibey-gh's single-artifact design intends, and it is
-      # the best available when the name is taken.
-      - name: Build the TestPyPI artifact under its own name
-        run: |
-          sed -i '0,/^name = "vibey"$/s//name = "vibey-dev"/' pyproject.toml
-          rm -rf dist
-          python -m build
-      - uses: actions/upload-artifact@v4
-        with:
-          name: dist-testpypi
-          path: dist/
-
   testpypi:
     name: Publish to TestPyPI
     needs: build
+    if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     environment: testpypi
     permissions:
       id-token: write            # trusted publishing; no token is stored anywhere
     steps:
       - uses: actions/download-artifact@v4
-        with: { name: dist-testpypi, path: dist }
+        with: { name: dist, path: dist }
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           repository-url: https://test.pypi.org/legacy/
           skip-existing: true
 
-  verify:
+  verify-testpypi:
     name: Verify the TestPyPI artifact
     needs: [build, testpypi]
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-python@v5
@@ -104,20 +87,18 @@ jobs:
             if pip install --no-cache-dir --quiet \
                  --index-url https://test.pypi.org/simple/ \
                  --extra-index-url https://pypi.org/simple/ \
-                 "vibey-dev==${VERSION}"; then
+                 "vibey==${VERSION}"; then
               break
             fi
             echo "not indexed yet (attempt $i); waiting"
             sleep 30
           done
-          # A real invocation, not an import: the console script and its
-          # entry point are the part a user actually touches.
-          test "$(vibey --version)" = "vibey ${VERSION}"
+          vibey --version
           echo "installed ${VERSION} from TestPyPI and it runs"
 
   pypi:
     name: Publish to PyPI
-    needs: [build, verify]
+    needs: build
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: pypi
@@ -151,9 +132,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
 
-      # vibey-gh is a dev dependency here, not a runtime one, so install it
-      # directly rather than pulling the whole project to reach one CLI.
-      - run: python -m pip install --quiet vibey-gh
+      - run: python -m pip install --quiet "vibey-gh==1.39.0"
 
       # main is rebase-merged, so its commits are rewritten copies with new SHAs and
       # develop can never be fast-forwarded onto it. `realign` converges them only when

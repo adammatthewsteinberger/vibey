@@ -1,0 +1,605 @@
+:root {
+  color-scheme: dark;
+  --v-bg: #080b14;
+  --v-surface: rgba(17, 23, 42, 0.76);
+  --v-surface-strong: rgba(20, 27, 49, 0.96);
+  --v-line: rgba(255, 255, 255, 0.1);
+  --v-line-bright: rgba(255, 255, 255, 0.18);
+  --v-ink: #f7f8ff;
+  --v-muted: #a7acc2;
+  --v-violet: #9d7bff;
+  --v-cyan: #57dcff;
+  --v-mint: #75f0c2;
+  --bs-body-bg: transparent;
+  --bs-body-color: var(--v-ink);
+  --bs-body-color-rgb: 247, 248, 255;
+  --bs-tertiary-bg: rgba(255, 255, 255, 0.04);
+  --bs-border-color: var(--v-line);
+  --bs-link-color: #b9a5ff;
+  --bs-link-hover-color: #77e3ff;
+}
+
+html {
+  min-height: 100%;
+  background: var(--v-bg);
+  scroll-padding-top: 110px;
+}
+
+body {
+  min-height: 100vh;
+  padding-top: 0;
+  color: var(--v-ink);
+  font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 1.03rem;
+  line-height: 1.72;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(112, 74, 255, 0.2), transparent 34rem),
+    radial-gradient(circle at 88% 20%, rgba(49, 207, 255, 0.13), transparent 31rem),
+    linear-gradient(145deg, #080b14 0%, #0d1222 54%, #090d18 100%);
+  background-attachment: fixed;
+}
+
+body::before {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  opacity: 0.2;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 52px 52px;
+  mask-image: linear-gradient(to bottom, black, transparent 82%);
+}
+
+::selection {
+  color: #fff;
+  background: rgba(157, 123, 255, 0.55);
+}
+
+.navbar.bg-primary {
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+  width: 100%;
+  min-height: 68px;
+  border-bottom: 1px solid var(--v-line);
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.28);
+  background: rgba(8, 11, 20, 0.78) !important;
+  backdrop-filter: blur(22px) saturate(150%);
+}
+
+.navbar > .container {
+  max-width: 1320px;
+}
+
+.navbar-brand {
+  position: relative;
+  margin-right: 0.75rem;
+  padding-left: 47px;
+  color: var(--v-ink) !important;
+  font-size: 1.08rem;
+  font-weight: 790;
+  letter-spacing: -0.03em;
+}
+
+.navbar-brand::before {
+  position: absolute;
+  display: grid;
+  width: 35px;
+  aspect-ratio: 1;
+  left: 0;
+  top: 50%;
+  place-items: center;
+  border: 1px solid var(--v-line-bright);
+  border-radius: 11px;
+  content: "V";
+  transform: translateY(-50%);
+  color: #ded5ff;
+  font-size: 0.78rem;
+  font-weight: 900;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.16), 0 10px 26px rgba(0, 0, 0, 0.28);
+  background: linear-gradient(145deg, rgba(157, 123, 255, 0.36), rgba(87, 220, 255, 0.14));
+}
+
+.release-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-right: 1.2rem;
+  padding: 5px 9px;
+  border: 1px solid color-mix(in srgb, var(--channel-accent) 28%, transparent);
+  border-radius: 99px;
+  color: var(--channel-accent);
+  font-size: 0.62rem;
+  font-weight: 850;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  background: color-mix(in srgb, var(--channel-accent) 8%, transparent);
+}
+
+.release-badge span {
+  width: 5px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--channel-accent);
+  background: var(--channel-accent);
+}
+
+body[data-release-channel="main"] { --channel-accent: var(--v-mint); }
+body[data-release-channel="develop"] { --channel-accent: var(--v-violet); }
+
+.navbar .nav-link {
+  margin: 0 0.08rem;
+  border-radius: 10px;
+  color: #aeb4ca !important;
+  font-size: 0.84rem;
+  font-weight: 620;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.navbar .ms-md-auto .nav-link {
+  white-space: nowrap;
+}
+
+.navbar .nav-link:hover,
+.navbar .nav-link:focus-visible,
+.navbar .nav-link.active {
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.navbar-toggler {
+  border-color: var(--v-line-bright);
+}
+
+body > .container {
+  max-width: 1120px;
+}
+
+body > .container > .row {
+  display: block;
+}
+
+body > .container > .row > .col-md-3 {
+  display: none;
+}
+
+body > .container > .row > [role="main"] {
+  width: min(100%, 920px);
+  margin: 0 auto;
+  padding: clamp(28px, 4vw, 52px) 0 68px;
+}
+
+.bs-sidebar {
+  position: sticky;
+  top: 94px;
+  padding: 14px;
+  border: 1px solid var(--v-line);
+  border-radius: 18px;
+  background: rgba(12, 17, 31, 0.66);
+  backdrop-filter: blur(16px);
+}
+
+.bs-sidebar .card {
+  border: 0;
+  background: transparent !important;
+}
+
+.bs-sidebar .nav-link {
+  margin: 2px 0;
+  padding: 8px 11px;
+  border-radius: 9px;
+  color: #8f96af;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  transition: color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+}
+
+.bs-sidebar .nav-link:hover,
+.bs-sidebar .nav-link.active {
+  color: var(--v-ink);
+  transform: translateX(2px);
+  background: rgba(157, 123, 255, 0.1);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  color: var(--v-ink);
+  font-weight: 760;
+  letter-spacing: -0.045em;
+}
+
+h1 {
+  max-width: 760px;
+  margin: 0 0 1rem;
+  font-size: clamp(2.8rem, 5vw, 4.55rem);
+  line-height: 1;
+  color: transparent;
+  background: linear-gradient(100deg, #fff 6%, #cbbcff 52%, #82e6ff 94%);
+  background-clip: text;
+  -webkit-background-clip: text;
+}
+
+h2 {
+  margin-top: 3.2rem;
+  padding-top: 0.2rem;
+  font-size: clamp(1.7rem, 3vw, 2.35rem);
+}
+
+h3 { font-size: 1.18rem; letter-spacing: -0.025em; }
+
+.hero-copy {
+  max-width: 720px;
+  margin: 0 0 2rem;
+  color: #b4bad0;
+  font-size: clamp(1.12rem, 2vw, 1.32rem);
+  line-height: 1.72;
+}
+
+p,
+li { color: #b5bbcf; }
+
+a {
+  text-underline-offset: 0.2em;
+  text-decoration-thickness: 0.08em;
+}
+
+code {
+  padding: 0.17em 0.42em;
+  border: 1px solid rgba(157, 123, 255, 0.16);
+  border-radius: 7px;
+  color: #d7cfff;
+  background: rgba(157, 123, 255, 0.09);
+}
+
+pre,
+.highlight pre {
+  position: relative;
+  padding: 1.3rem 1.45rem;
+  overflow: auto;
+  border: 1px solid var(--v-line);
+  border-radius: 17px;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.04), 0 16px 38px rgba(0, 0, 0, 0.2);
+  background: #080c17 !important;
+}
+
+pre::before {
+  display: block;
+  margin-bottom: 0.95rem;
+  color: #737b98;
+  content: "●  ●  ●";
+  font-size: 0.58rem;
+  letter-spacing: 0.3rem;
+}
+
+pre code,
+.highlight pre code,
+.highlight code {
+  display: block;
+  padding: 0;
+  border: 0;
+  color: #dce2f5 !important;
+  background: transparent !important;
+}
+
+/* Syntax colours for a code block this stylesheet has already forced dark.
+ *
+ * The theme ships two highlight.js palettes and enables the LIGHT one by default
+ * (`#hljs-dark` carries `disabled`). Its tokens are chosen for a white page — github's
+ * light theme paints strings `#032f62`, a dark navy — while the rule above paints the
+ * background `#080c17`. The result was dark navy on near-black: a string literal was
+ * genuinely unreadable, and every code sample here has string literals in it.
+ *
+ * Overriding the tokens rather than swapping the stylesheet keeps this working whichever
+ * palette the theme has enabled, and needs no JavaScript. This file loads after both, so
+ * ordinary specificity is enough.
+ *
+ * Pygments classes are covered too: `pymdownx.highlight` renders server-side and emits
+ * `.highlight .s` rather than `.hljs-string`, so a site configured that way would
+ * otherwise keep the same unreadable defaults. */
+/* Nothing in a code block may keep a colour chosen for a white page.
+ *
+ * Naming tokens one at a time only fixes the ones thought of: the first pass covered
+ * strings and keywords and missed `.hljs-subst`, so `$(git rev-parse HEAD)` inside a
+ * shell string stayed at 1.33:1 — still unreadable, in the very example that tells
+ * someone how to list their check names. `.hljs-code` and `.hljs-formula` were a hair
+ * under too, at 4.06:1.
+ *
+ * So a legible default is set for every token first, and the palette below overrides the
+ * ones worth distinguishing. An attribute selector has the same specificity as a class,
+ * so source order decides and these two rules must stay above the palette. A token this
+ * stylesheet has never heard of is then merely undistinguished rather than invisible,
+ * which is the property that actually matters. */
+[class*="hljs-"],
+.highlight span {
+  color: #dce2f5;
+}
+
+.hljs-string,
+.hljs-meta .hljs-string,
+.hljs-regexp,
+.highlight .s,
+.highlight .s1,
+.highlight .s2,
+.highlight .sb,
+.highlight .sd,
+.highlight .se,
+.highlight .sh,
+.highlight .si,
+.highlight .sx,
+.highlight .sr,
+.highlight .dl {
+  color: #9ae6a0;
+}
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-literal,
+.hljs-type,
+.highlight .k,
+.highlight .kc,
+.highlight .kd,
+.highlight .kn,
+.highlight .kp,
+.highlight .kr,
+.highlight .kt,
+.highlight .ow {
+  color: #c3a6ff;
+}
+
+.hljs-number,
+.hljs-symbol,
+.hljs-bullet,
+.highlight .m,
+.highlight .mb,
+.highlight .mf,
+.highlight .mh,
+.highlight .mi,
+.highlight .mo,
+.highlight .il {
+  color: #ffb86b;
+}
+
+.hljs-title,
+.hljs-section,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.highlight .nc,
+.highlight .nf,
+.highlight .nn,
+.highlight .fm {
+  color: #7cc4ff;
+}
+
+.hljs-attr,
+.hljs-attribute,
+.hljs-variable,
+.hljs-template-variable,
+.highlight .na,
+.highlight .nv,
+.highlight .vc,
+.highlight .vg,
+.highlight .vi {
+  color: #8fd0ff;
+}
+
+.hljs-built_in,
+.hljs-class .hljs-title,
+.highlight .nb,
+.highlight .bp {
+  color: #6fd3c7;
+}
+
+.hljs-comment,
+.hljs-quote,
+.hljs-code,
+.hljs-formula,
+.highlight .c,
+.highlight .c1,
+.highlight .cm,
+.highlight .cp,
+.highlight .cs,
+.highlight .ch,
+.highlight .cpf {
+  color: #8b93b0;
+  font-style: italic;
+}
+
+.hljs-meta,
+.hljs-doctag,
+.hljs-subst,
+.hljs-operator,
+.hljs-punctuation,
+.hljs-params,
+.hljs-property,
+.highlight .o,
+.highlight .p,
+.highlight .nt {
+  color: #d3dcf5;
+}
+
+.hljs-deletion,
+.highlight .gd {
+  color: #ff9aa8;
+}
+
+.hljs-addition,
+.highlight .gi {
+  color: #9ae6a0;
+}
+
+.feature-grid {
+  display: grid;
+  margin: 2rem 0 0.5rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.feature-card {
+  min-height: 180px;
+  padding: 20px;
+  border: 1px solid var(--v-line);
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.018));
+}
+
+.feature-card h3 {
+  margin: 0 0 0.75rem;
+  color: #d9d1ff;
+}
+
+.feature-card p {
+  margin: 0;
+  color: #9299b2;
+  font-size: 0.89rem;
+  line-height: 1.6;
+}
+
+.primary-action,
+.secondary-action {
+  display: inline-flex;
+  margin: 1.1rem 0.55rem 0.25rem 0;
+  padding: 10px 15px;
+  align-items: center;
+  border-radius: 11px;
+  font-size: 0.82rem;
+  font-weight: 760;
+  text-decoration: none;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.primary-action {
+  border: 1px solid rgba(157, 123, 255, 0.52);
+  color: #fff;
+  box-shadow: 0 12px 28px rgba(94, 61, 194, 0.2);
+  background: linear-gradient(135deg, #7655df, #4c94c4);
+}
+
+.secondary-action {
+  border: 1px solid var(--v-line-bright);
+  color: #c6cbda;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.primary-action:hover,
+.secondary-action:hover {
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.table {
+  --bs-table-bg: transparent;
+  --bs-table-color: #bdc3d6;
+  --bs-table-border-color: var(--v-line);
+  margin: 1.8rem 0;
+  overflow: hidden;
+  border: 1px solid var(--v-line);
+  border-radius: 15px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table thead th {
+  padding: 0.9rem 1rem;
+  color: #e1e4ef;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.table td {
+  padding: 0.9rem 1rem;
+  vertical-align: middle;
+}
+
+blockquote {
+  padding: 1rem 1.25rem;
+  border-left: 3px solid var(--v-violet);
+  border-radius: 0 12px 12px 0;
+  background: rgba(157, 123, 255, 0.07);
+}
+
+.modal-content {
+  border: 1px solid var(--v-line-bright);
+  border-radius: 20px;
+  color: var(--v-ink);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.55);
+  background: var(--v-surface-strong);
+  backdrop-filter: blur(24px);
+}
+
+.modal-header,
+.modal-footer { border-color: var(--v-line); }
+
+.form-control {
+  border-color: var(--v-line-bright);
+  color: #fff;
+  background: rgba(0, 0, 0, 0.24);
+}
+
+.form-control:focus {
+  border-color: var(--v-violet);
+  color: #fff;
+  box-shadow: 0 0 0 0.2rem rgba(157, 123, 255, 0.16);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+footer.col-md-12 {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 40px 24px 28px;
+  color: #737b94;
+  font-size: 0.76rem;
+}
+
+footer hr { border-color: var(--v-line); }
+footer p { color: #737b94; }
+
+.release-provenance {
+  display: flex;
+  margin: 18px 0 0;
+  padding: 13px 15px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  border: 1px solid var(--v-line);
+  border-radius: 12px;
+  color: #858da8;
+  font: 600 0.68rem ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.release-provenance strong { color: var(--channel-accent); text-transform: uppercase; letter-spacing: 0.08em; }
+.release-provenance a { color: #aeb5cb; text-decoration: none; }
+.release-provenance a:hover { color: #fff; }
+
+@media (max-width: 991px) {
+  .release-badge { display: none; }
+  .navbar-collapse { margin-top: 12px; padding: 10px; border: 1px solid var(--v-line); border-radius: 15px; background: rgba(8, 11, 20, 0.96); }
+}
+
+@media (max-width: 767px) {
+  body { padding-top: 0; }
+  body > .container { width: calc(100% - 22px); }
+  body > .container > .row { display: block; }
+  body > .container > .row > [role="main"] { padding: 22px 8px 48px; }
+  h1 { font-size: clamp(2.65rem, 15vw, 4.2rem); }
+  .feature-grid { grid-template-columns: 1fr; }
+  .feature-card { min-height: 0; }
+  .table { display: block; overflow-x: auto; white-space: nowrap; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition: none !important;
+  }
+}

@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        <link rel="canonical" href="https://adammatthewsteinberger.github.io/vibey/runbooks/expansion/evidence/13-front1-before-after/">
+        <link rel="shortcut icon" href="../../../../img/favicon.ico">
+        <title>Front 1: Test parallelization and coverage unification — Evidence - vibey</title>
+        <link href="../../../../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../../../../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../../../../css/brands.min.css" rel="stylesheet">
+        <link href="../../../../css/solid.min.css" rel="stylesheet">
+        <link href="../../../../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../../../../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <link href="../../../../stylesheets/vibey.css" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="../../../..">vibey</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href="../../../.." class="nav-link">Home</a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Guides</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../../../../guides/kubernetes/" class="dropdown-item">Kubernetes</a>
+</li>
+                                    
+<li>
+    <a href="../../../../guides/greeter-live-demo/" class="dropdown-item">Greeter live demo</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Architecture</a>
+                                <ul class="dropdown-menu">
+                                    
+  <li class="dropdown-submenu">
+    <a href="#" class="dropdown-item">Decision records</a>
+    <ul class="dropdown-menu">
+            
+<li>
+    <a href="../../../../architecture/decisions/0001-orchestrate-do-not-reimplement/" class="dropdown-item">0001 — Orchestrate do not reimplement</a>
+</li>
+            
+<li>
+    <a href="../../../../architecture/decisions/0002-postgres-not-sqlite/" class="dropdown-item">0002 — Postgres not sqlite</a>
+</li>
+            
+<li>
+    <a href="../../../../architecture/decisions/0003-event-sourced-ledger/" class="dropdown-item">0003 — Event sourced ledger</a>
+</li>
+            
+<li>
+    <a href="../../../../architecture/decisions/0004-no-loss-gate-on-handoff/" class="dropdown-item">0004 — No loss gate on handoff</a>
+</li>
+            
+<li>
+    <a href="../../../../architecture/decisions/0005-smooth-weighted-round-robin/" class="dropdown-item">0005 — Smooth weighted round robin</a>
+</li>
+            
+<li>
+    <a href="../../../../architecture/decisions/0006-normalized-effort-ladder/" class="dropdown-item">0006 — Normalized effort ladder</a>
+</li>
+            
+<li>
+    <a href="../../../../architecture/decisions/0007-rotate-at-boundaries/" class="dropdown-item">0007 — Rotate at boundaries</a>
+</li>
+            
+<li>
+    <a href="../../../../architecture/decisions/0008-worktree-isolation/" class="dropdown-item">0008 — Worktree isolation</a>
+</li>
+            
+<li>
+    <a href="../../../../architecture/decisions/0009-human-gates-are-parked-jobs/" class="dropdown-item">0009 — Human gates are parked jobs</a>
+</li>
+            
+<li>
+    <a href="../../../../architecture/decisions/0010-review-loopback-routing/" class="dropdown-item">0010 — Review loopback routing</a>
+</li>
+            
+<li>
+    <a href="../../../../architecture/decisions/0011-agent-surface-provisioning/" class="dropdown-item">0011 — Agent surface provisioning</a>
+</li>
+            
+<li>
+    <a href="../../../../architecture/decisions/0012-deploy-is-a-separate-cli/" class="dropdown-item">0012 — Deploy is a separate cli</a>
+</li>
+            
+<li>
+    <a href="../../../../architecture/decisions/0013-deployment-is-a-three-phase-stage-set/" class="dropdown-item">0013 — Deployment is a three phase stage set</a>
+</li>
+            
+<li>
+    <a href="../../../../architecture/decisions/0014-optional-visual-design-and-deployment-opt-in/" class="dropdown-item">0014 — Optional visual design and deployment opt in</a>
+</li>
+            
+<li>
+    <a href="../../../../architecture/decisions/0015-qwenloop-standby/" class="dropdown-item">0015 — Qwenloop standby</a>
+</li>
+    </ul>
+  </li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#properdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a href="https://github.com/adammatthewsteinberger/vibey/edit/main/docs/runbooks/expansion/evidence/13-front1-before-after.md" class="nav-link">Edit on adammatthewsteinberger/vibey
+                                    </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#front-1-test-parallelization-and-coverage-unification-evidence" class="nav-link">Front 1: Test parallelization and coverage unification — Evidence</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#machine-specification" class="nav-link">Machine specification</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#baseline-measurements-before-template-database-pattern" class="nav-link">Baseline measurements (BEFORE template-database pattern)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#after-measurements-with-template-database-pattern-xdist-hook-diet" class="nav-link">After measurements (with template-database pattern + xdist + hook diet)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="front-1-test-parallelization-and-coverage-unification-evidence">Front 1: Test parallelization and coverage unification — Evidence<a class="headerlink" href="#front-1-test-parallelization-and-coverage-unification-evidence" title="Permanent link">&para;</a></h1>
+<h2 id="machine-specification">Machine specification<a class="headerlink" href="#machine-specification" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>OS</strong>: Darwin 25.6.0 (macOS), ARM64</li>
+<li><strong>CPU</strong>: 10 cores (10 physical)</li>
+<li><strong>RAM</strong>: 24 GB</li>
+<li><strong>Python</strong>: 3.14.6</li>
+<li><strong>uv</strong>: 0.12.3</li>
+<li><strong>pytest</strong>: 9.1.1</li>
+<li><strong>Branch</strong>: vibey/1/ws</li>
+<li><strong>Base commit</strong>: 1dc2e0d (chore(claudeloop): turn 1 — Decomposed the Front 1 design spec into 6 d…)</li>
+</ul>
+<h2 id="baseline-measurements-before-template-database-pattern">Baseline measurements (BEFORE template-database pattern)<a class="headerlink" href="#baseline-measurements-before-template-database-pattern" title="Permanent link">&para;</a></h2>
+<h3 id="test-collection">Test collection<a class="headerlink" href="#test-collection" title="Permanent link">&para;</a></h3>
+<p>Command:</p>
+<pre><code class="language-bash">uv run pytest --collect-only -q
+</code></pre>
+<p>Result:</p>
+<pre><code>1375/1384 tests collected (9 deselected)
+</code></pre>
+<ul>
+<li><strong>Collected</strong>: 1375 tests</li>
+<li><strong>Deselected</strong>: 9 tests (via <code>-m 'not paid'</code>)</li>
+<li><strong>Total</strong>: 1384 tests</li>
+</ul>
+<h3 id="full-suite-wall-time-sequential">Full suite wall time (sequential)<a class="headerlink" href="#full-suite-wall-time-sequential" title="Permanent link">&para;</a></h3>
+<p>Command:</p>
+<pre><code class="language-bash">time uv run pytest -q -p no:cacheprovider
+</code></pre>
+<p>Result:</p>
+<pre><code>1373 passed, 9 deselected, 2 xfailed, 3 warnings in 383.56s (0:06:23)
+uv run pytest -q -p no:cacheprovider  21.79s user 8.51s system 7% cpu 6:23.85 total
+</code></pre>
+<p>Verification run:</p>
+<pre><code>1373 passed, 9 deselected, 2 xfailed, 3 warnings in 378.86s (0:06:18)
+</code></pre>
+<ul>
+<li><strong>Wall time</strong>: 383.56s (6m23s), verified at 378.86s (6m18s)</li>
+<li><strong>Passed</strong>: 1373</li>
+<li><strong>Deselected</strong>: 9</li>
+<li><strong>xfailed</strong>: 2</li>
+<li><strong>Warnings</strong>: 3</li>
+<li><strong>CPU usage</strong>: 7% (single-threaded execution)</li>
+</ul>
+<h3 id="pre-commit-hook-timing">Pre-commit hook timing<a class="headerlink" href="#pre-commit-hook-timing" title="Permanent link">&para;</a></h3>
+<p>Current pre-commit hooks (from <code>.pre-commit-config.yaml</code>):
+1. ruff + ruff-format (on changed files)
+2. mypy --strict (full src/vibey)
+3. lint-imports (onion contract)
+4. domain-purity (runs full <code>uv run pytest</code>)
+5. conventional-pre-commit (commit-msg stage)</p>
+<p>Command:</p>
+<pre><code class="language-bash">time uv run pre-commit run --all-files
+</code></pre>
+<p>Result:</p>
+<pre><code>ruff (legacy alias)......................................................Passed
+ruff format..............................................................Passed
+mypy --strict............................................................Passed
+import-linter onion contract.............................................Passed
+domain purity + full test suite..........................................Passed
+uv run pre-commit run --all-files  21.15s user 7.84s system 7% cpu 6:22.20 total
+</code></pre>
+<ul>
+<li><strong>Hook wall time</strong>: 382.20s (6m22s)</li>
+<li><strong>CPU usage</strong>: 7% (all hooks sequential, dominated by pytest)</li>
+<li><strong>Breakdown</strong>: ruff + ruff-format (~2s) + mypy (~8s) + lint-imports (~2s) + pytest (~370s)</li>
+</ul>
+<p>Note: when run via <code>git commit</code> with a staged Python change, the hook also stashes
+unstaged files and may trigger system tests that shell out to <code>git commit</code> in temp
+directories, which inherit the pre-commit config and can cause cascade failures.
+A realistic <code>git commit</code> timing is approximately equal to the pre-commit run time
+(~6m22s) plus the commit-msg conventional-commit check (~1s), totaling ~6m23s.</p>
+<h3 id="protected-file-verification">Protected file verification<a class="headerlink" href="#protected-file-verification" title="Permanent link">&para;</a></h3>
+<p>Command:</p>
+<pre><code class="language-bash">git diff develop...HEAD --stat -- \
+  tests/system/test_delivery_stage_set.py \
+  'tests/domain/test_noloss*.py' \
+  tests/domain/test_briefing.py \
+  tests/infrastructure/db/test_chaos.py \
+  tests/live/
+</code></pre>
+<p>Result:</p>
+<pre><code>(no output - protected files unchanged)
+</code></pre>
+<p>✅ <strong>AC-13 satisfied</strong>: All protected test files are byte-identical to develop</p>
+<h2 id="after-measurements-with-template-database-pattern-xdist-hook-diet">After measurements (with template-database pattern + xdist + hook diet)<a class="headerlink" href="#after-measurements-with-template-database-pattern-xdist-hook-diet" title="Permanent link">&para;</a></h2>
+<h3 id="test-collection-with-pytest-xdist">Test collection (with pytest-xdist)<a class="headerlink" href="#test-collection-with-pytest-xdist" title="Permanent link">&para;</a></h3>
+<p>Command:</p>
+<pre><code class="language-bash">uv run pytest --collect-only -q
+</code></pre>
+<p>Result:</p>
+<pre><code>1375/1384 tests collected (9 deselected)
+</code></pre>
+<ul>
+<li><strong>Collected</strong>: 1375 tests (unchanged)</li>
+<li><strong>Deselected</strong>: 9 tests (via <code>-m 'not paid'</code>)</li>
+<li><strong>Total</strong>: 1384 tests</li>
+</ul>
+<h3 id="full-suite-wall-time-parallel-n-auto-maxprocesses8">Full suite wall time (parallel, -n auto --maxprocesses=8)<a class="headerlink" href="#full-suite-wall-time-parallel-n-auto-maxprocesses8" title="Permanent link">&para;</a></h3>
+<p>Command:</p>
+<pre><code class="language-bash">time uv run pytest -q -p no:cacheprovider
+</code></pre>
+<p>Consistency runs (3x consecutive):</p>
+<table>
+<thead>
+<tr>
+<th>Run</th>
+<th>Passed</th>
+<th>xfailed</th>
+<th>Warnings</th>
+<th>Wall time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>1373</td>
+<td>2</td>
+<td>3</td>
+<td>133.13s</td>
+</tr>
+<tr>
+<td>2</td>
+<td>1373</td>
+<td>2</td>
+<td>3</td>
+<td>132.07s</td>
+</tr>
+<tr>
+<td>3</td>
+<td>1373</td>
+<td>2</td>
+<td>3</td>
+<td>131.81s</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Average wall time</strong>: 132.34s (2m12s)</li>
+<li><strong>Speedup</strong>: 383.56s → 132.34s = <strong>2.90× faster</strong></li>
+<li><strong>CPU usage</strong>: 29–31% (multi-core via xdist)</li>
+<li><strong>Flakes</strong>: 0 across 3 runs</li>
+<li><strong>Test counts</strong>: identical across all runs</li>
+</ul>
+<h3 id="per-layer-coverage-reports">Per-layer coverage reports<a class="headerlink" href="#per-layer-coverage-reports" title="Permanent link">&para;</a></h3>
+<p>Single unified run:</p>
+<pre><code class="language-bash">uv run pytest -q -p no:cacheprovider --cov=vibey --cov-branch --cov-report=
+</code></pre>
+<p>Per-layer report results:</p>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Stmts</th>
+<th>Miss</th>
+<th>Branch</th>
+<th>BrPart</th>
+<th>Cover</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>domain</td>
+<td>1866</td>
+<td>0</td>
+<td>496</td>
+<td>0</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>application</td>
+<td>2460</td>
+<td>0</td>
+<td>616</td>
+<td>0</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>infrastructure</td>
+<td>2159</td>
+<td>0</td>
+<td>456</td>
+<td>0</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>cli</td>
+<td>617</td>
+<td>0</td>
+<td>188</td>
+<td>0</td>
+<td>100%</td>
+</tr>
+</tbody>
+</table>
+<p>✅ All four per-layer coverage gates pass at 100% branch coverage.</p>
+<h3 id="pre-commit-hook-timing-with-diet">Pre-commit hook timing (with diet)<a class="headerlink" href="#pre-commit-hook-timing-with-diet" title="Permanent link">&para;</a></h3>
+<p>New pre-commit hooks (from <code>.pre-commit-config.yaml</code>):</p>
+<p><strong>Pre-commit stage</strong> (every <code>git commit</code>):
+1. ruff + ruff-format (on changed files)
+2. parallel test suite (<code>uv run pytest -q -p no:cacheprovider</code>)</p>
+<p><strong>Pre-push stage</strong> (every <code>git push</code>):
+3. mypy --strict (full src/vibey)
+4. lint-imports (onion contract)
+5. coverage gates (pytest --cov + four per-layer reports)
+6. bandit
+7. pip-audit</p>
+<p><strong>Commit-msg stage</strong>: conventional-pre-commit</p>
+<p>Hook timing (3x consecutive, <code>pre-commit run --all-files</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Run</th>
+<th>Wall time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>133.36s</td>
+</tr>
+<tr>
+<td>2</td>
+<td>132.48s</td>
+</tr>
+<tr>
+<td>3</td>
+<td>132.10s</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Average pre-commit time</strong>: 132.65s (2m13s)</li>
+<li><strong>Speedup</strong>: 382.20s → 132.65s = <strong>2.88× faster</strong></li>
+<li><strong>Hooks in pre-commit</strong>: ruff check, ruff-format, pytest (exactly 1 pytest invocation)</li>
+<li><strong>Hooks moved to pre-push</strong>: mypy, lint-imports, coverage gates, bandit, pip-audit</li>
+</ul>
+<h3 id="protected-file-verification_1">Protected file verification<a class="headerlink" href="#protected-file-verification_1" title="Permanent link">&para;</a></h3>
+<p>Command:</p>
+<pre><code class="language-bash">git diff develop...HEAD --stat -- \
+  tests/system/test_delivery_stage_set.py \
+  'tests/domain/test_noloss*.py' \
+  tests/domain/test_briefing.py \
+  tests/infrastructure/db/test_chaos.py \
+  tests/live/
+</code></pre>
+<p>Result:</p>
+<pre><code>(no output - protected files unchanged)
+</code></pre>
+<p>✅ <strong>AC-13 satisfied</strong>: All protected test files are byte-identical to develop</p>
+<h3 id="ci-duration">CI duration<a class="headerlink" href="#ci-duration" title="Permanent link">&para;</a></h3>
+<p>[To be recorded from PR CI run]</p></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://properdocs.org/">ProperDocs</a>.</p>
+        </footer>
+        <script src="../../../../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "../../../..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../../../../js/base.js"></script>
+        <script src="../../../../javascripts/channel.js"></script>
+        <script src="../../../../search/main.js"></script>
+
+        <div class="modal" id="properdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="properdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="properdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="properdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
