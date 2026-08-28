@@ -1,4 +1,4 @@
-# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://hire.adam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 name: Promote
 
 # The other half of the flow. The merge train fills the integration branch; this moves it
@@ -63,7 +63,7 @@ jobs:
           if grep -qE '^name = "vibey-(gh|bootstrap)"' pyproject.toml 2>/dev/null; then
             python -m pip install --quiet -e .
           else
-            python -m pip install --quiet "vibey-gh==1.39.0"
+            python -m pip install --quiet "vibey-gh==1.43.0"
           fi
 
       - name: Promote

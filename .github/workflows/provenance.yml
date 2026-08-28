@@ -1,4 +1,4 @@
-# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://hire.adam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 name: Provenance
 
 # Server-side half of the provenance rule. The pre-push hook is the fast, local half, but
@@ -47,7 +47,7 @@ jobs:
             echo "this repository provides the tooling — installing from source"
             python -m pip install --quiet -e .
           else
-            python -m pip install --quiet "vibey-gh==1.39.0"
+            python -m pip install --quiet "vibey-gh==1.43.0"
           fi
 
       # --ci skips the core.hooksPath assertion, which is per-clone local git config that
