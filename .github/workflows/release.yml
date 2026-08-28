@@ -33,6 +33,14 @@ jobs:
           # version; the dev suffix makes each push distinct and sorts it BEFORE the
           # release it anticipates, which is the correct relationship.
           vibey-gh version --dev "${GITHUB_RUN_NUMBER}" --apply
+          # The TestPyPI rehearsal publishes as vibey-dev: the name `vibey` on TestPyPI is
+          # squatted by an unrelated project ("AI-powered, vibe-aligned app generation"),
+          # was never ours, and can never be claimed -- index names are immutable. vibey-dev
+          # there is this project's own long-standing answer to that squat, and the
+          # release.yml trusted publisher already lives on it. Renamed in the runner only,
+          # exactly like the dev version above; the importable package stays `vibey`, and
+          # PyPI proper -- where we do own the name -- is untouched.
+          sed -i 's/^name = "vibey"$/name = "vibey-dev"/' pyproject.toml
 
       - id: v
         # Indented inside the block scalar on purpose: a heredoc body written at column 0
@@ -87,12 +95,13 @@ jobs:
             if pip install --no-cache-dir --quiet \
                  --index-url https://test.pypi.org/simple/ \
                  --extra-index-url https://pypi.org/simple/ \
-                 "vibey==${VERSION}"; then
+                 "vibey-dev==${VERSION}"; then
               break
             fi
             echo "not indexed yet (attempt $i); waiting"
             sleep 30
           done
+          # The distribution is vibey-dev; the package it installs is still vibey.
           vibey --version
           echo "installed ${VERSION} from TestPyPI and it runs"
 
