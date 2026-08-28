@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="/vibey/img/favicon.ico">
+        <title>vibey</title>
+        <link href="/vibey/css/bootstrap.min.css" rel="stylesheet">
+        <link href="/vibey/css/fontawesome.min.css" rel="stylesheet">
+        <link href="/vibey/css/brands.min.css" rel="stylesheet">
+        <link href="/vibey/css/solid.min.css" rel="stylesheet">
+        <link href="/vibey/css/v4-font-face.min.css" rel="stylesheet">
+        <link href="/vibey/css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <link href="/vibey/stylesheets/vibey.css" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="/vibey/.">vibey</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href="/vibey/." class="nav-link">Home</a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Guides</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="/vibey/guides/kubernetes/" class="dropdown-item">Kubernetes</a>
+</li>
+                                    
+<li>
+    <a href="/vibey/guides/greeter-live-demo/" class="dropdown-item">Greeter live demo</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Architecture</a>
+                                <ul class="dropdown-menu">
+                                    
+  <li class="dropdown-submenu">
+    <a href="#" class="dropdown-item">Decision records</a>
+    <ul class="dropdown-menu">
+            
+<li>
+    <a href="/vibey/architecture/decisions/0001-orchestrate-do-not-reimplement/" class="dropdown-item">0001 — Orchestrate do not reimplement</a>
+</li>
+            
+<li>
+    <a href="/vibey/architecture/decisions/0002-postgres-not-sqlite/" class="dropdown-item">0002 — Postgres not sqlite</a>
+</li>
+            
+<li>
+    <a href="/vibey/architecture/decisions/0003-event-sourced-ledger/" class="dropdown-item">0003 — Event sourced ledger</a>
+</li>
+            
+<li>
+    <a href="/vibey/architecture/decisions/0004-no-loss-gate-on-handoff/" class="dropdown-item">0004 — No loss gate on handoff</a>
+</li>
+            
+<li>
+    <a href="/vibey/architecture/decisions/0005-smooth-weighted-round-robin/" class="dropdown-item">0005 — Smooth weighted round robin</a>
+</li>
+            
+<li>
+    <a href="/vibey/architecture/decisions/0006-normalized-effort-ladder/" class="dropdown-item">0006 — Normalized effort ladder</a>
+</li>
+            
+<li>
+    <a href="/vibey/architecture/decisions/0007-rotate-at-boundaries/" class="dropdown-item">0007 — Rotate at boundaries</a>
+</li>
+            
+<li>
+    <a href="/vibey/architecture/decisions/0008-worktree-isolation/" class="dropdown-item">0008 — Worktree isolation</a>
+</li>
+            
+<li>
+    <a href="/vibey/architecture/decisions/0009-human-gates-are-parked-jobs/" class="dropdown-item">0009 — Human gates are parked jobs</a>
+</li>
+            
+<li>
+    <a href="/vibey/architecture/decisions/0010-review-loopback-routing/" class="dropdown-item">0010 — Review loopback routing</a>
+</li>
+            
+<li>
+    <a href="/vibey/architecture/decisions/0011-agent-surface-provisioning/" class="dropdown-item">0011 — Agent surface provisioning</a>
+</li>
+            
+<li>
+    <a href="/vibey/architecture/decisions/0012-deploy-is-a-separate-cli/" class="dropdown-item">0012 — Deploy is a separate cli</a>
+</li>
+            
+<li>
+    <a href="/vibey/architecture/decisions/0013-deployment-is-a-three-phase-stage-set/" class="dropdown-item">0013 — Deployment is a three phase stage set</a>
+</li>
+            
+<li>
+    <a href="/vibey/architecture/decisions/0014-optional-visual-design-and-deployment-opt-in/" class="dropdown-item">0014 — Optional visual design and deployment opt in</a>
+</li>
+            
+<li>
+    <a href="/vibey/architecture/decisions/0015-qwenloop-standby/" class="dropdown-item">0015 — Qwenloop standby</a>
+</li>
+    </ul>
+  </li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#properdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a href="https://github.com/adammatthewsteinberger/vibey" class="nav-link">adammatthewsteinberger/vibey</a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+
+    <div class="row-fluid">
+      <div id="main-content" class="span12">
+        <h1 id="404-page-not-found" style="text-align: center">404</h1>
+        <p style="text-align: center"><strong>Page not found</strong></p>
+      </div>
+    </div>
+
+
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://properdocs.org/">ProperDocs</a>.</p>
+        </footer>
+        <script src="/vibey/js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "/vibey/",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="/vibey/js/base.js"></script>
+        <script src="/vibey/javascripts/channel.js"></script>
+        <script src="/vibey/search/main.js"></script>
+
+        <div class="modal" id="properdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="properdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="properdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="properdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

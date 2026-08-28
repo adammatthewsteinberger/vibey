@@ -1,4 +1,4 @@
-# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
+# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://hire.adam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 name: Promote
 
 # The other half of the flow. The merge train fills the integration branch; this moves it
@@ -9,14 +9,12 @@ name: Promote
 # merge and so never completes, and for anything that arrives by another route.
 #
 # The decisions live in `vibey-gh promote`, where they are unit-tested: compare the
-# branches by CONTENT rather than commit count, derive the version before opening
-# anything, wait for the checks, then merge. A hand-written version of this workflow gets
-# at least one of those wrong.
+# branches by CONTENT rather than commit count, derive the version, and open or reuse the
+# promotion PR. Its scans, PR-automation gate, and rebase merge then run asynchronously.
 #
 # PERMISSIONS. A ruleset requiring an approving review cannot be satisfied by the default
-# GITHUB_TOKEN. Supply `AUTOMERGE_TOKEN` (a token belonging to someone with the admin
-# role) or the job will open the pull request and report that it could not merge it —
-# which is a safe place to stop.
+# GITHUB_TOKEN. Supply `AUTOMERGE_TOKEN` (a token belonging to someone with the required
+# ruleset role) for the version push and later event-driven merge.
 
 on:
   workflow_run:
@@ -47,7 +45,7 @@ jobs:
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
           # checkout's extraheader beats a remote URL, so the push of the version bump
@@ -55,7 +53,7 @@ jobs:
           token: ${{ secrets.AUTOMERGE_TOKEN || github.token }}
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
 
@@ -65,7 +63,7 @@ jobs:
           if grep -qE '^name = "vibey-(gh|bootstrap)"' pyproject.toml 2>/dev/null; then
             python -m pip install --quiet -e .
           else
-            python -m pip install --quiet vibey-gh
+            python -m pip install --quiet "vibey-gh==1.39.0"
           fi
 
       - name: Promote

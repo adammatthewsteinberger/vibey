@@ -1,17 +1,12 @@
-# vibey-gh: provenance guardrails for this repository.
-#
-# All bundled workflows are managed here: this repository has moved off
-# release-please entirely, so vibey-gh owns provenance, version derivation,
-# the merge train, and promotion. Omitting `workflows` means "all of them",
-# which is the right answer once there is no second release system to
-# collide with.
+# vibey-gh owns provenance and release automation for this repository, exactly as it does
+# for the five *loop runners and vibey-skills. Adopted in one pass; the checklist that
+# shaped this file is the one those adoptions debugged the hard way.
 
 [fingerprint]
-# Defaults already read "Made with love by Vibey, the auto-vibecoding
-# machine by Adam Matthew Steinberger", so text and trailer are inherited.
 sources = [
   "src/**/*.py",
   "tests/**/*.py",
+  "scripts/**/*.py",
   ".github/workflows/*.yml",
 ]
 
@@ -27,3 +22,34 @@ release     = "main"
 [merge_train]
 owner           = "adammatthewsteinberger"
 trusted_authors = ["adammatthewsteinberger", "claude[bot]", "github-actions[bot]", "vibey[bot]"]
+
+[install]
+# Pin every rendered template to the version that rendered it. Unpinned, a runner adopts
+# whatever is newest -- the failure mode that took vibey-skills' CI red for two days.
+pin_version = true
+workflows = ["merge-train.yml", "promote-to-main.yml", "provenance.yml", "release-surfaces.yml", "pr-automation.yml", "automation-bootstrap.yml"]
+
+[pr_automation]
+# This repository's real PR-triggered workflows. The default set names "Docs", which
+# nothing here answers to -- a gate waiting on a scan that can never complete never posts.
+scan_workflows = ["CI", "Provenance"]
+
+[pr_automation.fallback]
+# Reviews with a local model when the paid path returns NO VERDICT AT ALL. It never
+# overrides a review that ran, `trusted_only` keeps fork PRs off the self-hosted runner,
+# and the verdict is labelled as the degraded path.
+enabled = true
+runner_label = "vibey-local-vibey"
+trusted_only = true
+
+[issue_automation]
+# The issue path's counterpart, sharing the fallback runner and model: an exhausted API
+# key degrades to one bounded triage comment instead of silence.
+fallback_enabled = true
+
+[documentation]
+# The full documentation contract is a separate project; off until it is satisfied.
+enabled = false
+# GA4 measurement id for the published docs site, rendered into release-surfaces.yml as
+# GA_ID. Public by nature -- it ships in the page source of every site using it.
+google_analytics_id = "G-DMYG7PHCQP"

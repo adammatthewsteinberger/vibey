@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        <link rel="canonical" href="https://adammatthewsteinberger.github.io/vibey/guides/kubernetes/">
+        <link rel="shortcut icon" href="../../img/favicon.ico">
+        <title>Kubernetes - vibey</title>
+        <link href="../../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../../css/brands.min.css" rel="stylesheet">
+        <link href="../../css/solid.min.css" rel="stylesheet">
+        <link href="../../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <link href="../../stylesheets/vibey.css" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="../..">vibey</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href="../.." class="nav-link">Home</a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle active" aria-current="page" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Guides</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="./" class="dropdown-item active" aria-current="page">Kubernetes</a>
+</li>
+                                    
+<li>
+    <a href="../greeter-live-demo/" class="dropdown-item">Greeter live demo</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Architecture</a>
+                                <ul class="dropdown-menu">
+                                    
+  <li class="dropdown-submenu">
+    <a href="#" class="dropdown-item">Decision records</a>
+    <ul class="dropdown-menu">
+            
+<li>
+    <a href="../../architecture/decisions/0001-orchestrate-do-not-reimplement/" class="dropdown-item">0001 — Orchestrate do not reimplement</a>
+</li>
+            
+<li>
+    <a href="../../architecture/decisions/0002-postgres-not-sqlite/" class="dropdown-item">0002 — Postgres not sqlite</a>
+</li>
+            
+<li>
+    <a href="../../architecture/decisions/0003-event-sourced-ledger/" class="dropdown-item">0003 — Event sourced ledger</a>
+</li>
+            
+<li>
+    <a href="../../architecture/decisions/0004-no-loss-gate-on-handoff/" class="dropdown-item">0004 — No loss gate on handoff</a>
+</li>
+            
+<li>
+    <a href="../../architecture/decisions/0005-smooth-weighted-round-robin/" class="dropdown-item">0005 — Smooth weighted round robin</a>
+</li>
+            
+<li>
+    <a href="../../architecture/decisions/0006-normalized-effort-ladder/" class="dropdown-item">0006 — Normalized effort ladder</a>
+</li>
+            
+<li>
+    <a href="../../architecture/decisions/0007-rotate-at-boundaries/" class="dropdown-item">0007 — Rotate at boundaries</a>
+</li>
+            
+<li>
+    <a href="../../architecture/decisions/0008-worktree-isolation/" class="dropdown-item">0008 — Worktree isolation</a>
+</li>
+            
+<li>
+    <a href="../../architecture/decisions/0009-human-gates-are-parked-jobs/" class="dropdown-item">0009 — Human gates are parked jobs</a>
+</li>
+            
+<li>
+    <a href="../../architecture/decisions/0010-review-loopback-routing/" class="dropdown-item">0010 — Review loopback routing</a>
+</li>
+            
+<li>
+    <a href="../../architecture/decisions/0011-agent-surface-provisioning/" class="dropdown-item">0011 — Agent surface provisioning</a>
+</li>
+            
+<li>
+    <a href="../../architecture/decisions/0012-deploy-is-a-separate-cli/" class="dropdown-item">0012 — Deploy is a separate cli</a>
+</li>
+            
+<li>
+    <a href="../../architecture/decisions/0013-deployment-is-a-three-phase-stage-set/" class="dropdown-item">0013 — Deployment is a three phase stage set</a>
+</li>
+            
+<li>
+    <a href="../../architecture/decisions/0014-optional-visual-design-and-deployment-opt-in/" class="dropdown-item">0014 — Optional visual design and deployment opt in</a>
+</li>
+            
+<li>
+    <a href="../../architecture/decisions/0015-qwenloop-standby/" class="dropdown-item">0015 — Qwenloop standby</a>
+</li>
+    </ul>
+  </li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#properdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a rel="prev" href="../.." class="nav-link">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a rel="next" href="../greeter-live-demo/" class="nav-link">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="https://github.com/adammatthewsteinberger/vibey/edit/main/docs/guides/kubernetes.md" class="nav-link">Edit on adammatthewsteinberger/vibey
+                                    </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#running-vibey-on-kubernetes" class="nav-link">Running vibey on Kubernetes</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#what-works-today-and-what-does-not" class="nav-link">What works today, and what does not</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#prerequisites" class="nav-link">Prerequisites</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#1-build-the-image-into-the-clusters-daemon" class="nav-link">1. Build the image into the cluster's daemon</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#2-install-the-chart" class="nav-link">2. Install the chart</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#3-create-a-project" class="nav-link">3. Create a project</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#4-watch-it-work" class="nav-link">4. Watch it work</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#5-autoscaling-with-keda" class="nav-link">5. Autoscaling with KEDA</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#6-scale-in-and-long-sessions" class="nav-link">6. Scale-in and long sessions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#troubleshooting" class="nav-link">Troubleshooting</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#values-worth-knowing" class="nav-link">Values worth knowing</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="running-vibey-on-kubernetes">Running vibey on Kubernetes<a class="headerlink" href="#running-vibey-on-kubernetes" title="Permanent link">&para;</a></h1>
+<p>This guide takes vibey from a laptop process to a long-lived deployment:
+a containerized worker, a Helm chart, an in-cluster PostgreSQL, and
+queue-depth autoscaling via KEDA. Everything below was verified on
+minikube (Kubernetes v1.35.1); the chart is written so the same values
+work against a managed Postgres on AKS/EKS/GKE, but only the local path
+has been exercised end to end so far.</p>
+<h2 id="what-works-today-and-what-does-not">What works today, and what does not<a class="headerlink" href="#what-works-today-and-what-does-not" title="Permanent link">&para;</a></h2>
+<p>Be clear about this before you install anything:</p>
+<ul>
+<li><strong>The worker runs, applies migrations, claims jobs, and autoscales.</strong></li>
+<li><strong>Engines do not ship in the image.</strong> <code>deploy/docker/Dockerfile</code> builds
+  vibey only — no <code>claudeloop</code>, <code>codexloop</code>, <code>cursorloop</code>, or <code>agyloop</code>
+  binaries. In-cluster runs therefore use <code>--provider scripted</code>, and the
+  worker will log <code>no recorded conformance for agyloop, claudeloop,
+  codexloop, cursorloop</code>. That warning is correct, not a misconfiguration.
+  Real engines in-cluster are workstreams
+  <a href="../../runbooks/expansion/05-server-mode-kubernetes/">05</a> item 1 and
+  <a href="../../runbooks/expansion/16-loop-runner-containers/">16</a>.</li>
+<li><strong>There is no operator yet.</strong> Creating projects and answering gates is
+  still <code>vibey new</code> / <code>vibey answer</code>, run inside a pod or against the
+  database. The <code>VibeyProject</code> CRD is 05 item 5.</li>
+</ul>
+<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Docker (or colima) and <code>minikube</code>, <code>helm</code>, <code>kubectl</code>.</li>
+<li>For autoscaling, KEDA installed in the cluster (step 5).</li>
+</ul>
+<h2 id="1-build-the-image-into-the-clusters-daemon">1. Build the image into the cluster's daemon<a class="headerlink" href="#1-build-the-image-into-the-clusters-daemon" title="Permanent link">&para;</a></h2>
+<p>The chart defaults to <code>image.pullPolicy: Never</code> and tag <code>vibey:dev</code>,
+because a locally built image has never been pushed anywhere and <code>Always</code>
+would send kubelet hunting a registry that has never seen it. Build
+directly into minikube's Docker daemon:</p>
+<pre><code class="language-bash">minikube start -p vibey
+eval $(minikube -p vibey docker-env)
+docker build -f deploy/docker/Dockerfile -t vibey:dev .
+</code></pre>
+<p>The image is two-stage on purpose: the runtime layer carries no compiler
+and no package manager, so a compromised engine session inside a worker
+does not find build tools waiting. Migrations ship inside it, so an
+install never depends on someone running SQL by hand first.</p>
+<h2 id="2-install-the-chart">2. Install the chart<a class="headerlink" href="#2-install-the-chart" title="Permanent link">&para;</a></h2>
+<pre><code class="language-bash">helm install vibey deploy/helm/vibey -n vibey --create-namespace
+</code></pre>
+<p>This creates a worker Deployment, a worktree PVC, and a single-replica
+PostgreSQL StatefulSet. An init container waits for Postgres so the
+failure mode is "pod pending" rather than "CrashLoopBackOff with a stack
+trace", and the worker applies migrations itself at startup.</p>
+<p>The built-in Postgres is <strong>development only</strong> — <code>postgres.password</code>
+defaults to <code>vibey</code> in plain values. For anything real, set
+<code>postgres.enabled: false</code> and point <code>dsn.existingSecret</code> at a Secret
+holding a managed instance's DSN.</p>
+<h2 id="3-create-a-project">3. Create a project<a class="headerlink" href="#3-create-a-project" title="Permanent link">&para;</a></h2>
+<p>A worker with nothing to do would normally exit, which in a Deployment is
+a restart loop that ends only when a human creates a project — and the
+crash counter makes a healthy worker look broken. The chart therefore
+sets <code>--wait-for-project 15</code>, so the worker parks and polls:</p>
+<pre><code>no project yet; polling every 15s
+</code></pre>
+<p>Create one from inside the cluster:</p>
+<pre><code class="language-bash">kubectl exec -n vibey deploy/vibey-vibey-worker -- \
+  vibey new demo --repo /work/demo --max-cycles 1
+</code></pre>
+<blockquote>
+<p><strong>Set <code>worker.project</code> explicitly.</strong> Left empty, the worker binds to
+whichever project was created most recently — convenient on a laptop, a
+footgun in a cluster the moment a second project exists. The value is
+the project <strong>UUID</strong>, not its name. <code>vibey new</code> prints it on creation;
+there is no list-projects command yet, so otherwise read it from the
+database (<code>SELECT id, name FROM project;</code>). The chart does not enforce
+this, so it is on you:</p>
+<p><code>bash
+helm upgrade vibey deploy/helm/vibey -n vibey \
+  --set worker.project=&lt;uuid&gt;</code></p>
+</blockquote>
+<h2 id="4-watch-it-work">4. Watch it work<a class="headerlink" href="#4-watch-it-work" title="Permanent link">&para;</a></h2>
+<pre><code class="language-bash">kubectl logs -n vibey deploy/vibey-vibey-worker -f
+</code></pre>
+<pre><code>worker started: project=demo engines=all parallelism=2 provider=scripted
+processed one job
+</code></pre>
+<h2 id="5-autoscaling-with-keda">5. Autoscaling with KEDA<a class="headerlink" href="#5-autoscaling-with-keda" title="Permanent link">&para;</a></h2>
+<p>KEDA is a cluster-wide operator and is not assumed, so the ScaledObject is
+off by default and inert without it.</p>
+<pre><code class="language-bash">helm repo add kedacore https://kedacore.github.io/charts
+helm install keda kedacore/keda -n keda --create-namespace --wait
+helm upgrade vibey deploy/helm/vibey -n vibey --set keda.enabled=true
+</code></pre>
+<p>The trigger is the <strong>claimable-work</strong> query — ready, due now, and not
+blocked behind an unsatisfied dependency — deliberately mirroring
+<code>JobRepository.claim</code>'s SELECT arm. Scaling on raw queue depth would
+start workers for jobs nothing can claim yet.</p>
+<p>Measured behavior on minikube with <code>maxReplicas: 4</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Event</th>
+<th>Observed</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>20 claimable jobs enqueued</td>
+<td>0 → 4 replicas in ~8s</td>
+</tr>
+<tr>
+<td>queue drained</td>
+<td>4 → 0 after the 300s <code>cooldownPeriod</code></td>
+</tr>
+<tr>
+<td>pod receives SIGTERM</td>
+<td>exits in 4-5s</td>
+</tr>
+</tbody>
+</table>
+<p>Note that the N→0 transition happens in <strong>one step</strong>. KEDA's deactivation
+path sets the replica count directly and bypasses the HPA <code>scaleDown</code>
+behavior policy entirely. That policy only smooths HPA-driven scaling
+between <code>minReplicas</code> and max — do not read it as protection against
+losing several in-flight sessions at once.</p>
+<h2 id="6-scale-in-and-long-sessions">6. Scale-in and long sessions<a class="headerlink" href="#6-scale-in-and-long-sessions" title="Permanent link">&para;</a></h2>
+<p>Engine sessions run for minutes to hours, so <code>terminationGracePeriodSeconds</code>
+defaults to <strong>7200</strong>. That is a ceiling for one long in-flight turn, not
+an expected shutdown time.</p>
+<p>On SIGTERM the worker drains: it finishes the job in hand and claims no
+more, then exits.</p>
+<pre><code>draining on SIGTERM: finishing in-flight job, claiming no more
+</code></pre>
+<p>An idle worker therefore exits in seconds. Only a worker genuinely
+mid-turn uses any meaningful part of the grace period.</p>
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<p><strong><code>helm upgrade</code> fails with <code>lookup &lt;release&gt;-postgres ... no such host</code>.</strong>
+You are on a chart older than the DSN fix. KEDA's operator runs in its own
+namespace and dials Postgres itself, so the DSN must be fully qualified —
+a bare Service name resolves only from inside the release namespace, which
+is why the worker was fine and the autoscaler was not. Set
+<code>clusterDomain</code> if your cluster does not use <code>cluster.local</code>.</p>
+<p><strong>Deployment shows <code>0/0</code> but pods are still <code>Terminating</code> and working.</strong>
+The worker is ignoring SIGTERM — you are running an image built before the
+drain landed. Rebuild. This state is deceptive: <code>kubectl</code> reports capacity
+released while the pods still hold CPU, memory, and Postgres connections.</p>
+<p><strong><code>kubectl delete pod --force --grace-period=0</code> leaves workers running.</strong>
+Force delete removes the pod object without waiting for the container to
+die, exactly as its warning says. The container keeps running, keeps its
+database connections, and <strong>keeps claiming jobs</strong> — invisible to
+<code>kubectl</code>, since the pod is gone from the API server. Check with:</p>
+<pre><code class="language-bash">kubectl exec -n vibey vibey-vibey-postgres-0 -- \
+  psql -U vibey -d vibey -c \
+  &quot;SELECT client_addr, count(*) FROM pg_stat_activity
+   WHERE datname='vibey' AND client_addr IS NOT NULL GROUP BY client_addr;&quot;
+</code></pre>
+<p>Connections from addresses with no corresponding pod are orphans; kill
+them at the container runtime (<code>docker kill</code> inside <code>minikube docker-env</code>).
+Prefer a normal delete — the drain makes it fast.</p>
+<p><strong>Workers scale up but claim nothing.</strong> The scaler counts claimable jobs
+across <em>all</em> projects, while the worker Deployment binds to one. Work in
+another project will scale workers that cannot claim it.</p>
+<h2 id="values-worth-knowing">Values worth knowing<a class="headerlink" href="#values-worth-knowing" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Default</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>worker.terminationGracePeriodSeconds</code></td>
+<td><code>7200</code></td>
+<td>ceiling for one long in-flight turn</td>
+</tr>
+<tr>
+<td><code>worker.waitForProjectSeconds</code></td>
+<td><code>15</code></td>
+<td>park instead of restart-looping</td>
+</tr>
+<tr>
+<td><code>worker.parallelism</code></td>
+<td><code>2</code></td>
+<td>concurrent job loops per pod</td>
+</tr>
+<tr>
+<td><code>worker.project</code></td>
+<td><code>""</code></td>
+<td><strong>set this</strong>; empty binds to the newest project</td>
+</tr>
+<tr>
+<td><code>keda.minReplicas</code> / <code>maxReplicas</code></td>
+<td><code>0</code> / <code>4</code></td>
+<td>scale to zero when idle</td>
+</tr>
+<tr>
+<td><code>keda.cooldownPeriod</code></td>
+<td><code>300</code></td>
+<td>delay before deactivating to zero</td>
+</tr>
+<tr>
+<td><code>clusterDomain</code></td>
+<td><code>cluster.local</code></td>
+<td>only change on a custom <code>--service-dns-domain</code></td>
+</tr>
+<tr>
+<td><code>postgres.enabled</code></td>
+<td><code>true</code></td>
+<td>dev only; use <code>dsn.existingSecret</code> for managed</td>
+</tr>
+</tbody>
+</table></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://properdocs.org/">ProperDocs</a>.</p>
+        </footer>
+        <script src="../../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "../..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../../js/base.js"></script>
+        <script src="../../javascripts/channel.js"></script>
+        <script src="../../search/main.js"></script>
+
+        <div class="modal" id="properdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="properdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="properdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="properdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

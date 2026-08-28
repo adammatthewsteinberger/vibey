@@ -1,3 +1,4 @@
+# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://hire.adam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 # Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """FileDeploymentStateRepository: spec/consent round-trips and the
 consent-is-never-silently-reused digest invariant."""

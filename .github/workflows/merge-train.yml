@@ -1,78 +1,84 @@
-# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
+# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://hire.adam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 name: Merge train
 
-# Weekly: merge every pull request into the integration branch that is READY.
-#
-# Readiness is mechanical and is decided by `vibey-gh merge-train` — not a draft, no
-# conflicts, checks green, no changes requested — plus the trust rule: work from the owner
-# or their own bots merges on a green build, work from anyone else additionally needs an
-# approving review. The logic lives in the library, where it is unit-tested, rather than
-# in this file where it would not be.
-#
-# A pull request held ONLY on that approval is labelled `needs-human-review` and the owner
-# is mentioned on it, once — because otherwise the contribution just sits there and nobody
-# finds out. Repeating the mention weekly would train the owner to ignore it, so an
-# existing notification is detected before another is posted. A draft or a red build gets
-# neither: that is the contributor's to fix, and paging anyone about it is noise.
-#
-# The run also writes a markdown table to the job summary, so a week that merged nothing
-# still says what it looked at.
-#
-# PERMISSIONS. A branch ruleset that requires an approving review cannot be satisfied by
-# the default GITHUB_TOKEN, and GitHub Actions is usually not a bypass actor. Supply a
-# repository secret `AUTOMERGE_TOKEN` belonging to someone with the admin role. Without
-# one this job reports every pull request as blocked rather than merging anything.
-#
-# Use a real token rather than adding GitHub Actions to the bypass list: a push made with
-# GITHUB_TOKEN does not trigger further workflows, so a release chain downstream of this
-# would silently stop.
-
+# A successful PR-automation gate is the primary trigger. Weekly and manual runs remain
+# recovery backstops and evaluate every currently ready PR.
 on:
+  workflow_run:
+    workflows: ["PR automation"]
+    types: [completed]
   schedule:
     - cron: "17 7 * * 1"
   workflow_dispatch:
     inputs:
+      pr:
+        description: "Evaluate only this PR number"
+        required: false
+        type: string
       dry_run:
-        description: "Report what would be merged without merging it"
+        description: "Report without merging"
         required: false
         default: false
         type: boolean
 
 permissions:
+  actions: read
   contents: write
   pull-requests: write
 
 concurrency:
-  group: merge-train
+  group: merge-train-${{ inputs.pr || github.event.workflow_run.head_sha || 'recovery' }}
   cancel-in-progress: false
 
 jobs:
   merge:
-    name: Merge train
+    name: merge
+    # Deliberately NOT gated on the triggering run's conclusion. "PR automation" concludes
+    # `failure` whenever its exact-head review job fails -- which is exactly the case the
+    # local review fallback exists to cover: the fallback job then succeeds, publishes a
+    # green `PR automation / gate`, and the run as a whole still ends `failure` because one
+    # job in it did. Filtering on that conclusion skipped the merge train on every such PR
+    # and silently defeated the fallback at the last step.
+    #
+    # Nothing is relaxed by dropping it. The conclusion was never the authority: the
+    # decision is made below by `vibey-gh merge-train`, which re-reads each PR and requires
+    # a completed, successful `PR automation / gate` on the head before merging anything.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
-
       - name: Install the tooling
         run: |
           set -euo pipefail
           if grep -qE '^name = "vibey-(gh|bootstrap)"' pyproject.toml 2>/dev/null; then
             python -m pip install --quiet -e .
           else
-            python -m pip install --quiet vibey-gh
+            python -m pip install --quiet "vibey-gh==1.39.0"
           fi
-
+      - name: Resolve the gated PR
+        id: resolve
+        env:
+          GH_TOKEN: ${{ secrets.AUTOMERGE_TOKEN || github.token }}
+          REPO: ${{ github.repository }}
+          INPUT_PR: ${{ inputs.pr }}
+          EVENT_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          number="${INPUT_PR:-}"
+          if [ -z "$number" ] && [ -n "${EVENT_SHA:-}" ]; then
+            number=$(gh api "repos/${REPO}/commits/${EVENT_SHA}/pulls" --jq '.[0].number // empty')
+          fi
+          echo "pr=$number" >> "$GITHUB_OUTPUT"
       - name: Merge what is ready
         env:
           GH_TOKEN: ${{ secrets.AUTOMERGE_TOKEN || github.token }}
+          PR: ${{ steps.resolve.outputs.pr }}
         run: |
           set -euo pipefail
-          # No `tee` into the job summary: the command writes its own markdown table
-          # there. Piping stdout in as well would append the plain log lines too, which
-          # are not markdown and render as one run-on paragraph above the table.
-          vibey-gh merge-train ${{ inputs.dry_run && '--dry-run' || '' }}
+          args=()
+          if [ -n "${PR:-}" ]; then args+=(--pr "$PR"); fi
+          if [ "${{ inputs.dry_run || false }}" = true ]; then args+=(--dry-run); fi
+          vibey-gh merge-train "${args[@]}"

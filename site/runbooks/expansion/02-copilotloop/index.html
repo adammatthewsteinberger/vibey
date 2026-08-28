@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        <link rel="canonical" href="https://adammatthewsteinberger.github.io/vibey/runbooks/expansion/02-copilotloop/">
+        <link rel="shortcut icon" href="../../../img/favicon.ico">
+        <title>Runbook: copilotloop — the fifth engine - vibey</title>
+        <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../../../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../../../css/brands.min.css" rel="stylesheet">
+        <link href="../../../css/solid.min.css" rel="stylesheet">
+        <link href="../../../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../../../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <link href="../../../stylesheets/vibey.css" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="../../..">vibey</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href="../../.." class="nav-link">Home</a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Guides</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../../../guides/kubernetes/" class="dropdown-item">Kubernetes</a>
+</li>
+                                    
+<li>
+    <a href="../../../guides/greeter-live-demo/" class="dropdown-item">Greeter live demo</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Architecture</a>
+                                <ul class="dropdown-menu">
+                                    
+  <li class="dropdown-submenu">
+    <a href="#" class="dropdown-item">Decision records</a>
+    <ul class="dropdown-menu">
+            
+<li>
+    <a href="../../../architecture/decisions/0001-orchestrate-do-not-reimplement/" class="dropdown-item">0001 — Orchestrate do not reimplement</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0002-postgres-not-sqlite/" class="dropdown-item">0002 — Postgres not sqlite</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0003-event-sourced-ledger/" class="dropdown-item">0003 — Event sourced ledger</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0004-no-loss-gate-on-handoff/" class="dropdown-item">0004 — No loss gate on handoff</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0005-smooth-weighted-round-robin/" class="dropdown-item">0005 — Smooth weighted round robin</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0006-normalized-effort-ladder/" class="dropdown-item">0006 — Normalized effort ladder</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0007-rotate-at-boundaries/" class="dropdown-item">0007 — Rotate at boundaries</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0008-worktree-isolation/" class="dropdown-item">0008 — Worktree isolation</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0009-human-gates-are-parked-jobs/" class="dropdown-item">0009 — Human gates are parked jobs</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0010-review-loopback-routing/" class="dropdown-item">0010 — Review loopback routing</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0011-agent-surface-provisioning/" class="dropdown-item">0011 — Agent surface provisioning</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0012-deploy-is-a-separate-cli/" class="dropdown-item">0012 — Deploy is a separate cli</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0013-deployment-is-a-three-phase-stage-set/" class="dropdown-item">0013 — Deployment is a three phase stage set</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0014-optional-visual-design-and-deployment-opt-in/" class="dropdown-item">0014 — Optional visual design and deployment opt in</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0015-qwenloop-standby/" class="dropdown-item">0015 — Qwenloop standby</a>
+</li>
+    </ul>
+  </li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#properdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a href="https://github.com/adammatthewsteinberger/vibey/edit/main/docs/runbooks/expansion/02-copilotloop.md" class="nav-link">Edit on adammatthewsteinberger/vibey
+                                    </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#runbook-copilotloop-the-fifth-engine" class="nav-link">Runbook: copilotloop — the fifth engine</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#goal" class="nav-link">Goal</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#current-state-verified" class="nav-link">Current state (verified)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#design" class="nav-link">Design</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#work-items" class="nav-link">Work items</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#verification" class="nav-link">Verification</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#needs-from-operator" class="nav-link">Needs from operator</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#risks" class="nav-link">Risks</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="runbook-copilotloop-the-fifth-engine">Runbook: copilotloop — the fifth engine<a class="headerlink" href="#runbook-copilotloop-the-fifth-engine" title="Permanent link">&para;</a></h1>
+<h2 id="goal">Goal<a class="headerlink" href="#goal" title="Permanent link">&para;</a></h2>
+<p>A <code>copilotloop</code> autonomous session runner wrapping GitHub Copilot CLI,
+conforming to the same contract the other four runners expose, so vibey
+rotates across five engines with zero vibey-side special-casing.</p>
+<h2 id="current-state-verified">Current state (verified)<a class="headerlink" href="#current-state-verified" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Copilot CLI is GA (Feb 2026) with headless mode (<code>copilot -p "&lt;prompt&gt;"</code>)
+  and <code>--mode autopilot</code> for fully autonomous sessions; <code>--plan</code> composes
+  with both. Model selection spans Anthropic/OpenAI/Google.</li>
+<li>vibey's engine contract is defined by <code>EngineAdapter</code>
+  (<code>application/interfaces/engines.py</code>) + an <code>EngineDescriptor</code>
+  (<code>infrastructure/engines/descriptors.py</code>): binary, state_dir,
+  done_marker, capabilities, effort projection onto native flags.</li>
+<li>The conformance suite (<code>application/conformance.py</code>, 9 checks) is the
+  acceptance bar: binary, flags, state_dir, run_dir_shape,
+  snapshot_schema, capacity_map, done_marker, control_plane,
+  structured_verdict.</li>
+</ul>
+<h2 id="design">Design<a class="headerlink" href="#design" title="Permanent link">&para;</a></h2>
+<p>Build <code>copilotloop</code> as its own repo (<code>~/git/copilotloop</code>), mirroring
+claudeloop's shape — vibey orchestrates runners, it does not absorb them
+(ADR-0001). The runner owns:</p>
+<ul>
+<li><code>copilotloop run &lt;plan.md&gt; --run-id --preset --effort --cwd</code>: spawns
+  <code>copilot -p</code> with <code>--mode autopilot</code>, translating preset/effort to model</li>
+<li>allow-list flags.</li>
+<li>State dir <code>.copilotloop/runs/&lt;run-id&gt;/</code> with <code>meta.json</code>,
+  <code>events.jsonl</code> (translated from Copilot CLI output stream),
+  <code>snapshots/latest.json</code>, <code>stop-summary.md</code>.</li>
+<li>Done marker <code>COPILOTLOOP_TASK_FULLY_COMPLETE</code>; structured verdict block;
+  control-plane inbox (<code>wind-down</code> honored at turn boundaries — document
+  the same "needs one more turn" semantics claudeloop has).</li>
+<li><code>copilotloop doctor</code>: binary present, <code>gh auth status</code>, Copilot
+  entitlement check.</li>
+<li>Capacity classification: map Copilot quota/rate errors →
+  WindowExhausted (resets_at from headers when present) vs
+  CreditsExhausted (entitlement exhausted; never a deadline).</li>
+</ul>
+<p>vibey side (small): a <code>COPILOTLOOP</code> descriptor with effort projection
+(TRIVIAL/LOW→cheap model, STANDARD→default, HIGH/MAX→best available;
+<code>achieved</code> saturates honestly if Copilot lacks a MAX-grade knob), argv
+goldens (5 efforts), classify fixtures, and <code>LOOP_EVENT_MAP</code> entries
+sourced from <strong>real captured output</strong> — never fabricated (the #32/#34
+lesson: every prior engine's event map had to be re-verified against
+source).</p>
+<h2 id="work-items">Work items<a class="headerlink" href="#work-items" title="Permanent link">&para;</a></h2>
+<ol>
+<li>copilotloop repo: runner skeleton, run dir shape, done marker.</li>
+<li>Output→events.jsonl translation + structured verdict.</li>
+<li>doctor + capacity classification.</li>
+<li>Control plane (send-prompt, wind-down) + stop-summary.</li>
+<li>vibey: descriptor + goldens + classify fixtures + event map (from
+   captured real output).</li>
+<li>Conformance run: <code>vibey doctor --conformance</code> all 9 checks green.</li>
+<li>Live: one paid greeter work item implemented by copilotloop end-to-end,
+   plus a cross-engine verify (copilot implements, claudeloop verifies).</li>
+</ol>
+<h2 id="verification">Verification<a class="headerlink" href="#verification" title="Permanent link">&para;</a></h2>
+<p>All 9 conformance checks pass; the live item lands through
+implement→verify→integrate with copilotloop in the health table and
+rotation selecting it.</p>
+<h2 id="needs-from-operator">Needs from operator<a class="headerlink" href="#needs-from-operator" title="Permanent link">&para;</a></h2>
+<p><code>gh</code> authenticated with a Copilot-entitled account; <code>copilot</code> CLI
+installed (<code>npm i -g @github/copilot</code> or platform installer).</p>
+<h2 id="risks">Risks<a class="headerlink" href="#risks" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Copilot CLI output format is young and changes on its weekly release
+  train — the docs-scraper workstream (04) should watch its changelog.</li>
+<li>Autopilot permission flags must be scoped to the worktree only.</li>
+<li>Quota semantics are org-plan-dependent; classify conservatively
+  (unknown → WindowExhausted with short backoff, never Credits).</li>
+</ul></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://properdocs.org/">ProperDocs</a>.</p>
+        </footer>
+        <script src="../../../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "../../..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../../../js/base.js"></script>
+        <script src="../../../javascripts/channel.js"></script>
+        <script src="../../../search/main.js"></script>
+
+        <div class="modal" id="properdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="properdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="properdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="properdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

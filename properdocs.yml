@@ -1,0 +1,62 @@
+site_name: vibey
+site_description: >-
+  A queue-based, six-phase conductor for autonomous software delivery on top of the *loop
+  runners — spec interview, design, build, review, deploy. PostgreSQL-backed.
+site_url: https://adammatthewsteinberger.github.io/vibey/
+repo_url: https://github.com/adammatthewsteinberger/vibey
+repo_name: adammatthewsteinberger/vibey
+edit_uri: edit/main/docs/
+
+# ProperDocs, matching the rest of the family. `theme: mkdocs` because ProperDocs ships
+# its own theme package; the styling lives in stylesheets/vibey.css.
+theme: mkdocs
+
+extra_css:
+  - stylesheets/vibey.css
+extra_javascript:
+  - javascripts/channel.js
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+
+# docs/plans is working material, not documentation: superseded planning notes whose
+# claims drift from the code. Publishing them would present drafts as reference.
+exclude_docs: |
+  plans/**
+
+# ADRs legitimately reference the excluded plans; those links resolve on GitHub, and
+# failing the build over a deliberate exclusion would just re-publish the drafts.
+validation:
+  omitted_files: ignore
+  absolute_links: ignore
+
+nav:
+  - Home: index.md
+  - Guides:
+      - Kubernetes: guides/kubernetes.md
+      - Greeter live demo: guides/greeter-live-demo.md
+  - Architecture:
+      - Decision records:
+          - "0001 — Orchestrate do not reimplement": architecture/decisions/0001-orchestrate-do-not-reimplement.md
+          - "0002 — Postgres not sqlite": architecture/decisions/0002-postgres-not-sqlite.md
+          - "0003 — Event sourced ledger": architecture/decisions/0003-event-sourced-ledger.md
+          - "0004 — No loss gate on handoff": architecture/decisions/0004-no-loss-gate-on-handoff.md
+          - "0005 — Smooth weighted round robin": architecture/decisions/0005-smooth-weighted-round-robin.md
+          - "0006 — Normalized effort ladder": architecture/decisions/0006-normalized-effort-ladder.md
+          - "0007 — Rotate at boundaries": architecture/decisions/0007-rotate-at-boundaries.md
+          - "0008 — Worktree isolation": architecture/decisions/0008-worktree-isolation.md
+          - "0009 — Human gates are parked jobs": architecture/decisions/0009-human-gates-are-parked-jobs.md
+          - "0010 — Review loopback routing": architecture/decisions/0010-review-loopback-routing.md
+          - "0011 — Agent surface provisioning": architecture/decisions/0011-agent-surface-provisioning.md
+          - "0012 — Deploy is a separate cli": architecture/decisions/0012-deploy-is-a-separate-cli.md
+          - "0013 — Deployment is a three phase stage set": architecture/decisions/0013-deployment-is-a-three-phase-stage-set.md
+          - "0014 — Optional visual design and deployment opt in": architecture/decisions/0014-optional-visual-design-and-deployment-opt-in.md
+          - "0015 — Qwenloop standby": architecture/decisions/0015-qwenloop-standby.md

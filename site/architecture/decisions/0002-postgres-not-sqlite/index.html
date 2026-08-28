@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        <link rel="canonical" href="https://adammatthewsteinberger.github.io/vibey/architecture/decisions/0002-postgres-not-sqlite/">
+        <link rel="shortcut icon" href="../../../img/favicon.ico">
+        <title>0002 — Postgres not sqlite - vibey</title>
+        <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../../../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../../../css/brands.min.css" rel="stylesheet">
+        <link href="../../../css/solid.min.css" rel="stylesheet">
+        <link href="../../../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../../../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <link href="../../../stylesheets/vibey.css" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="../../..">vibey</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href="../../.." class="nav-link">Home</a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Guides</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../../../guides/kubernetes/" class="dropdown-item">Kubernetes</a>
+</li>
+                                    
+<li>
+    <a href="../../../guides/greeter-live-demo/" class="dropdown-item">Greeter live demo</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle active" aria-current="page" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Architecture</a>
+                                <ul class="dropdown-menu">
+                                    
+  <li class="dropdown-submenu">
+    <a href="#" class="dropdown-item">Decision records</a>
+    <ul class="dropdown-menu">
+            
+<li>
+    <a href="../0001-orchestrate-do-not-reimplement/" class="dropdown-item">0001 — Orchestrate do not reimplement</a>
+</li>
+            
+<li>
+    <a href="./" class="dropdown-item active" aria-current="page">0002 — Postgres not sqlite</a>
+</li>
+            
+<li>
+    <a href="../0003-event-sourced-ledger/" class="dropdown-item">0003 — Event sourced ledger</a>
+</li>
+            
+<li>
+    <a href="../0004-no-loss-gate-on-handoff/" class="dropdown-item">0004 — No loss gate on handoff</a>
+</li>
+            
+<li>
+    <a href="../0005-smooth-weighted-round-robin/" class="dropdown-item">0005 — Smooth weighted round robin</a>
+</li>
+            
+<li>
+    <a href="../0006-normalized-effort-ladder/" class="dropdown-item">0006 — Normalized effort ladder</a>
+</li>
+            
+<li>
+    <a href="../0007-rotate-at-boundaries/" class="dropdown-item">0007 — Rotate at boundaries</a>
+</li>
+            
+<li>
+    <a href="../0008-worktree-isolation/" class="dropdown-item">0008 — Worktree isolation</a>
+</li>
+            
+<li>
+    <a href="../0009-human-gates-are-parked-jobs/" class="dropdown-item">0009 — Human gates are parked jobs</a>
+</li>
+            
+<li>
+    <a href="../0010-review-loopback-routing/" class="dropdown-item">0010 — Review loopback routing</a>
+</li>
+            
+<li>
+    <a href="../0011-agent-surface-provisioning/" class="dropdown-item">0011 — Agent surface provisioning</a>
+</li>
+            
+<li>
+    <a href="../0012-deploy-is-a-separate-cli/" class="dropdown-item">0012 — Deploy is a separate cli</a>
+</li>
+            
+<li>
+    <a href="../0013-deployment-is-a-three-phase-stage-set/" class="dropdown-item">0013 — Deployment is a three phase stage set</a>
+</li>
+            
+<li>
+    <a href="../0014-optional-visual-design-and-deployment-opt-in/" class="dropdown-item">0014 — Optional visual design and deployment opt in</a>
+</li>
+            
+<li>
+    <a href="../0015-qwenloop-standby/" class="dropdown-item">0015 — Qwenloop standby</a>
+</li>
+    </ul>
+  </li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#properdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a rel="prev" href="../0001-orchestrate-do-not-reimplement/" class="nav-link">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a rel="next" href="../0003-event-sourced-ledger/" class="nav-link">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="https://github.com/adammatthewsteinberger/vibey/edit/main/docs/architecture/decisions/0002-postgres-not-sqlite.md" class="nav-link">Edit on adammatthewsteinberger/vibey
+                                    </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#0002-postgresql-not-sqlite-for-the-queue-and-ledger" class="nav-link">0002 — PostgreSQL, not SQLite, for the queue and ledger</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#context" class="nav-link">Context</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#decision" class="nav-link">Decision</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#rationale" class="nav-link">Rationale</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#consequences" class="nav-link">Consequences</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#alternatives-rejected" class="nav-link">Alternatives rejected</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="0002-postgresql-not-sqlite-for-the-queue-and-ledger">0002 — PostgreSQL, not SQLite, for the queue and ledger<a class="headerlink" href="#0002-postgresql-not-sqlite-for-the-queue-and-ledger" title="Permanent link">&para;</a></h1>
+<p><strong>Status:</strong> accepted · <strong>Date:</strong> 2026-08-14</p>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
+<p>Vibey must run on a laptop. SQLite is the natural instinct for a local tool: no
+daemon, one file, zero setup. Vibey's workload is N concurrent worker processes
+claiming jobs, plus an append-only event ledger with payload queries.</p>
+<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<p><strong>PostgreSQL 17.</strong> <code>vibey up</code> resolves a database in three steps: an existing
+instance via <code>--pg-url</code>, a Docker/Podman Compose service, or a local <code>pg_ctl</code>
+cluster initialized under <code>.vibey/pgdata</code>.</p>
+<h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
+<p>The disqualifying issue is concrete and not a matter of taste: <strong>SQLite has no
+row-level locking, therefore no <code>SELECT … FOR UPDATE SKIP LOCKED</code>.</strong> WAL mode
+solves reader/writer blocking; vibey's contention is writer/writer — several
+workers competing to claim the next job. The standard SQLite workaround
+(mark-a-row-locked, then return it) leaks: if the worker dies after the mark, that
+row stays locked forever. Surviving worker death is a core requirement (workers
+<em>will</em> be killed; the reaper is the design), so a queue that leaks on crash is not
+a candidate.</p>
+<p>Postgres additionally gives, all of which vibey uses:</p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Used for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>FOR UPDATE SKIP LOCKED</code></td>
+<td>job claim</td>
+</tr>
+<tr>
+<td><code>LISTEN</code> / <code>NOTIFY</code></td>
+<td>worker wakeup without polling</td>
+</tr>
+<tr>
+<td><code>jsonb</code> + GIN</td>
+<td>ledger payload queries and projections</td>
+</tr>
+<tr>
+<td>advisory locks</td>
+<td>serializing phase transitions</td>
+</tr>
+<tr>
+<td><code>CHECK</code> constraints</td>
+<td>making "credits never have a reset time" unrepresentable</td>
+</tr>
+<tr>
+<td>range partitioning</td>
+<td>keeping gate range-queries on the hot partition</td>
+</tr>
+</tbody>
+</table>
+<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
+<p><strong>Good.</strong> The queue is correct under concurrency and crash. Ledger queries are
+real queries. The same storage substrate as the sibling <code>apg-*</code> projects, so the
+operational knowledge already exists.</p>
+<p><strong>Bad.</strong> A "local tool" now needs a database. This is real friction and the main
+cost of this decision.</p>
+<p><strong>Mitigation.</strong> <code>vibey up</code> makes it one command with three fallbacks, and
+<code>vibey doctor</code> diagnoses each. The <code>pg_ctl</code> path means a developer with Postgres
+installed but no Docker still gets a zero-config experience.</p>
+<h2 id="alternatives-rejected">Alternatives rejected<a class="headerlink" href="#alternatives-rejected" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>SQLite + WAL.</strong> Disqualified above.</li>
+<li><strong>Redis.</strong> Adds a daemon <em>and</em> loses durability guarantees and relational
+  queries. If a daemon is acceptable, Postgres strictly dominates.</li>
+<li><strong>Filesystem queue (directories + <code>flock</code>).</strong> What the <code>*loop</code> runners' <code>inbox/</code>
+  does for single-run control. It does not survive multi-worker contention or give
+  dependency ordering, and it makes the ledger unqueryable.</li>
+<li><strong>An embedded durable-execution library (DBOS-style).</strong> The 2026 pattern for
+  this shape, and attractive — but it is Postgres-backed anyway, so it does not
+  remove the dependency; it only adds a framework on top of it.</li>
+</ul></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://properdocs.org/">ProperDocs</a>.</p>
+        </footer>
+        <script src="../../../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "../../..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../../../js/base.js"></script>
+        <script src="../../../javascripts/channel.js"></script>
+        <script src="../../../search/main.js"></script>
+
+        <div class="modal" id="properdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="properdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="properdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="properdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

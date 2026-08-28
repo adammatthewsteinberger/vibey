@@ -1,3 +1,4 @@
+# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://hire.adam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 # Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """ScriptedEngine: a fake runner that writes the real run-directory shape
 (architecture doc §8.1 / rotation-and-engines.md §8.1) without spawning a

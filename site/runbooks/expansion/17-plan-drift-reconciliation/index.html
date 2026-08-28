@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        <link rel="canonical" href="https://adammatthewsteinberger.github.io/vibey/runbooks/expansion/17-plan-drift-reconciliation/">
+        <link rel="shortcut icon" href="../../../img/favicon.ico">
+        <title>Runbook: plan-drift reconciliation — a control loop that keeps bots on plan - vibey</title>
+        <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../../../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../../../css/brands.min.css" rel="stylesheet">
+        <link href="../../../css/solid.min.css" rel="stylesheet">
+        <link href="../../../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../../../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <link href="../../../stylesheets/vibey.css" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="../../..">vibey</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href="../../.." class="nav-link">Home</a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Guides</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../../../guides/kubernetes/" class="dropdown-item">Kubernetes</a>
+</li>
+                                    
+<li>
+    <a href="../../../guides/greeter-live-demo/" class="dropdown-item">Greeter live demo</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Architecture</a>
+                                <ul class="dropdown-menu">
+                                    
+  <li class="dropdown-submenu">
+    <a href="#" class="dropdown-item">Decision records</a>
+    <ul class="dropdown-menu">
+            
+<li>
+    <a href="../../../architecture/decisions/0001-orchestrate-do-not-reimplement/" class="dropdown-item">0001 — Orchestrate do not reimplement</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0002-postgres-not-sqlite/" class="dropdown-item">0002 — Postgres not sqlite</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0003-event-sourced-ledger/" class="dropdown-item">0003 — Event sourced ledger</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0004-no-loss-gate-on-handoff/" class="dropdown-item">0004 — No loss gate on handoff</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0005-smooth-weighted-round-robin/" class="dropdown-item">0005 — Smooth weighted round robin</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0006-normalized-effort-ladder/" class="dropdown-item">0006 — Normalized effort ladder</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0007-rotate-at-boundaries/" class="dropdown-item">0007 — Rotate at boundaries</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0008-worktree-isolation/" class="dropdown-item">0008 — Worktree isolation</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0009-human-gates-are-parked-jobs/" class="dropdown-item">0009 — Human gates are parked jobs</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0010-review-loopback-routing/" class="dropdown-item">0010 — Review loopback routing</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0011-agent-surface-provisioning/" class="dropdown-item">0011 — Agent surface provisioning</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0012-deploy-is-a-separate-cli/" class="dropdown-item">0012 — Deploy is a separate cli</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0013-deployment-is-a-three-phase-stage-set/" class="dropdown-item">0013 — Deployment is a three phase stage set</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0014-optional-visual-design-and-deployment-opt-in/" class="dropdown-item">0014 — Optional visual design and deployment opt in</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0015-qwenloop-standby/" class="dropdown-item">0015 — Qwenloop standby</a>
+</li>
+    </ul>
+  </li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#properdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a href="https://github.com/adammatthewsteinberger/vibey/edit/main/docs/runbooks/expansion/17-plan-drift-reconciliation.md" class="nav-link">Edit on adammatthewsteinberger/vibey
+                                    </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#runbook-plan-drift-reconciliation-a-control-loop-that-keeps-bots-on-plan" class="nav-link">Runbook: plan-drift reconciliation — a control loop that keeps bots on plan</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#goal" class="nav-link">Goal</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#why-this-is-not-just-monitoring" class="nav-link">Why this is not just monitoring</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#phase-0-make-plans-machine-checkable-blocks-everything" class="nav-link">Phase 0 — make plans machine-checkable (blocks everything)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#drift-taxonomy" class="nav-link">Drift taxonomy</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#the-action-ladder-bounded-enumerated-never-creative" class="nav-link">The action ladder (bounded, enumerated, never creative)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#design" class="nav-link">Design</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#work-items" class="nav-link">Work items</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#verification" class="nav-link">Verification</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#needs-from-operator" class="nav-link">Needs from operator</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#risks" class="nav-link">Risks</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="runbook-plan-drift-reconciliation-a-control-loop-that-keeps-bots-on-plan">Runbook: plan-drift reconciliation — a control loop that keeps bots on plan<a class="headerlink" href="#runbook-plan-drift-reconciliation-a-control-loop-that-keeps-bots-on-plan" title="Permanent link">&para;</a></h1>
+<h2 id="goal">Goal<a class="headerlink" href="#goal" title="Permanent link">&para;</a></h2>
+<p>Apply Kubernetes' reconciliation model to autonomous delivery. A
+controller continuously compares <strong>desired state</strong> (the accepted plan)
+against <strong>observed state</strong> (what the bots actually did), names the
+divergence, and takes bounded corrective action to bring the system back
+to the plan.</p>
+<p>Delivered as a kopf loop in <strong>all five repos</strong>, each at its own altitude:</p>
+<table>
+<thead>
+<tr>
+<th>Repo</th>
+<th>Desired state</th>
+<th>Observed state</th>
+<th>Altitude</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>vibey</code></td>
+<td>accepted <code>DesignSpec</code> + <code>WorkPlan</code> + phase protocol</td>
+<td>ledger, <code>job</code> table, worktree git history, artifacts</td>
+<td>a project across six phases</td>
+</tr>
+<tr>
+<td><code>claudeloop</code></td>
+<td>the plan file handed to the run + its run contract</td>
+<td>own <code>events.jsonl</code>, <code>state.json</code>, rundir</td>
+<td>one autonomous session</td>
+</tr>
+<tr>
+<td><code>codexloop</code></td>
+<td>"</td>
+<td>"</td>
+<td>"</td>
+</tr>
+<tr>
+<td><code>cursorloop</code></td>
+<td>"</td>
+<td>"</td>
+<td>"</td>
+</tr>
+<tr>
+<td><code>agyloop</code></td>
+<td>"</td>
+<td>"</td>
+<td>"</td>
+</tr>
+</tbody>
+</table>
+<p>Two altitudes, one pattern. vibey answers "is this <em>project</em> still
+building what was accepted?"; each runner answers "is this <em>session</em>
+still working the plan it was given?" A conductor-level reconciler cannot
+see inside a two-hour session, and a session-level one cannot see the
+project. Both are needed and neither substitutes for the other.</p>
+<p>This loop answers "did the bots build what was planned?". Its sibling,
+<code>18-production-fitness-reconciliation.md</code>, answers "is what they built
+fit to run in production?" -- built on the same rails, and a separate
+question, since code can match its plan exactly and still allocate
+unboundedly and cost three times what it should.</p>
+<h2 id="why-this-is-not-just-monitoring">Why this is not just monitoring<a class="headerlink" href="#why-this-is-not-just-monitoring" title="Permanent link">&para;</a></h2>
+<p>The distinction that makes this worth building is Kubernetes':
+<strong>level-triggered, not edge-triggered.</strong> The loop does not watch for a
+drift event and react. It recomputes the verdict from observed state
+every interval, so it is correct after a missed event, a crashed worker,
+a replayed job, or an operator editing state by hand. That is the same
+property vibey already relies on for job replay, extended to plan
+adherence.</p>
+<p>The second Kubernetes idea worth stealing: drift is reported as
+<strong>status conditions</strong>, not logs. <code>kubectl get vibeyprojects</code> should show
+<code>PLANDRIFT=True</code> with a reason, the same way a Deployment shows
+<code>Available=False</code>. That makes drift legible to every k8s-native tool the
+operator already runs.</p>
+<h2 id="phase-0-make-plans-machine-checkable-blocks-everything">Phase 0 — make plans machine-checkable (blocks everything)<a class="headerlink" href="#phase-0-make-plans-machine-checkable-blocks-everything" title="Permanent link">&para;</a></h2>
+<p><strong>A reconciler over prose is vibes with a control loop bolted on.</strong> Today
+a spec constraint reads:</p>
+<pre><code>- [hard] Scope is Front 1 items 1-4 only. Do not start Front 2 ...
+- [hard] Protected test files must remain byte-untouched: ...
+</code></pre>
+<p>The second is mechanically checkable (hash the files). The first is not,
+as written. Until a constraint carries a predicate something can evaluate,
+no loop can honestly say whether it was violated.</p>
+<p>So Phase 0 is a domain change, not a Kubernetes one: constraints gain a
+structured, checkable form alongside their prose — a kind, a target, and
+a predicate (<code>files_unchanged</code>, <code>paths_within</code>, <code>no_new_dependency</code>,
+<code>coverage_at_least</code>, <code>spend_under</code>, <code>phase_is</code>). Prose stays for humans;
+the predicate is what the reconciler reads. Constraints that genuinely
+cannot be expressed as a predicate are marked <code>advisory</code> and are
+explicitly <strong>out of scope for automated action</strong> — they can be reported,
+never enforced.</p>
+<p>Do not start Phase 1 until a real spec round-trips through this. The
+honest failure mode of this whole workstream is a confident loop
+enforcing constraints it cannot actually evaluate.</p>
+<h2 id="drift-taxonomy">Drift taxonomy<a class="headerlink" href="#drift-taxonomy" title="Permanent link">&para;</a></h2>
+<h3 id="vibey-altitude">vibey altitude<a class="headerlink" href="#vibey-altitude" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Scope drift</strong> — commits touching paths outside the work item's
+  declared scope, or work items appearing that the accepted plan never
+  contained (gold-plating).</li>
+<li><strong>Constraint violation</strong> — a <code>[hard]</code> constraint's predicate evaluates
+  false.</li>
+<li><strong>Acceptance drift</strong> — a work item marked complete with acceptance
+  criteria never demonstrated. vibey already has the vocabulary for this;
+  the loop makes it continuous rather than end-of-phase.</li>
+<li><strong>Phase drift</strong> — work of one phase performed in another (BUILD doing
+  design, REVIEW writing features).</li>
+<li><strong>Dependency drift</strong> — jobs succeeding out of the plan's intended
+  order.</li>
+<li><strong>Budget drift</strong> — spend outpacing the plan's projection for remaining
+  work. The brake already stops a runaway cycle (PR #58); this predicts
+  one early enough to re-plan.</li>
+<li><strong>Stall drift</strong> — no forward progress: repair rounds cycling, a work
+  item bouncing ready→failed→ready, a phase not advancing.</li>
+<li><strong>Silent-partial drift</strong> — a handoff that passed the no-loss gate
+  marginally, or a completion claim whose ledger shows no corresponding
+  work.</li>
+</ul>
+<h3 id="runner-altitude-each-loop-repo">runner altitude (each *loop repo)<a class="headerlink" href="#runner-altitude-each-loop-repo" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Prompt drift</strong> — turns spent on work the plan file does not contain.</li>
+<li><strong>Turn-budget drift</strong> — turns burned without advancing any plan item.</li>
+<li><strong>Verdict drift</strong> — a "done" verdict with plan items unaddressed. This
+  is the session-level twin of vibey's no-loss gate.</li>
+<li><strong>Path drift</strong> — writes outside the declared worktree scope.</li>
+<li><strong>Loop drift</strong> — the same failing action repeated: the "stuck"
+  detector. Each runner already has partial signal for this; the loop
+  makes it a first-class, reported condition.</li>
+</ul>
+<h2 id="the-action-ladder-bounded-enumerated-never-creative">The action ladder (bounded, enumerated, never creative)<a class="headerlink" href="#the-action-ladder-bounded-enumerated-never-creative" title="Permanent link">&para;</a></h2>
+<p>Escalating, with the ceiling set by policy per project or run:</p>
+<ol>
+<li><strong>Record</strong> — a drift event in the ledger, a CR status condition, a
+   Kubernetes Event. <em>Always happens; the only rung enabled by default.</em></li>
+<li><strong>Nudge</strong> — enqueue a corrective job through the normal application
+   service (a repair ticket, a re-verify).</li>
+<li><strong>Reject</strong> — the completion claim does not stand; the work item
+   returns to ready.</li>
+<li><strong>Escalate</strong> — park a human gate carrying the drift evidence.</li>
+<li><strong>Halt</strong> — stop claiming for this project; a circuit break.</li>
+</ol>
+<p><strong>The reconciler never repairs creatively.</strong> It selects from this list.
+A loop that reasons freely about how to fix drift is a second autonomous
+agent, and it will drift — about drift. If a drift kind genuinely needs
+model judgment, that is a <em>budgeted, rate-limited job</em> the loop enqueues
+(rung 2), never work the timer does inline.</p>
+<h2 id="design">Design<a class="headerlink" href="#design" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Detector lives in <code>domain/</code>, pure.</strong> Given a plan and an observation
+   snapshot, return findings. Stdlib only, no I/O, no async — so it is
+   property-testable and identical across replays. This is the piece that
+   must be right; kopf is delivery.</li>
+<li><strong>kopf timer per CR.</strong> <code>@kopf.timer</code> on <code>VibeyProject</code> (05's CRD) and
+   on each runner's own run CR. The timer gathers the observation
+   snapshot, calls the pure detector, writes conditions, and applies at
+   most one rung.</li>
+<li><strong>Conditions and Events.</strong> A shared condition vocabulary across all
+   five repos — <code>PlanDrift</code>, with <code>reason</code> drawn from the taxonomy above —
+   so one dashboard reads every repo. Divergent vocabularies across five
+   implementations is the predictable failure; a conformance suite pins
+   it, the same way the engine conformance suite pins adapter behavior.</li>
+<li><strong>One write path.</strong> Corrective actions call the same application
+   services <code>vibey answer</code> and the normal enqueue path call. 05 already
+   names this risk for the CRD answer channel; it applies with more force
+   here, because the reconciler writes far more often than a human does.</li>
+<li><strong>Policy.</strong> <code>spec.driftPolicy</code> caps the ladder (<code>observe</code>, <code>nudge</code>,
+   <code>reject</code>, <code>escalate</code>, <code>halt</code>) globally and per drift kind. Ship
+   <code>observe</code> as the default everywhere and promote a drift kind only once
+   its false-positive rate has been measured on real runs.</li>
+</ol>
+<h3 id="guardrails-inherited-from-the-non-negotiables">Guardrails inherited from the non-negotiables<a class="headerlink" href="#guardrails-inherited-from-the-non-negotiables" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Never block a worker on a human.</strong> Escalation is a parked job plus a
+  <code>human_gate</code> row. The reconciler never waits.</li>
+<li><strong>The ledger is append-only.</strong> Drift findings are new events; a
+  resolved finding is superseded, never mutated.</li>
+<li><strong>Idempotent under replay.</strong> The verdict is a pure function of the
+  observation snapshot, so re-running the timer changes nothing.</li>
+<li><strong><code>domain/</code> stays pure.</strong> Enforced by import-linter, as everywhere else.</li>
+<li><strong>A drift finding outranks a completion claim</strong> — the same precedence
+  rule as capacity rejection, and for the same reason: the claim is the
+  thing under suspicion.</li>
+</ul>
+<h2 id="work-items">Work items<a class="headerlink" href="#work-items" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Phase 0: checkable constraints in vibey's domain + spec round-trip.</li>
+<li>Pure drift detector in <code>vibey/domain/</code>, property-tested.</li>
+<li>Observation snapshot assembler in <code>application/</code> (ledger + jobs + git).</li>
+<li>kopf timer on <code>VibeyProject</code>; conditions + Events; <code>observe</code> only.</li>
+<li>Action ladder rungs 2–5 behind <code>driftPolicy</code>, promoted one at a time.</li>
+<li>Runner-altitude detector in each of the four *loop repos (their own
+   <code>domain/</code>, their own coverage budget).</li>
+<li>Shared condition vocabulary + a cross-repo conformance suite.</li>
+<li><code>docs/guides/drift-reconciliation.md</code> in each repo.</li>
+</ol>
+<h2 id="verification">Verification<a class="headerlink" href="#verification" title="Permanent link">&para;</a></h2>
+<ul>
+<li>A seeded scope violation (a commit touching a path outside the work
+  item's scope) surfaces as <code>PlanDrift=True</code> with reason <code>ScopeDrift</code> on
+  <code>kubectl get vibeyprojects</code>, within one reconcile interval.</li>
+<li>A seeded stall (a work item bounced N times) escalates to a human gate
+  under <code>driftPolicy: escalate</code>, and the worker never blocks.</li>
+<li>Killing the operator mid-drift and restarting it reproduces the same
+  verdict from observed state alone — the level-triggered property.</li>
+<li>Measured false-positive rate per drift kind over a full greeter run,
+  recorded as evidence before any kind is promoted past <code>observe</code>.</li>
+<li>One runner-altitude drift (verdict drift: "done" with plan items
+  unaddressed) caught in a real session in each of the four repos.</li>
+</ul>
+<h2 id="needs-from-operator">Needs from operator<a class="headerlink" href="#needs-from-operator" title="Permanent link">&para;</a></h2>
+<ul>
+<li>05's kopf operator and CRD landed first (this is a loop on top of it).</li>
+<li>16's runner containers, for the runner-altitude loops.</li>
+<li>A decision on the default <code>driftPolicy</code> ceiling in production values.</li>
+</ul>
+<h2 id="risks">Risks<a class="headerlink" href="#risks" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Prose constraints.</strong> Addressed by Phase 0; the risk is skipping it.</li>
+<li><strong>False positives halting healthy work.</strong> Mitigated by shipping
+  <code>observe</code>-only and promoting per kind on measured evidence. A
+  reconciler that halts good runs will be turned off, and then it
+  protects nothing.</li>
+<li><strong>Reconciler cost.</strong> The timer runs constantly and must stay cheap —
+  DB queries and git, no model calls in the hot path.</li>
+<li><strong>Five implementations diverging.</strong> The conformance suite is not
+  optional; without it the shared vocabulary is aspirational.</li>
+<li><strong>Drift about drift.</strong> The bounded action ladder is the whole mitigation.
+  Resist every temptation to let the loop reason its way to a fix.</li>
+</ul></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://properdocs.org/">ProperDocs</a>.</p>
+        </footer>
+        <script src="../../../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "../../..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../../../js/base.js"></script>
+        <script src="../../../javascripts/channel.js"></script>
+        <script src="../../../search/main.js"></script>
+
+        <div class="modal" id="properdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="properdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="properdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="properdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

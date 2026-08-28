@@ -23,7 +23,16 @@ red() { printf '\033[0;31m%s\033[0m\n' "$1"; }
 # when the tool IS installed is a gate people learn to bypass. Look where it actually
 # lives before giving up. Hooks run from the top of the working tree.
 vibey_gh() {
-  if command -v vibey-gh >/dev/null 2>&1; then
+  # A repository that IS vibey-gh must run its own working tree, never an installed copy.
+  # Its `develop` is ahead of the last release nearly always, so a globally installed
+  # vibey-gh compares the repository's managed assets against the older ones it bundles,
+  # reports them out of date, and refuses every push — a contributor who installed the
+  # tool the obvious way cannot commit to it. The package is dependency-free stdlib, so
+  # `python3 -m` against the checkout needs no install and no virtualenv at all.
+  if [ -f pyproject.toml ] && grep -qE '^name = "vibey-gh"' pyproject.toml \
+    && [ -d vibey_gh ] && python3 -c "import vibey_gh.cli" >/dev/null 2>&1; then
+    python3 -m vibey_gh.cli "$@"
+  elif command -v vibey-gh >/dev/null 2>&1; then
     vibey-gh "$@"
   elif [ -n "${VIRTUAL_ENV:-}" ] && [ -x "${VIRTUAL_ENV}/bin/vibey-gh" ]; then
     "${VIRTUAL_ENV}/bin/vibey-gh" "$@"

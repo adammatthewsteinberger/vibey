@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        <link rel="canonical" href="https://adammatthewsteinberger.github.io/vibey/runbooks/expansion/04-docs-scraper/">
+        <link rel="shortcut icon" href="../../../img/favicon.ico">
+        <title>Runbook: integration docs scraper — self-maintaining adapters - vibey</title>
+        <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../../../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../../../css/brands.min.css" rel="stylesheet">
+        <link href="../../../css/solid.min.css" rel="stylesheet">
+        <link href="../../../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../../../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <link href="../../../stylesheets/vibey.css" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="../../..">vibey</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href="../../.." class="nav-link">Home</a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Guides</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../../../guides/kubernetes/" class="dropdown-item">Kubernetes</a>
+</li>
+                                    
+<li>
+    <a href="../../../guides/greeter-live-demo/" class="dropdown-item">Greeter live demo</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Architecture</a>
+                                <ul class="dropdown-menu">
+                                    
+  <li class="dropdown-submenu">
+    <a href="#" class="dropdown-item">Decision records</a>
+    <ul class="dropdown-menu">
+            
+<li>
+    <a href="../../../architecture/decisions/0001-orchestrate-do-not-reimplement/" class="dropdown-item">0001 — Orchestrate do not reimplement</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0002-postgres-not-sqlite/" class="dropdown-item">0002 — Postgres not sqlite</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0003-event-sourced-ledger/" class="dropdown-item">0003 — Event sourced ledger</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0004-no-loss-gate-on-handoff/" class="dropdown-item">0004 — No loss gate on handoff</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0005-smooth-weighted-round-robin/" class="dropdown-item">0005 — Smooth weighted round robin</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0006-normalized-effort-ladder/" class="dropdown-item">0006 — Normalized effort ladder</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0007-rotate-at-boundaries/" class="dropdown-item">0007 — Rotate at boundaries</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0008-worktree-isolation/" class="dropdown-item">0008 — Worktree isolation</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0009-human-gates-are-parked-jobs/" class="dropdown-item">0009 — Human gates are parked jobs</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0010-review-loopback-routing/" class="dropdown-item">0010 — Review loopback routing</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0011-agent-surface-provisioning/" class="dropdown-item">0011 — Agent surface provisioning</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0012-deploy-is-a-separate-cli/" class="dropdown-item">0012 — Deploy is a separate cli</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0013-deployment-is-a-three-phase-stage-set/" class="dropdown-item">0013 — Deployment is a three phase stage set</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0014-optional-visual-design-and-deployment-opt-in/" class="dropdown-item">0014 — Optional visual design and deployment opt in</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0015-qwenloop-standby/" class="dropdown-item">0015 — Qwenloop standby</a>
+</li>
+    </ul>
+  </li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#properdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a href="https://github.com/adammatthewsteinberger/vibey/edit/main/docs/runbooks/expansion/04-docs-scraper.md" class="nav-link">Edit on adammatthewsteinberger/vibey
+                                    </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#runbook-integration-docs-scraper-self-maintaining-adapters" class="nav-link">Runbook: integration docs scraper — self-maintaining adapters</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#goal" class="nav-link">Goal</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#watched-surfaces-initial-registry" class="nav-link">Watched surfaces (initial registry)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#design" class="nav-link">Design</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#work-items" class="nav-link">Work items</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#verification" class="nav-link">Verification</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#needs-from-operator" class="nav-link">Needs from operator</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#risks" class="nav-link">Risks</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="runbook-integration-docs-scraper-self-maintaining-adapters">Runbook: integration docs scraper — self-maintaining adapters<a class="headerlink" href="#runbook-integration-docs-scraper-self-maintaining-adapters" title="Permanent link">&para;</a></h1>
+<h2 id="goal">Goal<a class="headerlink" href="#goal" title="Permanent link">&para;</a></h2>
+<p>A watcher that monitors the documentation of every external surface vibey
+integrates with, detects drift, and turns each change into work vibey
+executes on itself: raise a finding → open a vibey project (or Jira
+ticket, post-01) → an engine session updates the affected adapter → gates
+prove it → PR.</p>
+<h2 id="watched-surfaces-initial-registry">Watched surfaces (initial registry)<a class="headerlink" href="#watched-surfaces-initial-registry" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Surface</th>
+<th>Source of truth</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>claudeloop/codexloop/cursorloop/agyloop</td>
+<td>their repos' docs + <code>--help</code> output</td>
+</tr>
+<tr>
+<td>GitHub Copilot CLI</td>
+<td>github.blog changelog feed + <code>copilot --help</code></td>
+</tr>
+<tr>
+<td>Jira Cloud REST v3</td>
+<td>developer.atlassian.com changelog</td>
+</tr>
+<tr>
+<td>az / aws / gcloud CLIs</td>
+<td>release notes feeds + <code>&lt;cli&gt; version</code></td>
+</tr>
+<tr>
+<td>App Store Connect / Play Developer APIs</td>
+<td>Apple/Google release notes</td>
+</tr>
+<tr>
+<td>KEDA / kopf / Helm</td>
+<td>GitHub releases</td>
+</tr>
+<tr>
+<td>OpenClaw skill format / Moltbook API</td>
+<td>docs.openclaw.ai, moltbook docs</td>
+</tr>
+<tr>
+<td>Anthropic/OpenAI/Google LLM APIs</td>
+<td>provider changelogs</td>
+</tr>
+</tbody>
+</table>
+<h2 id="design">Design<a class="headerlink" href="#design" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>infrastructure/docwatch/registry.py</code>: declarative registry — each entry
+  has a fetcher (RSS/Atom, GitHub releases API, HTML page + CSS selector,
+  or local <code>--help</code> capture), a canonicalizer (strip dates/ads →
+  normalized markdown), and an <code>owner_paths</code> list mapping the surface to
+  the adapter files it governs.</li>
+<li><code>docwatch.scan</code> job kind (serial, scheduled): fetch → canonicalize →
+  SHA-256 → compare against the stored digest in a <code>doc_snapshot</code> table
+  (append-only, like everything else). On change: store the new snapshot,
+  diff the two normalized texts, and record a <code>FindingRaised</code> ledger event
+  scoped to the owning adapter.</li>
+<li><strong>Change triage is a model call, upgrades are engine sessions</strong>: the
+  finding's payload carries the diff; a <code>docwatch.triage</code> job asks an
+  engine (TRIVIAL effort) "does this diff affect <code>owner_paths</code>? breaking /
+  additive / cosmetic?". Breaking/additive → seed a vibey project on the
+  owning repo with the diff + affected files as DESIGN input. Cosmetic →
+  resolve the finding with the classification recorded.</li>
+<li>Local <code>--help</code> capture is the cheapest, most truthful watcher for CLIs
+  — the flags conformance check (#33) already proved help output catches
+  real drift. Reuse it.</li>
+<li>Everything idempotent: digest-keyed snapshots, finding ids derived from
+  (surface, digest-pair).</li>
+</ul>
+<h2 id="work-items">Work items<a class="headerlink" href="#work-items" title="Permanent link">&para;</a></h2>
+<ol>
+<li><code>doc_snapshot</code> table + migration + repository (append-only).</li>
+<li>Registry + three fetcher kinds (feed, releases-API, help-capture) with
+   fixture tests; HTML fetcher with a strict allowlist.</li>
+<li><code>docwatch.scan</code> handler + scheduling (worker heartbeat or cron job row).</li>
+<li>Canonicalizer + differ (pure, <code>domain/</code> if truly pure).</li>
+<li><code>docwatch.triage</code> handler → finding resolution or project seeding.</li>
+<li>CLI: <code>vibey docwatch list|scan|status</code>.</li>
+<li>Live: point at the real Copilot changelog feed, replay a known past
+   change, prove a project gets seeded with the right owner_paths.</li>
+</ol>
+<h2 id="verification">Verification<a class="headerlink" href="#verification" title="Permanent link">&para;</a></h2>
+<p>Fixture gates green. Replay test: feed two archived versions of a real
+changelog through the pipeline and assert the seeded project's DESIGN
+input contains the diff and owner paths. One real scheduled scan runs
+overnight without raising false positives on unchanged docs.</p>
+<h2 id="needs-from-operator">Needs from operator<a class="headerlink" href="#needs-from-operator" title="Permanent link">&para;</a></h2>
+<p>Nothing (public feeds). Optional: a GitHub token to raise API rate limits.</p>
+<h2 id="risks">Risks<a class="headerlink" href="#risks" title="Permanent link">&para;</a></h2>
+<ul>
+<li>False positives from page chrome → canonicalizer strips aggressively;
+  cosmetic classification is the safety valve.</li>
+<li>Watching too much too often → scans are daily by default, per-surface
+  overrides, ETag/If-None-Match caching.</li>
+<li>A scraped page is untrusted input: diffs are data for triage, never
+  instructions executed verbatim (prompt-shield already exists,
+  <code>domain/prompt_shield.py</code> — reuse it on scraped content).</li>
+</ul></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://properdocs.org/">ProperDocs</a>.</p>
+        </footer>
+        <script src="../../../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "../../..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../../../js/base.js"></script>
+        <script src="../../../javascripts/channel.js"></script>
+        <script src="../../../search/main.js"></script>
+
+        <div class="modal" id="properdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="properdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="properdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="properdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

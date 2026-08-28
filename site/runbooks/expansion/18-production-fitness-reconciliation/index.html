@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        <link rel="canonical" href="https://adammatthewsteinberger.github.io/vibey/runbooks/expansion/18-production-fitness-reconciliation/">
+        <link rel="shortcut icon" href="../../../img/favicon.ico">
+        <title>Runbook: production-fitness reconciliation — is the delivered code actually production-grade? - vibey</title>
+        <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../../../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../../../css/brands.min.css" rel="stylesheet">
+        <link href="../../../css/solid.min.css" rel="stylesheet">
+        <link href="../../../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../../../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <link href="../../../stylesheets/vibey.css" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="../../..">vibey</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href="../../.." class="nav-link">Home</a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Guides</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../../../guides/kubernetes/" class="dropdown-item">Kubernetes</a>
+</li>
+                                    
+<li>
+    <a href="../../../guides/greeter-live-demo/" class="dropdown-item">Greeter live demo</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Architecture</a>
+                                <ul class="dropdown-menu">
+                                    
+  <li class="dropdown-submenu">
+    <a href="#" class="dropdown-item">Decision records</a>
+    <ul class="dropdown-menu">
+            
+<li>
+    <a href="../../../architecture/decisions/0001-orchestrate-do-not-reimplement/" class="dropdown-item">0001 — Orchestrate do not reimplement</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0002-postgres-not-sqlite/" class="dropdown-item">0002 — Postgres not sqlite</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0003-event-sourced-ledger/" class="dropdown-item">0003 — Event sourced ledger</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0004-no-loss-gate-on-handoff/" class="dropdown-item">0004 — No loss gate on handoff</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0005-smooth-weighted-round-robin/" class="dropdown-item">0005 — Smooth weighted round robin</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0006-normalized-effort-ladder/" class="dropdown-item">0006 — Normalized effort ladder</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0007-rotate-at-boundaries/" class="dropdown-item">0007 — Rotate at boundaries</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0008-worktree-isolation/" class="dropdown-item">0008 — Worktree isolation</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0009-human-gates-are-parked-jobs/" class="dropdown-item">0009 — Human gates are parked jobs</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0010-review-loopback-routing/" class="dropdown-item">0010 — Review loopback routing</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0011-agent-surface-provisioning/" class="dropdown-item">0011 — Agent surface provisioning</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0012-deploy-is-a-separate-cli/" class="dropdown-item">0012 — Deploy is a separate cli</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0013-deployment-is-a-three-phase-stage-set/" class="dropdown-item">0013 — Deployment is a three phase stage set</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0014-optional-visual-design-and-deployment-opt-in/" class="dropdown-item">0014 — Optional visual design and deployment opt in</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0015-qwenloop-standby/" class="dropdown-item">0015 — Qwenloop standby</a>
+</li>
+    </ul>
+  </li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#properdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a href="https://github.com/adammatthewsteinberger/vibey/edit/main/docs/runbooks/expansion/18-production-fitness-reconciliation.md" class="nav-link">Edit on adammatthewsteinberger/vibey
+                                    </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#runbook-production-fitness-reconciliation-is-the-delivered-code-actually-production-grade" class="nav-link">Runbook: production-fitness reconciliation — is the delivered code actually production-grade?</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#goal" class="nav-link">Goal</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#why-this-one-is-not-blocked-on-a-phase-0" class="nav-link">Why this one is not blocked on a Phase 0</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#the-rule-that-keeps-this-from-becoming-a-nuisance" class="nav-link">The rule that keeps this from becoming a nuisance</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#fitness-dimensions" class="nav-link">Fitness dimensions</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#design" class="nav-link">Design</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#work-items" class="nav-link">Work items</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#verification" class="nav-link">Verification</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#needs-from-operator" class="nav-link">Needs from operator</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#risks" class="nav-link">Risks</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="runbook-production-fitness-reconciliation-is-the-delivered-code-actually-production-grade">Runbook: production-fitness reconciliation — is the delivered code actually production-grade?<a class="headerlink" href="#runbook-production-fitness-reconciliation-is-the-delivered-code-actually-production-grade" title="Permanent link">&para;</a></h1>
+<h2 id="goal">Goal<a class="headerlink" href="#goal" title="Permanent link">&para;</a></h2>
+<p>A second kopf control loop, sibling to
+<a href="../17-plan-drift-reconciliation/">17</a>, that continuously audits <strong>what
+the jobs produced</strong> against its declared production budgets: latency,
+memory, database behavior, cloud cost, artifact weight, dependency
+health. Where 17 asks <em>"did the bots build what was planned?"</em>, this asks
+<em>"is what they built fit to run in production?"</em> Both are real failures
+and neither implies the other — code can match its plan exactly and still
+allocate unboundedly, N+1 every request, and cost three times what it
+should.</p>
+<p>Runs in all five repos on the same reconcile machinery as 17, and vibey
+dogfoods it on itself, since vibey is built by vibey.</p>
+<h2 id="why-this-one-is-not-blocked-on-a-phase-0">Why this one is not blocked on a Phase 0<a class="headerlink" href="#why-this-one-is-not-blocked-on-a-phase-0" title="Permanent link">&para;</a></h2>
+<p>17 cannot start until constraints carry machine-checkable predicates,
+because they are prose today. <strong>This loop does not have that problem</strong>,
+and the reason is already in the codebase:</p>
+<pre><code class="language-python">class NonFunctionalRequirement:
+    &quot;&quot;&quot;Planguage. 'fast' is not an NFR; a scale and a meter are.&quot;&quot;&quot;
+
+    nfr_id: str
+    attribute: str
+    scale: str
+    meter: str
+    must: str
+    wish: str | None
+    fit_criterion: str
+</code></pre>
+<p>Planguage already forces every NFR to name a <strong>scale</strong> (the unit), a
+<strong>meter</strong> (how it is measured), a <strong>must</strong> (the threshold that fails),
+and a <strong>wish</strong> (the target). That is a machine-checkable contract by
+construction — the design decision that makes this workstream
+tractable is one that was made long before it.</p>
+<p>What is missing is smaller and concrete: a <strong>meter registry</strong> mapping
+meter names to executable probes. A meter reading "measured by hand
+during review" cannot be automated, and NFRs carrying one are <code>advisory</code>
+— reported, never actioned. Building the registry is work item 1, not a
+blocking research phase.</p>
+<h2 id="the-rule-that-keeps-this-from-becoming-a-nuisance">The rule that keeps this from becoming a nuisance<a class="headerlink" href="#the-rule-that-keeps-this-from-becoming-a-nuisance" title="Permanent link">&para;</a></h2>
+<p><strong>Act only on a breach or a regression. Never on "could be better."</strong></p>
+<p>An always-on optimizer always finds something. Unbounded, it generates
+infinite work, churns correct code, and trains everyone to ignore it.
+So the loop acts in exactly two situations:</p>
+<ol>
+<li>an NFR's <code>must</code> is breached, or</li>
+<li>a measurement regressed against the project's recorded baseline
+   beyond a stated tolerance.</li>
+</ol>
+<p>Absolute-quality opinions — "this could use a better algorithm", "this
+dependency is heavier than necessary" — are <strong>recorded and never
+actioned</strong>. They are input to a human deciding to raise work, not work
+the loop raises itself. A <code>wish</code> is a target to report progress against,
+never a trigger.</p>
+<p>The second rule: <strong>the loop never applies an optimization.</strong> A finding
+becomes a repair ticket that goes through the normal BUILD → REVIEW path
+with the full gate suite behind it. An optimizer that edits code directly
+is an unreviewed second author, and performance work is exactly the kind
+that silently trades correctness for speed.</p>
+<h3 id="two-cadences-and-why-a-weekly-pr-does-not-break-the-rule-above">Two cadences, and why a weekly PR does not break the rule above<a class="headerlink" href="#two-cadences-and-why-a-weekly-pr-does-not-break-the-rule-above" title="Permanent link">&para;</a></h3>
+<p>The reconcile timer runs continuously and acts only on breaches. A
+<strong>second, weekly job</strong> deep-scans the codebase for improvements and opens
+a PR with them.</p>
+<p>That is not a contradiction of "never applies an optimization", and the
+distinction is load-bearing: a PR is a <em>proposal</em>. It is reviewable,
+rejectable, and gated -- the change does not exist in any branch anyone
+runs until someone merges it. What the rule forbids is the loop editing
+code in place, silently, with no review surface. Opening a PR is the
+opposite of that.</p>
+<p>Two guardrails keep the weekly job from becoming noise, which is the
+failure mode for every "improve the codebase" bot ever built:</p>
+<ul>
+<li><strong>One PR per week per repo, scoped.</strong> Not one per finding. A weekly
+  flood of single-line PRs is how this gets muted.</li>
+<li><strong>If the scan finds nothing worth proposing, it opens nothing.</strong> A job
+  that must produce a PR will invent one.</li>
+</ul>
+<h2 id="fitness-dimensions">Fitness dimensions<a class="headerlink" href="#fitness-dimensions" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Dimension</th>
+<th>Measured from</th>
+<th>Typical finding</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Latency / throughput</td>
+<td>benchmark suite, NFR meters</td>
+<td>a <code>must</code> breached; a regression past tolerance</td>
+</tr>
+<tr>
+<td>Memory</td>
+<td>peak RSS, allocation profiles</td>
+<td>unbounded cache or buffer; growth across a run</td>
+</tr>
+<tr>
+<td>Database</td>
+<td><code>pg_stat_statements</code>, <code>EXPLAIN</code></td>
+<td>N+1, sequential scan on a hot path, missing index, pool mis-sizing</td>
+</tr>
+<tr>
+<td>Cloud cost / right-sizing</td>
+<td>metrics-server vs declared requests</td>
+<td>pods requesting 4x observed usage; over-provisioned PVCs; idle replicas</td>
+</tr>
+<tr>
+<td>Artifact weight</td>
+<td>image size, layer count, dep tree</td>
+<td>image growth, a heavy transitive dependency, slow cold start</td>
+</tr>
+<tr>
+<td>Concurrency</td>
+<td>lock waits, serialization points</td>
+<td>a global lock on a hot path</td>
+</tr>
+<tr>
+<td>Dependency health</td>
+<td>lockfile, upstream releases</td>
+<td>abandoned or duplicated transitive deps (weight, not CVEs — <code>pip-audit</code> owns security)</td>
+</tr>
+<tr>
+<td>Delivery economics</td>
+<td>ledger <code>cost_usd</code> per work item</td>
+<td>spend per unit of delivered work drifting up</td>
+</tr>
+<tr>
+<td>Documentation comprehensiveness</td>
+<td>docstring coverage, strict docs build, reference checker</td>
+<td>an undocumented public symbol; a doc naming a flag or file that no longer exists; build warnings</td>
+</tr>
+<tr>
+<td>Debug logging &amp; traceability</td>
+<td>AST scan, log sampling, ledger-to-log round trip</td>
+<td>an exception swallowed without a log; a line missing its correlation ids; a failed job whose causal chain cannot be reconstructed</td>
+</tr>
+<tr>
+<td>Surface parity</td>
+<td>capability registry vs each surface's introspection</td>
+<td>a capability reachable from the CLI but absent from the API, MCP, SDK, or emitting no webhook event</td>
+</tr>
+<tr>
+<td>Gate integrity</td>
+<td>declared floors and scan configs vs baseline; suppression census</td>
+<td>a coverage floor lowered; a new unjustified <code># pragma: no cover</code>, <code>noqa</code>, <code>nosec</code>, or <code>type: ignore</code>; a path excluded from a scan</td>
+</tr>
+<tr>
+<td>Shared-library currency</td>
+<td>installed vs latest <code>vibey-skills</code> / <code>vibey-bootstrap</code>; session manifests</td>
+<td>a repo pinned to a stale release; an AI request issued without the current skills loaded</td>
+</tr>
+<tr>
+<td>Library-extraction candidates</td>
+<td>cross-repo duplication scan</td>
+<td>logic duplicated in 3+ repos that belongs in a shared library instead</td>
+</tr>
+<tr>
+<td>Attribution</td>
+<td>file header scan</td>
+<td>produced code missing the vibey provenance line</td>
+</tr>
+</tbody>
+</table>
+<h3 id="making-the-two-soft-sounding-dimensions-checkable">Making the two soft-sounding dimensions checkable<a class="headerlink" href="#making-the-two-soft-sounding-dimensions-checkable" title="Permanent link">&para;</a></h3>
+<p>"Comprehensive documentation" and "good logging" are exactly the kind of
+phrases this runbook's meter discipline exists to reject. Both split
+cleanly into a meterable part and an advisory part, and only the first
+half is ever actioned.</p>
+<p><strong>Documentation.</strong> Meterable: docstring coverage on the public API; a
+docs build that is clean under <code>--strict</code>; and — the highest-value of the
+three — a <strong>stale-reference count</strong>. Every file path, CLI flag, command,
+env var, and symbol named in the docs either still exists or it does not,
+and that is a scan, not an opinion. Documentation rots silently, and a
+guide naming a removed flag is worse than no guide: it actively misleads
+someone who trusts it. Advisory, never actioned: whether the prose is
+clear, well-organized, or pitched at the right reader.</p>
+<p><strong>Debug logging and traceability.</strong> Meterable in three ways:</p>
+<ol>
+<li><strong>AST scan</strong> — zero exception handlers that swallow without logging.
+   A bare <code>except: pass</code> is a hole in the record, and it is mechanically
+   detectable.</li>
+<li><strong>Sampling</strong> — every line emitted inside a job carries its correlation
+   ids. vibey already has the mechanism: structlog is configured with
+   <code>merge_contextvars</code>, so the question is not whether ids <em>can</em> be
+   attached but whether every entry path actually binds them.</li>
+<li><strong>The round-trip, which is the real bar.</strong> Given nothing but a failed
+   job's id, an automated probe must reconstruct the complete causal
+   chain — job to session to engine events to verdict — from logs and
+   ledger alone, without re-running anything. If it cannot, the logging is
+   insufficient no matter how many lines were emitted. Traceability is a
+   property of the record, not a count of log statements.</li>
+</ol>
+<p>Note this dimension is bounded on <strong>both</strong> sides. Too little logging
+costs an unreconstructable incident; too much costs money, I/O, and
+signal-to-noise in production. A <code>must</code> that only sets a floor will be
+satisfied by a service that logs every loop iteration at INFO, so the
+floor and the ceiling are both stated.</p>
+<p>Advisory, never actioned: whether an individual message is well-worded.</p>
+<h3 id="shared-library-currency-extraction-and-attribution">Shared-library currency, extraction, and attribution<a class="headerlink" href="#shared-library-currency-extraction-and-attribution" title="Permanent link">&para;</a></h3>
+<p>Three related <code>must</code>s, all of which decay silently rather than break.</p>
+<p><strong>Currency.</strong> Every repo in the family tracks the latest <code>vibey-skills</code>
+and, where it applies, <code>vibey-bootstrap</code>; and every AI request a run
+issues does so with the current skills loaded, not whatever was vendored
+months ago. The check is a version diff against the published release
+plus a per-session manifest recording which skills version was actually
+in play. A run that cannot name its skills version is itself a finding --
+"probably current" is not a measurement. Produced code that makes its own
+AI requests inherits the same rule: it references the skills library
+rather than reinventing prompts inline.</p>
+<p><strong>Extraction.</strong> The loop also watches for logic that has appeared in
+three or more repos and belongs in a shared library instead. This runs at
+the family level, not per repo, and it is the one dimension whose finding
+is a <em>proposal</em> rather than a defect -- see the cadence note below.</p>
+<p><strong>Attribution.</strong> Code this system produces carries a provenance line:</p>
+<pre><code>made with love by vibey the auto-vibecoding machine by adam matthew steinberger
+</code></pre>
+<p>This is a <code>must</code>, checked by a header scan, and it is a disclosure
+mechanism before it is a signature. Anyone reading, reviewing, or
+receiving a contribution should be able to tell it was machine-authored
+without reconstructing its history -- which matters most for work that
+leaves this account entirely (see the explorer runbook). The scan skips
+file types where a comment is not valid or not wanted, and that skip list
+is explicit rather than inferred.</p>
+<h3 id="gate-integrity-the-produced-code-holds-the-same-bar-and-the-bar-does-not-move">Gate integrity: the produced code holds the same bar, and the bar does not move<a class="headerlink" href="#gate-integrity-the-produced-code-holds-the-same-bar-and-the-bar-does-not-move" title="Permanent link">&para;</a></h3>
+<p>Everything the jobs produce must be <strong>100% branch covered, fully linted,
+and clean under the standard security scans</strong> — the same 7-gate bar vibey
+holds itself to, applied to the code it writes. That much CI already
+enforces at merge time.</p>
+<p>What CI cannot tell you is whether the gates still mean what they meant
+last month. The failure mode here is not a red build; it is a green one:</p>
+<ul>
+<li>a coverage floor lowered from 100 to 95 "temporarily";</li>
+<li>a <code># pragma: no cover</code> on the branch nobody wanted to test;</li>
+<li>a <code># noqa</code> or <code># nosec</code> added to silence a finding rather than fix it;</li>
+<li>a <code># type: ignore</code> hiding a real signature mismatch;</li>
+<li>a directory quietly excluded from the scan's include path.</li>
+</ul>
+<p>Every one of those leaves CI green while the bar quietly moves, and an
+autonomous builder under deadline pressure has exactly the same incentive
+to reach for them that a tired human does. <strong>So the loop watches the
+gates themselves, not only their outcome.</strong> Two <code>must</code>s:</p>
+<ol>
+<li>The gates pass — coverage at 100% per layer, lint clean, security
+   scans clean.</li>
+<li>The gate <em>configuration</em> has not eroded against the recorded baseline,
+   and the suppression census has not grown without justification.</li>
+</ol>
+<p>Suppressions are not banned — a genuine false positive deserves one. They
+are <strong>counted, diffed, and required to carry a reason</strong>, the same
+exemption discipline surface parity uses. A suppression with a written
+justification is engineering; an anonymous one is the bar moving in the
+dark.</p>
+<p>This is also the dimension most worth running against vibey itself, since
+vibey is built by vibey: the four 100% floors, <code>import-linter</code>'s onion
+contracts, <code>bandit</code>, and <code>pip-audit</code> are exactly the configuration a
+future cycle could erode while every check stayed green.</p>
+<h3 id="surface-parity-every-capability-reachable-from-every-programmatic-surface">Surface parity: every capability reachable from every programmatic surface<a class="headerlink" href="#surface-parity-every-capability-reachable-from-every-programmatic-surface" title="Permanent link">&para;</a></h3>
+<p>A capability that exists only behind the CLI is invisible to automation,
+and automation is the entire premise of this system. The moment someone
+adds a feature and wires only the surface they happened to be working in,
+the family of surfaces has silently forked. This dimension exists to make
+that a build failure rather than a discovery six months later.</p>
+<p>The <code>must</code>: <strong>for every capability, all five surfaces are present.</strong></p>
+<ul>
+<li><strong>API, CLI, MCP, SDK</strong> are <em>invocation</em> surfaces — can the thing be
+  done? Parity here means the operation is exposed on each.</li>
+<li><strong>Webhooks</strong> are the <em>notification</em> surface — can the thing be observed
+  happening? Parity here means every significant state change the
+  capability produces is published as an event. Requiring a webhook to
+  "invoke" a capability would be a category error, so the check is
+  directional and stated as such.</li>
+</ul>
+<p>Runbook 12 makes this tractable rather than aspirational: the API is the
+root artifact, everything else is generated or derived from its OpenAPI
+schema, and a parity test already asserts every MCP tool maps to a
+documented API operation. This dimension generalizes that test to all
+five surfaces and, crucially, makes it <strong>continuous</strong> — 12 builds the
+surfaces once, this keeps them complete as capabilities land afterward.
+The capability registry is the application layer, which the API already
+mirrors 1:1.</p>
+<p><strong>Exemptions are explicit and recorded.</strong> Not every capability belongs on
+every surface — an interactive TTY flow has no honest MCP form. A
+capability may declare <code>surface_exempt</code> with a reason, and the reason is
+reviewed like any other. Without that escape hatch the check becomes a
+nuisance, and a nuisance check gets muted.</p>
+<p><strong>GUIs are explicitly out of scope for this loop.</strong> A graphical surface
+is a product decision with design cost, audience assumptions, and a
+maintenance burden that only the people planning the work can weigh. If a
+project wants a GUI it belongs in that project's plan, where it is
+designed deliberately. It is never something a reconciler raises as a
+missing surface — the five programmatic surfaces are the baseline that
+makes a capability automatable, and that is a different question from
+whether a human should have a screen for it.</p>
+<p><strong>Right-sizing is the most k8s-native of these</strong> and the natural first
+deliverable: comparing a Deployment's declared <code>resources.requests</code>
+against observed usage is something the operator can do with data the
+cluster already produces, and the finding is directly actionable — it is
+a values change, not a code change. vibey's own chart is the first
+subject; its worker requests <code>250m</code> CPU and <code>512Mi</code> today, chosen by
+judgement rather than by measurement.</p>
+<h2 id="design">Design<a class="headerlink" href="#design" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Pure evaluator in <code>domain/</code>.</strong> Given NFRs, a baseline, and a
+   measurement set, return findings. No I/O, stdlib only, property-tested
+   — identical to 17's detector and subject to the same import-linter
+   contract.</li>
+<li><strong>Meter registry in <code>infrastructure/</code>.</strong> Named probes, each returning
+   a value on the NFR's declared scale. An NFR whose meter has no
+   registered probe is <code>advisory</code> and says so out loud, rather than
+   silently passing.</li>
+<li><strong>Cheap timer, budgeted probes.</strong> The kopf timer reads cached
+   measurements and evaluates. Anything expensive — a profile, a load
+   test, a full benchmark suite — is a <strong>budgeted job the loop enqueues</strong>,
+   never work the timer performs inline. A fitness loop that itself burns
+   CPU every 30 seconds has failed on its own terms.</li>
+<li><strong>Baselines are recorded, append-only.</strong> A baseline is a ledger
+   artifact per project, so "regression" has a definition and a history.
+   Re-baselining is an explicit, recorded act — never an automatic
+   overwrite, or the loop will happily ratchet toward slower over time.</li>
+<li><strong>Statistical honesty.</strong> Measurements on shared runners are noisy.
+   A regression requires N samples and a stated confidence, not one bad
+   reading. This is the difference between a useful gate and a flaky one.</li>
+<li><strong>Same action ladder as 17</strong>, with the ceiling in <code>spec.fitnessPolicy</code>:
+   record → raise a repair ticket → fail the phase gate → escalate →
+   halt. Ships at <code>record</code> everywhere.</li>
+</ol>
+<h3 id="relationship-to-the-neighbours">Relationship to the neighbours<a class="headerlink" href="#relationship-to-the-neighbours" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>17</strong> shares the reconcile machinery, the condition vocabulary, and
+  the action ladder. Build 17 first; this is the second loop on the same
+  rails, not a parallel invention.</li>
+<li><strong>13</strong> is the other side of the coin and must not be duplicated: 13
+  optimizes <em>vibey's own</em> dev loop and engine spend (suite duration, CI
+  caching, effort right-sizing, cost-aware rotation). This runbook
+  optimizes <em>the code vibey's jobs produce</em>. Where they meet — delivery
+  economics from ledger <code>cost_usd</code> — 13 owns the measurement and this
+  loop consumes it.</li>
+<li><strong>05</strong> supplies the operator, CRD, and condition plumbing.</li>
+</ul>
+<h2 id="work-items">Work items<a class="headerlink" href="#work-items" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Meter registry + probes for the meters real specs already use.</li>
+<li>Pure fitness evaluator in <code>vibey/domain/</code>, property-tested.</li>
+<li>Baseline artifact: recording, reading, explicit re-baselining.</li>
+<li>Measurement collectors: benchmark, memory, <code>pg_stat_statements</code>,
+   metrics-server, image size, docstring coverage, stale-reference scan,
+   swallowed-exception AST scan, correlation-id sampling.</li>
+<li>Capability registry + per-surface introspection for the parity check
+   (generalizes 12's existing MCP-to-API parity test to all five).</li>
+<li>Gate-integrity baseline: record declared floors, scan includes, and the
+   suppression census; diff each cycle and require justifications.</li>
+<li>Currency probes for vibey-skills / vibey-bootstrap + a per-session
+   skills-version manifest.</li>
+<li>Attribution header scan with an explicit skip list.</li>
+<li>Cross-repo extraction scan (family level).</li>
+<li>The weekly improvement-PR job, one scoped PR per repo, silent when
+    there is nothing worth proposing.</li>
+<li>kopf timer + <code>Fitness</code> condition + Events, at <code>record</code> only.</li>
+<li>Right-sizing recommendations for the chart's own resource requests.</li>
+<li>Ladder rungs behind <code>fitnessPolicy</code>, promoted one dimension at a time.</li>
+<li>The same loop in the four *loop repos, at their own altitude.</li>
+<li><code>docs/guides/production-fitness.md</code> per repo.</li>
+</ol>
+<h2 id="verification">Verification<a class="headerlink" href="#verification" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>The quiet test, and the most important one:</strong> a codebase already
+  within budget produces <strong>zero</strong> findings across a full greeter run. A
+  loop that chirps on healthy code will be muted, and then it protects
+  nothing.</li>
+<li>A seeded regression — an NFR's <code>must</code> deliberately breached — is caught
+  within one reconcile interval and produces a repair ticket that flows
+  through BUILD → REVIEW and closes.</li>
+<li>A seeded N+1 on a hot path is caught from <code>pg_stat_statements</code> rather
+  than from someone reading the diff.</li>
+<li>A doc referencing a deliberately removed CLI flag is caught by the
+  stale-reference scan, not by the next person to follow the guide.</li>
+<li>A deliberately swallowed exception is caught by the AST scan.</li>
+<li>A capability added to the application layer and wired only into the CLI
+  is reported as a parity gap against API, MCP, SDK and webhook, and a
+  <code>surface_exempt</code> reason suppresses it without editing the checker.</li>
+<li>No GUI-related finding is ever produced, under any policy setting.</li>
+<li>A coverage floor lowered from 100 to 95 in a config file is reported as
+  a gate-integrity breach even though every CI check still passes.</li>
+<li>A newly added, unjustified <code># nosec</code> is reported; the same suppression
+  with a written reason is not.</li>
+<li>A repo pinned to a superseded vibey-skills release is reported, and a
+  run whose session manifest names no skills version is reported too.</li>
+<li>Produced code missing the provenance line is reported; a file type on
+  the explicit skip list is not.</li>
+<li>A week with nothing worth proposing produces no PR at all.</li>
+<li>The round-trip probe reconstructs the full causal chain of a real failed
+  job from logs and ledger alone, and fails when correlation ids are
+  unbound on one entry path.</li>
+<li>Right-sizing: a recommendation for the vibey worker's own requests,
+  derived from measured usage over a real run, replacing the current
+  judgement-based <code>250m</code> / <code>512Mi</code>.</li>
+<li>Noise floor measured and recorded before any dimension is promoted past
+  <code>record</code>.</li>
+</ul>
+<h2 id="needs-from-operator">Needs from operator<a class="headerlink" href="#needs-from-operator" title="Permanent link">&para;</a></h2>
+<ul>
+<li>05's operator and 17's reconcile machinery landed first.</li>
+<li>metrics-server (or Prometheus) in-cluster for the right-sizing arm.</li>
+<li><code>pg_stat_statements</code> enabled on the target database.</li>
+<li>A decision on the production <code>fitnessPolicy</code> ceiling.</li>
+</ul>
+<h2 id="risks">Risks<a class="headerlink" href="#risks" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Optimization churn.</strong> The single biggest risk, and the breach-or-
+  regression rule is the whole mitigation. Resist every request to make
+  the loop act on absolute quality.</li>
+<li><strong>Correctness traded for speed.</strong> Every finding goes through the normal
+  review path with the full gate suite; the loop never edits code.</li>
+<li><strong>Measurement noise.</strong> Addressed by sampling and confidence, and by
+  measuring the noise floor before promoting a dimension.</li>
+<li><strong>Ratcheting baselines.</strong> Automatic re-baselining would let the system
+  drift steadily slower while reporting green. Re-baselining stays
+  explicit and recorded.</li>
+<li><strong>Premature micro-optimization.</strong> A <code>wish</code> is a reporting target, never
+  a trigger. If a dimension has no <code>must</code>, the loop cannot act on it.</li>
+</ul></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://properdocs.org/">ProperDocs</a>.</p>
+        </footer>
+        <script src="../../../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "../../..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../../../js/base.js"></script>
+        <script src="../../../javascripts/channel.js"></script>
+        <script src="../../../search/main.js"></script>
+
+        <div class="modal" id="properdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="properdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="properdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="properdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

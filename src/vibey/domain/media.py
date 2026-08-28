@@ -1,3 +1,4 @@
+# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://hire.adam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 # Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """Media-provider capability discovery and per-modality rotation (M5 tasks
 5.9/5.10). Capability-based, not model-name-based: a provider advertises

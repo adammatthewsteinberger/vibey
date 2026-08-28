@@ -1,0 +1,105 @@
+# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://hire.adam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+name: Automation bootstrap
+
+# Privileged workflows are loaded from the trusted base branch. A PR that repairs a
+# broken privileged gate therefore cannot prove its own repair. This explicit, admin-only
+# recovery path verifies the exact head and every independent deterministic gate before
+# performing the narrowly authorized squash merge.
+on:
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: "Automation-repair PR number"
+        required: true
+        type: string
+      head_sha:
+        description: "Exact reviewed head SHA"
+        required: true
+        type: string
+      authorize:
+        description: "I authorize the automation bootstrap admin merge"
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  checks: read
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: automation-bootstrap-${{ github.repository }}-${{ inputs.pr }}
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    name: Verify and bootstrap automation repair
+    if: inputs.authorize == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify exact head, administrator, scope, and independent gates
+        env:
+          GH_TOKEN: ${{ secrets.AUTOMERGE_TOKEN || github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ inputs.pr }}
+          EXPECTED_SHA: ${{ inputs.head_sha }}
+          INTEGRATION_BRANCH: develop
+          RELEASE_BRANCH: main
+        run: |
+          set -euo pipefail
+          permission=$(gh api "repos/${REPO}/collaborators/${GITHUB_ACTOR}/permission" --jq .permission)
+          test "$permission" = admin
+
+          pr=$(gh pr view "$PR" --repo "$REPO" \
+            --json state,isDraft,headRefOid,headRefName,baseRefName,isCrossRepository)
+          test "$(jq -r .state <<<"$pr")" = OPEN
+          test "$(jq -r .isDraft <<<"$pr")" = false
+          test "$(jq -r .headRefOid <<<"$pr")" = "$EXPECTED_SHA"
+          test "$(jq -r .baseRefName <<<"$pr")" = "$INTEGRATION_BRANCH"
+
+          gh pr diff "$PR" --repo "$REPO" --name-only > changed-files.txt
+          test -s changed-files.txt
+          if grep -Ev '^(\.github/workflows/|vibey_gh/templates/workflows/|vibey_gh/(cli|install|merge_train|pr_automation)\.py$|test/)' changed-files.txt; then
+            echo "::error::changed files are not confined to automation-core paths" >&2
+            exit 1
+          fi
+
+          checks=$(gh api "repos/${REPO}/commits/${EXPECTED_SHA}/check-runs?per_page=100")
+          jq -e '
+            [.check_runs[] |
+              select(.name != "gate" and
+                     .name != "PR automation / gate" and
+                     .name != "Automation bootstrap / gate")] as $checks |
+            ($checks | length > 0) and
+            ($checks | all(
+              .status == "completed" and
+              (.conclusion == "success" or .conclusion == "neutral" or .conclusion == "skipped")
+            )) and
+            ([$checks[].name] | any(. == "Documentation contract")) and
+            ([$checks[].name] | any(. == "Provenance")) and
+            ([$checks[].name] | any(. == "Build")) and
+            ([$checks[].name] | any(. == "Lint")) and
+            ([$checks[].name] | any(. == "Analyze Python")) and
+            ([$checks[].name] | any(. == "MCP, API, CLI, SDK, and webhook parity"))
+          ' <<<"$checks" >/dev/null
+
+          gh pr merge "$PR" --repo "$REPO" --squash --admin \
+            --match-head-commit "$EXPECTED_SHA"
+
+          head=$(jq -r .headRefName <<<"$pr")
+          fork=$(jq -r .isCrossRepository <<<"$pr")
+          if [ "$fork" = false ] && [ -n "$head" ] && \
+             [ "$head" != "$INTEGRATION_BRANCH" ] && [ "$head" != "$RELEASE_BRANCH" ] && \
+             [ "$head" != develop ] && [ "$head" != main ]; then
+            gh api "repos/${REPO}/git/refs/heads/${head}" --method DELETE || true
+          fi
+
+          {
+            echo '### Automation bootstrap completed'
+            echo
+            echo "- PR: #${PR}"
+            echo "- Exact head: \`${EXPECTED_SHA}\`"
+            echo '- Independent CI, CodeQL, API drift, documentation, provenance, build, and lint gates: passed'
+            echo '- Merge: explicitly authorized admin squash merge'
+            echo '- Permanent branches: never deletion targets'
+          } >> "$GITHUB_STEP_SUMMARY"

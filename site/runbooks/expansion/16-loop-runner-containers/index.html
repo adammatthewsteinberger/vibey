@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        <link rel="canonical" href="https://adammatthewsteinberger.github.io/vibey/runbooks/expansion/16-loop-runner-containers/">
+        <link rel="shortcut icon" href="../../../img/favicon.ico">
+        <title>Runbook: loop-runner containers — each *loop repo ships its own k8s - vibey</title>
+        <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../../../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../../../css/brands.min.css" rel="stylesheet">
+        <link href="../../../css/solid.min.css" rel="stylesheet">
+        <link href="../../../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../../../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <link href="../../../stylesheets/vibey.css" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="../../..">vibey</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href="../../.." class="nav-link">Home</a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Guides</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../../../guides/kubernetes/" class="dropdown-item">Kubernetes</a>
+</li>
+                                    
+<li>
+    <a href="../../../guides/greeter-live-demo/" class="dropdown-item">Greeter live demo</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Architecture</a>
+                                <ul class="dropdown-menu">
+                                    
+  <li class="dropdown-submenu">
+    <a href="#" class="dropdown-item">Decision records</a>
+    <ul class="dropdown-menu">
+            
+<li>
+    <a href="../../../architecture/decisions/0001-orchestrate-do-not-reimplement/" class="dropdown-item">0001 — Orchestrate do not reimplement</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0002-postgres-not-sqlite/" class="dropdown-item">0002 — Postgres not sqlite</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0003-event-sourced-ledger/" class="dropdown-item">0003 — Event sourced ledger</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0004-no-loss-gate-on-handoff/" class="dropdown-item">0004 — No loss gate on handoff</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0005-smooth-weighted-round-robin/" class="dropdown-item">0005 — Smooth weighted round robin</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0006-normalized-effort-ladder/" class="dropdown-item">0006 — Normalized effort ladder</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0007-rotate-at-boundaries/" class="dropdown-item">0007 — Rotate at boundaries</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0008-worktree-isolation/" class="dropdown-item">0008 — Worktree isolation</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0009-human-gates-are-parked-jobs/" class="dropdown-item">0009 — Human gates are parked jobs</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0010-review-loopback-routing/" class="dropdown-item">0010 — Review loopback routing</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0011-agent-surface-provisioning/" class="dropdown-item">0011 — Agent surface provisioning</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0012-deploy-is-a-separate-cli/" class="dropdown-item">0012 — Deploy is a separate cli</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0013-deployment-is-a-three-phase-stage-set/" class="dropdown-item">0013 — Deployment is a three phase stage set</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0014-optional-visual-design-and-deployment-opt-in/" class="dropdown-item">0014 — Optional visual design and deployment opt in</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0015-qwenloop-standby/" class="dropdown-item">0015 — Qwenloop standby</a>
+</li>
+    </ul>
+  </li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#properdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a href="https://github.com/adammatthewsteinberger/vibey/edit/main/docs/runbooks/expansion/16-loop-runner-containers.md" class="nav-link">Edit on adammatthewsteinberger/vibey
+                                    </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#runbook-loop-runner-containers-each-loop-repo-ships-its-own-k8s" class="nav-link">Runbook: loop-runner containers — each *loop repo ships its own k8s</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#goal" class="nav-link">Goal</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#current-state-verified-2026-08-21" class="nav-link">Current state (verified 2026-08-21)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#design" class="nav-link">Design</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#work-items" class="nav-link">Work items</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#verification" class="nav-link">Verification</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#needs-from-operator" class="nav-link">Needs from operator</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#risks" class="nav-link">Risks</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="runbook-loop-runner-containers-each-loop-repo-ships-its-own-k8s">Runbook: loop-runner containers — each *loop repo ships its own k8s<a class="headerlink" href="#runbook-loop-runner-containers-each-loop-repo-ships-its-own-k8s" title="Permanent link">&para;</a></h1>
+<h2 id="goal">Goal<a class="headerlink" href="#goal" title="Permanent link">&para;</a></h2>
+<p>Each of the four session runners — <code>claudeloop</code>, <code>codexloop</code>,
+<code>cursorloop</code>, <code>agyloop</code> — becomes independently deployable on Kubernetes:
+its own image, its own Helm chart, its own multi-arch CI publish, its own
+docs. Two consumers are served by the same artifacts:</p>
+<ol>
+<li><strong>Standalone.</strong> Each runner is a separately published tool with its own
+   users. <code>helm install claudeloop</code> should run an autonomous session in a
+   cluster without vibey anywhere in the picture.</li>
+<li><strong>The <code>vibey-engines</code> image.</strong> Runbook 05's design calls for a second
+   image layering the runners on top of the vibey base. That image
+   consumes what this workstream produces instead of reinventing four
+   installs.</li>
+</ol>
+<h2 id="current-state-verified-2026-08-21">Current state (verified 2026-08-21)<a class="headerlink" href="#current-state-verified-2026-08-21" title="Permanent link">&para;</a></h2>
+<p>Measured directly in the four working copies, not assumed:</p>
+<table>
+<thead>
+<tr>
+<th>Repo</th>
+<th>Version</th>
+<th>Python</th>
+<th>Console script</th>
+<th>Vendor binary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>claudeloop</code></td>
+<td>0.6.1</td>
+<td>&gt;=3.10</td>
+<td><code>claudeloop</code></td>
+<td><code>claude</code></td>
+</tr>
+<tr>
+<td><code>codexloop</code></td>
+<td>0.3.1</td>
+<td>&gt;=3.12</td>
+<td><code>codexloop</code></td>
+<td><code>codex</code></td>
+</tr>
+<tr>
+<td><code>cursorloop</code></td>
+<td>0.6.0</td>
+<td>&gt;=3.12</td>
+<td><code>cursorloop</code></td>
+<td><code>cursor-sdk-bridge</code></td>
+</tr>
+<tr>
+<td><code>agyloop</code></td>
+<td>0.4.1</td>
+<td>&gt;=3.12</td>
+<td><code>agyloop</code></td>
+<td><code>agy</code></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>All four are on <code>develop</code>, share vibey's onion layout
+  (<code>domain/application/infrastructure/cli</code>), and build with hatchling.</li>
+<li><strong>None has a <code>deploy/</code> directory.</strong> Nothing is containerized anywhere.</li>
+<li>CI is uniform: <code>ci.yml</code>, <code>docs.yml</code>, <code>publish-*.yml</code>,
+  <code>release-please.yml</code> (plus <code>api-drift.yml</code> in cursorloop). No image job
+  in any repo.</li>
+<li><strong>API-key auth already exists in all four</strong> — <code>ANTHROPIC_API_KEY</code> /
+  <code>ANTHROPIC_AUTH_TOKEN</code>, <code>OPENAI_API_KEY</code> / <code>AZURE_OPENAI_API_KEY</code>,
+  <code>CURSOR_API_KEY</code>, <code>GOOGLE_API_KEY</code> / <code>GEMINI_API_KEY</code> / ADC — each with
+  a <code>doctor_env</code> check behind it. Runbook 05's work item 1 is closer to a
+  verification job than an implementation job. <strong>This is the single
+  biggest de-risking fact in this runbook.</strong></li>
+<li>vibey invokes runners as <strong>subprocess CLIs</strong>
+  (<code>infrastructure/engines/loop_process_adapter.py</code>), and the current
+  vibey image ships <strong>no engines at all</strong> — nothing in-cluster can run a
+  real engine today.</li>
+</ul>
+<h3 id="the-fact-that-shapes-everything">The fact that shapes everything<a class="headerlink" href="#the-fact-that-shapes-everything" title="Permanent link">&para;</a></h3>
+<p>Only <code>agyloop</code> selects its lane at runtime (<code>--gateway sdk|cli</code>, with
+<code>gateway: str = "sdk"</code> as the default). In <code>claudeloop</code> and <code>cursorloop</code>,
+<code>bootstrap.py</code> hardwires the <strong>agent</strong> gateway — <code>ClaudeAgentGateway</code>,
+<code>CursorAgentGateway</code> from <code>infrastructure/agent/gateway</code> — for the
+autonomous loop. Their <code>infrastructure/api/</code> trees (<code>gateway.py</code>,
+<code>providers.py</code>, <code>binder.py</code>, <code>introspect.py</code>, <code>surface_baseline.json</code>) are
+a <em>separate command surface</em> — claudeloop's "full Anthropic SDK CLI" — not
+a lane the loop can be pointed at.</p>
+<p><strong>So for three of four runners the autonomous loop currently requires the
+vendor agent binary on PATH.</strong> That decides image size, base image, and
+whether a container can authenticate at all — vendor CLIs generally assume
+an interactive TTY login, which does not exist in a cluster.</p>
+<p>Do not plan the images until this is settled per repo. It is Phase 0.</p>
+<h2 id="design">Design<a class="headerlink" href="#design" title="Permanent link">&para;</a></h2>
+<h3 id="phase-0-the-lane-spike-blocks-everything-one-spike-per-repo">Phase 0 — the lane spike (blocks everything; one spike per repo)<a class="headerlink" href="#phase-0-the-lane-spike-blocks-everything-one-spike-per-repo" title="Permanent link">&para;</a></h3>
+<p>For each runner, answer with a running process, not a code read: <em>can the
+autonomous loop complete a real session with no vendor binary on PATH,
+authenticated only by an API key from the environment?</em></p>
+<ul>
+<li><strong>agyloop</strong> — likely already yes (<code>--gateway sdk</code>). Confirm, then it is
+  the reference implementation the other three copy.</li>
+<li><strong>claudeloop / cursorloop / codexloop</strong> — if no, the deliverable is a
+  runner-side work item in that repo: promote the API gateway to a lane
+  the loop can select, mirroring agyloop's <code>--gateway</code>. That is a genuine
+  feature in someone else's repo, sized separately, and it must land
+  before that runner's image is worth building.</li>
+</ul>
+<p>The spike's output per repo is one of two verdicts, recorded in the repo:</p>
+<ul>
+<li><strong>SDK lane works</strong> → slim image, <code>python:3.12-slim</code>, no Node, no vendor
+  CLI, no TTY problem. This is the container-native path and the one to
+  fight for.</li>
+<li><strong>CLI lane only</strong> → the image must carry the vendor binary (Node +
+  npm-installed agent CLI for <code>claude</code>/<code>codex</code>; a proprietary installer
+  for <code>cursor-sdk-bridge</code>/<code>agy</code>), and headless API-key auth for that
+  binary must be proven before anything else is built. Vendor licensing
+  for redistribution inside an image is a real question here, not a
+  formality — answer it in the spike, not after publishing.</li>
+</ul>
+<h3 id="per-repo-artifacts-identical-shape-in-all-four">Per-repo artifacts (identical shape in all four)<a class="headerlink" href="#per-repo-artifacts-identical-shape-in-all-four" title="Permanent link">&para;</a></h3>
+<pre><code>deploy/
+  docker/Dockerfile          # two-stage, non-root, uid 10001
+  helm/&lt;runner&gt;/
+    Chart.yaml
+    values.yaml
+    templates/{_helpers.tpl,job.yaml,secret.yaml,rbac.yaml}
+.github/workflows/image.yml  # multi-arch buildx -&gt; ghcr.io
+docs/kubernetes.md
+</code></pre>
+<ol>
+<li>
+<p><strong>Dockerfile.</strong> Copy vibey's two-stage pattern
+   (<code>deploy/docker/Dockerfile</code>) — it is already load-bearing and its
+   reasoning transfers exactly: the runtime layer carries no compiler and
+   no package manager, because a compromised agent session inside the
+   container should not find build tools waiting. Same <code>/app</code> WORKDIR in
+   both stages for the editable-install path pointer. <code>git</code> is a genuine
+   runtime dependency — these runners work in real worktrees.
+   <code>ENTRYPOINT ["&lt;runner&gt;"]</code>, <code>CMD ["--help"]</code>: an image that silently
+   starts a session when someone runs it to inspect the filesystem is a
+   footgun. Note the Python floor differs — claudeloop allows 3.10, the
+   others require 3.12; pin every image to 3.12 anyway so one base layer
+   is shared and cached across all four.</p>
+</li>
+<li>
+<p><strong>Chart: a Job, not a Deployment.</strong> These are one-shot autonomous
+   session runners, not servers — they start, work, and finish. A
+   Deployment would restart a <em>successfully completed</em> session forever.
+   <code>Job</code> with <code>backoffLimit: 0</code> and <code>restartPolicy: Never</code> is the honest
+   shape; offer <code>CronJob</code> for scheduled runs. This is the sharpest
+   divergence from vibey's chart and must not be copied from it blindly.</p>
+</li>
+<li>
+<p><strong>Secrets.</strong> API keys come from a Secret, never values.yaml — the same
+   <code>engineAuth.existingSecret</code> convention vibey's chart already uses, so
+   one Secret can serve a vibey worker and a standalone runner alike.</p>
+</li>
+<li>
+<p><strong>Workspace.</strong> A PVC for the repo under work, cloned via a deploy key
+   mounted as a Secret. Reuse vibey's worktree PVC conventions.</p>
+</li>
+<li>
+<p><strong>CI.</strong> <code>docker/build-push-action</code> multi-arch (arm64 + amd64) to
+   <code>ghcr.io/&lt;owner&gt;/&lt;runner&gt;</code>, tagged on release-please releases so image
+   tags track the PyPI version already published. Do not invent a second
+   versioning scheme.</p>
+</li>
+</ol>
+<h3 id="the-vibey-engines-image-this-side">The <code>vibey-engines</code> image (this side)<a class="headerlink" href="#the-vibey-engines-image-this-side" title="Permanent link">&para;</a></h3>
+<p>Once the four images exist, <code>deploy/docker/Dockerfile.engines</code> layers the
+runners onto the vibey base and vibey's chart grows an
+<code>image.engines</code> value the worker Deployment can select. Prefer installing
+the four <strong>PyPI packages</strong> into one image over <code>COPY --from</code> of four
+images: one Python environment, one resolver run, no four-way base-image
+skew. The per-repo images remain the standalone deliverable.</p>
+<h2 id="work-items">Work items<a class="headerlink" href="#work-items" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Phase 0 lane spike × 4; record the verdict per repo (blocks 2–4).</li>
+<li>Runner-side <code>--gateway</code> work in whichever repos the spike says need it.</li>
+<li>Dockerfile × 4 + local <code>docker run &lt;runner&gt; doctor</code> green.</li>
+<li>Helm chart × 4 (Job/CronJob shape) + minikube install per runner.</li>
+<li><code>image.yml</code> multi-arch CI publish × 4, wired to release-please tags.</li>
+<li><code>docs/kubernetes.md</code> × 4.</li>
+<li><code>Dockerfile.engines</code> + <code>image.engines</code> in vibey's chart.</li>
+<li>One real greeter on minikube driven by a containerized engine — the
+   first time vibey runs a live engine in-cluster.</li>
+</ol>
+<h2 id="verification">Verification<a class="headerlink" href="#verification" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>docker run --rm -e &lt;KEY&gt; &lt;runner&gt;:dev doctor</code> passes for all four.</li>
+<li><code>helm install &lt;runner&gt;</code> on minikube → a scripted session reaches
+  completion → Job <code>Complete</code>, pod exits 0, no restarts.</li>
+<li>One paid live session per runner in-cluster, API-key authenticated.</li>
+<li>vibey worker running the engines image selects a real engine and
+  completes a BUILD job — verified against <code>vibey doctor --conformance</code>
+  recording a real conformance, which today is empty in-cluster
+  ("no recorded conformance for agyloop, claudeloop, codexloop,
+  cursorloop" is the live warning from the running worker).</li>
+</ul>
+<h2 id="needs-from-operator">Needs from operator<a class="headerlink" href="#needs-from-operator" title="Permanent link">&para;</a></h2>
+<ul>
+<li>LLM API keys for each vendor (the same set runbook 05 needs).</li>
+<li>A GHCR namespace (or other registry) and a token with <code>packages:write</code>.</li>
+<li>Deploy keys for any private repo a runner is pointed at.</li>
+<li>A decision on vendor-CLI redistribution if any repo lands on CLI-only.</li>
+</ul>
+<h2 id="risks">Risks<a class="headerlink" href="#risks" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>The spike may fail for a runner.</strong> If a vendor's agent CLI cannot
+  authenticate headlessly by API key, that runner is not clusterable this
+  quarter regardless of how good its chart is. Better to learn it in a
+  one-day spike than after four charts are written.</li>
+<li><strong>Four repos drift.</strong> The chart shape must be copied deliberately, not
+  by cargo cult — a Job here, a Deployment in vibey, for a stated reason.
+  Consider a shared chart library only after all four exist and the
+  duplication is measured, not before.</li>
+<li><strong>Python floor mismatch.</strong> claudeloop's 3.10 floor tempts a second base
+  image; resist it.</li>
+<li><strong>Coverage gates.</strong> Each repo carries its own 100% floors. Runner-side
+  <code>--gateway</code> work is real code in someone else's coverage budget, not a
+  packaging change.</li>
+</ul></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://properdocs.org/">ProperDocs</a>.</p>
+        </footer>
+        <script src="../../../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "../../..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../../../js/base.js"></script>
+        <script src="../../../javascripts/channel.js"></script>
+        <script src="../../../search/main.js"></script>
+
+        <div class="modal" id="properdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="properdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="properdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="properdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

@@ -1,4 +1,4 @@
-# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
+# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://hire.adam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 name: Provenance
 
 # Server-side half of the provenance rule. The pre-push hook is the fast, local half, but
@@ -28,13 +28,13 @@ jobs:
     name: Provenance
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           # Needed to walk the commits a pull request adds.
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
 
@@ -47,7 +47,7 @@ jobs:
             echo "this repository provides the tooling — installing from source"
             python -m pip install --quiet -e .
           else
-            python -m pip install --quiet vibey-gh
+            python -m pip install --quiet "vibey-gh==1.39.0"
           fi
 
       # --ci skips the core.hooksPath assertion, which is per-clone local git config that
@@ -57,9 +57,17 @@ jobs:
       - name: Check provenance
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          INTEGRATION_BRANCH: develop
+          RELEASE_BRANCH: main
         run: |
           set -euo pipefail
-          if [ -n "${BASE_SHA:-}" ]; then
+          if [ "$HEAD_REF" = "$INTEGRATION_BRANCH" ] && \
+             [ "$BASE_REF" = "$RELEASE_BRANCH" ]; then
+            echo "Promotion PR: checking repository provenance without rewriting or re-auditing admitted history."
+            vibey-gh check --ci
+          elif [ -n "${BASE_SHA:-}" ]; then
             git fetch --quiet --depth=50 origin "${BASE_SHA}" 2>/dev/null || true
             vibey-gh check --ci --commits "${BASE_SHA}..HEAD"
           else

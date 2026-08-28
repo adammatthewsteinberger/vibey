@@ -1,3 +1,4 @@
+# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://hire.adam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 # Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
 """The lease -> execute -> ack loop. Workers are stateless: all durable
 state lives in JobRepository, so a worker can die at any point and a reaped

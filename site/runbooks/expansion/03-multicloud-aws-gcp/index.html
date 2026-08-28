@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        <link rel="canonical" href="https://adammatthewsteinberger.github.io/vibey/runbooks/expansion/03-multicloud-aws-gcp/">
+        <link rel="shortcut icon" href="../../../img/favicon.ico">
+        <title>Runbook: multi-cloud — AWS and GCP beside Azure, all live-verified - vibey</title>
+        <link href="../../../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../../../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../../../css/brands.min.css" rel="stylesheet">
+        <link href="../../../css/solid.min.css" rel="stylesheet">
+        <link href="../../../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../../../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <link href="../../../stylesheets/vibey.css" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="../../..">vibey</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href="../../.." class="nav-link">Home</a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Guides</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../../../guides/kubernetes/" class="dropdown-item">Kubernetes</a>
+</li>
+                                    
+<li>
+    <a href="../../../guides/greeter-live-demo/" class="dropdown-item">Greeter live demo</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Architecture</a>
+                                <ul class="dropdown-menu">
+                                    
+  <li class="dropdown-submenu">
+    <a href="#" class="dropdown-item">Decision records</a>
+    <ul class="dropdown-menu">
+            
+<li>
+    <a href="../../../architecture/decisions/0001-orchestrate-do-not-reimplement/" class="dropdown-item">0001 — Orchestrate do not reimplement</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0002-postgres-not-sqlite/" class="dropdown-item">0002 — Postgres not sqlite</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0003-event-sourced-ledger/" class="dropdown-item">0003 — Event sourced ledger</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0004-no-loss-gate-on-handoff/" class="dropdown-item">0004 — No loss gate on handoff</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0005-smooth-weighted-round-robin/" class="dropdown-item">0005 — Smooth weighted round robin</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0006-normalized-effort-ladder/" class="dropdown-item">0006 — Normalized effort ladder</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0007-rotate-at-boundaries/" class="dropdown-item">0007 — Rotate at boundaries</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0008-worktree-isolation/" class="dropdown-item">0008 — Worktree isolation</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0009-human-gates-are-parked-jobs/" class="dropdown-item">0009 — Human gates are parked jobs</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0010-review-loopback-routing/" class="dropdown-item">0010 — Review loopback routing</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0011-agent-surface-provisioning/" class="dropdown-item">0011 — Agent surface provisioning</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0012-deploy-is-a-separate-cli/" class="dropdown-item">0012 — Deploy is a separate cli</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0013-deployment-is-a-three-phase-stage-set/" class="dropdown-item">0013 — Deployment is a three phase stage set</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0014-optional-visual-design-and-deployment-opt-in/" class="dropdown-item">0014 — Optional visual design and deployment opt in</a>
+</li>
+            
+<li>
+    <a href="../../../architecture/decisions/0015-qwenloop-standby/" class="dropdown-item">0015 — Qwenloop standby</a>
+</li>
+    </ul>
+  </li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#properdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a href="https://github.com/adammatthewsteinberger/vibey/edit/main/docs/runbooks/expansion/03-multicloud-aws-gcp.md" class="nav-link">Edit on adammatthewsteinberger/vibey
+                                    </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#runbook-multi-cloud-aws-and-gcp-beside-azure-all-live-verified" class="nav-link">Runbook: multi-cloud — AWS and GCP beside Azure, all live-verified</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#goal" class="nav-link">Goal</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#current-state-verified" class="nav-link">Current state (verified)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#design" class="nav-link">Design</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#work-items" class="nav-link">Work items</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#verification" class="nav-link">Verification</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#needs-from-operator" class="nav-link">Needs from operator</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#risks" class="nav-link">Risks</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="runbook-multi-cloud-aws-and-gcp-beside-azure-all-live-verified">Runbook: multi-cloud — AWS and GCP beside Azure, all live-verified<a class="headerlink" href="#runbook-multi-cloud-aws-and-gcp-beside-azure-all-live-verified" title="Permanent link">&para;</a></h1>
+<h2 id="goal">Goal<a class="headerlink" href="#goal" title="Permanent link">&para;</a></h2>
+<p>The deployment stage set (④–⑥) targets AWS and GCP with the same
+consent-gated, spec-driven pipeline Azure has, and all three providers are
+proven against real (free/cheap) tenants — including finally executing the
+Azure path live, which is currently blocked only on <code>az login</code>.</p>
+<h2 id="current-state-verified">Current state (verified)<a class="headerlink" href="#current-state-verified" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Azure is real: <code>AzureClientPort</code> (<code>application/interfaces/azure.py:44</code>),
+  ARM renderer (<code>infrastructure/azure/arm.py</code>), <code>AzCliClientAdapter</code>
+  (<code>infrastructure/azure/az_cli.py</code>) with digest-bound consent re-verified
+  at the mutation boundary; <code>vibey worker --azure {memory|az}</code> with an
+  <code>az account show</code> preflight. Live execution has never run — needs login.</li>
+<li>The domain deployment model (<code>DeploymentSpec</code>, <code>AzureTargetScope</code>,
+  <code>DeploymentConsent</code>, <code>scope_digest()</code>) is Azure-named but structurally
+  vendor-neutral: tenant/subscription/resource-group/region map cleanly to
+  account/project/region.</li>
+</ul>
+<h2 id="design">Design<a class="headerlink" href="#design" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>Generalize the port, keep the wire adapters vendor-specific.</strong>
+   Rename-by-addition (never break the protected system test):
+   <code>CloudClientPort</code> Protocol with <code>discover_environment</code>, <code>execute_plan</code>,
+   <code>get_resource_status</code>, <code>delete_resource</code>; <code>AzureClientPort</code> remains as
+   an alias. <code>TargetScope</code> grows a <code>provider: Literal["azure","aws","gcp"]</code>
+   discriminant with provider-shaped scope fields; <code>scope_digest()</code> covers
+   the provider so consent can never cross clouds.</li>
+<li><strong>AWS adapter</strong> (<code>infrastructure/aws/</code>): render <code>DeploymentSpec</code> →
+   CloudFormation template (container topology → ECS on Fargate + ALB when
+   ingress enabled; scale from <code>instances</code>); execute over the <code>aws</code> CLI
+   (<code>aws cloudformation deploy</code>, <code>describe-stacks</code>) with the same
+   <code>CommandExecutor</code> seam and consent checks as az_cli.py. Preflight:
+   <code>aws sts get-caller-identity</code>.</li>
+<li><strong>GCP adapter</strong> (<code>infrastructure/gcp/</code>): container topology → Cloud Run
+   (<code>gcloud run deploy</code> returns JSON; status via
+   <code>gcloud run services describe</code>); no template indirection needed — Cloud
+   Run is already declarative. Preflight: <code>gcloud auth print-access-token</code>.</li>
+<li><strong>CLI</strong>: <code>vibey worker --cloud {memory|az|aws|gcp}</code> (deprecating
+   <code>--azure</code> with an alias); deploy interview gains a provider question
+   whose default stays <code>azure</code>.</li>
+<li><strong>Live verification harness</strong>: <code>tests/live/test_cloud_live.py</code>, one
+   parametrized case per provider, each gated on its own env
+   (<code>VIBEY_AZURE_LIVE</code>, <code>VIBEY_AWS_LIVE</code>, <code>VIBEY_GCP_LIVE</code>): deploy the
+   hello-world container, poll status to Succeeded/healthy, then
+   consent-gated delete. Cost ceiling: smallest SKUs, teardown in
+   <code>finally</code>, budget alarm on each tenant.</li>
+</ol>
+<h2 id="work-items">Work items<a class="headerlink" href="#work-items" title="Permanent link">&para;</a></h2>
+<ol>
+<li>CloudClientPort + provider-discriminated scope + digest coverage +
+   parity tests (Azure alias proven byte-compatible).</li>
+<li>AWS CloudFormation renderer + fixture tests.</li>
+<li>AWS CLI adapter + consent + fixtures at the subprocess boundary.</li>
+<li>GCP Cloud Run adapter + consent + fixtures.</li>
+<li>CLI <code>--cloud</code> + preflights + bootstrap wiring.</li>
+<li>Deploy interview provider question + spec provider fields.</li>
+<li>Live tests ×3 + teardown proof.</li>
+<li>Docs: <code>docs/guides/deploying.md</code> gains AWS/GCP sections.</li>
+</ol>
+<h2 id="verification">Verification<a class="headerlink" href="#verification" title="Permanent link">&para;</a></h2>
+<p>Fixture gates green; then three live runs, each producing a real resource
+ID, a Succeeded status poll, and a verified teardown (post-delete
+discovery shows no residue). Azure live counts as part of this workstream.</p>
+<h2 id="needs-from-operator">Needs from operator<a class="headerlink" href="#needs-from-operator" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>az login</code> on this machine + a subscription id.</li>
+<li>AWS: free-tier account, IAM user with scoped policy, <code>aws configure</code>.</li>
+<li>GCP: free-tier project, <code>gcloud auth login</code> + billing enabled (Cloud Run
+  free tier covers the hello-world).</li>
+</ul>
+<h2 id="risks">Risks<a class="headerlink" href="#risks" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Consent replay across providers — killed by provider-in-digest.</li>
+<li>Cloud CLIs drift (04 watches their changelogs).</li>
+<li>Free-tier quotas: keep live tests serialized, one resource at a time.</li>
+</ul></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://properdocs.org/">ProperDocs</a>.</p>
+        </footer>
+        <script src="../../../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "../../..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../../../js/base.js"></script>
+        <script src="../../../javascripts/channel.js"></script>
+        <script src="../../../search/main.js"></script>
+
+        <div class="modal" id="properdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="properdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="properdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="properdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

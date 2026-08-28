@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        <link rel="canonical" href="https://adammatthewsteinberger.github.io/vibey/guides/greeter-live-demo/">
+        <link rel="shortcut icon" href="../../img/favicon.ico">
+        <title>Greeter live demo - vibey</title>
+        <link href="../../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../../css/brands.min.css" rel="stylesheet">
+        <link href="../../css/solid.min.css" rel="stylesheet">
+        <link href="../../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <link href="../../stylesheets/vibey.css" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="../..">vibey</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href="../.." class="nav-link">Home</a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle active" aria-current="page" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Guides</a>
+                                <ul class="dropdown-menu">
+                                    
+<li>
+    <a href="../kubernetes/" class="dropdown-item">Kubernetes</a>
+</li>
+                                    
+<li>
+    <a href="./" class="dropdown-item active" aria-current="page">Greeter live demo</a>
+</li>
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a href="#" class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown"  aria-expanded="false">Architecture</a>
+                                <ul class="dropdown-menu">
+                                    
+  <li class="dropdown-submenu">
+    <a href="#" class="dropdown-item">Decision records</a>
+    <ul class="dropdown-menu">
+            
+<li>
+    <a href="../../architecture/decisions/0001-orchestrate-do-not-reimplement/" class="dropdown-item">0001 — Orchestrate do not reimplement</a>
+</li>
+            
+<li>
+    <a href="../../architecture/decisions/0002-postgres-not-sqlite/" class="dropdown-item">0002 — Postgres not sqlite</a>
+</li>
+            
+<li>
+    <a href="../../architecture/decisions/0003-event-sourced-ledger/" class="dropdown-item">0003 — Event sourced ledger</a>
+</li>
+            
+<li>
+    <a href="../../architecture/decisions/0004-no-loss-gate-on-handoff/" class="dropdown-item">0004 — No loss gate on handoff</a>
+</li>
+            
+<li>
+    <a href="../../architecture/decisions/0005-smooth-weighted-round-robin/" class="dropdown-item">0005 — Smooth weighted round robin</a>
+</li>
+            
+<li>
+    <a href="../../architecture/decisions/0006-normalized-effort-ladder/" class="dropdown-item">0006 — Normalized effort ladder</a>
+</li>
+            
+<li>
+    <a href="../../architecture/decisions/0007-rotate-at-boundaries/" class="dropdown-item">0007 — Rotate at boundaries</a>
+</li>
+            
+<li>
+    <a href="../../architecture/decisions/0008-worktree-isolation/" class="dropdown-item">0008 — Worktree isolation</a>
+</li>
+            
+<li>
+    <a href="../../architecture/decisions/0009-human-gates-are-parked-jobs/" class="dropdown-item">0009 — Human gates are parked jobs</a>
+</li>
+            
+<li>
+    <a href="../../architecture/decisions/0010-review-loopback-routing/" class="dropdown-item">0010 — Review loopback routing</a>
+</li>
+            
+<li>
+    <a href="../../architecture/decisions/0011-agent-surface-provisioning/" class="dropdown-item">0011 — Agent surface provisioning</a>
+</li>
+            
+<li>
+    <a href="../../architecture/decisions/0012-deploy-is-a-separate-cli/" class="dropdown-item">0012 — Deploy is a separate cli</a>
+</li>
+            
+<li>
+    <a href="../../architecture/decisions/0013-deployment-is-a-three-phase-stage-set/" class="dropdown-item">0013 — Deployment is a three phase stage set</a>
+</li>
+            
+<li>
+    <a href="../../architecture/decisions/0014-optional-visual-design-and-deployment-opt-in/" class="dropdown-item">0014 — Optional visual design and deployment opt in</a>
+</li>
+            
+<li>
+    <a href="../../architecture/decisions/0015-qwenloop-standby/" class="dropdown-item">0015 — Qwenloop standby</a>
+</li>
+    </ul>
+  </li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#properdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a rel="prev" href="../kubernetes/" class="nav-link">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a rel="next" href="../../architecture/decisions/0001-orchestrate-do-not-reimplement/" class="nav-link">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="https://github.com/adammatthewsteinberger/vibey/edit/main/docs/guides/greeter-live-demo.md" class="nav-link">Edit on adammatthewsteinberger/vibey
+                                    </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#the-greeter-live-demo-a-real-project-real-engines-one-forced-rotation" class="nav-link">The greeter live demo: a real project, real engines, one forced rotation</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#prerequisites" class="nav-link">Prerequisites</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#1-record-engine-health" class="nav-link">1. Record engine health</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#2-create-the-project" class="nav-link">2. Create the project</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#3-start-the-worker" class="nav-link">3. Start the worker</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#4-answer-the-design-gates" class="nav-link">4. Answer the DESIGN gates</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#5-watch-build-rotate" class="nav-link">5. Watch BUILD rotate</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#6-force-a-rotation-the-e1-milestone" class="nav-link">6. Force a rotation (the E1 milestone)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#7-review-and-completion" class="nav-link">7. REVIEW and completion</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#if-something-goes-wrong" class="nav-link">If something goes wrong</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="the-greeter-live-demo-a-real-project-real-engines-one-forced-rotation">The greeter live demo: a real project, real engines, one forced rotation<a class="headerlink" href="#the-greeter-live-demo-a-real-project-real-engines-one-forced-rotation" title="Permanent link">&para;</a></h1>
+<p>This runbook drives one small project ("a CLI greeter") end to end on real
+<code>*loop</code> binaries: DESIGN through the interactive interview, BUILD on
+engine-selected sessions, REVIEW with real automated gates, and DONE(local).
+Along the way it demonstrates the two behaviors the whole design exists
+for: <strong>per-job engine rotation</strong> and <strong>the no-loss wind-down handoff</strong>.</p>
+<p>It costs real money (live claudeloop/agyloop sessions). Budget caps are
+enforced per run (<code>--max-turns</code>, <code>--max-dollars</code>), but expect a few dollars
+across the whole demo.</p>
+<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
+<ul>
+<li>PostgreSQL running locally, and <code>VIBEY_PG_URL</code> pointing at a database you
+  own (never SQLite; see ADR-0002).</li>
+<li>At least two engines installed and authenticated — this runbook uses
+  <code>claudeloop</code> and <code>agyloop</code>. <code>vibey doctor</code> will tell you which are ready.</li>
+<li>A clean working directory for the project repo.</li>
+</ul>
+<h2 id="1-record-engine-health">1. Record engine health<a class="headerlink" href="#1-record-engine-health" title="Permanent link">&para;</a></h2>
+<p>Selection is driven by the <code>engine_health</code> table. An engine with no
+recorded conformance is <strong>ineligible</strong> — the worker will warn and never
+select it. Record both:</p>
+<pre><code class="language-bash">vibey doctor --conformance --record
+</code></pre>
+<p>This runs the 9-check conformance suite against every installed engine and
+persists preflight + conformance for the latest project (use <code>--project</code> to
+target another). Re-run it whenever an engine is updated.</p>
+<h2 id="2-create-the-project">2. Create the project<a class="headerlink" href="#2-create-the-project" title="Permanent link">&para;</a></h2>
+<pre><code class="language-bash">mkdir ~/demos/greeter &amp;&amp; cd ~/demos/greeter &amp;&amp; git init
+vibey new greeter --repo . --max-cycles 3
+</code></pre>
+<p><code>vibey new</code> enqueues the first <code>design.interview</code> job. Nothing runs yet —
+jobs run only inside a worker.</p>
+<h2 id="3-start-the-worker">3. Start the worker<a class="headerlink" href="#3-start-the-worker" title="Permanent link">&para;</a></h2>
+<pre><code class="language-bash">vibey worker --provider claudeloop --engines claudeloop,agyloop
+</code></pre>
+<ul>
+<li><code>--provider claudeloop</code> makes the DESIGN interview and the BUILD
+  decomposition use live ClaudeLoop calls (the default <code>scripted</code> provider
+  is for tests).</li>
+<li><code>--engines claudeloop,agyloop</code> is the allow-list: BUILD jobs select
+  between exactly these two via smooth-weighted round-robin, per job.</li>
+</ul>
+<p>The worker LISTENs on <code>vibey_job_ready</code>, so answers you give in another
+terminal wake it immediately.</p>
+<h2 id="4-answer-the-design-gates">4. Answer the DESIGN gates<a class="headerlink" href="#4-answer-the-design-gates" title="Permanent link">&para;</a></h2>
+<p>The interview parks on human gates. In a second terminal:</p>
+<pre><code class="language-bash">vibey status            # shows the parked gate and its questions
+vibey answer &lt;gate-id&gt; system_description=&quot;a CLI that greets the user by name&quot; --defaults
+vibey answer &lt;gate-id&gt; --defaults          # later stages: take every default
+</code></pre>
+<p>Question keys are minted by the model and vary per run — read them from the
+gate prompt when you want to answer one explicitly. <code>--defaults</code> accepts
+every default (blocking questions included) and combines with explicit
+pairs, which win; it is the zero-touch path, so an unattended driver never
+needs to parse anything. Repeat until the interview completes and the
+design is accepted (decline the visual-design interstitial when offered —
+the greeter has no UI). <code>vibey watch</code> gives a live dashboard of the queue,
+circuits, and ledger tail while you go.</p>
+<h2 id="5-watch-build-rotate">5. Watch BUILD rotate<a class="headerlink" href="#5-watch-build-rotate" title="Permanent link">&para;</a></h2>
+<p>After acceptance, BUILD decomposes the spec into work items and runs
+<code>build.implement</code> / <code>build.verify</code> jobs on engine-selected sessions:</p>
+<ul>
+<li>every job's selected engine is durable (<code>job.assigned_engine</code>);</li>
+<li>each item's <strong>verifier is never its implementer</strong>;</li>
+<li><code>vibey engines</code> shows the selection counts and circuit states live.</li>
+</ul>
+<h2 id="6-force-a-rotation-the-e1-milestone">6. Force a rotation (the E1 milestone)<a class="headerlink" href="#6-force-a-rotation-the-e1-milestone" title="Permanent link">&para;</a></h2>
+<p>While a <code>build.implement</code> session is running on claudeloop, ask it to wind
+down (or wait for a real window exhaustion). The engine exits with code 75;
+vibey then:</p>
+<ol>
+<li>writes this cycle's full BUILD ledger to
+   <code>&lt;worktree&gt;/.vibey/handoff/ledger.jsonl</code>;</li>
+<li>produces a handoff brief and verifies it against the no-loss gate
+   (STRICT, escalating to FULL_TRANSCRIPT, parking for you only if even
+   that fails);</li>
+<li>persists the verified <code>HandoffEnvelope</code> (query the <code>handoff</code> table:
+   <code>accepted</code> must be true);</li>
+<li>enqueues a follow-up <code>build.implement</code> whose prompt is the rendered
+   brief — every open question, decision, assumption, and finding id
+   verbatim — with claudeloop durably excluded, so agyloop picks it up.</li>
+</ol>
+<p>The wind-down job settles <strong>Success</strong>: rotation is not a failure and never
+burns the escalation ladder. Three wind-downs on one item park it for you
+(<code>TooManyWindDowns</code>).</p>
+<h2 id="7-review-and-completion">7. REVIEW and completion<a class="headerlink" href="#7-review-and-completion" title="Permanent link">&para;</a></h2>
+<p>REVIEW runs the automated review (bandit, ruff) against the integrated
+result, then parks the deployment choice. Decline it:</p>
+<pre><code class="language-bash">vibey answer &lt;gate-id&gt; --choice local_only
+</code></pre>
+<p>The project records DONE(local). <code>vibey cost</code> shows what the demo spent;
+<code>vibey status</code> should show an empty queue with zero failed jobs.</p>
+<h2 id="if-something-goes-wrong">If something goes wrong<a class="headerlink" href="#if-something-goes-wrong" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>"no recorded conformance" warning at worker startup</strong> — step 1 was
+  skipped or failed; engine-driven jobs will sit ready but unselected. A
+  timing-flaky conformance FAIL is possible on a loaded machine: re-run
+  <code>vibey doctor --conformance --record --engine &lt;name&gt;</code> once.</li>
+<li><strong>A job keeps deferring</strong> — <code>vibey engines</code> will show an open circuit
+  (capacity) or <code>vibey status</code> a pending backoff; both clear on their own.
+  An open circuit past its reset deadline half-opens automatically at the
+  next selection and closes itself on the first success.</li>
+<li><strong>A <code>verify_repair_exhausted</code> / <code>integrate_repair_exhausted</code> gate</strong> —
+  the item burned its bounded repair rounds. Grant more with
+  <code>vibey answer &lt;gate-id&gt; --raw '{"max_rounds": 6}'</code> (the prompt suggests
+  a value), or fix the branch by hand and answer anything to retry.</li>
+<li><strong>A gate you don't recognize</strong> — <code>vibey answer --raw '{"...": ...}'</code>
+  covers any shape the typed flags don't.</li>
+<li>Workers are disposable: kill the worker any time; leases expire and the
+  next worker replays idempotently.</li>
+</ul></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://properdocs.org/">ProperDocs</a>.</p>
+        </footer>
+        <script src="../../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "../..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../../js/base.js"></script>
+        <script src="../../javascripts/channel.js"></script>
+        <script src="../../search/main.js"></script>
+
+        <div class="modal" id="properdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="properdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="properdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="properdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
