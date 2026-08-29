@@ -118,7 +118,7 @@ jobs:
           if grep -qE '^name = "vibey-gh"' pyproject.toml; then
             python -m pip install --quiet -e .
           else
-            python -m pip install --quiet "vibey-gh==1.43.0"
+            python -m pip install --quiet "vibey-gh==1.47.0"
           fi
 
       - name: Resolve the PR and exact head
@@ -255,7 +255,7 @@ jobs:
             --max-turns 100
             --disallowedTools Agent
             --allowedTools Read,Glob,Grep,mcp__github_inline_comment__create_inline_comment,Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr comment:*)
-            --json-schema '{"type":"object","properties":{"pass":{"type":"boolean"},"complete":{"type":"boolean"},"accurate":{"type":"boolean"},"human_readable":{"type":"boolean"},"architecture_diagram_complete":{"type":"boolean"},"all_capabilities_documented":{"type":"boolean"},"all_commands_documented":{"type":"boolean"},"all_configuration_documented":{"type":"boolean"},"examples_sufficient":{"type":"boolean"},"onboarding_sufficient":{"type":"boolean"},"operations_sufficient":{"type":"boolean"},"security_sufficient":{"type":"boolean"},"release_process_sufficient":{"type":"boolean"},"links_valid":{"type":"boolean"},"summary":{"type":"string"},"findings":{"type":"array","items":{"type":"object","properties":{"severity":{"type":"string"},"path":{"type":"string"},"line":{"type":"integer"},"explanation":{"type":"string"},"recommended_fix":{"type":"string"}},"required":["severity","path","explanation","recommended_fix"]}}},"required":["pass","complete","accurate","human_readable","architecture_diagram_complete","all_capabilities_documented","all_commands_documented","all_configuration_documented","examples_sufficient","onboarding_sufficient","operations_sufficient","security_sufficient","release_process_sufficient","links_valid","summary","findings"]}'
+            --json-schema '{"type":"object","properties":{"pass":{"type":"boolean"},"complete":{"type":"boolean"},"accurate":{"type":"boolean"},"human_readable":{"type":"boolean"},"opening_accessible":{"type":"boolean"},"opening_bluf":{"type":"boolean"},"audience_order":{"type":"boolean"},"architecture_diagram_complete":{"type":"boolean"},"all_capabilities_documented":{"type":"boolean"},"all_commands_documented":{"type":"boolean"},"all_configuration_documented":{"type":"boolean"},"examples_sufficient":{"type":"boolean"},"onboarding_sufficient":{"type":"boolean"},"operations_sufficient":{"type":"boolean"},"security_sufficient":{"type":"boolean"},"release_process_sufficient":{"type":"boolean"},"links_valid":{"type":"boolean"},"summary":{"type":"string"},"findings":{"type":"array","items":{"type":"object","properties":{"severity":{"type":"string"},"path":{"type":"string"},"line":{"type":"integer"},"explanation":{"type":"string"},"recommended_fix":{"type":"string"}},"required":["severity","path","explanation","recommended_fix"]}}},"required":["pass","complete","accurate","human_readable","opening_accessible","opening_bluf","audience_order","architecture_diagram_complete","all_capabilities_documented","all_commands_documented","all_configuration_documented","examples_sufficient","onboarding_sufficient","operations_sufficient","security_sufficient","release_process_sufficient","links_valid","summary","findings"]}'
           prompt: |
             Review PR #${{ needs.evaluate.outputs.pr }} at exact head
             ${{ needs.evaluate.outputs.head_sha }}. The proposed repository is under
@@ -283,6 +283,21 @@ jobs:
             command and configuration references, workflows and failure recovery,
             security and trust boundaries, upgrades, troubleshooting, contributing,
             support, release/provenance behavior, and links to deeper reference material.
+            Judge opening_accessible as if you had never seen this repository: the first
+            two text blocks of README.md must survive zero project context — every
+            load-bearing term either common knowledge or defined in the sentence that
+            uses it, and prose may only index into a diagram by labels the diagram
+            legibly carries. Judge opening_bluf on ordering alone: the first screen
+            states a problem the reader recognizes BEFORE any project vocabulary,
+            capability claims, or description of what the software is — a page that
+            opens with what it IS before what it FIXES fails, however well written.
+            Judge audience_order across the whole README: copy must serve audiences in a
+            fixed order -- beginner-accessible material first, engineering depth second,
+            scholarly material (citations, formal references, theory) third -- each
+            section BLUF, problem before solution. Executive or industry framing (ROI,
+            market positioning, business-value pitches) must be essentially absent: its
+            presence anywhere before the beginner and engineering material, or as more
+            than an incidental aside, fails this judgment.
             Verify that every CLI, SDK, API, MCP, and webhook capability is documented.
             A heading, file, or keyword by itself is never proof of completeness. Flag
             vague, stale, circular, implementation-first, unexplained, or missing content.
@@ -313,6 +328,9 @@ jobs:
             .pass = (
               .complete == true and .accurate == true and
               .human_readable == true and
+              .opening_accessible == true and
+              .opening_bluf == true and
+              .audience_order == true and
               .architecture_diagram_complete == true and
               .all_capabilities_documented == true and
               .all_commands_documented == true and
@@ -329,7 +347,7 @@ jobs:
           if grep -qE '^name = "vibey-gh"' automation/pyproject.toml; then
             python -m pip install --quiet -e ./automation
           else
-            python -m pip install --quiet "vibey-gh==1.43.0"
+            python -m pip install --quiet "vibey-gh==1.47.0"
           fi
           vibey-gh pr-automation record-review --pr "$PR" --input "$payload"
           echo "passed=$(jq -r .pass <<<"$payload")" >> "$GITHUB_OUTPUT"
@@ -461,7 +479,7 @@ jobs:
           if grep -qE '^name = "vibey-gh"' automation/pyproject.toml; then
             python -m pip install --quiet -e ./automation
           else
-            python -m pip install --quiet "vibey-gh==1.43.0"
+            python -m pip install --quiet "vibey-gh==1.47.0"
           fi
           vibey-gh pr-automation ensure-labels
           gh pr edit "$PR" --add-label vibey-gh:repairing
@@ -650,7 +668,7 @@ jobs:
           if grep -qE '^name = "vibey-gh"' automation/pyproject.toml; then
             python -m pip install --quiet -e ./automation
           else
-            python -m pip install --quiet "vibey-gh==1.43.0"
+            python -m pip install --quiet "vibey-gh==1.47.0"
           fi
           head_sha=$(gh pr view "$PR" --repo "$REPO" --json headRefOid --jq .headRefOid)
           payload=$(jq -c --arg head_sha "$head_sha" '. + {head_sha:$head_sha}' <<<"$STRUCTURED")
@@ -863,7 +881,7 @@ jobs:
           if grep -qE '^name = "vibey-gh"' automation/pyproject.toml; then
             python -m pip install --quiet -e ./automation
           else
-            python -m pip install --quiet "vibey-gh==1.43.0"
+            python -m pip install --quiet "vibey-gh==1.47.0"
           fi
           new_sha=$(git -C target rev-parse HEAD)
           payload=$(jq -c --arg head_sha "$new_sha" \
@@ -1000,7 +1018,7 @@ jobs:
           if grep -qE '^name = "vibey-gh"' automation/pyproject.toml; then
             python -m pip install --quiet -e ./automation
           else
-            python -m pip install --quiet "vibey-gh==1.43.0"
+            python -m pip install --quiet "vibey-gh==1.47.0"
           fi
       # The diff arrives through the API and reaches the model as text. Repository code is
       # never checked out here and never executed: the model has no shell, no tools, and no
@@ -1010,7 +1028,27 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           PR: ${{ needs.evaluate.outputs.pr }}
-        run: gh pr diff "$PR" --repo "$REPO" > "${RUNNER_TEMP}/pr.diff"
+        run: |
+          set -euo pipefail
+          if gh pr diff "$PR" --repo "$REPO" > "${RUNNER_TEMP}/pr.diff" 2>"${RUNNER_TEMP}/diff-err"; then
+            exit 0
+          fi
+          # GitHub's diff API refuses pull requests beyond roughly 300 files, which is
+          # exactly the shape of a migration or adoption sweep — observed on a 347-file
+          # provenance sweep that could therefore never be reviewed at all. Construct the
+          # same merge-base diff locally instead: fetching refs and diffing is read-only
+          # and executes no repository code, so the no-execution rule is untouched, and
+          # --max-chars still caps what actually reaches the model.
+          echo "gh pr diff failed ($(head -c 120 "${RUNNER_TEMP}/diff-err")); reconstructing locally"
+          base_sha=$(gh pr view "$PR" --repo "$REPO" --json baseRefOid -q .baseRefOid)
+          head_sha=$(gh pr view "$PR" --repo "$REPO" --json headRefOid -q .headRefOid)
+          git -C automation fetch --quiet origin "$base_sha" "$head_sha"
+          if ! merge_base=$(git -C automation merge-base "$base_sha" "$head_sha" 2>/dev/null); then
+            # The trusted checkout is shallow; deepen until the histories connect.
+            git -C automation fetch --quiet --unshallow origin 2>/dev/null ||               git -C automation fetch --quiet --deepen=2000 origin
+            merge_base=$(git -C automation merge-base "$base_sha" "$head_sha")
+          fi
+          git -C automation diff "$merge_base" "$head_sha" > "${RUNNER_TEMP}/pr.diff"
       - name: Review with the local model
         id: result
         run: |
