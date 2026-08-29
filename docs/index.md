@@ -130,7 +130,7 @@ things those runners deliberately do not do:
 | Document | What's in it |
 |---|---|
 | [Greeter live-demo runbook](guides/greeter-live-demo.md) | A full paid run, end to end, with the zero-touch contracts |
-| [Expansion runbooks](docs/runbooks/expansion/) | Fifteen workstreams: JIRA, more clouds, Kubernetes server mode, clients, store submissions, … |
+| [Expansion runbooks](runbooks/expansion/) | 21 workstreams: JIRA, more clouds, Kubernetes server mode, clients, store submissions, … |
 | [Architecture & roadmap](https://github.com/adammatthewsteinberger/vibey/blob/main/docs/plans/architecture-and-roadmap.md) | The master design: context, containers, layers, phases, risks, milestones |
 | [Domain model](https://github.com/adammatthewsteinberger/vibey/blob/main/docs/plans/domain-model.md) | Every value object, ADT, and invariant in `domain/` |
 | [Data model](https://github.com/adammatthewsteinberger/vibey/blob/main/docs/plans/data-model.md) | Full PostgreSQL DDL, queue semantics, indices |
@@ -138,7 +138,7 @@ things those runners deliberately do not do:
 | [Rotation & engines](https://github.com/adammatthewsteinberger/vibey/blob/main/docs/plans/rotation-and-engines.md) | Capability matrix, effort normalization, smooth weighted round robin |
 | [Phase protocols](https://github.com/adammatthewsteinberger/vibey/blob/main/docs/plans/phase-protocols.md) | What all six phases do, turn by turn |
 | [Implementation plan](https://github.com/adammatthewsteinberger/vibey/blob/main/docs/plans/implementation-plan.md) | Milestone-by-milestone, test-first task breakdown |
-| [Decision records](docs/architecture/decisions/) | Why each hard call was made |
+| [Decision records](architecture/decisions/) | Why each hard call was made |
 
 ## Status
 

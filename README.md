@@ -30,7 +30,7 @@ in one vendor's chat session.
 | Runs on | macOS / Linux, local. No cloud control plane required. |
 | Language | Python 3.12+ |
 | Queue | PostgreSQL (`FOR UPDATE SKIP LOCKED`) |
-| Engines | [`claudeloop`](https://github.com/adammatthewsteinberger/claudeloop), [`codexloop`](https://github.com/adammatthewsteinberger/codexloop), [`cursorloop`](https://github.com/adammatthewsteinberger/cursorloop), [`agyloop`](https://github.com/adammatthewsteinberger/agyloop) |
+| Engines | [`claudeloop`](https://github.com/adammatthewsteinberger/claudeloop), [`codexloop`](https://github.com/adammatthewsteinberger/codexloop), [`cursorloop`](https://github.com/adammatthewsteinberger/cursorloop), [`agyloop`](https://github.com/adammatthewsteinberger/agyloop) — plus `qwenloop`, a default-off local standby engine (`[features] qwenloop = true` or `VIBEY_FEATURE_QWENLOOP`) |
 | State dir | `.vibey/` |
 | Env prefix | `VIBEY_` |
 | Done marker | Each loop's own marker (CLAUDELOOP_TASK_FULLY_COMPLETE, etc.) |
@@ -158,9 +158,14 @@ Published on the [docs site](https://adammatthewsteinberger.github.io/vibey/):
 |---|---|
 | [Greeter live-demo runbook](docs/guides/greeter-live-demo.md) | A full paid run, end to end, with the zero-touch contracts |
 | [Running vibey on Kubernetes](docs/guides/kubernetes.md) | The Helm chart, the `vibey operator` command, KEDA autoscaling, and what's not there yet |
-| [Expansion runbooks](docs/runbooks/expansion/) | Fifteen workstreams: JIRA, more clouds, engine binaries in-cluster, clients, store submissions, … |
-| [Project map](docs/project.mmd) | One Mermaid diagram of every layer, the phase machine, the queue, engine adapters, Kubernetes surface, and the release pipeline |
+| [Expansion runbooks](docs/runbooks/expansion/) | 21 workstreams: JIRA, more clouds, engine binaries in-cluster, clients, store submissions, … |
 | [Decision records](docs/architecture/decisions/) | Why each hard call was made |
+
+The [project map](docs/project.mmd) is a Mermaid diagram of every layer, the
+phase machine, the queue, engine adapters, Kubernetes surface, and the release
+pipeline. It's not part of the published docs site — `properdocs.yml` has no
+Mermaid renderer configured — so read it on GitHub, where Mermaid fences
+render natively.
 
 `docs/plans/` holds design notes from before and during implementation —
 architecture, domain model, data model, handoff protocol, rotation, phase
@@ -194,6 +199,7 @@ test — the no-loss handoff gate is deterministic code, not a model's opinion.
 | [codexloop](https://github.com/adammatthewsteinberger/codexloop) | The same design retargeted onto OpenAI Codex |
 | [cursorloop](https://github.com/adammatthewsteinberger/cursorloop) | The same design retargeted onto Cursor |
 | [agyloop](https://github.com/adammatthewsteinberger/agyloop) | The same design retargeted onto Google Antigravity / Gemini |
+| `qwenloop` | Local Qwen-backed standby runner; opt-in only, selected when no eligible paid engine is available (ADR-0015) |
 
 ## License
 
