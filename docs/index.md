@@ -1,8 +1,21 @@
 # vibey
 
-**A queue-based, six-phase conductor for autonomous software delivery — with an
-optional visual-design interstitial and opt-in Azure deployment — built on top
-of the `*loop` autonomous session runners.**
+**You've used an AI coding agent. Then you babysat it** — re-prompting when it
+lost the thread, re-explaining everything after a crash, copying results
+between tools, watching a run die at 2am because one vendor's credits ran out.
+The agent was autonomous; the *delivery* was you.
+
+**Vibey is the layer that does the babysitting.** It's an orchestrator that
+wraps AI coding agents so you're not managing sessions or threads by hand: you
+describe what you want, it interviews you until the spec is sharp, builds
+unattended across a pool of engines, brings you back only for the decisions
+that are genuinely yours, and survives crashes and credit exhaustion without
+losing a single open question.
+
+For the precise version: a queue-based, six-phase conductor for autonomous
+software delivery — with an optional visual-design interstitial and opt-in
+Azure deployment — built on top of the [`*loop` autonomous session
+runners](https://github.com/adammatthewsteinberger/claudeloop).
 
 ## What problem this solves
 
@@ -94,6 +107,12 @@ paid run end to end, including the zero-touch contracts.
              ▲                 │                    │
              └─────────────────┴────────────────────┘
 ```
+
+**The six phases** — ① Design · ② Build · ③ Review · ④ Deploy Design ·
+⑤ Deploy Execute · ⑥ Deploy Review. The circled numbers above are these;
+**bold** below means the phase talks to you.
+
+**① Design** → ② Build → **③ Review** → **④ Deploy Design** → ⑤ Deploy Execute → **⑥ Deploy Review**
 
 Phases 1, 3, 4, and 6 talk to you. The optional Visual Design stage also talks to
 you and cannot hand work to BUILD until every planned visual is accepted or you
