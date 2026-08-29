@@ -101,6 +101,9 @@ uv run pip-audit
 | Need | Go to |
 |---|---|
 | How to work on any specific part of this codebase | `.claude/skills/`, `.cursor/rules/`, `.agents/skills/`, `.agent/rules/` |
+| Comprehensive architecture diagram (layers, phases, data flow, security boundary, release channels) | `docs/project.mmd` |
+| Every CLI command, subcommand, flag, default | `docs/reference/cli.md` |
+| Full `vibey.toml` schema | `docs/reference/configuration.md` |
 | Full architecture | `docs/plans/architecture-and-roadmap.md` |
 | Domain model | `docs/plans/domain-model.md` |
 | Data model | `docs/plans/data-model.md` |
@@ -108,9 +111,9 @@ uv run pip-audit
 | Rotation & engines | `docs/plans/rotation-and-engines.md` |
 | Phase protocols | `docs/plans/phase-protocols.md` |
 | Implementation plan | `docs/plans/implementation-plan.md` |
-| System design and why each hard call was made | `docs/architecture/decisions/` (14 ADRs) |
+| System design and why each hard call was made | `docs/architecture/decisions/` (15 ADRs) |
 | User-facing docs | `docs/getting-started/`, `docs/guides/` |
-| Expansion workstreams (JIRA, clouds, k8s, clients, …) | `docs/runbooks/expansion/` (16 runbooks, `00-master-plan.md` first) |
+| Expansion workstreams (JIRA, clouds, k8s, clients, …) | `docs/runbooks/expansion/` (21 runbooks, `00-master-plan.md` first) |
 
 **Agent-surface maintenance:** when a skill/procedure changes, update
 Claude, Cursor, Codex, and Antigravity trees in the same PR.

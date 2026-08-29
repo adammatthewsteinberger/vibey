@@ -102,7 +102,10 @@ uv run pip-audit
 | Need | Go to |
 |---|---|
 | How to work on any specific part of this codebase | `.claude/skills/`, `.cursor/rules/`, `.agents/skills/`, `.agent/rules/` |
-| System design and why each hard call was made | `docs/architecture/decisions/` (14 ADRs) |
+| Comprehensive architecture diagram (layers, phases, data flow, security boundary, release channels) | `docs/project.mmd` |
+| Every CLI command, subcommand, flag, default | `docs/reference/cli.md` |
+| Full `vibey.toml` schema | `docs/reference/configuration.md` |
+| System design and why each hard call was made | `docs/architecture/decisions/` (15 ADRs) |
 | Full architecture | `docs/plans/architecture-and-roadmap.md` |
 | Domain model | `docs/plans/domain-model.md` |
 | Data model | `docs/plans/data-model.md` |

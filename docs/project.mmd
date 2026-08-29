@@ -1,0 +1,141 @@
+%%{init: {"flowchart": {"htmlLabels": true}} }%%
+%% Vibey — comprehensive architecture map.
+%% Layers: source modules & onion boundaries, public interfaces, the six-phase
+%% workflow, the ledger/handoff data flow, the isolation/security boundary,
+%% and the release channels. Regenerate/edit by hand alongside any change to
+%% src/vibey/**, .github/workflows/**, or deploy/**; there is no generator.
+flowchart TB
+
+    User(("Developer"))
+
+    subgraph Interfaces["Public interfaces"]
+        CLI["cli/main.py<br/>vibey new · answer · work · design · visual ·<br/>watch · recover · status · engines · cost ·<br/>ledger · deploy · doctor · operator · worker"]
+        TUI["tui/dashboard.py<br/>live dashboard + ledger replay"]
+        TomlCfg["vibey.toml<br/>domain/config.py schema<br/>(see docs/reference/configuration.md)"]
+        K8sCRD["VibeyProject CRD<br/>infrastructure/operator/<br/>(pip install 'vibey[operator]')"]
+    end
+
+    User --> CLI
+    User --> TUI
+    CLI --> TUI
+    TomlCfg --> CLI
+    K8sCRD --> CLI
+
+    subgraph Bootstrap["bootstrap.py — the sole composition root"]
+        AppResources["AppResources<br/>wires every Protocol port in<br/>application/interfaces/ to one concrete adapter"]
+    end
+    CLI --> AppResources
+    K8sCRD --> AppResources
+
+    subgraph Domain["domain/ — pure stdlib, no I/O (import-linter enforced)"]
+        DPhase["phase.py<br/>Phase enum + VisualDecision"]
+        DLedger["ledger.py<br/>EventKind, append-only event shape"]
+        DNoLoss["noloss.py<br/>no-loss handoff gate, rules R1-R10"]
+        DRotation["rotation.py<br/>select() — smooth weighted round robin"]
+        DCapacity["capacity.py<br/>CreditsExhausted vs RateLimited"]
+        DConfig["config.py<br/>VibeyConfig schema + validation"]
+        DGuards["command_guard.py · scope_guard.py ·<br/>prompt_shield.py — security primitives"]
+    end
+
+    subgraph Application["application/ — use cases behind Protocol ports"]
+        ADesign["design_handler.py · design_acceptance.py ·<br/>design_synthesis_handler.py"]
+        ABuild["build_decompose/implement/verify/integrate_handler.py"]
+        AReview["review_collect/triage/demo_handler.py"]
+        ADeploy["deploy_design/execute/review_handler.py"]
+        AWorker["worker.py — WorkerLoop"]
+        AEngineSel["engine_selector.py · engine_selection.py"]
+        AHandoff["rotation_handoff.py · wind_down.py · brief_producer.py"]
+    end
+
+    subgraph Infrastructure["infrastructure/ — adapters, all I/O"]
+        IDb[("PostgreSQL<br/>queue (FOR UPDATE SKIP LOCKED) + ledger + repositories")]
+        IEngines["engines/ — LoopProcessAdapter × 4<br/>claudeloop · codexloop · cursorloop · agyloop<br/>(+ qwenloop local standby, off by default)"]
+        IGit["git/worktree_manager.py · integration_branch.py"]
+        IAzure["azure/az_cli.py · iac.py · arm.py · adapter.py"]
+        INotify["notify/service.py · notify/webhook.py<br/>HMAC-SHA256 signed webhooks<br/>IMPLEMENTED + TESTED, NOT constructed by bootstrap.py"]
+        IProvision["provision/agent_surface.py<br/>syncs .claude/ .cursor/ .agents/ .agent/"]
+        IRedact["redact.py — credential/token/secret redaction"]
+    end
+
+    subgraph TUILayer["cli/, tui/ — outermost onion ring"]
+        CLI
+        TUI
+    end
+
+    CLI --> Application
+    K8sCRD --> Application
+    AppResources --> Domain
+    AppResources --> Application
+    AppResources --> Infrastructure
+    Application --> Domain
+    Infrastructure -.->|implements interfaces from| Application
+
+    AWorker --> IEngines
+    AWorker --> IDb
+    AHandoff --> DNoLoss
+    AHandoff --> DLedger
+    AEngineSel --> DRotation
+    IEngines --> DCapacity
+    INotify -. "dormant: no CLI flag or vibey.toml key<br/>constructs it yet" .-> AppResources
+
+    subgraph Workflow["The six-phase delivery workflow"]
+        Intake(["INTAKE"]) --> PDesign["① DESIGN — interactive"]
+        PDesign -->|visual opt-in| PVisual["VISUAL_DESIGN — interactive,<br/>media generation + confirmation"]
+        PDesign -->|visual declined| PBuild["② BUILD — autonomous"]
+        PVisual -->|every visual accepted/waived| PBuild
+        PBuild <--> PReview["③ REVIEW — autonomous / interactive"]
+        PReview -->|deployment declined| DoneLocal(["DONE (local)"])
+        PReview -->|deployment opt-in| PDeployDesign["④ DEPLOY_DESIGN — interactive"]
+        PDeployDesign <--> PDeployExecute["⑤ DEPLOY_EXECUTE — autonomous"]
+        PDeployExecute <--> PDeployReview["⑥ DEPLOY_REVIEW — interactive"]
+        PDeployReview --> DoneDeployed(["DONE (deployed)"])
+        PDeployReview -.->|application defect found| PBuild
+        PDeployReview -.->|deployment details changed| PDeployDesign
+        PDeployReview -.->|unambiguous deploy retry| PDeployExecute
+    end
+
+    ADesign --> PDesign
+    ABuild --> PBuild
+    AReview --> PReview
+    ADeploy --> PDeployDesign
+    ADeploy --> PDeployExecute
+    ADeploy --> PDeployReview
+
+    subgraph DataFlow["Ledger & handoff data flow"]
+        EngineRun["engine session process<br/>tails its own events.jsonl"] --> LedgerAppend["LedgerEventDraft appended<br/>to the Postgres ledger<br/>(TRUSTED provenance, append-only)"]
+        LedgerAppend --> BudgetSrc["LedgerBudgetSource<br/>sums TurnCompleted + BudgetSpent<br/>per cycle / total"]
+        LedgerAppend -->|CreditsExhausted raised| BriefProducer["brief_producer.py<br/>builds a HandoffBrief"]
+        BriefProducer --> NoLossCheck{"no-loss gate:<br/>every open question, decision,<br/>and finding present in the brief?"}
+        NoLossCheck -->|pass| FullLedgerWrite["full_ledger_writer.py writes the<br/>complete ledger into the receiving worktree"]
+        NoLossCheck -->|fail| Escalate["retry, escalate to full-transcript mode,<br/>or open a human_gate — never a silent partial"]
+        FullLedgerWrite --> NextEngine["next EngineAdapter resumes the job"]
+    end
+
+    subgraph SecurityBoundary["Isolation & security boundary — ADR-0008, ADR-0012, ADR-0013, ADR-0014"]
+        Worktree["ephemeral git worktree<br/>per job/phase, branched from base or integration"]
+        Container["OCI container (opt-in):<br/>--read-only rootfs · --cap-drop=ALL ·<br/>no-new-privileges · --network=none by default ·<br/>tmpfs /tmp noexec,nosuid · memory/CPU caps"]
+        Guard["CommandSecurityPolicy<br/>blocks destructive git/fs/db/system commands"]
+        ScopeGuard["MutationScope<br/>blocks path traversal, symlink escape,<br/>out-of-scope-file edits"]
+        Shield["PromptShield<br/>nonced delimiters + injection heuristics<br/>on all untrusted text input"]
+    end
+
+    Worktree --> Container
+    Guard --> Worktree
+    ScopeGuard --> Worktree
+    Shield --> ADesign
+    Shield --> ABuild
+    IEngines --> Worktree
+    IAzure -.->|opt-in, mutates real resources<br/>only with --azure az| PDeployExecute
+
+    subgraph Release["Release channels — .github/workflows/"]
+        SourcePush(["git push: develop | main"]) --> BuildDist["build wheel + sdist<br/>(release.yml)"]
+        BuildDist -->|develop| TestPyPI["TestPyPI<br/>package renamed vibey-dev, dev-versioned"]
+        BuildDist -->|main| PyPI["PyPI<br/>package vibey, OIDC trusted publishing"]
+        BuildDist --> OCIPkg["GitHub Packages<br/>ghcr.io/.../python (oras: wheel + sdist)"]
+        SourcePush --> Provenance["Provenance workflow<br/>vibey-gh check --ci on every push and PR"]
+        BuildDist --> Pages["GitHub Pages docs<br/>ProperDocs, one channel site per branch"]
+        DockerImg["deploy/docker/Dockerfile<br/>two-stage, no compiler in the runtime layer"] --> HelmChart["deploy/helm/vibey chart<br/>worker + in-cluster Postgres + KEDA autoscaling"]
+        HelmChart --> K8sCluster[("Kubernetes cluster<br/>(minikube verified; AKS/EKS/GKE values-compatible)")]
+    end
+
+    K8sCRD -.-> K8sCluster

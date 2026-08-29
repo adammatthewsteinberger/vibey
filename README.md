@@ -93,6 +93,43 @@ vibey answer <gate-id> --choice local_only   # decline deployment → DONE (loca
 The [greeter live-demo runbook](docs/guides/greeter-live-demo.md) walks a full
 paid run end to end, including the zero-touch contracts.
 
+## Command reference
+
+Every command's flags and defaults are in the
+[CLI reference](docs/reference/cli.md). The most common ones:
+
+| Command | What it does |
+|---|---|
+| `vibey doctor` | Pre-flight: engine auth, versions, optional conformance suite. |
+| `vibey new` | Create a project and enqueue its first DESIGN interview. |
+| `vibey worker` | Long-running worker: dispatches jobs across every phase. |
+| `vibey work` | Process one ready DESIGN job (foreground, capped). |
+| `vibey answer` | Answer a parked human gate. |
+| `vibey design` / `vibey visual` | Resume/accept DESIGN; accept/waive VISUAL_DESIGN. |
+| `vibey watch` / `vibey status` | Live dashboard, or one-shot status (`--json` for scripting). |
+| `vibey engines` / `vibey cost` / `vibey ledger show` | Engine health, budget spend, and event-ledger inspection. |
+| `vibey deploy status/inspect/plan/cancel/rollback` | Inspect and control Phases ④–⑥. |
+| `vibey recover` | Recover jobs stuck under a dead worker's lease. |
+| `vibey operator` | Run the Kubernetes operator (`pip install 'vibey[operator]'`). |
+
+## Configuration
+
+Projects are configured via `vibey.toml`, CLI flags, and `VIBEY_`-prefixed
+environment variables (flags and env vars win). The full schema —
+`[project]`, `[isolation]`, `[budget]`, `[engines]`,
+`[phases.design/build/review]`, `[provision]`, `[deploy]`, `[features]`,
+`[qwenloop]` — with defaults and an example file, is in the
+[configuration reference](docs/reference/configuration.md).
+
+## Notifications
+
+`infrastructure/notify/` implements a `NotificationService` that dispatches
+desktop alerts and HMAC-SHA256-signed webhooks (`X-Vibey-Signature`, see
+[SECURITY.md](SECURITY.md#6-webhook-payload-integrity)), and it is covered
+by tests. It is **not yet wired into `bootstrap.py`, the worker, or the
+CLI** — no flag or `vibey.toml` key constructs it today. Treat it as
+implemented-and-tested, not yet an active runtime path.
+
 ## The shape of it
 
 ```
@@ -154,8 +191,12 @@ things those runners deliberately do not do:
 
 | Document | What's in it |
 |---|---|
+| [Architecture map](docs/project.mmd) | Comprehensive Mermaid diagram: every layer, the six phases, the ledger/handoff data flow, the security boundary, and the release channels |
+| [CLI reference](docs/reference/cli.md) | Every command, subcommand, flag, and default |
+| [Configuration reference](docs/reference/configuration.md) | The full `vibey.toml` schema, with defaults and an example file |
+| [Kubernetes guide](docs/guides/kubernetes.md) | Container, Helm chart, KEDA autoscaling, and its own troubleshooting section |
 | [Greeter live-demo runbook](docs/guides/greeter-live-demo.md) | A full paid run, end to end, with the zero-touch contracts |
-| [Expansion runbooks](docs/runbooks/expansion/) | Fifteen workstreams: JIRA, more clouds, Kubernetes server mode, clients, store submissions, … |
+| [Expansion runbooks](docs/runbooks/expansion/) | 21 workstreams: JIRA, more clouds, Kubernetes server mode, clients, store submissions, … |
 | [Architecture & roadmap](docs/plans/architecture-and-roadmap.md) | The master design: context, containers, layers, phases, risks, milestones |
 | [Domain model](docs/plans/domain-model.md) | Every value object, ADT, and invariant in `domain/` |
 | [Data model](docs/plans/data-model.md) | Full PostgreSQL DDL, queue semantics, indices |
@@ -163,7 +204,7 @@ things those runners deliberately do not do:
 | [Rotation & engines](docs/plans/rotation-and-engines.md) | Capability matrix, effort normalization, smooth weighted round robin |
 | [Phase protocols](docs/plans/phase-protocols.md) | What all six phases do, turn by turn |
 | [Implementation plan](docs/plans/implementation-plan.md) | Milestone-by-milestone, test-first task breakdown |
-| [Decision records](docs/architecture/decisions/) | Why each hard call was made |
+| [Decision records](docs/architecture/decisions/) | Why each hard call was made (15 ADRs) |
 
 ## Status
 
@@ -179,6 +220,44 @@ Every architectural layer (`domain`, `application`, `infrastructure`, `cli`)
 holds a **100% branch-coverage floor**, enforced as four separate CI gates.
 `domain/` is pure stdlib, enforced by import-linter and an AST-walking purity
 test — the no-loss handoff gate is deterministic code, not a model's opinion.
+
+## Troubleshooting
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| `vibey doctor` reports an engine `NOT INSTALLED` | The `*loop` binary isn't on `PATH`. | `uv tool install claudeloop` (or codexloop/cursorloop/agyloop), then re-run `vibey doctor`. |
+| `vibey doctor` reports `auth FAIL` | The engine's own vendor credentials aren't configured. | Run that engine's own login/auth flow, then re-run `vibey doctor --conformance`. |
+| `vibey worker` logs `no recorded conformance for ...` | `vibey doctor --conformance --record` has never passed for that engine on this project. | Run it before starting the worker; engine-driven jobs won't select an unrecorded engine. |
+| A project is parked and nothing progresses | A human gate (interview, review verdict, budget cap) is waiting. | `vibey status <project-id>` to see the park reason; `vibey answer <gate-id> ...` to clear it. |
+| Jobs sit `leased` after a worker crash | The lease hasn't expired yet, or nothing has reclaimed it. | `vibey recover --project <id>` (or `--all`) sets them back to `ready`. |
+| Budget cap trips mid-cycle | `max_dollars_per_cycle` / `max_dollars_total` was exceeded — by design. | `vibey answer <gate-id> --raw '{"max_dollars": 25}'` to grant more, or accept the park. |
+| Kubernetes-specific issues | — | See the [Kubernetes guide's Troubleshooting section](docs/guides/kubernetes.md#troubleshooting). |
+
+## Upgrading
+
+Vibey is pre-1.0: minor versions may change `vibey.toml` fields, ledger
+event shapes, or CLI flags. Before upgrading:
+
+1. Read [CHANGELOG.md](CHANGELOG.md) for the versions between your current
+   version and the target.
+2. Re-run `vibey doctor --conformance --record` afterward — engine
+   contracts and conformance checks can gain new checks between releases.
+3. The database schema migrates automatically
+   (`infrastructure/db/migrator.py`); no manual migration step is needed.
+
+`develop` publishes dev builds to TestPyPI as `vibey-dev`; `main` publishes
+tagged releases to PyPI as `vibey`. `uv tool install vibey` (or `pipx
+install vibey` / `pip install vibey`) tracks stable releases.
+
+## Project links
+
+| | |
+|---|---|
+| Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| Security policy | [SECURITY.md](SECURITY.md) |
+| Getting help | [SUPPORT.md](SUPPORT.md) |
+| Code of Conduct | [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) |
+| Changelog | [CHANGELOG.md](CHANGELOG.md) |
 
 ## Related projects
 
