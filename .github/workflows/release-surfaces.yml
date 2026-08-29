@@ -283,11 +283,13 @@ jobs:
           printf '%s\n' "$CHANNEL" > channel-site/release-channel.txt
           CHANNEL="$CHANNEL" REPOSITORY="$GITHUB_REPOSITORY" RELEASE_SHA="$RELEASE_SHA" \
           JSON_LD=true PRODUCTION_INDEX=true \
+          BOTTOM_NAV=true \
           PREVIEW_INDEX=false \
           SEO_FAVICON='📘' SEO_OG_IMAGE='' \
           SEO_TWITTER_SITE='' SEO_TWITTER_CREATOR='' \
           SEO_KEYWORDS='' SEO_AUTHOR='' \
           SEO_THEME_COLOR='#080b14' SEO_LOCALE='en_US' \
+          SEO_SITE_VERIFICATION='' \
           python - <<'PY'
           import html
           import json
@@ -308,6 +310,7 @@ jobs:
           author = os.environ.get("SEO_AUTHOR", "").strip() or owner
           locale = os.environ.get("SEO_LOCALE", "").strip() or "en_US"
           theme_color = os.environ.get("SEO_THEME_COLOR", "").strip()
+          site_verification = os.environ.get("SEO_SITE_VERIFICATION", "").strip()
           # GitHub's generated OpenGraph card always exists and stays current, so an
           # unconfigured site still previews with a real image everywhere cards render.
           og_image = os.environ.get("SEO_OG_IMAGE", "").strip() or (
@@ -348,6 +351,21 @@ jobs:
           ) if ga_id else ""
 
           title_of = re.compile(r"<title>(.*?)</title>", re.S)
+          # Bottom previous/next navigation. The theme already renders rel="prev"/rel="next"
+          # anchors in the page header with the correct targets and labels; on a phone that
+          # header is a full page-scroll away from a reader who has just FINISHED the page.
+          # Cloning those exact anchors into a bar before </body> gives the reader a way
+          # onward from where they already are, without teaching this injector anything
+          # about the nav tree — the theme stays the single authority on page order.
+          bottom_nav = os.environ.get("BOTTOM_NAV", "") == "true"
+          prev_next = re.compile(r'<a\s[^>]*rel="(?:prev|next)"[^>]*>.*?</a>', re.S)
+          bottom_nav_style = (
+              '<style>.vibey-bottom-nav{display:flex;justify-content:space-between;'
+              'gap:1rem;margin:3rem auto 1.5rem;padding-top:1rem;'
+              'border-top:1px solid rgba(128,128,128,.35)}'
+              '.vibey-bottom-nav a{max-width:48%}'
+              '.vibey-bottom-nav a.disabled{visibility:hidden}</style>\n'
+          )
           for path in pathlib.Path("channel-site").rglob("*.html"):
               text = path.read_text()
               relative = path.relative_to("channel-site").as_posix()
@@ -363,6 +381,7 @@ jobs:
                   f'<meta name="author" content="{html.escape(author, quote=True)}">\n'
                   f'<meta name="generator" content="vibey-gh release-surfaces">\n'
                   + (f'<meta name="theme-color" content="{theme_color}">\n' if theme_color else "")
+                  + (f'<meta name="google-site-verification" content="{site_verification}">\n' if site_verification else "")
                   + f'<meta property="og:type" content="website">\n'
                   f'<meta property="og:url" content="{url}">\n'
                   f'<meta property="og:site_name" content="{name}">\n'
@@ -393,6 +412,16 @@ jobs:
                       "inLanguage": locale.replace("_", "-"),
                   }
                   metadata += '<script type="application/ld+json">' + json.dumps(record) + '</script>\n'
+              if bottom_nav and "</body>" in text:
+                  anchors = [m.group(0) for m in prev_next.finditer(text)]
+                  if anchors:
+                      metadata += bottom_nav_style
+                      bar = (
+                          '<nav class="vibey-bottom-nav" aria-label="page navigation">'
+                          + "".join(anchors[:2])
+                          + "</nav>\n"
+                      )
+                      text = text.replace("</body>", bar + "</body>")
               path.write_text(text.replace("</head>", metadata + "</head>"))
           PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -432,6 +461,7 @@ jobs:
             <meta name="theme-color" content="#080b14">
             <meta name="description" content="Choose the production or preview documentation channel for __REPOSITORY__.">
             <meta name="vibey-gh:repository" content="__REPOSITORY__">
+
             <meta name="vibey-gh:revision" content="__RELEASE_SHA__">
             <meta property="og:type" content="website">
             <meta property="og:site_name" content="__REPOSITORY_NAME__">
