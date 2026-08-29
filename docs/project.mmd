@@ -60,6 +60,12 @@ flowchart TB
         IRedact["redact.py — credential/token/secret redaction"]
         ISkillsContext["skills_context.py<br/>VibeySkillsContextCompiler<br/>shells out to the vibey-skills CLI"]
         IOtel["otel.py<br/>TelemetryTracer + TelemetryMetrics<br/>+ calculate_rotation_fairness()<br/>IMPLEMENTED + TESTED, NOT constructed by bootstrap.py"]
+        IBuildGates["build/gate_runner.py · automated_review_runner.py<br/>subprocess runners: BUILD's gate commands (+ git diff)<br/>and Phase 3's automated ruff/bandit review"]
+        IContainer["container/config.py · runtime.py<br/>OciContainerExecutor — hardened OCI runtime wrapper<br/>(dormant, not constructed by bootstrap.py)"]
+        IDeployState["deploy/state_repository.py<br/>file-backed deploy spec/consent state, per project"]
+        IOperatorHandlers["operator/handlers.py<br/>kopf handlers for the VibeyProject CRD"]
+        IClusterPreflight["cluster_preflight.py<br/>in-cluster wiring checks behind vibey doctor --cluster"]
+        IWriters["context_writer.py · review_artifact_writer.py<br/>filesystem writers: DESIGN context artifacts,<br/>Phase 3 REVIEW artifacts"]
     end
 
     subgraph TUILayer["cli/, tui/ — outermost onion ring"]
@@ -87,6 +93,14 @@ flowchart TB
     SkillsFlags --> TomlCfg
     AppResources --> ISkillsContext
     ISkillsContext -->|packet always recorded to the ledger;<br/>inject mode also appends it to the BUILD prompt| ABuild
+    ABuild --> IBuildGates
+    AReview --> IBuildGates
+    ADesign --> IWriters
+    AReview --> IWriters
+    ADeploy --> IDeployState
+    CLI --> IClusterPreflight
+    K8sCRD --> IOperatorHandlers
+    IOperatorHandlers --> AppResources
 
     subgraph Workflow["The six-phase delivery workflow"]
         Intake(["INTAKE"]) --> PDesign["① DESIGN — interactive"]
@@ -130,6 +144,7 @@ flowchart TB
     end
 
     Worktree -.->|dormant, not wired| Container
+    IContainer -->|implements| Container
     Guard --> Worktree
     ScopeGuard --> Worktree
     Shield --> ADesign
@@ -138,12 +153,14 @@ flowchart TB
     IAzure -.->|opt-in, mutates real resources<br/>only with --azure az| PDeployExecute
 
     subgraph Release["Release channels — .github/workflows/"]
-        SourcePush(["git push: develop | main"]) --> BuildDist["build wheel + sdist<br/>(release.yml)"]
+        SourcePush(["git push: develop | main"]) --> ReleaseWF["Release workflow<br/>(release.yml)"]
+        ReleaseWF --> BuildDist["build wheel + sdist"]
         BuildDist -->|develop| TestPyPI["TestPyPI<br/>package renamed vibey-dev, dev-versioned"]
         BuildDist -->|main| PyPI["PyPI<br/>package vibey, OIDC trusted publishing"]
-        BuildDist --> OCIPkg["GitHub Packages<br/>ghcr.io/.../python (oras: wheel + sdist)"]
         SourcePush --> Provenance["Provenance workflow<br/>vibey-gh check --ci on every push and PR"]
-        BuildDist --> Pages["GitHub Pages docs<br/>ProperDocs, one channel site per branch"]
+        ReleaseWF -.->|workflow_run: completed, success| ReleaseSurfaces["Release surfaces workflow<br/>(release-surfaces.yml)<br/>re-downloads the dist artifact by run id"]
+        ReleaseSurfaces --> OCIPkg["GitHub Packages<br/>ghcr.io/.../python (oras: wheel + sdist)"]
+        ReleaseSurfaces --> Pages["GitHub Pages docs<br/>ProperDocs, one channel site per branch"]
         DockerImg["deploy/docker/Dockerfile<br/>two-stage, no compiler in the runtime layer"] --> HelmChart["deploy/helm/vibey chart<br/>worker + in-cluster Postgres + KEDA autoscaling"]
         HelmChart --> K8sCluster[("Kubernetes cluster<br/>(minikube verified; AKS/EKS/GKE values-compatible)")]
     end
