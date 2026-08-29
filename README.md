@@ -6,10 +6,6 @@
 [![CI](https://github.com/adammatthewsteinberger/vibey/actions/workflows/ci.yml/badge.svg)](https://github.com/adammatthewsteinberger/vibey/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/adammatthewsteinberger/vibey/blob/develop/LICENSE)
 
-**A queue-based, six-phase conductor for autonomous software delivery — with an
-optional visual-design interstitial and opt-in Azure deployment — built on top
-of the `*loop` autonomous session runners.**
-
 ## What problem this solves
 
 An autonomous coding session is not autonomous software delivery. A single
@@ -24,6 +20,10 @@ the spec is sharp, builds unattended across a pool of engines with real budget
 caps, reviews the result with you, and (only if you opt in) deploys. Every
 choice, finding, and handoff lives in an append-only PostgreSQL ledger — never
 in one vendor's chat session.
+
+**Concretely: a queue-based, six-phase conductor for autonomous software
+delivery — with an optional visual-design interstitial and opt-in Azure
+deployment — built on top of the `*loop` autonomous session runners.**
 
 | | |
 |---|---|
@@ -136,6 +136,25 @@ things those runners deliberately do not do:
 4. **Real money brakes** — per-cycle dollar and turn caps summed from the
    ledger's own cost events, with parks that tell you the exact command to
    grant more.
+
+## Inspecting the ledger and deployments
+
+```bash
+vibey ledger show <project-id> --phase build --kind decision_recorded
+                                              # tail the append-only event ledger;
+                                              # project-id, --phase, and --kind are all optional filters
+vibey design resume <project-id>             # re-enqueue or resume a stalled DESIGN interview
+
+# Once a project has opted into deployment (Phase ④–⑥):
+vibey deploy status <project-id>             # active phase, live endpoint, verification state
+vibey deploy inspect <project-id>            # accepted DeploymentSpec: spec_id, scope digest, monthly budget
+```
+
+`vibey deploy plan`, `vibey deploy cancel`, and `vibey deploy rollback` exist
+as CLI placeholders for a future IaC-plan/cancellation/rollback pipeline.
+Today they each print a fixed "not yet implemented" notice and do not
+evaluate a real IaC plan, call the Azure client, write a ledger event, or
+change any job/phase state.
 
 ## Running on Kubernetes
 
