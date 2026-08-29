@@ -48,6 +48,10 @@ trusted_only = true
 fallback_enabled = true
 
 [documentation]
+# The doctrine's end results, published on the docs site itself.
+generate_book = true
+generate_paper = true
+
 # The full documentation contract is a separate project; off until it is satisfied.
 enabled = false
 # GA4 measurement id for the published docs site, rendered into release-surfaces.yml as
