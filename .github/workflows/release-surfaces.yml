@@ -262,19 +262,80 @@ jobs:
           pathlib.Path(".properdocs-channel.yml").write_text(yaml.safe_dump(data, sort_keys=False))
           PY
           properdocs build --strict --config-file .properdocs-channel.yml --site-dir channel-site
+          # Search must demonstrably work at build time. A site can build --strict with a
+          # search whose assets 404 or whose index is empty, and the failure is invisible
+          # until a human types a query into a dead box — reported as exactly that.
+          python - <<'SMOKE'
+          import json
+          import pathlib
+          import sys
+
+          site = pathlib.Path("channel-site")
+          for asset in ("search/search_index.json", "search/lunr.js", "search/main.js", "search/worker.js"):
+              if not (site / asset).is_file():
+                  sys.exit(f"search smoke: {asset} missing from the built site")
+          index = json.loads((site / "search" / "search_index.json").read_text())
+          docs = index.get("docs", [])
+          if not docs:
+              sys.exit("search smoke: the index contains zero documents")
+          print(f"search smoke: {len(docs)} documents indexed, all assets present")
+          SMOKE
           printf '%s\n' "$CHANNEL" > channel-site/release-channel.txt
           CHANNEL="$CHANNEL" REPOSITORY="$GITHUB_REPOSITORY" RELEASE_SHA="$RELEASE_SHA" \
           JSON_LD=true PRODUCTION_INDEX=true \
-          PREVIEW_INDEX=false python - <<'PY'
+          PREVIEW_INDEX=false \
+          SEO_FAVICON='📘' SEO_OG_IMAGE='' \
+          SEO_TWITTER_SITE='' SEO_TWITTER_CREATOR='' \
+          SEO_KEYWORDS='' SEO_AUTHOR='' \
+          SEO_THEME_COLOR='#080b14' SEO_LOCALE='en_US' \
+          python - <<'PY'
+          import html
           import json
           import os
           import pathlib
+          import re
+          import urllib.parse
+
+          import yaml
 
           channel = os.environ["CHANNEL"]
           owner, name = os.environ["REPOSITORY"].split("/", 1)
           root = f"https://{owner}.github.io/{name}/"
           canonical = f"{root}{channel}/"
           indexable = os.environ["PRODUCTION_INDEX" if channel == "main" else "PREVIEW_INDEX"] == "true"
+          site = yaml.safe_load(pathlib.Path(".properdocs-channel.yml").read_text()) or {}
+          description = str(site.get("site_description", f"Release documentation for {owner}/{name}")).strip()
+          author = os.environ.get("SEO_AUTHOR", "").strip() or owner
+          locale = os.environ.get("SEO_LOCALE", "").strip() or "en_US"
+          theme_color = os.environ.get("SEO_THEME_COLOR", "").strip()
+          # GitHub's generated OpenGraph card always exists and stays current, so an
+          # unconfigured site still previews with a real image everywhere cards render.
+          og_image = os.environ.get("SEO_OG_IMAGE", "").strip() or (
+              f"https://opengraph.githubassets.com/{os.environ['RELEASE_SHA']}/{owner}/{name}"
+          )
+          twitter_site = os.environ.get("SEO_TWITTER_SITE", "").strip()
+          twitter_creator = os.environ.get("SEO_TWITTER_CREATOR", "").strip()
+          base_keywords = [w.strip() for w in os.environ.get("SEO_KEYWORDS", "").split(",") if w.strip()]
+          keywords = base_keywords or [name, owner, "documentation", "release notes", "changelog"]
+
+          def favicon_links() -> str:
+              spec = os.environ.get("SEO_FAVICON", "").strip()
+              if not spec:
+                  return ""
+              if spec.startswith(("http://", "https://", "/")) or "." in spec.split("/")[-1]:
+                  return f'<link rel="icon" href="{html.escape(spec, quote=True)}">\n'
+              # One or two emoji become a crisp zero-asset SVG favicon; the same data URI
+              # serves apple-touch-icon so pinned tabs and home screens match.
+              svg = (
+                  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">'
+                  f'<text y="0.9em" font-size="90">{html.escape(spec)}</text></svg>'
+              )
+              uri = "data:image/svg+xml," + urllib.parse.quote(svg)
+              return (
+                  f'<link rel="icon" href="{uri}">\n'
+                  f'<link rel="apple-touch-icon" href="{uri}">\n'
+              )
+
           ga_id = os.environ.get("GA_ID", "")
           ga_snippet = (
               f'<script async src="https://www.googletagmanager.com/gtag/js?id={ga_id}"></script>\n'
@@ -285,24 +346,54 @@ jobs:
               f"gtag('config', '{ga_id}');\n"
               "</script>\n"
           ) if ga_id else ""
+
+          title_of = re.compile(r"<title>(.*?)</title>", re.S)
           for path in pathlib.Path("channel-site").rglob("*.html"):
+              text = path.read_text()
               relative = path.relative_to("channel-site").as_posix()
               url = canonical + ("" if relative == "index.html" else relative.removesuffix("index.html"))
+              found = title_of.search(text)
+              page_title = html.escape(found.group(1).strip() if found else name, quote=True)
+              esc_desc = html.escape(description, quote=True)
               metadata = (
                   f'<link rel="canonical" href="{url}">\n'
                   f'<meta name="robots" content="{"index,follow" if indexable else "noindex,nofollow"}">\n'
-                  f'<meta property="og:type" content="website">\n'
+                  f'<meta name="description" content="{esc_desc}">\n'
+                  f'<meta name="keywords" content="{html.escape(", ".join(keywords), quote=True)}">\n'
+                  f'<meta name="author" content="{html.escape(author, quote=True)}">\n'
+                  f'<meta name="generator" content="vibey-gh release-surfaces">\n'
+                  + (f'<meta name="theme-color" content="{theme_color}">\n' if theme_color else "")
+                  + f'<meta property="og:type" content="website">\n'
                   f'<meta property="og:url" content="{url}">\n'
                   f'<meta property="og:site_name" content="{name}">\n'
+                  f'<meta property="og:title" content="{page_title}">\n'
+                  f'<meta property="og:description" content="{esc_desc}">\n'
+                  f'<meta property="og:image" content="{html.escape(og_image, quote=True)}">\n'
+                  f'<meta property="og:locale" content="{locale}">\n'
                   f'<meta name="twitter:card" content="summary_large_image">\n'
-                  f'{ga_snippet}'
+                  f'<meta name="twitter:title" content="{page_title}">\n'
+                  f'<meta name="twitter:description" content="{esc_desc}">\n'
+                  f'<meta name="twitter:image" content="{html.escape(og_image, quote=True)}">\n'
+                  + (f'<meta name="twitter:site" content="{html.escape(twitter_site, quote=True)}">\n' if twitter_site else "")
+                  + (f'<meta name="twitter:creator" content="{html.escape(twitter_creator, quote=True)}">\n' if twitter_creator else "")
+                  + favicon_links()
+                  + f'{ga_snippet}'
               )
               if os.environ["JSON_LD"] == "true":
-                  record = {"@context":"https://schema.org","@type":"SoftwareSourceCode",
-                            "name":name,"codeRepository":f"https://github.com/{os.environ['REPOSITORY']}",
-                            "url":url,"version":os.environ["RELEASE_SHA"]}
+                  record = {
+                      "@context": "https://schema.org",
+                      "@type": "SoftwareSourceCode",
+                      "name": name,
+                      "description": description,
+                      "codeRepository": f"https://github.com/{os.environ['REPOSITORY']}",
+                      "url": url,
+                      "version": os.environ["RELEASE_SHA"],
+                      "author": {"@type": "Person", "name": author},
+                      "keywords": ", ".join(keywords),
+                      "inLanguage": locale.replace("_", "-"),
+                  }
                   metadata += '<script type="application/ld+json">' + json.dumps(record) + '</script>\n'
-              path.write_text(path.read_text().replace("</head>", metadata + "</head>"))
+              path.write_text(text.replace("</head>", metadata + "</head>"))
           PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -342,6 +433,16 @@ jobs:
             <meta name="description" content="Choose the production or preview documentation channel for __REPOSITORY__.">
             <meta name="vibey-gh:repository" content="__REPOSITORY__">
             <meta name="vibey-gh:revision" content="__RELEASE_SHA__">
+            <meta property="og:type" content="website">
+            <meta property="og:site_name" content="__REPOSITORY_NAME__">
+            <meta property="og:title" content="__REPOSITORY_NAME__ · Release documentation">
+            <meta property="og:description" content="Choose the production or preview documentation channel for __REPOSITORY__.">
+            <meta property="og:url" content="__PAGES_ROOT__">
+            <meta property="og:image" content="__OG_IMAGE__">
+            <meta name="twitter:card" content="summary_large_image">
+            <meta name="twitter:title" content="__REPOSITORY_NAME__ · Release documentation">
+            <meta name="twitter:image" content="__OG_IMAGE__">
+            <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Ctext%20y%3D%220.9em%22%20font-size%3D%2290%22%3E%F0%9F%93%98%3C/text%3E%3C/svg%3E"><link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Ctext%20y%3D%220.9em%22%20font-size%3D%2290%22%3E%F0%9F%93%98%3C/text%3E%3C/svg%3E">
             <title>__REPOSITORY_NAME__ · Release documentation</title>
             <style>
               :root {
@@ -624,6 +725,7 @@ jobs:
           RELEASE_CHANNEL=${{ needs.context.outputs.channel }} \
           RELEASE_SHA=${{ needs.context.outputs.sha }} \
           GA_ID="$GA_ID" \
+          SEO_OG_IMAGE='' \
           python - <<'PY'
           import os
           import pathlib
@@ -649,6 +751,17 @@ jobs:
               "__RELEASE_SHA__": os.environ["RELEASE_SHA"],
               "__SHORT_SHA__": os.environ["RELEASE_SHA"][:12],
               "__GA_SNIPPET__": ga_snippet,
+              "__PAGES_ROOT__": "https://"
+              + os.environ["GITHUB_REPOSITORY"].split("/")[0]
+              + ".github.io/"
+              + os.environ["REPOSITORY_NAME"]
+              + "/",
+              # GitHub's generated OpenGraph card: always exists, stays current.
+              "__OG_IMAGE__": os.environ.get("SEO_OG_IMAGE", "").strip()
+              or "https://opengraph.githubassets.com/"
+              + os.environ["RELEASE_SHA"]
+              + "/"
+              + os.environ["GITHUB_REPOSITORY"],
           }
           for old, new in values.items():
               text = text.replace(old, new)

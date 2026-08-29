@@ -468,9 +468,9 @@ Anything else is `needs_clarification`.
 When there are no open product findings, `review.collect` raises a second parked
 choice gate:
 
-- `vibey deploy opt-in` → Phase ④ DEPLOY DESIGN;
-- `vibey deploy decline` → terminal `DONE` with `completion_mode = "local"` and
-  no deployment jobs; or
+- `vibey answer <gate-id> --choice deploy` → Phase ④ DEPLOY DESIGN;
+- `vibey answer <gate-id> --choice local_only` → terminal `DONE` with
+  `completion_mode = "local"` and no deployment jobs; or
 - cancel → `ABANDONED`.
 
 The deployment question is asked again after any delivery loop that changes the

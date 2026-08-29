@@ -1,5 +1,12 @@
 # Session Handoff — vibey, after M0–M4
 
+> **Historical snapshot, superseded.** This document describes repo state
+> partway through implementation (after milestone M4, before M5/M6). It
+> predates the `vibey worker`, `doctor --conformance`, and rotation-wiring
+> work, and the v0.1.0–v0.1.2 releases described in `README.md`'s Status
+> section and `CHANGELOG.md`. Kept for history; do not treat its "current
+> state" claims as current.
+
 > **You are picking up an in-progress, test-first implementation of vibey**, a
 > queue-based six-phase conductor for autonomous software delivery. It has an
 > optional visual-design interstitial between ① DESIGN and ② BUILD, plus an
