@@ -27,7 +27,7 @@ jobs:
       - name: Stamp a dev version on develop
         if: github.ref == 'refs/heads/develop'
         run: |
-          python -m pip install --quiet "vibey-gh==1.50.0"
+          python -m pip install --quiet "vibey-gh==1.56.0"
           # An index version is immutable, so a develop build cannot reuse the release
           # version; the dev suffix makes each push distinct and sorts it BEFORE the
           # release it anticipates, which is the correct relationship.
@@ -140,7 +140,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
 
-      - run: python -m pip install --quiet "vibey-gh==1.50.0"
+      - run: python -m pip install --quiet "vibey-gh==1.56.0"
 
       # main is rebase-merged, so its commits are rewritten copies with new SHAs and
       # develop can never be fast-forwarded onto it. `realign` converges them only when
