@@ -118,7 +118,7 @@ jobs:
           if grep -qE '^name = "vibey-gh"' pyproject.toml; then
             python -m pip install --quiet -e .
           else
-            python -m pip install --quiet "vibey-gh==1.47.0"
+            python -m pip install --quiet "vibey-gh==1.50.0"
           fi
 
       - name: Resolve the PR and exact head
@@ -238,6 +238,11 @@ jobs:
           # A nonmatching sentinel activates the action's token-free credential-helper
           # path without authorizing any non-write actor.
           allowed_non_write_users: "__vibey_gh_no_nonwrite_users__"
+          # Our own event chains are bot-initiated: a workflow_run fired by CI
+          # completing arrives as github-actions, and the action refuses bot
+          # actors unless they are named. Named, not "*": only the platform's
+          # own actor is trusted, never arbitrary third-party bots.
+          allowed_bots: "github-actions,github-actions[bot]"
           track_progress: ${{ true && (github.event_name == 'pull_request' || github.event_name == 'issues' || github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment' || github.event_name == 'pull_request_review') }}
           show_full_output: ${{ inputs.full_claude_output && github.event_name == 'workflow_dispatch' && github.event.repository.visibility == 'private' && false }}
           additional_permissions: |
@@ -284,20 +289,44 @@ jobs:
             security and trust boundaries, upgrades, troubleshooting, contributing,
             support, release/provenance behavior, and links to deeper reference material.
             Judge opening_accessible as if you had never seen this repository: the first
-            two text blocks of README.md must survive zero project context — every
-            load-bearing term either common knowledge or defined in the sentence that
-            uses it, and prose may only index into a diagram by labels the diagram
-            legibly carries. Judge opening_bluf on ordering alone: the first screen
-            states a problem the reader recognizes BEFORE any project vocabulary,
-            capability claims, or description of what the software is — a page that
-            opens with what it IS before what it FIXES fails, however well written.
-            Judge audience_order across the whole README: copy must serve audiences in a
-            fixed order -- beginner-accessible material first, engineering depth second,
-            scholarly material (citations, formal references, theory) third -- each
-            section BLUF, problem before solution. Executive or industry framing (ROI,
-            market positioning, business-value pitches) must be essentially absent: its
-            presence anywhere before the beginner and engineering material, or as more
-            than an incidental aside, fails this judgment.
+            two text blocks of README.md — and of the documentation site's landing page
+            (docs/index.md or equivalent), when the repository publishes one — must
+            survive zero project context — every load-bearing term either common
+            knowledge or defined in the sentence that uses it, and prose may only index
+            into a diagram by labels the diagram legibly carries. Judge opening_bluf on
+            ordering alone, on those same first screens: each states a problem the
+            reader recognizes BEFORE any project vocabulary, capability claims, or
+            description of what the software is — a page that
+            opens with what it IS before what it FIXES fails, however well written,
+            and so does a marketing tagline. Judge audience_order against the document
+            arc, across the whole README AND the documentation suite as published --
+            including the nav order declared in the site configuration (properdocs.yml,
+            mkdocs.yml, or equivalent). The arc, in order: (1) a BLUF opening -- the
+            problem first, then the solution; (2) immediately after it, absolute-zero
+            beginner material written for a reader who has NEVER written a single line
+            of code -- zero project context is not enough, the floor is zero
+            programming context; (3) a monotonic climb up the engineering ladder --
+            junior, mid, senior, staff, senior staff, principal, senior staff
+            principal, CTO -- each rung's concerns served before the next begins;
+            (4) purely theoretical material at Ivy-league coursework register, as
+            dense and comprehensive as the subject allows: formal statements, proofs
+            or proof sketches, citations; (5) a one-breath restatement of the BLUF
+            followed by a call to action naming the reader's concrete next step. A
+            document that skips the zero-code rung, climbs out of order, thins the
+            theory, or ends without the reprise and call to action fails. A nav that
+            puts the engineering reference before the beginner on-ramp fails.
+            Executive or industry framing (ROI, market positioning, business-value
+            pitches) must be essentially absent -- the call to action is the reader's
+            next step, never a sales pitch; its presence beyond an incidental aside
+            fails this judgment. Judge examples_sufficient against every platform surface the
+            repository exposes — API, CLI, MCP, webhook, SDK, and Moltbook where
+            present: each exposed surface needs at least one FULLY WORKING and FULLY
+            COMPREHENSIBLE example — copy-paste-runnable against this exact head, with
+            every command, flag, endpoint, payload shape, and import verified to exist
+            in the source, and readable at the arc's zero-code rung under the
+            beginner-first BLUF standard. A surface with no example of its own, a
+            pseudo-code example, or an example naming anything that does not exist
+            fails this judgment.
             Verify that every CLI, SDK, API, MCP, and webhook capability is documented.
             A heading, file, or keyword by itself is never proof of completeness. Flag
             vague, stale, circular, implementation-first, unexplained, or missing content.
@@ -347,7 +376,7 @@ jobs:
           if grep -qE '^name = "vibey-gh"' automation/pyproject.toml; then
             python -m pip install --quiet -e ./automation
           else
-            python -m pip install --quiet "vibey-gh==1.47.0"
+            python -m pip install --quiet "vibey-gh==1.50.0"
           fi
           vibey-gh pr-automation record-review --pr "$PR" --input "$payload"
           echo "passed=$(jq -r .pass <<<"$payload")" >> "$GITHUB_OUTPUT"
@@ -479,7 +508,7 @@ jobs:
           if grep -qE '^name = "vibey-gh"' automation/pyproject.toml; then
             python -m pip install --quiet -e ./automation
           else
-            python -m pip install --quiet "vibey-gh==1.47.0"
+            python -m pip install --quiet "vibey-gh==1.50.0"
           fi
           vibey-gh pr-automation ensure-labels
           gh pr edit "$PR" --add-label vibey-gh:repairing
@@ -531,6 +560,11 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           allowed_non_write_users: "__vibey_gh_no_nonwrite_users__"
+          # Our own event chains are bot-initiated: a workflow_run fired by CI
+          # completing arrives as github-actions, and the action refuses bot
+          # actors unless they are named. Named, not "*": only the platform's
+          # own actor is trusted, never arbitrary third-party bots.
+          allowed_bots: "github-actions,github-actions[bot]"
           track_progress: ${{ true && (github.event_name == 'pull_request' || github.event_name == 'issues' || github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment' || github.event_name == 'pull_request_review') }}
           show_full_output: ${{ inputs.full_claude_output && github.event_name == 'workflow_dispatch' && github.event.repository.visibility == 'private' && false }}
           additional_permissions: |
@@ -638,6 +672,12 @@ jobs:
           git -C target config user.name 'vibey[bot]'
           git -C target config user.email 'adam@matthewsteinberger.com'
           git -C target add -A
+          # A push that touches .github/workflows/** requires the Workflows permission
+          # on the pushing token. Say so BEFORE the attempt is spent: the rejection
+          # otherwise surfaces as a generic repair failure in a log nobody reads.
+          if git -C target diff --cached --name-only | grep -q '^\.github/workflows/'; then
+            echo "::warning::this repair edits .github/workflows/** — the push requires the Workflows (read-write) permission on the automation token; if it is rejected, grant that permission and re-run"
+          fi
           git -C target commit -m "fix: repair PR #${{ needs.evaluate.outputs.pr }} (attempt ${{ needs.evaluate.outputs.repair_attempt }})" \
             -m "Made-With: Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/))."
           gh auth setup-git
@@ -653,6 +693,10 @@ jobs:
               exit 0
             fi
             printf '%s\n' "$push_output" >&2
+            if printf '%s' "$push_output" | grep -q 'without `workflow` scope\|without .workflow. scope'; then
+              echo "::error::the repair could not be pushed because the automation token lacks the Workflows (read-write) permission — grant it on the fine-grained PAT and re-run; the repair itself succeeded"
+              echo "The repair could not be pushed: the automation token lacks the **Workflows (read-write)** permission required to update files under .github/workflows/. Grant it on the fine-grained PAT and re-run — the repair itself succeeded." >> "$GITHUB_STEP_SUMMARY"
+            fi
             exit 1
           fi
       - name: Persist repair state and classify operator blocks
@@ -668,7 +712,7 @@ jobs:
           if grep -qE '^name = "vibey-gh"' automation/pyproject.toml; then
             python -m pip install --quiet -e ./automation
           else
-            python -m pip install --quiet "vibey-gh==1.47.0"
+            python -m pip install --quiet "vibey-gh==1.50.0"
           fi
           head_sha=$(gh pr view "$PR" --repo "$REPO" --json headRefOid --jq .headRefOid)
           payload=$(jq -c --arg head_sha "$head_sha" '. + {head_sha:$head_sha}' <<<"$STRUCTURED")
@@ -797,6 +841,11 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           allowed_non_write_users: "__vibey_gh_no_nonwrite_users__"
+          # Our own event chains are bot-initiated: a workflow_run fired by CI
+          # completing arrives as github-actions, and the action refuses bot
+          # actors unless they are named. Named, not "*": only the platform's
+          # own actor is trusted, never arbitrary third-party bots.
+          allowed_bots: "github-actions,github-actions[bot]"
           track_progress: ${{ true && (github.event_name == 'pull_request' || github.event_name == 'issues' || github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment' || github.event_name == 'pull_request_review') }}
           show_full_output: ${{ inputs.full_claude_output && github.event_name == 'workflow_dispatch' && github.event.repository.visibility == 'private' && false }}
           plugin_marketplaces: |
@@ -876,12 +925,16 @@ jobs:
               exit 0
             fi
             printf '%s\n' "$push_output" >&2
+            if printf '%s' "$push_output" | grep -q 'without `workflow` scope\|without .workflow. scope'; then
+              echo "::error::the repair could not be pushed because the automation token lacks the Workflows (read-write) permission — grant it on the fine-grained PAT and re-run; the repair itself succeeded"
+              echo "The repair could not be pushed: the automation token lacks the **Workflows (read-write)** permission required to update files under .github/workflows/. Grant it on the fine-grained PAT and re-run — the repair itself succeeded." >> "$GITHUB_STEP_SUMMARY"
+            fi
             exit 1
           fi
           if grep -qE '^name = "vibey-gh"' automation/pyproject.toml; then
             python -m pip install --quiet -e ./automation
           else
-            python -m pip install --quiet "vibey-gh==1.47.0"
+            python -m pip install --quiet "vibey-gh==1.50.0"
           fi
           new_sha=$(git -C target rev-parse HEAD)
           payload=$(jq -c --arg head_sha "$new_sha" \
@@ -1018,7 +1071,7 @@ jobs:
           if grep -qE '^name = "vibey-gh"' automation/pyproject.toml; then
             python -m pip install --quiet -e ./automation
           else
-            python -m pip install --quiet "vibey-gh==1.47.0"
+            python -m pip install --quiet "vibey-gh==1.50.0"
           fi
       # The diff arrives through the API and reaches the model as text. Repository code is
       # never checked out here and never executed: the model has no shell, no tools, and no
