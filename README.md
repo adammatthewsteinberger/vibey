@@ -131,13 +131,28 @@ things those runners deliberately do not do:
    ledger's own cost events, with parks that tell you the exact command to
    grant more.
 
+## Running on Kubernetes
+
+Beyond a laptop, `vibey worker` ships as a Helm chart
+(`deploy/helm/vibey/`) with an in-cluster PostgreSQL, KEDA-based
+queue-depth autoscaling, and a `vibey operator` command that runs a
+kopf-based operator reconciling a `VibeyProject` custom resource
+(create-project, apply `spec.answers`, project phase as CR status). The
+worker path is verified end to end on minikube; engine binaries
+(`claudeloop`, `codexloop`, `cursorloop`, `agyloop`) do not ship in the
+container image yet, so in-cluster runs are limited to `--provider
+scripted`. See the [Kubernetes guide](docs/guides/kubernetes.md) for setup
+and current limitations.
+
 ## Documentation
 
 | Document | What's in it |
 |---|---|
 | [Greeter live-demo runbook](docs/guides/greeter-live-demo.md) | A full paid run, end to end, with the zero-touch contracts |
-| [Expansion runbooks](docs/runbooks/expansion/) | Fifteen workstreams: JIRA, more clouds, Kubernetes server mode, clients, store submissions, … |
+| [Running vibey on Kubernetes](docs/guides/kubernetes.md) | The Helm chart, the `vibey operator` command, KEDA autoscaling, and what's not there yet |
+| [Expansion runbooks](docs/runbooks/expansion/) | Fifteen workstreams: JIRA, more clouds, engine binaries in-cluster, clients, store submissions, … |
 | [Architecture & roadmap](docs/plans/architecture-and-roadmap.md) | The master design: context, containers, layers, phases, risks, milestones |
+| [Project map](docs/project.mmd) | One Mermaid diagram of every layer, the phase machine, the queue, engine adapters, Kubernetes surface, and the release pipeline |
 | [Domain model](docs/plans/domain-model.md) | Every value object, ADT, and invariant in `domain/` |
 | [Data model](docs/plans/data-model.md) | Full PostgreSQL DDL, queue semantics, indices |
 | [Handoff protocol](docs/plans/handoff-protocol.md) | The event ledger, the envelope, and the no-loss gate |

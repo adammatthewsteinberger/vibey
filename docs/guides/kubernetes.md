@@ -20,9 +20,13 @@ Be clear about this before you install anything:
   Real engines in-cluster are workstreams
   [05](../runbooks/expansion/05-server-mode-kubernetes.md) item 1 and
   [16](../runbooks/expansion/16-loop-runner-containers.md).
-- **There is no operator yet.** Creating projects and answering gates is
-  still `vibey new` / `vibey answer`, run inside a pod or against the
-  database. The `VibeyProject` CRD is 05 item 5.
+- **The operator exists but is off by default.** `vibey operator` and the
+  `VibeyProject` CRD (`operator.enabled: true` in values) let a CR's
+  `spec.answers` drive `vibey answer` and surface phase as CR status; it
+  has integration test coverage but has not been exercised as a long-running
+  deployment the way the worker path has. Without it, creating projects and
+  answering gates is still `vibey new` / `vibey answer`, run inside a pod or
+  against the database.
 
 ## Prerequisites
 
@@ -194,6 +198,7 @@ another project will scale workers that cannot claim it.
 | `worker.waitForProjectSeconds` | `15` | park instead of restart-looping |
 | `worker.parallelism` | `2` | concurrent job loops per pod |
 | `worker.project` | `""` | **set this**; empty binds to the newest project |
+| `operator.enabled` | `false` | install the `VibeyProject` CRD + `vibey operator` Deployment |
 | `keda.minReplicas` / `maxReplicas` | `0` / `4` | scale to zero when idle |
 | `keda.cooldownPeriod` | `300` | delay before deactivating to zero |
 | `clusterDomain` | `cluster.local` | only change on a custom `--service-dns-domain` |
