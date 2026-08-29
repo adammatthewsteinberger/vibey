@@ -60,9 +60,14 @@ Vibey is a queue-based conductor for autonomous software delivery. Because Vibey
   (`tests/domain/test_prompt_shield.py`) ever constructs or calls it — no
   design or build handler (`application/seed_prompt.py`,
   `application/design_handler.py`, `application/build_implement_handler.py`,
-  etc.) frames untrusted input through it. **Do not rely on the controls
-  below: seed prompts, interview answers, issue descriptions, and other
-  third-party inputs are not currently shielded.**
+  etc.) frames untrusted input through it. This includes the skills-context
+  packet: `infrastructure/skills_context.py`'s `VibeySkillsContextCompiler`
+  retrieves markdown from the independently-versioned, third-party
+  `vibey-skills` marketplace, and `build_implement_handler.py` appends it
+  verbatim to the BUILD prompt whenever a project's `skills_context.mode` is
+  `inject` — with no `PromptShield` framing. **Do not rely on the controls
+  below: seed prompts, interview answers, issue descriptions, skills-context
+  packets, and other third-party inputs are not currently shielded.**
   - Strips non-printable ASCII control codes and ANSI escape sequences.
   - Generates unique cryptographic nonces per interaction (`<{label}_{nonce}>...<{label}_{nonce}>`).
   - Neutralizes XML/tag delimiter breakouts (`</...` escaping).

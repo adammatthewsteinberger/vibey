@@ -150,6 +150,7 @@ flowchart TB
     ScopeGuard -.->|dormant, not wired| Worktree
     Shield -.->|dormant, not wired| ADesign
     Shield -.->|dormant, not wired| ABuild
+    ISkillsContext -.->|third-party markdown from the vibey-skills<br/>marketplace, injected into BUILD prompts<br/>unshielded; not currently shielded| Shield
     IEngines --> Worktree
     IAzure -.->|opt-in, mutates real resources<br/>only with --azure az| PDeployExecute
 
