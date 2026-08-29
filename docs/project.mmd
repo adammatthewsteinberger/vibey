@@ -57,7 +57,7 @@ flowchart TB
         IAzure["azure/az_cli.py · iac.py · arm.py · adapter.py"]
         INotify["notify/service.py · notify/webhook.py<br/>HMAC-SHA256 signed webhooks<br/>IMPLEMENTED + TESTED, NOT constructed by bootstrap.py"]
         IProvision["provision/agent_surface.py<br/>syncs .claude/ .cursor/ .agents/ .agent/"]
-        IRedact["redact.py — credential/token/secret redaction"]
+        IRedact["ledger/redact.py — credential/token/secret redaction"]
         ISkillsContext["skills_context.py<br/>VibeySkillsContextCompiler<br/>shells out to the vibey-skills CLI"]
         IOtel["otel.py<br/>TelemetryTracer + TelemetryMetrics<br/>+ calculate_rotation_fairness()<br/>IMPLEMENTED + TESTED, NOT constructed by bootstrap.py"]
         IBuildGates["build/gate_runner.py · automated_review_runner.py<br/>subprocess runners: BUILD's gate commands (+ git diff)<br/>and Phase 3's automated ruff/bandit review"]
