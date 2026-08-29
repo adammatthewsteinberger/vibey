@@ -1,5 +1,10 @@
 # Phase A Coverage Status - vibey
 
+> **Historical snapshot, superseded.** Written while the infrastructure and
+> CLI layers were still below the 100% branch-coverage floor. All four
+> layers now hold that floor as enforced CI gates — see `README.md`'s
+> Status section and `.github/workflows/ci.yml` for current state.
+
 **Branch:** `chore/a8-coverage`  
 **Last Updated:** 2026-08-15  
 **Status:** Partial completion - Domain layer complete, Infrastructure/CLI require substantial work

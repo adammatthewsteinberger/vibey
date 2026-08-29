@@ -1,5 +1,11 @@
 # Phase E1: Live Engines, Rotation, Full Worker — Final Status
 
+> **Historical snapshot, superseded.** Written mid-session; the CLI
+> commands and test infrastructure marked "NOT IMPLEMENTED"/"NOT CREATED"
+> below (`vibey worker`, `vibey doctor --conformance`, `tests/live/`,
+> `tests/contracts/`) have since landed — see `README.md`'s Status section
+> and `CHANGELOG.md` (v0.1.0+) for current state.
+
 **Date:** 2026-08-17  
 **Branch:** `chore/e1-live-engines`  
 **Commits:** 917052d, a6dac22, 972b01b
