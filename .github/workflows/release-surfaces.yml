@@ -280,6 +280,63 @@ jobs:
               sys.exit("search smoke: the index contains zero documents")
           print(f"search smoke: {len(docs)} documents indexed, all assets present")
           SMOKE
+          # The documentation as artifacts on the site itself: the doctrine's end
+          # results are a KDP-shaped book and a journal-shaped paper, and a reader
+          # should download them from the docs they mirror — not hunt a release page.
+          if [ "true" = "true" ] || { [ "true" = "true" ] && [ -f docs/paper.md ]; }; then
+            # This step's environment installs ProperDocs only; the exporters live in
+            # vibey-gh. Observed as exit 127 on the first dogfooded deploy — the guard
+            # printed its intent and the command did not exist. Self-hosting installs
+            # from source, adopters install the published package.
+            if grep -qE '^name = "vibey-(gh|bootstrap)"' pyproject.toml 2>/dev/null; then
+              python -m pip install --quiet -e .
+            else
+              python -m pip install --quiet "vibey-gh==1.56.0"
+            fi
+          fi
+          if [ "true" = "true" ]; then
+            AUTHOR=''
+            vibey-gh book --site-dir channel-site --config-file .properdocs-channel.yml \
+              --output-dir book-out \
+              --title "${GITHUB_REPOSITORY#*/} — The Documentation" \
+              --author "${AUTHOR:-${GITHUB_REPOSITORY%%/*}}"
+            cp book-out/book.epub channel-site/book.epub
+            cp book-out/book-print.html channel-site/book-print.html
+            # The KDP paperback interior wants a PDF, and the runner already carries a
+            # Chromium: one headless print honours the @page 6in x 9in rules in the
+            # print HTML, so the artifact is the uploadable interior itself.
+            BROWSER="$(command -v google-chrome || command -v chromium-browser || command -v chromium || true)"
+            if [ -n "$BROWSER" ]; then
+              "$BROWSER" --headless --disable-gpu --no-sandbox \
+                --no-pdf-header-footer \
+                --print-to-pdf="$PWD/book-out/book.pdf" \
+                "file://$PWD/book-out/book-print.html" 2>/dev/null
+              if [ -s book-out/book.pdf ]; then
+                cp book-out/book.pdf channel-site/book.pdf
+                echo "book: published book.pdf (KDP interior) on the channel site"
+              else
+                echo "::warning::book.pdf was not produced; the print HTML remains available"
+              fi
+            else
+              echo "::warning::no Chromium on this runner; book.pdf skipped, print HTML published"
+            fi
+            echo "book: published book.epub and book-print.html on the channel site"
+          fi
+          if [ "true" = "true" ] && [ -f docs/paper.md ] \
+              && vibey-gh paper --help >/dev/null 2>&1; then
+            AUTHOR=''
+            vibey-gh paper --author "${AUTHOR:-${GITHUB_REPOSITORY%%/*}}" \
+              --output paper-out/paper.tex
+            # Tectonic: one pinned, checksummed binary — a full TeX Live would cost
+            # minutes per deploy for one PDF.
+            curl -sL -o /tmp/tectonic.tar.gz \
+              "https://github.com/tectonic-typesetting/tectonic/releases/download/tectonic%400.15.0/tectonic-0.15.0-x86_64-unknown-linux-gnu.tar.gz"
+            echo "875fbbc9ab48560d7776088c608e0beee49197b57ab4a2f6c5385b2c661c842f  /tmp/tectonic.tar.gz" | sha256sum -c -
+            tar -xzf /tmp/tectonic.tar.gz -C /tmp
+            (cd paper-out && /tmp/tectonic paper.tex)
+            cp paper-out/paper.pdf channel-site/paper.pdf
+            echo "paper: published paper.pdf on the channel site"
+          fi
           printf '%s\n' "$CHANNEL" > channel-site/release-channel.txt
           CHANNEL="$CHANNEL" REPOSITORY="$GITHUB_REPOSITORY" RELEASE_SHA="$RELEASE_SHA" \
           JSON_LD=true PRODUCTION_INDEX=true \
@@ -288,6 +345,8 @@ jobs:
           SEO_FAVICON='📘' SEO_OG_IMAGE='' \
           SEO_TWITTER_SITE='' SEO_TWITTER_CREATOR='' \
           SEO_KEYWORDS='' SEO_AUTHOR='' \
+          FUNDING_BITCOIN='' FUNDING_MONERO='' \
+          FUNDING_ETHEREUM='' FUNDING_LABEL='Support this work' \
           SEO_THEME_COLOR='#080b14' SEO_LOCALE='en_US' \
           SEO_SITE_VERIFICATION='' \
           python - <<'PY'
@@ -358,6 +417,35 @@ jobs:
           # onward from where they already are, without teaching this injector anything
           # about the nav tree — the theme stays the single authority on page order.
           bottom_nav = os.environ.get("BOTTOM_NAV", "") == "true"
+          # Funding signage (#198): opt-in per currency, rendered VERBATIM from
+          # reviewed config beside the provenance line — text with a copy affordance,
+          # never a payment-processor link. Addresses were shape-validated at config
+          # load; this only renders what that validation admitted.
+          funding = [
+              (label, os.environ.get(key, "").strip())
+              for label, key in (
+                  ("Bitcoin", "FUNDING_BITCOIN"),
+                  ("Monero", "FUNDING_MONERO"),
+                  ("Ethereum", "FUNDING_ETHEREUM"),
+              )
+              if os.environ.get(key, "").strip()
+          ]
+          funding_label = os.environ.get("FUNDING_LABEL", "Support this work").strip()
+          funding_html = ""
+          if funding:
+              rows = "".join(
+                  '<span class="vibey-funding-row"><strong>' + html.escape(c) + ":"
+                  '</strong> <code>' + html.escape(a) + "</code>"
+                  '<button type="button" onclick="navigator.clipboard.writeText(\'' + a + '\')"'
+                  ' title="Copy the ' + html.escape(c) + ' address">copy</button></span>'
+                  for c, a in funding
+              )
+              funding_html = (
+                  '<footer class="vibey-funding" style="text-align:center;font-size:.85em;'
+                  "opacity:.8;margin:2rem auto 1rem;display:flex;flex-wrap:wrap;gap:.75rem;"
+                  'justify-content:center;align-items:center">'
+                  "<span>" + html.escape(funding_label) + "</span>" + rows + "</footer>\n"
+              )
           prev_next = re.compile(r'<a\s[^>]*rel="(?:prev|next)"[^>]*>.*?</a>', re.S)
           bottom_nav_style = (
               '<style>.vibey-bottom-nav{display:flex;justify-content:space-between;'
@@ -422,6 +510,8 @@ jobs:
                           + "</nav>\n"
                       )
                       text = text.replace("</body>", bar + "</body>")
+              if funding_html and "</body>" in text:
+                  text = text.replace("</body>", funding_html + "</body>")
               path.write_text(text.replace("</head>", metadata + "</head>"))
           PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

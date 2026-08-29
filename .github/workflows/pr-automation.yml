@@ -118,7 +118,7 @@ jobs:
           if grep -qE '^name = "vibey-gh"' pyproject.toml; then
             python -m pip install --quiet -e .
           else
-            python -m pip install --quiet "vibey-gh==1.50.0"
+            python -m pip install --quiet "vibey-gh==1.56.0"
           fi
 
       - name: Resolve the PR and exact head
@@ -284,6 +284,26 @@ jobs:
             source, tests, workflows, configuration, packaging, release surfaces, and
             every public capability. The README must be a complete, approachable guide
             for a first-time human: explain the problem and mental model before internals;
+            Judge human_readable as the never-lost contract, across EVERY FORM of
+            documentation this repository ships — README and the published site, page
+            prose, docstrings, CLI --help text, error and log messages a person will
+            read, code comments, issue and PR templates, and changelogs alike: the
+            reader must NEVER be lost — every page orients (what this is, what it
+            assumed, what comes next) — and must never finish a passage unable to state
+            back what it said, or needing their own chat, a dictionary, or a web search
+            to follow along. Comprehension is self-contained: every load-bearing term
+            is defined at first use IN THAT DOCUMENT, not a link away, not assumed.
+            The priority order is absolute and violations fail this judgment: the HUMAN
+            reader is served first, always; the AI reader second — machine-facing
+            artifacts are maintained but human prose is never contorted for machine
+            parsing and no human document degrades in service of an AI one; and
+            industry or business needs come absolutely last, if at all. Hyperlinks are a
+            first-class citizen: whenever outside material is referenced or described
+            in ANY way -- a tool, a specification, a paper, a product, someone else's
+            documentation -- the hyperlink to it appears ALONGSIDE the referencing copy
+            itself, at the point of reference, not only in a references section; prose
+            that describes an outside source the reader cannot click from that very
+            sentence fails this judgment.
             provide installation, prerequisites, quick start, runnable examples, complete
             command and configuration references, workflows and failure recovery,
             security and trust boundaries, upgrades, troubleshooting, contributing,
@@ -376,7 +396,7 @@ jobs:
           if grep -qE '^name = "vibey-gh"' automation/pyproject.toml; then
             python -m pip install --quiet -e ./automation
           else
-            python -m pip install --quiet "vibey-gh==1.50.0"
+            python -m pip install --quiet "vibey-gh==1.56.0"
           fi
           vibey-gh pr-automation record-review --pr "$PR" --input "$payload"
           echo "passed=$(jq -r .pass <<<"$payload")" >> "$GITHUB_OUTPUT"
@@ -508,7 +528,7 @@ jobs:
           if grep -qE '^name = "vibey-gh"' automation/pyproject.toml; then
             python -m pip install --quiet -e ./automation
           else
-            python -m pip install --quiet "vibey-gh==1.50.0"
+            python -m pip install --quiet "vibey-gh==1.56.0"
           fi
           vibey-gh pr-automation ensure-labels
           gh pr edit "$PR" --add-label vibey-gh:repairing
@@ -712,7 +732,7 @@ jobs:
           if grep -qE '^name = "vibey-gh"' automation/pyproject.toml; then
             python -m pip install --quiet -e ./automation
           else
-            python -m pip install --quiet "vibey-gh==1.50.0"
+            python -m pip install --quiet "vibey-gh==1.56.0"
           fi
           head_sha=$(gh pr view "$PR" --repo "$REPO" --json headRefOid --jq .headRefOid)
           payload=$(jq -c --arg head_sha "$head_sha" '. + {head_sha:$head_sha}' <<<"$STRUCTURED")
@@ -934,7 +954,7 @@ jobs:
           if grep -qE '^name = "vibey-gh"' automation/pyproject.toml; then
             python -m pip install --quiet -e ./automation
           else
-            python -m pip install --quiet "vibey-gh==1.50.0"
+            python -m pip install --quiet "vibey-gh==1.56.0"
           fi
           new_sha=$(git -C target rev-parse HEAD)
           payload=$(jq -c --arg head_sha "$new_sha" \
@@ -1071,7 +1091,7 @@ jobs:
           if grep -qE '^name = "vibey-gh"' automation/pyproject.toml; then
             python -m pip install --quiet -e ./automation
           else
-            python -m pip install --quiet "vibey-gh==1.50.0"
+            python -m pip install --quiet "vibey-gh==1.56.0"
           fi
       # The diff arrives through the API and reaches the model as text. Repository code is
       # never checked out here and never executed: the model has no shell, no tools, and no
