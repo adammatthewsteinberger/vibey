@@ -73,8 +73,14 @@ vibey worker --engines claudeloop,agyloop -j 2   # unattended build across the p
 vibey answer <gate-id> --defaults            # accept the interview defaults, or:
 vibey answer <gate-id> --raw '{"max_dollars": 25}'   # raise a tripped budget cap
 vibey design accept <project-id> --no-visual
+# or, having opted into --visual above, settle the visual gate before BUILD:
+vibey visual accept <project-id>             # accept the reviewed visual plan
+vibey visual waive <project-id>              # explicitly decline it (inventory must be complete)
 vibey answer <gate-id> --verdict accept      # review demo
 vibey answer <gate-id> --choice local_only   # decline deployment → DONE (local)
+
+# If a worker dies mid-lease, jobs stay stuck in `leased` until recovered:
+vibey recover --project <project-id>         # or --all, for every project
 ```
 
 The [greeter live-demo runbook](docs/guides/greeter-live-demo.md) walks a full
@@ -146,20 +152,24 @@ and current limitations.
 
 ## Documentation
 
+Published on the [docs site](https://adammatthewsteinberger.github.io/vibey/):
+
 | Document | What's in it |
 |---|---|
 | [Greeter live-demo runbook](docs/guides/greeter-live-demo.md) | A full paid run, end to end, with the zero-touch contracts |
 | [Running vibey on Kubernetes](docs/guides/kubernetes.md) | The Helm chart, the `vibey operator` command, KEDA autoscaling, and what's not there yet |
 | [Expansion runbooks](docs/runbooks/expansion/) | Fifteen workstreams: JIRA, more clouds, engine binaries in-cluster, clients, store submissions, … |
-| [Architecture & roadmap](docs/plans/architecture-and-roadmap.md) | The master design: context, containers, layers, phases, risks, milestones |
 | [Project map](docs/project.mmd) | One Mermaid diagram of every layer, the phase machine, the queue, engine adapters, Kubernetes surface, and the release pipeline |
-| [Domain model](docs/plans/domain-model.md) | Every value object, ADT, and invariant in `domain/` |
-| [Data model](docs/plans/data-model.md) | Full PostgreSQL DDL, queue semantics, indices |
-| [Handoff protocol](docs/plans/handoff-protocol.md) | The event ledger, the envelope, and the no-loss gate |
-| [Rotation & engines](docs/plans/rotation-and-engines.md) | Capability matrix, effort normalization, smooth weighted round robin |
-| [Phase protocols](docs/plans/phase-protocols.md) | What all six phases do, turn by turn |
-| [Implementation plan](docs/plans/implementation-plan.md) | Milestone-by-milestone, test-first task breakdown |
 | [Decision records](docs/architecture/decisions/) | Why each hard call was made |
+
+`docs/plans/` holds design notes from before and during implementation —
+architecture, domain model, data model, handoff protocol, rotation, phase
+protocols, and the implementation plan. They're useful background, but
+`properdocs.yml` deliberately excludes them from the published docs site
+(`exclude_docs: plans/**`) because their claims can drift from the shipped
+code; treat the source (`src/vibey/domain/`, `docs/project.mmd`) as the
+authority when they disagree. Read them on GitHub, starting with
+[`docs/plans/architecture-and-roadmap.md`](docs/plans/architecture-and-roadmap.md).
 
 ## Status
 

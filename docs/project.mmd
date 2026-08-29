@@ -11,7 +11,7 @@
 graph TB
     %% ---------------------------------------------------------------
     subgraph Human["Human-facing surfaces"]
-        CLI["cli/main.py<br/>vibey new / design / answer / work /<br/>worker / watch / status / engines /<br/>cost / ledger show / deploy * / doctor / operator"]
+        CLI["cli/main.py<br/>vibey new / design / answer / work /<br/>worker / watch / status / engines /<br/>cost / ledger show / deploy * / doctor / operator /<br/>recover / visual accept / visual waive"]
         TUI["tui/<br/>Textual live view: phase, engine, cost"]
     end
 
@@ -20,7 +20,7 @@ graph TB
         direction TB
         Domain["domain/<br/>phase, job, handoff, noloss, rotation,<br/>budget, effort, capacity, circuit,<br/>command_guard, scope_guard, prompt_shield,<br/>visual, media, deployment, provision, plan<br/><i>stdlib only — import-linter enforced</i>"]
         Application["application/<br/>ports.py (Protocols) + phase handlers:<br/>design_handler, build_*_handler, review_*_handler,<br/>deploy_*_handler, visual_handler, operator_projection,<br/>engine_selector, job_dispatcher, worker.py"]
-        Infrastructure["infrastructure/<br/>db/ (repositories), engines/ (adapters),<br/>ledger/, notify/, git/, container/, build/,<br/>deploy/, azure/, operator/, provision/,<br/>otel.py, logging.py, config_loader.py"]
+        Infrastructure["infrastructure/<br/>db/ (repositories), engines/ (adapters),<br/>ledger/, notify/, git/, container/, build/,<br/>deploy/, azure/, operator/, provision/,<br/>skills_context.py, otel.py, logging.py,<br/>config_loader.py"]
         Bootstrap["bootstrap.py<br/><i>sole composition root — the only place<br/>concrete infrastructure meets application Protocols</i>"]
     end
 
@@ -61,6 +61,14 @@ graph TB
     Adapter --> CodexLoop["codexloop<br/>OpenAI"]
     Adapter --> CursorLoop["cursorloop<br/>Cursor / Composer"]
     Adapter --> AgyLoop["agyloop<br/>Google Antigravity"]
+
+    %% ---------------------------------------------------------------
+    subgraph SkillsContext["infrastructure/skills_context.py — vibey-skills marketplace (opt-in)"]
+        Compiler["VibeySkillsContextCompiler<br/>shadow mode: build + record packet provenance only<br/>inject mode: append packet to BUILD prompt"]
+    end
+
+    Application -->|"--skills-context-mode/--skills-context-budget<br/>per-project config"| Compiler
+    Compiler -->|"subprocess, trusted project-config command<br/>default: python -m vibey_skills.cli"| VibeySkillsCli["vibey-skills CLI<br/>(independently versioned package)"]
 
     %% ---------------------------------------------------------------
     subgraph SixPhase["Domain model — six-phase conductor"]
@@ -110,12 +118,14 @@ graph TB
         SecNote2["domain/prompt_shield.py, command_guard.py,<br/>scope_guard.py — untrusted engine output<br/>never executes unchecked"]
         SecNote3["Media egress to external providers only<br/>after explicit visual-stage opt-in<br/>and per-asset confirmation"]
         SecNote4["Azure credentials never leave the<br/>developer's environment/keychain;<br/>ARM plans reviewed before apply"]
+        SecNote5["Skills-context subprocess command and budget<br/>come from trusted project config, not engine<br/>output; off by default; shadow mode never<br/>alters prompts"]
     end
 
     Domain -.-> SecNote1
     Domain -.-> SecNote2
     Application -.-> SecNote3
     Infrastructure -.-> SecNote4
+    Compiler -.-> SecNote5
 
     %% ---------------------------------------------------------------
     subgraph Release["Release & provenance — .github/workflows/"]

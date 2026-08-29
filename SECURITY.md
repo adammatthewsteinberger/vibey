@@ -57,6 +57,6 @@ Vibey is a queue-based conductor for autonomous software delivery. Because Vibey
 If you discover a security vulnerability in Vibey, please report it responsibly:
 
 1. **Do NOT open a public issue.**
-2. Send a detailed report to the security team or repository maintainers.
+2. Use [GitHub Security Advisories](https://github.com/adammatthewsteinberger/vibey/security/advisories/new) to send a private report to the repository maintainers.
 3. Include reproducible steps, affected versions, and potential impact.
 4. We will acknowledge receipt within 48 hours and coordinate remediation before public disclosure.
