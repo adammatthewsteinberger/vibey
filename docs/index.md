@@ -1,5 +1,22 @@
 # vibey
 
+**You've used an AI coding agent. Then you babysat it** — re-prompting when it
+lost the thread, re-explaining everything after a crash, copying results
+between tools, watching a run die at 2am because one vendor's credits ran out.
+The agent was autonomous; the *delivery* was you.
+
+**Vibey is the layer that does the babysitting.** It's an orchestrator that
+wraps AI coding agents so you're not managing sessions or threads by hand: you
+describe what you want, it interviews you until the spec is sharp, builds
+unattended across a pool of engines, brings you back only for the decisions
+that are genuinely yours, and survives crashes and credit exhaustion without
+losing a single open question.
+
+For the precise version: a queue-based, six-phase conductor for autonomous
+software delivery — with an optional visual-design interstitial and opt-in
+Azure deployment — built on top of the [`*loop` autonomous session
+runners](https://github.com/adammatthewsteinberger/claudeloop).
+
 ## What problem this solves
 
 An autonomous coding session is not autonomous software delivery. A single
@@ -15,16 +32,12 @@ caps, reviews the result with you, and (only if you opt in) deploys. Every
 choice, finding, and handoff lives in an append-only PostgreSQL ledger — never
 in one vendor's chat session.
 
-**Concretely: a queue-based, six-phase conductor for autonomous software
-delivery — with an optional visual-design interstitial and opt-in Azure
-deployment — built on top of the `*loop` autonomous session runners.**
-
 | | |
 |---|---|
 | Runs on | macOS / Linux, local. No cloud control plane required. |
 | Language | Python 3.12+ |
 | Queue | PostgreSQL (`FOR UPDATE SKIP LOCKED`) |
-| Engines | [`claudeloop`](https://github.com/adammatthewsteinberger/claudeloop), [`codexloop`](https://github.com/adammatthewsteinberger/codexloop), [`cursorloop`](https://github.com/adammatthewsteinberger/cursorloop), [`agyloop`](https://github.com/adammatthewsteinberger/agyloop) — plus `qwenloop`, a default-off local standby engine (`[features] qwenloop = true` or `VIBEY_FEATURE_QWENLOOP`) |
+| Engines | [`claudeloop`](https://github.com/adammatthewsteinberger/claudeloop), [`codexloop`](https://github.com/adammatthewsteinberger/codexloop), [`cursorloop`](https://github.com/adammatthewsteinberger/cursorloop), [`agyloop`](https://github.com/adammatthewsteinberger/agyloop) |
 | State dir | `.vibey/` |
 | Env prefix | `VIBEY_` |
 | Done marker | Each loop's own marker (CLAUDELOOP_TASK_FULLY_COMPLETE, etc.) |
@@ -67,18 +80,59 @@ vibey worker --engines claudeloop,agyloop -j 2   # unattended build across the p
 vibey answer <gate-id> --defaults            # accept the interview defaults, or:
 vibey answer <gate-id> --raw '{"max_dollars": 25}'   # raise a tripped budget cap
 vibey design accept <project-id> --no-visual
-# or, having opted into --visual above, settle the visual gate before BUILD:
-vibey visual accept <project-id>             # accept the reviewed visual plan
-vibey visual waive <project-id>              # explicitly decline it (inventory must be complete)
 vibey answer <gate-id> --verdict accept      # review demo
 vibey answer <gate-id> --choice local_only   # decline deployment → DONE (local)
-
-# If a worker dies mid-lease, jobs stay stuck in `leased` until recovered:
-vibey recover --project <project-id>         # or --all, for every project
 ```
 
 The [greeter live-demo runbook](guides/greeter-live-demo.md) walks a full
 paid run end to end, including the zero-touch contracts.
+
+## Command reference
+
+Every command's flags and defaults are in the
+[CLI reference](reference/cli.md). The most common ones:
+
+| Command | What it does |
+|---|---|
+| `vibey doctor` | Pre-flight: engine auth, versions, optional conformance suite. |
+| `vibey new` | Create a project and enqueue its first DESIGN interview. |
+| `vibey worker` | Long-running worker: dispatches jobs across every phase. |
+| `vibey work` | Process one ready DESIGN job (foreground, capped). |
+| `vibey answer` | Answer a parked human gate. |
+| `vibey design` / `vibey visual` | Resume/accept DESIGN; accept/waive VISUAL_DESIGN. |
+| `vibey watch` / `vibey status` | Live dashboard, or one-shot status (`--json` for scripting). |
+| `vibey engines` / `vibey cost` / `vibey ledger show` | Engine health, budget spend, and event-ledger inspection. |
+| `vibey deploy status/inspect/plan/cancel/rollback` | Inspect and control Phases ④–⑥. |
+| `vibey recover` | Recover jobs stuck under a dead worker's lease. |
+| `vibey operator` | Run the Kubernetes operator (`pip install 'vibey[operator]'`). |
+
+## Configuration
+
+`vibey.toml`'s schema — `[project]`, `[isolation]`, `[budget]`, `[engines]`,
+`[phases.design/build/review]`, `[provision]`, `[deploy]`, `[features]`,
+`[qwenloop]` — is fully implemented and unit-tested in
+`domain/config.py`/`infrastructure/config_loader.py`, with defaults and an
+example file in the [configuration reference](reference/configuration.md).
+**It is not yet wired into any command** — no code path in `cli/`,
+`bootstrap.py`, the worker, or the operator ever reads a `vibey.toml` file
+from disk, so writing one today has no effect. Treat it the same as
+`infrastructure/notify/` below: implemented-and-tested, not yet an active
+runtime path.
+
+What does configure a project today is a handful of `vibey new` CLI flags
+(`--max-cycles`, `--max-cycle-dollars`, `--max-cycle-turns`,
+`--skills-context-mode`, `--skills-context-budget`) recorded directly into
+that project's stored config at creation time — see the
+[CLI reference](reference/cli.md).
+
+## Notifications
+
+`infrastructure/notify/` implements a `NotificationService` that dispatches
+desktop alerts and HMAC-SHA256-signed webhooks (`X-Vibey-Signature`, see
+[SECURITY.md](https://github.com/adammatthewsteinberger/vibey/blob/main/SECURITY.md#6-webhook-payload-integrity)),
+and it is covered by tests. It is **not yet wired into `bootstrap.py`, the
+worker, or the CLI** — no flag or `vibey.toml` key constructs it today.
+Treat it as implemented-and-tested, not yet an active runtime path.
 
 ## The shape of it
 
@@ -100,6 +154,12 @@ paid run end to end, including the zero-touch contracts.
              ▲                 │                    │
              └─────────────────┴────────────────────┘
 ```
+
+**The six phases** — ① Design · ② Build · ③ Review · ④ Deploy Design ·
+⑤ Deploy Execute · ⑥ Deploy Review. The circled numbers above are these;
+**bold** below means the phase talks to you.
+
+**① Design** → ② Build → **③ Review** → **④ Deploy Design** → ⑤ Deploy Execute → **⑥ Deploy Review**
 
 Phases 1, 3, 4, and 6 talk to you. The optional Visual Design stage also talks to
 you and cannot hand work to BUILD until every planned visual is accepted or you
@@ -131,45 +191,16 @@ things those runners deliberately do not do:
    ledger's own cost events, with parks that tell you the exact command to
    grant more.
 
-## Inspecting the ledger and deployments
-
-```bash
-vibey ledger show <project-id> --phase build --kind decision_recorded
-                                              # tail the append-only event ledger;
-                                              # project-id, --phase, and --kind are all optional filters
-vibey design resume <project-id>             # re-enqueue or resume a stalled DESIGN interview
-
-# Once a project has opted into deployment (Phase ④–⑥):
-vibey deploy status <project-id>             # active phase, live endpoint, verification state
-vibey deploy inspect <project-id>            # accepted DeploymentSpec: spec_id, scope digest, monthly budget
-```
-
-`vibey deploy plan`, `vibey deploy cancel`, and `vibey deploy rollback` exist
-as CLI placeholders for a future IaC-plan/cancellation/rollback pipeline.
-Today they each print a fixed "not yet implemented" notice and do not
-evaluate a real IaC plan, call the Azure client, write a ledger event, or
-change any job/phase state.
-
-## Running on Kubernetes
-
-Beyond a laptop, `vibey worker` ships as a Helm chart
-(`deploy/helm/vibey/`) with an in-cluster PostgreSQL, KEDA-based
-queue-depth autoscaling, and a `vibey operator` command that runs a
-kopf-based operator reconciling a `VibeyProject` custom resource
-(create-project, apply `spec.answers`, project phase as CR status). The
-worker path is verified end to end on minikube; engine binaries
-(`claudeloop`, `codexloop`, `cursorloop`, `agyloop`) do not ship in the
-container image yet, so in-cluster runs are limited to `--provider
-scripted`. See the [Kubernetes guide](guides/kubernetes.md) for setup
-and current limitations.
-
 ## Documentation
 
 | Document | What's in it |
 |---|---|
+| [Architecture map](https://github.com/adammatthewsteinberger/vibey/blob/main/docs/project.mmd) | Comprehensive Mermaid diagram: every layer, the six phases, the ledger/handoff data flow, the security boundary, and the release channels |
+| [CLI reference](reference/cli.md) | Every command, subcommand, flag, and default |
+| [Configuration reference](reference/configuration.md) | The full `vibey.toml` schema, with defaults and an example file |
+| [Kubernetes guide](guides/kubernetes.md) | Container, Helm chart, KEDA autoscaling, and its own troubleshooting section |
 | [Greeter live-demo runbook](guides/greeter-live-demo.md) | A full paid run, end to end, with the zero-touch contracts |
-| [Running vibey on Kubernetes](guides/kubernetes.md) | The Helm chart, the `vibey operator` command, KEDA autoscaling, and what's not there yet |
-| [Expansion runbooks](runbooks/expansion/) | 21 workstreams: JIRA, more clouds, engine binaries in-cluster, clients, store submissions, … |
+| [Expansion runbooks](https://github.com/adammatthewsteinberger/vibey/blob/main/docs/runbooks/expansion/) | 21 workstreams: JIRA, more clouds, Kubernetes server mode, clients, store submissions, … |
 | [Architecture & roadmap](https://github.com/adammatthewsteinberger/vibey/blob/main/docs/plans/architecture-and-roadmap.md) | The master design: context, containers, layers, phases, risks, milestones |
 | [Domain model](https://github.com/adammatthewsteinberger/vibey/blob/main/docs/plans/domain-model.md) | Every value object, ADT, and invariant in `domain/` |
 | [Data model](https://github.com/adammatthewsteinberger/vibey/blob/main/docs/plans/data-model.md) | Full PostgreSQL DDL, queue semantics, indices |
@@ -177,7 +208,7 @@ and current limitations.
 | [Rotation & engines](https://github.com/adammatthewsteinberger/vibey/blob/main/docs/plans/rotation-and-engines.md) | Capability matrix, effort normalization, smooth weighted round robin |
 | [Phase protocols](https://github.com/adammatthewsteinberger/vibey/blob/main/docs/plans/phase-protocols.md) | What all six phases do, turn by turn |
 | [Implementation plan](https://github.com/adammatthewsteinberger/vibey/blob/main/docs/plans/implementation-plan.md) | Milestone-by-milestone, test-first task breakdown |
-| [Decision records](architecture/decisions/) | Why each hard call was made |
+| [Decision records](https://github.com/adammatthewsteinberger/vibey/blob/main/docs/architecture/decisions/) | Why each hard call was made (15 ADRs) |
 
 ## Status
 
@@ -194,6 +225,44 @@ holds a **100% branch-coverage floor**, enforced as four separate CI gates.
 `domain/` is pure stdlib, enforced by import-linter and an AST-walking purity
 test — the no-loss handoff gate is deterministic code, not a model's opinion.
 
+## Troubleshooting
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| `vibey doctor` reports an engine `NOT INSTALLED` | The `*loop` binary isn't on `PATH`. | `uv tool install claudeloop` (or codexloop/cursorloop/agyloop), then re-run `vibey doctor`. |
+| `vibey doctor` reports `auth FAIL` | The engine's own vendor credentials aren't configured. | Run that engine's own login/auth flow, then re-run `vibey doctor --conformance`. |
+| `vibey worker` logs `no recorded conformance for ...` | `vibey doctor --conformance --record` has never passed for that engine on this project. | Run it before starting the worker; engine-driven jobs won't select an unrecorded engine. |
+| A project is parked and nothing progresses | A human gate (interview, review verdict, budget cap) is waiting. | `vibey status <project-id>` to see the park reason; `vibey answer <gate-id> ...` to clear it. |
+| Jobs sit `leased` after a worker crash | The lease hasn't expired yet, or nothing has reclaimed it. | `vibey recover --project <id>` (or `--all`) sets them back to `ready`. |
+| Budget cap trips mid-cycle | `max_dollars_per_cycle` / `max_dollars_total` was exceeded — by design. | `vibey answer <gate-id> --raw '{"max_dollars": 25}'` to grant more, or accept the park. |
+| Kubernetes-specific issues | — | See the [Kubernetes guide's Troubleshooting section](guides/kubernetes.md#troubleshooting). |
+
+## Upgrading
+
+Vibey is pre-1.0: minor versions may change `vibey.toml` fields, ledger
+event shapes, or CLI flags. Before upgrading:
+
+1. Read the [changelog](https://github.com/adammatthewsteinberger/vibey/blob/main/CHANGELOG.md)
+   for the versions between your current version and the target.
+2. Re-run `vibey doctor --conformance --record` afterward — engine
+   contracts and conformance checks can gain new checks between releases.
+3. The database schema migrates automatically
+   (`infrastructure/db/migrator.py`); no manual migration step is needed.
+
+`develop` publishes dev builds to TestPyPI as `vibey-dev`; `main` publishes
+tagged releases to PyPI as `vibey`. `uv tool install vibey` (or `pipx
+install vibey` / `pip install vibey`) tracks stable releases.
+
+## Project links
+
+| | |
+|---|---|
+| Contributing | [CONTRIBUTING.md](https://github.com/adammatthewsteinberger/vibey/blob/main/CONTRIBUTING.md) |
+| Security policy | [SECURITY.md](https://github.com/adammatthewsteinberger/vibey/blob/main/SECURITY.md) |
+| Getting help | [SUPPORT.md](https://github.com/adammatthewsteinberger/vibey/blob/main/SUPPORT.md) |
+| Code of Conduct | [CODE_OF_CONDUCT.md](https://github.com/adammatthewsteinberger/vibey/blob/main/CODE_OF_CONDUCT.md) |
+| Changelog | [CHANGELOG.md](https://github.com/adammatthewsteinberger/vibey/blob/main/CHANGELOG.md) |
+
 ## Related projects
 
 | Project | What it is |
@@ -202,7 +271,6 @@ test — the no-loss handoff gate is deterministic code, not a model's opinion.
 | [codexloop](https://github.com/adammatthewsteinberger/codexloop) | The same design retargeted onto OpenAI Codex |
 | [cursorloop](https://github.com/adammatthewsteinberger/cursorloop) | The same design retargeted onto Cursor |
 | [agyloop](https://github.com/adammatthewsteinberger/agyloop) | The same design retargeted onto Google Antigravity / Gemini |
-| `qwenloop` | Local Qwen-backed standby runner; opt-in only, selected when no eligible paid engine is available (ADR-0015) |
 
 ## License
 

@@ -1,5 +1,5 @@
 ---
-description: Release-please workflow, Conventional Commits, and publishing to PyPI. Read before cutting a release.
+description: The release.yml OIDC publish workflow, Conventional Commits, and manual CHANGELOG/version bumps. Read before cutting a release.
 alwaysApply: false
 ---
 
@@ -7,8 +7,9 @@ alwaysApply: false
 
 # vibey releasing
 
-Vibey uses **release-please** for automated semantic versioning and changelog
-generation, triggered by Conventional Commits.
+Vibey publishes directly from `.github/workflows/release.yml` on every push
+to `develop` or `main` — there is no release-please step and no release PR.
+Versioning and the changelog are both maintained by hand.
 
 ## Conventional Commits (enforced)
 
@@ -38,56 +39,44 @@ feat!: require Python 3.12+
 BREAKING CHANGE: Python 3.11 is no longer supported.
 ```
 
-**Why this matters:** release-please parses commit messages to determine
-version bumps (`fix` → patch, `feat` → minor, `BREAKING CHANGE` → major) and
-generate changelogs. A malformed commit breaks the release automation.
+**Why this matters:** commit messages are not parsed by any release
+automation here — there is no release-please. Conventional Commits are
+still enforced for a legible history, but bumping the version and writing
+the changelog entry are manual steps you do as part of the release commit.
 
 ## Release workflow
 
-1. **Merge to `develop`** — feature PRs squash into `develop`.
-2. **`develop` → `main`** — when ready to release, merge `develop` into `main`
-   via a merge commit (never squash).
-3. **Release-please PR** — on push to `main`, the `release-please.yml` workflow
-   creates or updates a release PR. It:
-   - Bumps version in `pyproject.toml`
-   - Updates `CHANGELOG.md`
-   - Tags the release
-4. **Merge the release PR** — merging it creates a GitHub release and triggers
-   the `publish-to-pypi.yml` workflow.
-5. **PyPI publish** — `publish-to-pypi.yml` builds the wheel and uploads to
-   PyPI.
+1. **Merge to `develop`** — feature PRs squash into `develop`. Every push to
+   `develop` builds and publishes a dev-versioned build to TestPyPI as
+   `vibey-dev` (the `vibey` name is squatted there by an unrelated project),
+   via OIDC trusted publishing — no token stored anywhere.
+2. **Bump the version by hand** — before merging to `main`, edit
+   `version = "x.y.z"` in `pyproject.toml` and add a matching entry at the
+   top of `CHANGELOG.md`. Nothing does this automatically.
+3. **`develop` → `main`** — when ready to release, merge `develop` into
+   `main` via a merge commit (never squash).
+4. **`release.yml` runs on push to `main`** — it builds the wheel/sdist and
+   publishes straight to PyPI as `vibey` via OIDC trusted publishing. There
+   is no release PR and no separate publish workflow to merge first.
+5. **`main` realigns `develop`** — a `realign` job force-syncs `develop`'s
+   tree to match `main` once the publish succeeds (skipped, with a notice,
+   if `AUTOMERGE_TOKEN` isn't set — harmless, since promotion compares
+   branches by content).
 
-## Checking the release state
+## Manual version bump
 
-```bash
-# See what the next version will be
-gh pr list --label "autorelease: pending"
-
-# See the changelog draft
-gh pr view <PR_NUMBER>
-```
-
-## Manual version bump (escape hatch)
-
-If release-please is stuck or miscalculated, you can force a version:
+There is no escape hatch to reach for — this *is* the normal process:
 
 1. Edit `pyproject.toml` and bump `version = "x.y.z"`
-2. Update `CHANGELOG.md` manually
+2. Add a `## [x.y.z]` entry to `CHANGELOG.md` describing what changed
 3. Commit with `chore: release x.y.z`
-4. Tag and push:
-
-```bash
-git tag -a vx.y.z -m "Release x.y.z"
-git push origin vx.y.z
-```
-
-This bypasses release-please but still triggers PyPI publish.
+4. Merge to `main` — `release.yml` publishes it on push, no tag needed
 
 ## Verifying the publish
 
-After the release PR merges:
+After `main` builds:
 
-1. Check the GitHub release: https://github.com/YOUR_ORG/vibey/releases
+1. Check the `release.yml` run in GitHub Actions.
 2. Verify PyPI: https://pypi.org/project/vibey/
 3. Install and test:
 
@@ -98,22 +87,30 @@ pip install vibey==x.y.z
 vibey --version
 ```
 
+For a `develop` push, verify TestPyPI instead (package name `vibey-dev`);
+the workflow's own `verify-testpypi` job already does this automatically.
+
 ## Common issues
 
-**Release PR not created:** check that commits on `main` since the last
-release follow Conventional Commits.
+**Version didn't change on PyPI:** confirm `pyproject.toml`'s `version` was
+actually bumped before the push — `release.yml` reads it directly and
+`skip-existing: true` means an unbumped version silently no-ops.
 
-**Version didn't bump:** `fix` and `feat` are the only types that trigger a
-bump. `docs`, `chore`, `test` do not.
+**CHANGELOG.md doesn't mention the shipped version:** nothing updates it
+automatically; it must be edited in the same commit as the version bump.
 
-**PyPI publish failed:** check the `publish-to-pypi.yml` run in GitHub
-Actions. Common causes: PyPI token expired, wheel build failed, version
-already published.
+**Publish failed:** check the `release.yml` run in GitHub Actions. Common
+causes: OIDC trusted-publisher not configured for the `pypi`/`testpypi`
+environment, wheel build failed, version already published.
 
-## The workflows
+**`develop` didn't realign after a release:** check whether
+`AUTOMERGE_TOKEN` is set — the `realign` job skips (not fails) without it.
 
-- `.github/workflows/release-please.yml` — creates/updates the release PR
-- `.github/workflows/publish-to-pypi.yml` — publishes to PyPI when a release
-  is tagged
+## The workflow
 
-Both are triggered automatically. Do not run them manually unless debugging.
+- `.github/workflows/release.yml` — the only release workflow. `build` runs
+  on every push to `develop`/`main`; `testpypi`/`verify-testpypi` run on
+  `develop`; `pypi` and `realign` run on `main`.
+
+Triggered automatically by pushing to `develop` or `main`. Do not run it
+manually unless debugging.

@@ -73,6 +73,9 @@ uv run pip-audit
 | Need | Go to |
 |---|---|
 | Procedures | `.agent/rules/`, `.claude/skills/`, `.cursor/rules/`, `.agents/skills/` |
+| Comprehensive architecture diagram | `docs/project.mmd` |
+| CLI reference | `docs/reference/cli.md` |
+| `vibey.toml` schema reference | `docs/reference/configuration.md` |
 | Architecture | `docs/plans/architecture-and-roadmap.md` |
 | Domain model | `docs/plans/domain-model.md` |
 | Handoff protocol | `docs/plans/handoff-protocol.md` |
