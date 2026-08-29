@@ -2,9 +2,9 @@
 
 **Not yet an active runtime input.** The schema below is fully implemented
 and unit-tested in
-[`src/vibey/domain/config.py`](../../src/vibey/domain/config.py)
+[`src/vibey/domain/config.py`](https://github.com/adammatthewsteinberger/vibey/blob/main/src/vibey/domain/config.py)
 (`VibeyConfig`, `parse_config`, `parse_toml_string`) and
-[`src/vibey/infrastructure/config_loader.py`](../../src/vibey/infrastructure/config_loader.py)
+[`src/vibey/infrastructure/config_loader.py`](https://github.com/adammatthewsteinberger/vibey/blob/main/src/vibey/infrastructure/config_loader.py)
 (`load_config_from_path`), but **no command actually reads a `vibey.toml`
 file from disk today** — `load_config_from_path` has no caller anywhere in
 `cli/`, `bootstrap.py`, the worker, or the Kubernetes operator, only its own
@@ -58,7 +58,7 @@ implemented and unit-tested, but — like the rest of this page — it is never
 constructed by `bootstrap.py` or anything else outside its own test file,
 and (per the note above) `[isolation]` itself is never read from a real
 `vibey.toml`. Setting `level = "container"` has no effect today; see
-[SECURITY.md](../../SECURITY.md#1-worktree--container-isolation-runtime-adr-0008-task-91)
+[SECURITY.md](https://github.com/adammatthewsteinberger/vibey/blob/main/SECURITY.md#1-worktree--container-isolation-runtime-adr-0008-task-91)
 for the same disclosure.
 
 ## `[budget]`
