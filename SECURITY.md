@@ -28,8 +28,9 @@ Vibey is a queue-based conductor for autonomous software delivery. Because Vibey
 - Subprocess execution strips sensitive git and shell environment variables (`GIT_DIR`, `GIT_WORK_TREE`, `GIT_INDEX_FILE`, etc.) using `CleanGitEnvSubprocessExecutor`.
 - All ledger and telemetry records run through redaction masks (`redact.py`) to prevent leakage of credentials, tokens, or private keys.
 
-### 6. Webhook Payload Integrity
-- External notifications dispatched via `WebhookPublisher` are signed with HMAC-SHA256 signatures (`X-Vibey-Signature: sha256=...`) and validated against URL scheme restrictions.
+### 6. Webhook Payload Integrity — designed, not yet wired
+- `infrastructure/notify/service.py` (`NotificationService`) and `infrastructure/notify/webhook.py` (`WebhookPublisher`) implement HMAC-SHA256 request signing (`X-Vibey-Signature: sha256=...`) and validation against URL scheme restrictions for outbound webhook notifications.
+- **This is unit-tested but not imported or instantiated from `bootstrap.py` or any gate-raised, phase-change, or budget-event dispatch path** (verified: no reference to `infrastructure/notify/` outside its own module and tests). No webhook — signed or otherwise — is sent by vibey today; treat this as a designed-and-tested primitive awaiting integration, not an active runtime control, and do not rely on it for out-of-band visibility into a run.
 
 ---
 
