@@ -20,13 +20,14 @@ Be clear about this before you install anything:
   Real engines in-cluster are workstreams
   [05](../runbooks/expansion/05-server-mode-kubernetes.md) item 1 and
   [16](../runbooks/expansion/16-loop-runner-containers.md).
-- **The operator exists but is off by default.** `vibey operator` and the
-  `VibeyProject` CRD (`operator.enabled: true` in values) let a CR's
-  `spec.answers` drive `vibey answer` and surface phase as CR status; it
-  has integration test coverage but has not been exercised as a long-running
-  deployment the way the worker path has. Without it, creating projects and
-  answering gates is still `vibey new` / `vibey answer`, run inside a pod or
-  against the database.
+- **The operator is implemented, but off by default.** `vibey operator`
+  (`pip install 'vibey[operator]'`) runs kopf handlers that create
+  projects and apply `spec.answers` through the same application services
+  `vibey new` / `vibey answer` use, then reconcile `VibeyProject` status
+  every 15s. The chart does not install it unless you set
+  `operator.enabled=true` (step 7 below); without that flag, creating
+  projects and answering gates is still `vibey new` / `vibey answer`, run
+  inside a pod or against the database.
 
 ## Prerequisites
 
@@ -155,6 +156,60 @@ draining on SIGTERM: finishing in-flight job, claiming no more
 An idle worker therefore exits in seconds. Only a worker genuinely
 mid-turn uses any meaningful part of the grace period.
 
+## 7. The kopf operator (optional)
+
+The chart can also install a cluster-scoped operator that reconciles
+`VibeyProject` custom resources, so a project is a CR instead of a
+`kubectl exec` command:
+
+```bash
+helm upgrade vibey deploy/helm/vibey -n vibey --set operator.enabled=true
+```
+
+This installs, in addition to the worker:
+
+- the `VibeyProject` CRD (`vibeyprojects.vibey.dev`, short name `vp`),
+  annotated `helm.sh/resource-policy: keep` so `helm uninstall` never
+  deletes a project mid-`BUILD` along with it. Set
+  `operator.installCRD=false` if another release already owns the CRD.
+- a `ClusterRole` scoped to `vibeyprojects`/`vibeyprojects/status`
+  (`list, watch, get, patch, update` — deliberately no `delete`) plus the
+  `events` and kopf peering permissions it needs to run.
+- a single-replica operator Deployment (`kind: Recreate`; two operators
+  patching the same CR is a race with no upside at this scale). Set
+  `operator.watchNamespace` to scope it to one namespace instead of the
+  cluster.
+
+Create a project by applying a CR instead of `vibey new`:
+
+```yaml
+apiVersion: vibey.dev/v1alpha1
+kind: VibeyProject
+metadata:
+  name: demo
+spec:
+  repo: /work/demo
+  maxCycles: 10
+  maxCycleDollars: 25
+  engines: [claudeloop]
+  answers:
+    some-gate-id: { choice: "yes" }
+```
+
+```bash
+kubectl apply -n vibey -f vibeyproject.yaml
+kubectl get vibeyprojects -n vibey
+```
+
+The operator creates the project on first reconcile, then re-reconciles
+every 15s: it applies any new `spec.answers` through the same gate-answer
+service `vibey answer` calls (a key naming an already-answered gate is
+recorded in `status.ignoredAnswers`, not treated as an error), and writes
+`status.phase`, `status.cycle`, `status.openGates`, and `Ready`/`Parked`
+conditions — visible via `kubectl get vibeyprojects` and
+`kubectl describe`. It never deletes a project, so removing the CR does
+not remove the underlying project or its data.
+
 ## Troubleshooting
 
 **`helm upgrade` fails with `lookup <release>-postgres ... no such host`.**
@@ -198,8 +253,10 @@ another project will scale workers that cannot claim it.
 | `worker.waitForProjectSeconds` | `15` | park instead of restart-looping |
 | `worker.parallelism` | `2` | concurrent job loops per pod |
 | `worker.project` | `""` | **set this**; empty binds to the newest project |
-| `operator.enabled` | `false` | install the `VibeyProject` CRD + `vibey operator` Deployment |
 | `keda.minReplicas` / `maxReplicas` | `0` / `4` | scale to zero when idle |
 | `keda.cooldownPeriod` | `300` | delay before deactivating to zero |
 | `clusterDomain` | `cluster.local` | only change on a custom `--service-dns-domain` |
 | `postgres.enabled` | `true` | dev only; use `dsn.existingSecret` for managed |
+| `operator.enabled` | `false` | install the kopf `VibeyProject` operator |
+| `operator.watchNamespace` | `""` | empty watches cluster-wide |
+| `operator.installCRD` | `true` | disable if another release already owns the CRD |
