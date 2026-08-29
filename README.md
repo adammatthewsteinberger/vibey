@@ -130,6 +130,17 @@ by tests. It is **not yet wired into `bootstrap.py`, the worker, or the
 CLI** — no flag or `vibey.toml` key constructs it today. Treat it as
 implemented-and-tested, not yet an active runtime path.
 
+## Telemetry
+
+`infrastructure/otel.py` implements `TelemetryTracer` (span tracing for
+jobs, turns, and handoffs) and `TelemetryMetrics` (engine-selection,
+queue-latency, phase-duration, handoff-failure, and cost-spend counters),
+plus `calculate_rotation_fairness()` for measuring rotation fairness against
+declared engine weights. It is covered by unit tests. Like `notify/`, it is
+**not constructed by `bootstrap.py`** and has no CLI flag or `vibey.toml`
+key wiring it into a running worker — treat it as implemented-and-tested,
+not yet an active runtime path.
+
 ## The shape of it
 
 ```

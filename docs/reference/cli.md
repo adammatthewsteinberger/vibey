@@ -27,7 +27,7 @@ Create a project and enqueue its first DESIGN interview.
 | `--max-cycles N` | `10` | Cap on delivery cycles before the project stops. |
 | `--max-cycle-dollars F` | unset | Per-cycle dollar cap; tripping it parks a `budget_exhausted` gate instead of starting more sessions. |
 | `--max-cycle-turns N` | unset | Per-cycle engine-turn cap. |
-| `--skills-context-mode {off,shadow,inject}` | `off` | `vibey-skills` retrieval mode — see [Configuration reference](configuration.md#skills-context). |
+| `--skills-context-mode {off,shadow,inject}` | `off` | `vibey-skills` retrieval mode — see [Configuration reference](configuration.md#skills_context). |
 | `--skills-context-budget N` | `6000` | Token budget for skills retrieval (1,000–32,000). |
 
 ## `vibey answer GATE_ID`

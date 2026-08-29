@@ -13,6 +13,7 @@ flowchart TB
         TUI["tui/dashboard.py<br/>live dashboard + ledger replay"]
         TomlCfg["vibey.toml<br/>domain/config.py schema<br/>(see docs/reference/configuration.md)"]
         K8sCRD["VibeyProject CRD<br/>infrastructure/operator/<br/>(pip install 'vibey[operator]')"]
+        SkillsFlags["vibey new<br/>--skills-context-mode {off,shadow,inject}<br/>--skills-context-budget N<br/>[skills_context] vibey.toml table"]
     end
 
     User --> CLI
@@ -55,6 +56,8 @@ flowchart TB
         INotify["notify/service.py · notify/webhook.py<br/>HMAC-SHA256 signed webhooks<br/>IMPLEMENTED + TESTED, NOT constructed by bootstrap.py"]
         IProvision["provision/agent_surface.py<br/>syncs .claude/ .cursor/ .agents/ .agent/"]
         IRedact["redact.py — credential/token/secret redaction"]
+        ISkillsContext["skills_context.py<br/>VibeySkillsContextCompiler<br/>shells out to the vibey-skills CLI"]
+        IOtel["otel.py<br/>TelemetryTracer + TelemetryMetrics<br/>+ calculate_rotation_fairness()<br/>IMPLEMENTED + TESTED, NOT constructed by bootstrap.py"]
     end
 
     subgraph TUILayer["cli/, tui/ — outermost onion ring"]
@@ -77,6 +80,10 @@ flowchart TB
     AEngineSel --> DRotation
     IEngines --> DCapacity
     INotify -. "dormant: no CLI flag or vibey.toml key<br/>constructs it yet" .-> AppResources
+    IOtel -. "dormant: implemented + tested,<br/>not constructed by bootstrap.py" .-> AppResources
+    SkillsFlags --> TomlCfg
+    AppResources --> ISkillsContext
+    ISkillsContext -->|packet always recorded to the ledger;<br/>inject mode also appends it to the BUILD prompt| ABuild
 
     subgraph Workflow["The six-phase delivery workflow"]
         Intake(["INTAKE"]) --> PDesign["① DESIGN — interactive"]
