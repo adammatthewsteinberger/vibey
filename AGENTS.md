@@ -102,7 +102,7 @@ uv run pip-audit
 | Need | Go to |
 |---|---|
 | How to work on any specific part of this codebase | `.claude/skills/`, `.cursor/rules/`, `.agents/skills/`, `.agent/rules/` |
-| System design and why each hard call was made | `docs/architecture/decisions/` (14 ADRs) |
+| System design and why each hard call was made | `docs/architecture/decisions/` (15 ADRs) |
 | Full architecture | `docs/plans/architecture-and-roadmap.md` |
 | Domain model | `docs/plans/domain-model.md` |
 | Data model | `docs/plans/data-model.md` |
@@ -110,7 +110,7 @@ uv run pip-audit
 | Rotation & engines | `docs/plans/rotation-and-engines.md` |
 | Phase protocols | `docs/plans/phase-protocols.md` |
 | Implementation plan | `docs/plans/implementation-plan.md` |
-| User-facing docs | `docs/getting-started/`, `docs/guides/` |
+| User-facing docs | `docs/guides/` |
 
 **Maintenance:** when procedural guidance changes, update Claude skills,
 Cursor rules, Codex skills, and Antigravity rules in the **same PR**.

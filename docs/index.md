@@ -24,7 +24,7 @@ in one vendor's chat session.
 | Runs on | macOS / Linux, local. No cloud control plane required. |
 | Language | Python 3.12+ |
 | Queue | PostgreSQL (`FOR UPDATE SKIP LOCKED`) |
-| Engines | [`claudeloop`](https://github.com/adammatthewsteinberger/claudeloop), [`codexloop`](https://github.com/adammatthewsteinberger/codexloop), [`cursorloop`](https://github.com/adammatthewsteinberger/cursorloop), [`agyloop`](https://github.com/adammatthewsteinberger/agyloop) |
+| Engines | [`claudeloop`](https://github.com/adammatthewsteinberger/claudeloop), [`codexloop`](https://github.com/adammatthewsteinberger/codexloop), [`cursorloop`](https://github.com/adammatthewsteinberger/cursorloop), [`agyloop`](https://github.com/adammatthewsteinberger/agyloop) — plus `qwenloop`, a default-off local standby engine (`[features] qwenloop = true` or `VIBEY_FEATURE_QWENLOOP`) |
 | State dir | `.vibey/` |
 | Env prefix | `VIBEY_` |
 | Done marker | Each loop's own marker (CLAUDELOOP_TASK_FULLY_COMPLETE, etc.) |
@@ -67,8 +67,14 @@ vibey worker --engines claudeloop,agyloop -j 2   # unattended build across the p
 vibey answer <gate-id> --defaults            # accept the interview defaults, or:
 vibey answer <gate-id> --raw '{"max_dollars": 25}'   # raise a tripped budget cap
 vibey design accept <project-id> --no-visual
+# or, having opted into --visual above, settle the visual gate before BUILD:
+vibey visual accept <project-id>             # accept the reviewed visual plan
+vibey visual waive <project-id>              # explicitly decline it (inventory must be complete)
 vibey answer <gate-id> --verdict accept      # review demo
 vibey answer <gate-id> --choice local_only   # decline deployment → DONE (local)
+
+# If a worker dies mid-lease, jobs stay stuck in `leased` until recovered:
+vibey recover --project <project-id>         # or --all, for every project
 ```
 
 The [greeter live-demo runbook](guides/greeter-live-demo.md) walks a full
@@ -125,12 +131,26 @@ things those runners deliberately do not do:
    ledger's own cost events, with parks that tell you the exact command to
    grant more.
 
+## Running on Kubernetes
+
+Beyond a laptop, `vibey worker` ships as a Helm chart
+(`deploy/helm/vibey/`) with an in-cluster PostgreSQL, KEDA-based
+queue-depth autoscaling, and a `vibey operator` command that runs a
+kopf-based operator reconciling a `VibeyProject` custom resource
+(create-project, apply `spec.answers`, project phase as CR status). The
+worker path is verified end to end on minikube; engine binaries
+(`claudeloop`, `codexloop`, `cursorloop`, `agyloop`) do not ship in the
+container image yet, so in-cluster runs are limited to `--provider
+scripted`. See the [Kubernetes guide](guides/kubernetes.md) for setup
+and current limitations.
+
 ## Documentation
 
 | Document | What's in it |
 |---|---|
 | [Greeter live-demo runbook](guides/greeter-live-demo.md) | A full paid run, end to end, with the zero-touch contracts |
-| [Expansion runbooks](docs/runbooks/expansion/) | Fifteen workstreams: JIRA, more clouds, Kubernetes server mode, clients, store submissions, … |
+| [Running vibey on Kubernetes](guides/kubernetes.md) | The Helm chart, the `vibey operator` command, KEDA autoscaling, and what's not there yet |
+| [Expansion runbooks](runbooks/expansion/) | 21 workstreams: JIRA, more clouds, engine binaries in-cluster, clients, store submissions, … |
 | [Architecture & roadmap](https://github.com/adammatthewsteinberger/vibey/blob/main/docs/plans/architecture-and-roadmap.md) | The master design: context, containers, layers, phases, risks, milestones |
 | [Domain model](https://github.com/adammatthewsteinberger/vibey/blob/main/docs/plans/domain-model.md) | Every value object, ADT, and invariant in `domain/` |
 | [Data model](https://github.com/adammatthewsteinberger/vibey/blob/main/docs/plans/data-model.md) | Full PostgreSQL DDL, queue semantics, indices |
@@ -138,7 +158,7 @@ things those runners deliberately do not do:
 | [Rotation & engines](https://github.com/adammatthewsteinberger/vibey/blob/main/docs/plans/rotation-and-engines.md) | Capability matrix, effort normalization, smooth weighted round robin |
 | [Phase protocols](https://github.com/adammatthewsteinberger/vibey/blob/main/docs/plans/phase-protocols.md) | What all six phases do, turn by turn |
 | [Implementation plan](https://github.com/adammatthewsteinberger/vibey/blob/main/docs/plans/implementation-plan.md) | Milestone-by-milestone, test-first task breakdown |
-| [Decision records](docs/architecture/decisions/) | Why each hard call was made |
+| [Decision records](architecture/decisions/) | Why each hard call was made |
 
 ## Status
 
@@ -163,6 +183,7 @@ test — the no-loss handoff gate is deterministic code, not a model's opinion.
 | [codexloop](https://github.com/adammatthewsteinberger/codexloop) | The same design retargeted onto OpenAI Codex |
 | [cursorloop](https://github.com/adammatthewsteinberger/cursorloop) | The same design retargeted onto Cursor |
 | [agyloop](https://github.com/adammatthewsteinberger/agyloop) | The same design retargeted onto Google Antigravity / Gemini |
+| `qwenloop` | Local Qwen-backed standby runner; opt-in only, selected when no eligible paid engine is available (ADR-0015) |
 
 ## License
 

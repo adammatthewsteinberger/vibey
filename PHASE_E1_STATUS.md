@@ -1,5 +1,10 @@
 # Phase E1: Live Engines, Rotation, Full Worker — Status Report
 
+> **Historical snapshot, superseded.** Written mid-session; the "NOT
+> STARTED"/"NOT IMPLEMENTED" items below were completed in later work — see
+> `PHASE_E1_FINAL_STATUS.md`, `README.md`'s Status section, and
+> `CHANGELOG.md` (v0.1.0+) for current state.
+
 **Date:** 2026-08-17  
 **Branch:** `chore/e1-live-engines`  
 **Autonomous Session:** Yes (unattended execution)

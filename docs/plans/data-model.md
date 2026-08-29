@@ -562,7 +562,7 @@ only one transitions a given project at a time.
 
 | Table | Policy |
 |---|---|
-| `event` | **never deleted** — it is the ledger. `vibey ledger archive` moves cycles older than N to a compressed partition |
+| `event` | **never deleted** — it is the ledger. Cycles older than N are meant to move to a compressed partition; there is no `vibey ledger` subcommand for this yet — `ledger_app` only exposes `show` |
 | `job` | `succeeded` rows pruned after 30 days; `failed` kept until acknowledged |
 | `handoff` | kept with the ledger |
 | `artifact` | rows kept; files garbage-collected by `vibey gc` when unreferenced by any open item |

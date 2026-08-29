@@ -66,7 +66,10 @@ explicit opt-in; declining deployment records a successful local completion.
 - **Queue backend:** PostgreSQL, never SQLite. `FOR UPDATE SKIP LOCKED` is
   the reason; see ADR-0002.
 - **Engines:** `claudeloop`, `codexloop`, `cursorloop`, `agyloop` — four
-  autonomous session runners. `domain/rotation.py::select()` implements
+  default paid-engine session runners, plus `qwenloop`, a default-off local
+  standby considered only when enabled (`[features] qwenloop = true` or
+  `VIBEY_FEATURE_QWENLOOP`) and no eligible paid engine is available
+  (ADR-0015). `domain/rotation.py::select()` implements
   smooth-weighted round-robin selection (ADR-0005); check whether
   production wiring (an `EngineSelector` calling it from a real dispatch
   path) has landed before describing rotation as an active runtime
@@ -108,9 +111,9 @@ uv run pip-audit
 | Rotation & engines | `docs/plans/rotation-and-engines.md` |
 | Phase protocols | `docs/plans/phase-protocols.md` |
 | Implementation plan | `docs/plans/implementation-plan.md` |
-| System design and why each hard call was made | `docs/architecture/decisions/` (14 ADRs) |
-| User-facing docs | `docs/getting-started/`, `docs/guides/` |
-| Expansion workstreams (JIRA, clouds, k8s, clients, …) | `docs/runbooks/expansion/` (16 runbooks, `00-master-plan.md` first) |
+| System design and why each hard call was made | `docs/architecture/decisions/` (15 ADRs) |
+| User-facing docs | `docs/guides/` |
+| Expansion workstreams (JIRA, clouds, k8s, clients, …) | `docs/runbooks/expansion/` (22 files: `00-master-plan.md` plus 21 workstreams) |
 
 **Agent-surface maintenance:** when a skill/procedure changes, update
 Claude, Cursor, Codex, and Antigravity trees in the same PR.

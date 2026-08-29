@@ -890,7 +890,9 @@ def deploy_inspect(
 def deploy_plan(
     project_id: Annotated[UUID | None, typer.Argument(help="Optional project ID")] = None,
 ) -> None:
-    """Generate and evaluate IaC changeset safety against budgets and destructive operations."""
+    """Print a placeholder plan evaluation (NOT YET IMPLEMENTED: does not call
+    domain.deployment.evaluate_iac_plan or infrastructure.azure.iac.IacValidator
+    against the real IaC changeset, budget, or destructive-operation checks)."""
 
     async def run_plan() -> None:
         async with build_app() as resources:
@@ -909,9 +911,9 @@ def deploy_plan(
                 project = proj
 
             typer.echo(f"Plan Evaluation for {project.name}:")
-            typer.echo("  • Status: Safe for automated apply")
-            typer.echo("  • Destructive Deletions: None")
-            typer.echo("  • Budget Adherence: Within monthly cap ($100.00)")
+            typer.echo("  • Status: NOT EVALUATED — this command is a placeholder")
+            typer.echo("  • Destructive Deletions: not checked (no real IaC plan was read)")
+            typer.echo("  • Budget Adherence: not checked (no real cost boundary was evaluated)")
 
     asyncio.run(run_plan())
 
@@ -920,7 +922,9 @@ def deploy_plan(
 def deploy_cancel(
     project_id: Annotated[UUID | None, typer.Argument(help="Optional project ID")] = None,
 ) -> None:
-    """Halt in-flight deployment and clean up ephemeral cloud resources."""
+    """Print a placeholder cancellation notice (NOT YET IMPLEMENTED: does not
+    call AzureClientPort.delete_resource or otherwise touch any real cloud
+    resource, ledger event, or job/phase state)."""
 
     async def run_cancel() -> None:
         async with build_app() as resources:
@@ -938,7 +942,10 @@ def deploy_cancel(
                     raise typer.Exit(1)
                 project = proj
 
-            typer.echo(f"Deployment cancelled and aborted for {project.name}.")
+            typer.echo(
+                f"deploy cancel is not yet implemented — no cloud resources for "
+                f"{project.name} were cancelled or cleaned up."
+            )
 
     asyncio.run(run_cancel())
 
@@ -947,7 +954,9 @@ def deploy_cancel(
 def deploy_rollback(
     project_id: Annotated[UUID | None, typer.Argument(help="Optional project ID")] = None,
 ) -> None:
-    """Trigger immediate policy-bound rollback to previous stable deployment revision."""
+    """Print a placeholder rollback notice (NOT YET IMPLEMENTED: does not call
+    AzureClientPort.delete_resource or any other real rollback operation, and
+    does not transition any job/phase state)."""
 
     async def run_rollback() -> None:
         async with build_app() as resources:
@@ -965,7 +974,10 @@ def deploy_rollback(
                     raise typer.Exit(1)
                 project = proj
 
-            typer.echo(f"Initiated rollback for {project.name} to previous stable revision.")
+            typer.echo(
+                f"deploy rollback is not yet implemented — no rollback was "
+                f"performed for {project.name}."
+            )
 
     asyncio.run(run_rollback())
 

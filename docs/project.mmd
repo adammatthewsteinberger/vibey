@@ -1,0 +1,146 @@
+%% vibey — project map
+%%
+%% One diagram of the whole system: the onion layers and their public
+%% interfaces, the six-phase domain model plus the optional visual and
+%% deployment stage sets, the engine adapters, the Postgres queue/ledger,
+%% the Kubernetes operator/Helm surface, and the release/provenance
+%% pipeline. Keep this current as those surfaces change — see
+%% docs/plans/architecture-and-roadmap.md for the prose version of each
+%% subgraph below.
+
+graph TB
+    %% ---------------------------------------------------------------
+    subgraph Human["Human-facing surfaces"]
+        CLI["cli/main.py<br/>vibey new / design / answer / work /<br/>worker / watch / status / engines /<br/>cost / ledger show / deploy * / doctor / operator /<br/>recover / visual accept / visual waive"]
+        TUI["tui/<br/>Textual live view: phase, engine, cost"]
+    end
+
+    %% ---------------------------------------------------------------
+    subgraph Onion["Onion architecture — src/vibey/"]
+        direction TB
+        Domain["domain/<br/>phase, job, handoff, noloss, rotation,<br/>budget, effort, capacity, circuit,<br/>command_guard, scope_guard, prompt_shield,<br/>visual, media, deployment, provision, plan<br/><i>stdlib only — import-linter enforced</i>"]
+        Application["application/<br/>ports.py (Protocols) + phase handlers:<br/>design_handler, build_*_handler, review_*_handler,<br/>deploy_*_handler, visual_handler, operator_projection,<br/>engine_selector, job_dispatcher, worker.py"]
+        Infrastructure["infrastructure/<br/>db/ (repositories), engines/ (adapters),<br/>ledger/, notify/, git/, container/, build/,<br/>deploy/, azure/, operator/, provision/,<br/>skills_context.py, otel.py, logging.py,<br/>config_loader.py"]
+        Bootstrap["bootstrap.py<br/><i>sole composition root — the only place<br/>concrete infrastructure meets application Protocols</i>"]
+    end
+
+    CLI --> Bootstrap
+    TUI --> Bootstrap
+    Bootstrap --> Application
+    Bootstrap --> Infrastructure
+    Application -->|"depends on"| Domain
+    Infrastructure -->|"depends on"| Application
+    Infrastructure -->|"depends on"| Domain
+
+    %% ---------------------------------------------------------------
+    subgraph Store["PostgreSQL — the queue and the ledger"]
+        JobTable[("job / job_dep<br/>FOR UPDATE SKIP LOCKED")]
+        EventTable[("event<br/>append-only, partitioned by<br/>(project_id, cycle) past ~500k rows")]
+        HandoffTable[("handoff")]
+        GateTable[("human_gate")]
+        HealthTable[("engine_health")]
+    end
+
+    Infrastructure -->|"db/job_repository.py<br/>advisory-locked transitions"| JobTable
+    Infrastructure -->|"db/ledger_repository.py<br/>ledger/ projections"| EventTable
+    Infrastructure -->|"db/handoff_repository.py"| HandoffTable
+    Infrastructure -->|"db/human_gate_repository.py"| GateTable
+    Infrastructure -->|"db/engine_health_repository.py"| HealthTable
+    JobTable -.->|"LISTEN/NOTIFY<br/>vibey_job_ready"| Infrastructure
+    GateTable -.->|"LISTEN/NOTIFY<br/>vibey_gate_raised"| Infrastructure
+
+    %% ---------------------------------------------------------------
+    subgraph EngineLayer["infrastructure/engines/ — the adapter surface"]
+        Adapter["EngineAdapter Protocol<br/>argv.py build, tailer.py run-dir tail,<br/>classify.py rate-limit vs credits-exhausted,<br/>descriptors.py capability + effort map"]
+        Rotation["domain/rotation.py::select()<br/>smooth-weighted round robin +<br/>circuit breakers, driven by engine_selector.py"]
+    end
+
+    Application -->|"handoff_orchestration.py,<br/>rotation_handoff.py"| Rotation
+    Rotation --> Adapter
+    Adapter -->|"subprocess, one per engine"| ClaudeLoop["claudeloop<br/>Anthropic"]
+    Adapter --> CodexLoop["codexloop<br/>OpenAI"]
+    Adapter --> CursorLoop["cursorloop<br/>Cursor / Composer"]
+    Adapter --> AgyLoop["agyloop<br/>Google Antigravity"]
+    Adapter --> QwenLoop["qwenloop<br/>local standby, opt-in<br/>(features.qwenloop, ADR-0015)"]
+
+    %% ---------------------------------------------------------------
+    subgraph SkillsContext["infrastructure/skills_context.py — vibey-skills marketplace (opt-in)"]
+        Compiler["VibeySkillsContextCompiler<br/>shadow mode: build + record packet provenance only<br/>inject mode: append packet to BUILD prompt"]
+    end
+
+    Application -->|"--skills-context-mode/--skills-context-budget<br/>per-project config"| Compiler
+    Compiler -->|"subprocess, trusted project-config command<br/>default: python -m vibey_skills.cli"| VibeySkillsCli["vibey-skills CLI<br/>(independently versioned package)"]
+
+    %% ---------------------------------------------------------------
+    subgraph SixPhase["Domain model — six-phase conductor"]
+        direction LR
+        Intake["INTAKE"] --> Design["① DESIGN<br/>interactive"]
+        Design -->|"visual opt-in"| Visual["VISUAL DESIGN<br/>interactive, optional<br/>media generation + confirmation"]
+        Visual -->|"visual-ready"| Build
+        Design -->|"no visual"| Build["② BUILD<br/>autonomous"]
+        Build <--> Review["③ REVIEW<br/>autonomous + interactive<br/>collect / triage / demo / deployment choice"]
+        Review -->|"decline deploy"| DoneLocal["DONE (local)"]
+    end
+
+    subgraph DeploySet["Optional deployment stage set (④–⑥)"]
+        direction LR
+        DeployDesign["④ DEPLOY DESIGN<br/>interactive"] --> DeployExecute["⑤ DEPLOY EXECUTE<br/>autonomous"]
+        DeployExecute --> DeployReview["⑥ DEPLOY REVIEW<br/>interactive"]
+        DeployReview -->|"accept"| DoneDeployed["DONE (deployed)"]
+        DeployReview -->|"changed details"| DeployDesign
+        DeployReview -->|"retry"| DeployExecute
+        DeployReview -->|"app defect"| Build
+    end
+
+    Application -->|"handlers per phase,<br/>dispatched via job_dispatcher.py"| SixPhase
+    Application --> DeploySet
+    Review -->|"opt in<br/>vibey answer --choice deploy"| DeployDesign
+    DeploySet -->|"infrastructure/azure/<br/>adapter, arm, iac, az_cli"| AzureCloud["Azure<br/>(the only deploy target today)"]
+
+    %% ---------------------------------------------------------------
+    subgraph K8s["Kubernetes surface — deploy/helm/vibey/ (opt-in)"]
+        Chart["Helm chart<br/>worker Deployment, Postgres StatefulSet"]
+        CRD[("VibeyProject CRD<br/>operator.enabled=false by default")]
+        OperatorDeploy["operator Deployment<br/>runs: vibey operator"]
+        Keda["KEDA ScaledObject<br/>keda.enabled=false by default<br/>scales on claimable-job count"]
+    end
+
+    Chart --> JobTable
+    Chart -.->|"operator.enabled: true"| CRD
+    CRD --> OperatorDeploy
+    OperatorDeploy -->|"infrastructure/operator/handlers.py<br/>kopf handlers, thin: delegate to<br/>application/operator_projection.py"| Application
+    Keda -.->|"queries claimable-work,<br/>mirrors job_repository.py claim SELECT"| JobTable
+    Chart -.-> Keda
+
+    %% ---------------------------------------------------------------
+    subgraph Security["Security boundaries"]
+        direction TB
+        SecNote1["domain/ is pure stdlib —<br/>no I/O, no network, enforced by<br/>import-linter + an AST purity test"]
+        SecNote2["domain/prompt_shield.py, command_guard.py,<br/>scope_guard.py, infrastructure/container/ —<br/>designed and unit-tested primitives, NOT yet<br/>called from bootstrap.py or any dispatch path;<br/>see SECURITY.md for current wiring status"]
+        SecNote3["Media egress to external providers only<br/>after explicit visual-stage opt-in<br/>and per-asset confirmation"]
+        SecNote4["Azure credentials never leave the<br/>developer's environment/keychain;<br/>`vibey deploy plan/cancel/rollback` are<br/>placeholder CLI commands today — real ARM<br/>plan evaluation (domain/deployment.py,<br/>infrastructure/azure/iac.py) is not yet wired in"]
+        SecNote5["Skills-context subprocess command and budget<br/>come from trusted project config, not engine<br/>output; off by default; shadow mode never<br/>alters prompts"]
+    end
+
+    Domain -.-> SecNote1
+    Domain -.-> SecNote2
+    Application -.-> SecNote3
+    Infrastructure -.-> SecNote4
+    Compiler -.-> SecNote5
+
+    %% ---------------------------------------------------------------
+    subgraph Release["Release & provenance — .github/workflows/"]
+        direction LR
+        CI["ci.yml<br/>ruff check + format, mypy --strict,<br/>4× 100%-branch coverage gates,<br/>lint-imports, bandit, pip-audit"]
+        MergeTrain["merge-train.yml / promote-to-main.yml<br/>develop → main, squash + merge-commit"]
+        ReleasePlease["release.yml<br/>Conventional Commits → version stamp →<br/>build → publish TestPyPI → verify → publish PyPI"]
+        Provenance["provenance.yml<br/>SLSA-style provenance check on published artifacts"]
+        ReleaseSurfaces["release-surfaces.yml<br/>docs site + agent-surface sync<br/>(Claude/Cursor/Codex/Antigravity trees)"]
+    end
+
+    Onion --> CI
+    CI --> MergeTrain
+    MergeTrain --> ReleasePlease
+    ReleasePlease --> Provenance
+    ReleasePlease --> ReleaseSurfaces
+    ReleasePlease -->|"published package"| PyPI[("PyPI<br/>vibey")]
