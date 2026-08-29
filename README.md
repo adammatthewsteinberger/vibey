@@ -18,6 +18,14 @@ unattended across a pool of engines, brings you back only for the decisions
 that are genuinely yours, and survives crashes and credit exhaustion without
 losing a single open question.
 
+**Never written code?** You can still read this. *Code* is text files of
+instructions computers run; an *AI coding agent* is a program that writes and
+edits that code from plain-English requests; *deploying* means putting the
+finished software somewhere people can use it. Vibey's job is to manage a
+team of those agents from your first description to deployed software, the
+way a project manager runs a team — asking you questions up front, checking
+the work, and only interrupting you when a decision is truly yours.
+
 For the precise version: a queue-based, six-phase conductor for autonomous
 software delivery — with an optional visual-design interstitial and opt-in
 Azure deployment — built on top of the [`*loop` autonomous session
@@ -270,6 +278,26 @@ event shapes, or CLI flags. Before upgrading:
 tagged releases to PyPI as `vibey`. `uv tool install vibey` (or `pipx
 install vibey` / `pip install vibey`) tracks stable releases.
 
+## Formal notes
+
+For the reader who wants the theory under the phases. Work items form a queue
+$Q$ in PostgreSQL; workers claim with `SELECT ... FOR UPDATE SKIP LOCKED`, so
+claims serialize per item without global locks: for any item $w$, at most one
+worker holds $w$ at any instant, while throughput scales with
+$\min(|Q|, \text{workers})$. The conductor is a six-phase state machine
+$\Sigma = \langle D, B, R, D_d, D_e, D_r \rangle$ (design, build, review,
+deploy-design, deploy-execute, deploy-review) with human gates exactly at
+$\{D, R, D_d, D_r\}$ — interactive phases are the fixed points where the
+ledger's open questions must drain to zero before the transition fires.
+Crash recovery follows from two invariants: every decision, finding, and
+handoff is a row in an append-only ledger *before* it takes effect
+(write-ahead intent), and engine handoff re-derives session context from the
+ledger alone — so vendor credit exhaustion is a scheduling event, not a loss
+of state: $\text{state}(t) = f(\text{ledger}_{\leq t})$, independent of any
+vendor session. The full treatment — with the queue-fairness argument and the
+gate-soundness proof sketch — lives in the
+[architecture documentation](https://adammatthewsteinberger.github.io/vibey/).
+
 ## Project links
 
 | | |
@@ -292,3 +320,15 @@ install vibey` / `pip install vibey`) tracks stable releases.
 ## License
 
 [MIT](LICENSE) © [Adam Matthew Steinberger](https://github.com/adammatthewsteinberger)
+
+---
+
+**The short version, again**: agents can code, but delivery still meant
+babysitting them — Vibey is the layer that does the babysitting, from sharp
+spec to deployed software, without losing a single open question.
+
+**Your next step**: install it and let it interview you —
+
+```bash
+uv tool install vibey claudeloop && vibey doctor
+```
