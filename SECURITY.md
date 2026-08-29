@@ -9,8 +9,17 @@ Vibey is a queue-based conductor for autonomous software delivery. Because Vibey
 ## Threat Model & Security Boundaries
 
 ### 1. Worktree & Container Isolation Runtime (ADR-0008, Task 9.1)
-- **Worktree Sandboxing**: Every job and phase executes inside an isolated ephemeral git worktree branched from base or integration heads.
-- **OCI Container Hardening**: When container runtime execution is enabled:
+- **Worktree Sandboxing**: Every job and phase executes inside an isolated ephemeral git worktree branched from base or integration heads. This is the only isolation boundary active today.
+- **OCI Container Hardening — implemented and unit-tested, not yet an active runtime path**: `ContainerConfig` and `OciContainerExecutor`
+  (`src/vibey/infrastructure/container/config.py`, `runtime.py`) implement the
+  hardening described below, but nothing outside their own test file
+  (`tests/infrastructure/container/test_runtime.py`) ever constructs them —
+  `bootstrap.py` does not import `vibey.infrastructure.container`, and no CLI
+  flag or `vibey.toml` key (`[isolation] level = "container"` included; see
+  [the configuration reference](docs/reference/configuration.md#isolation))
+  reaches this code. Every job runs in a plain worktree regardless of what
+  `[isolation]` says. Do not rely on the controls below until this adapter is
+  wired into the composition root:
   - **Read-Only Root Filesystem**: Containers run with `--read-only`.
   - **Dropped Capabilities**: All Linux kernel capabilities are dropped (`--cap-drop=ALL`).
   - **Privilege Escalation Prevention**: Containers run with `--security-opt=no-new-privileges:true`.

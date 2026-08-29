@@ -1,16 +1,36 @@
 # Configuration reference: `vibey.toml`
 
-`vibey.toml` is validated by
-[`src/vibey/domain/config.py`](../../src/vibey/domain/config.py) — a pure,
-stdlib-only module with no filesystem access of its own (reading the file
-is an infrastructure concern). Every table below is optional; omit any of
-them and the listed defaults apply. An unknown engine name anywhere, or
-`qwenloop` referenced before `features.qwenloop = true`, fails validation
-with a `ConfigError` naming the offending path.
+**Not yet an active runtime input.** The schema below is fully implemented
+and unit-tested in
+[`src/vibey/domain/config.py`](../../src/vibey/domain/config.py)
+(`VibeyConfig`, `parse_config`, `parse_toml_string`) and
+[`src/vibey/infrastructure/config_loader.py`](../../src/vibey/infrastructure/config_loader.py)
+(`load_config_from_path`), but **no command actually reads a `vibey.toml`
+file from disk today** — `load_config_from_path` has no caller anywhere in
+`cli/`, `bootstrap.py`, the worker, or the Kubernetes operator, only its own
+unit test. Writing a `vibey.toml` into your repo currently has *no effect*
+on a running project. Treat this page as a designed-and-tested schema, the
+same "implemented and tested, not yet an active runtime path" status the
+README gives `infrastructure/notify/` and `infrastructure/otel.py`.
 
-Every project also accepts overrides via CLI flags (`vibey new --max-cycle-dollars`,
-etc. — see the [CLI reference](cli.md)) and via `VIBEY_`-prefixed environment
-variables. CLI flags and environment variables win over `vibey.toml`.
+What actually configures a project today is a small, separate set of CLI
+flags on `vibey new` — `--max-cycles`, `--max-cycle-dollars`,
+`--max-cycle-turns`, `--skills-context-mode`, `--skills-context-budget` (see
+the [CLI reference](cli.md)) — which are recorded directly into that
+project's own stored config record at creation time. They never pass
+through `parse_config`, and no `vibey.toml` file is written or read to
+produce them. `VIBEY_`-prefixed environment variables are read only inside
+`load_config_from_path` itself (e.g. `VIBEY_FEATURE_QWENLOOP`), so they too
+have no effect until that function is wired into a live command.
+
+`domain/config.py` is a pure, stdlib-only module with no filesystem access
+of its own (reading the file is an infrastructure concern). Every table
+below is optional; omit any of them and the listed defaults apply, as
+validated by `parse_config`. An unknown engine name anywhere, or `qwenloop`
+referenced before `features.qwenloop = true`, fails validation with a
+`ConfigError` naming the offending path — again, only when something calls
+`load_config_from_path`/`parse_config`, which nothing in this codebase does
+yet outside tests.
 
 ## `[project]`
 
@@ -29,9 +49,17 @@ variables. CLI flags and environment variables win over `vibey.toml`.
 | `allow_push` | boolean | `false` | Whether a worktree may push to a remote. |
 | `egress` | array of strings | `[]` | Allowed egress destinations when network isolation is otherwise closed. |
 
-See [ADR-0008](../architecture/decisions/0008-worktree-isolation.md) and
-[SECURITY.md](../../SECURITY.md) for what each isolation level enforces at
-runtime (container hardening flags, network defaults, etc.).
+`worktree` isolation is the one active runtime behavior today: every job
+and phase runs in an isolated ephemeral git worktree. `container` and `vm`
+are schema-valid values, and the container hardening path
+(`infrastructure/container/config.py`'s `ContainerConfig`,
+`infrastructure/container/runtime.py`'s `OciContainerExecutor`) is
+implemented and unit-tested, but — like the rest of this page — it is never
+constructed by `bootstrap.py` or anything else outside its own test file,
+and (per the note above) `[isolation]` itself is never read from a real
+`vibey.toml`. Setting `level = "container"` has no effect today; see
+[SECURITY.md](../../SECURITY.md#1-worktree--container-isolation-runtime-adr-0008-task-91)
+for the same disclosure.
 
 ## `[budget]`
 
@@ -120,6 +148,10 @@ project's own config at creation time.
 | `budget` | integer | `6000` | Token budget for retrieval (1,000–32,000). |
 
 ## Full example
+
+This file illustrates the full schema that `parse_config` validates today —
+not a file any command currently reads from disk (see the disclosure at the
+top of this page).
 
 ```toml
 [project]

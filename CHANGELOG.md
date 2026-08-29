@@ -4,7 +4,7 @@
 
 ### Features
 
-* skills-context retrieval: `vibey new --skills-context-mode {off,shadow,inject}` and `--skills-context-budget`, backed by `infrastructure/skills_context.py` (`VibeySkillsContextCompiler`) and wired into the BUILD implement handler, plus the `[skills_context]` `vibey.toml` table.
+* skills-context retrieval: `vibey new --skills-context-mode {off,shadow,inject}` and `--skills-context-budget`, backed by `infrastructure/skills_context.py` (`VibeySkillsContextCompiler`) and wired into the BUILD implement handler. These are CLI-flag-driven, recorded into the project's own config at creation time — there is no static `[skills_context]` `vibey.toml` table (`domain/config.py`'s `VibeyConfig` has no `skills_context` field).
 
 ## [0.1.2](https://github.com/adammatthewsteinberger/vibey/compare/vibey-v0.1.1...vibey-v0.1.2) (2026-08-20)
 

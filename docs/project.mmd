@@ -11,15 +11,15 @@ flowchart TB
     subgraph Interfaces["Public interfaces"]
         CLI["cli/main.py<br/>vibey new · answer · work · design · visual ·<br/>watch · recover · status · engines · cost ·<br/>ledger · deploy · doctor · operator · worker"]
         TUI["tui/dashboard.py<br/>live dashboard + ledger replay"]
-        TomlCfg["vibey.toml<br/>domain/config.py schema<br/>(see docs/reference/configuration.md)"]
+        TomlCfg["vibey.toml<br/>domain/config.py schema + infrastructure/config_loader.py<br/>IMPLEMENTED + TESTED, NOT read by any command<br/>(see docs/reference/configuration.md)"]
         K8sCRD["VibeyProject CRD<br/>infrastructure/operator/<br/>(pip install 'vibey[operator]')"]
-        SkillsFlags["vibey new<br/>--skills-context-mode {off,shadow,inject}<br/>--skills-context-budget N<br/>[skills_context] vibey.toml table"]
+        SkillsFlags["vibey new<br/>--skills-context-mode {off,shadow,inject}<br/>--skills-context-budget N<br/>recorded into project config at creation,<br/>not a vibey.toml table"]
     end
 
     User --> CLI
     User --> TUI
     CLI --> TUI
-    TomlCfg --> CLI
+    TomlCfg -. "dormant: load_config_from_path has<br/>no caller outside its own test" .-> CLI
     K8sCRD --> CLI
 
     subgraph Bootstrap["bootstrap.py — the sole composition root"]
@@ -32,10 +32,12 @@ flowchart TB
         DPhase["phase.py<br/>Phase enum + VisualDecision"]
         DLedger["ledger.py<br/>EventKind, append-only event shape"]
         DNoLoss["noloss.py<br/>no-loss handoff gate, rules R1-R10"]
+        DHandoff["handoff.py<br/>HandoffBrief · HandoffEnvelope ·<br/>GateRule · GateResult"]
         DRotation["rotation.py<br/>select() — smooth weighted round robin"]
         DCapacity["capacity.py<br/>CreditsExhausted vs RateLimited"]
         DConfig["config.py<br/>VibeyConfig schema + validation"]
         DGuards["command_guard.py · scope_guard.py ·<br/>prompt_shield.py — security primitives"]
+        DMore["and 17 more: job.py · engine.py · review.py ·<br/>plan.py · deployment.py · budget.py · briefing.py ·<br/>effort.py · circuit.py · media.py · verbosity.py ·<br/>worktree.py · errors.py · spec.py · projections.py ·<br/>provision.py · visual.py"]
     end
 
     subgraph Application["application/ — use cases behind Protocol ports"]
@@ -76,6 +78,7 @@ flowchart TB
     AWorker --> IEngines
     AWorker --> IDb
     AHandoff --> DNoLoss
+    AHandoff --> DHandoff
     AHandoff --> DLedger
     AEngineSel --> DRotation
     IEngines --> DCapacity
@@ -120,13 +123,13 @@ flowchart TB
 
     subgraph SecurityBoundary["Isolation & security boundary — ADR-0008, ADR-0012, ADR-0013, ADR-0014"]
         Worktree["ephemeral git worktree<br/>per job/phase, branched from base or integration"]
-        Container["OCI container (opt-in):<br/>--read-only rootfs · --cap-drop=ALL ·<br/>no-new-privileges · --network=none by default ·<br/>tmpfs /tmp noexec,nosuid · memory/CPU caps"]
+        Container["OCI container (dormant):<br/>--read-only rootfs · --cap-drop=ALL ·<br/>no-new-privileges · --network=none by default ·<br/>tmpfs /tmp noexec,nosuid · memory/CPU caps<br/>IMPLEMENTED + TESTED, NOT constructed by bootstrap.py"]
         Guard["CommandSecurityPolicy<br/>blocks destructive git/fs/db/system commands"]
         ScopeGuard["MutationScope<br/>blocks path traversal, symlink escape,<br/>out-of-scope-file edits"]
         Shield["PromptShield<br/>nonced delimiters + injection heuristics<br/>on all untrusted text input"]
     end
 
-    Worktree --> Container
+    Worktree -.->|dormant, not wired| Container
     Guard --> Worktree
     ScopeGuard --> Worktree
     Shield --> ADesign

@@ -108,12 +108,22 @@ Every command's flags and defaults are in the
 
 ## Configuration
 
-Projects are configured via `vibey.toml`, CLI flags, and `VIBEY_`-prefixed
-environment variables (flags and env vars win). The full schema —
-`[project]`, `[isolation]`, `[budget]`, `[engines]`,
+`vibey.toml`'s schema — `[project]`, `[isolation]`, `[budget]`, `[engines]`,
 `[phases.design/build/review]`, `[provision]`, `[deploy]`, `[features]`,
-`[qwenloop]` — with defaults and an example file, is in the
-[configuration reference](reference/configuration.md).
+`[qwenloop]` — is fully implemented and unit-tested in
+`domain/config.py`/`infrastructure/config_loader.py`, with defaults and an
+example file in the [configuration reference](reference/configuration.md).
+**It is not yet wired into any command** — no code path in `cli/`,
+`bootstrap.py`, the worker, or the operator ever reads a `vibey.toml` file
+from disk, so writing one today has no effect. Treat it the same as
+`infrastructure/notify/` below: implemented-and-tested, not yet an active
+runtime path.
+
+What does configure a project today is a handful of `vibey new` CLI flags
+(`--max-cycles`, `--max-cycle-dollars`, `--max-cycle-turns`,
+`--skills-context-mode`, `--skills-context-budget`) recorded directly into
+that project's stored config at creation time — see the
+[CLI reference](reference/cli.md).
 
 ## Notifications
 
