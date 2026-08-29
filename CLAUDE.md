@@ -112,7 +112,7 @@ uv run pip-audit
 | Phase protocols | `docs/plans/phase-protocols.md` |
 | Implementation plan | `docs/plans/implementation-plan.md` |
 | System design and why each hard call was made | `docs/architecture/decisions/` (15 ADRs) |
-| User-facing docs | `docs/getting-started/`, `docs/guides/` |
+| User-facing docs | `README.md` Quickstart, `docs/guides/` |
 | Expansion workstreams (JIRA, clouds, k8s, clients, …) | `docs/runbooks/expansion/` (21 runbooks, `00-master-plan.md` first) |
 
 **Agent-surface maintenance:** when a skill/procedure changes, update

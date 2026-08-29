@@ -113,7 +113,7 @@ uv run pip-audit
 | Rotation & engines | `docs/plans/rotation-and-engines.md` |
 | Phase protocols | `docs/plans/phase-protocols.md` |
 | Implementation plan | `docs/plans/implementation-plan.md` |
-| User-facing docs | `docs/getting-started/`, `docs/guides/` |
+| User-facing docs | `README.md` Quickstart, `docs/guides/` |
 
 **Maintenance:** when procedural guidance changes, update Claude skills,
 Cursor rules, Codex skills, and Antigravity rules in the **same PR**.
