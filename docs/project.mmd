@@ -48,6 +48,7 @@ flowchart TB
         AWorker["worker.py — WorkerLoop"]
         AEngineSel["engine_selector.py · engine_selection.py"]
         AHandoff["rotation_handoff.py · wind_down.py · brief_producer.py"]
+        AMore["and 25 more: azure_port.py · budget_source.py ·<br/>build_engine_run.py · build_kickoff.py · conformance.py ·<br/>deploy_acceptance_handler.py · deploy_design_bridge.py ·<br/>deploy_review_routing.py · design.py · design_research_handler.py ·<br/>design_spec.py · dto.py · engine_health_service.py ·<br/>handoff_orchestration.py · job_dispatcher.py ·<br/>operator_projection.py · ports.py · project_kickoff.py ·<br/>review_deployment_choice_handler.py · seed_prompt.py ·<br/>text_verdict_fallback.py · verdict_extraction.py ·<br/>visual_acceptance.py · visual_handler.py · visual_spec.py"]
     end
 
     subgraph Infrastructure["infrastructure/ — adapters, all I/O"]
@@ -138,17 +139,17 @@ flowchart TB
     subgraph SecurityBoundary["Isolation & security boundary — ADR-0008, ADR-0012, ADR-0013, ADR-0014"]
         Worktree["ephemeral git worktree<br/>per job/phase, branched from base or integration"]
         Container["OCI container (dormant):<br/>--read-only rootfs · --cap-drop=ALL ·<br/>no-new-privileges · --network=none by default ·<br/>tmpfs /tmp noexec,nosuid · memory/CPU caps<br/>IMPLEMENTED + TESTED, NOT constructed by bootstrap.py"]
-        Guard["CommandSecurityPolicy<br/>blocks destructive git/fs/db/system commands"]
-        ScopeGuard["MutationScope<br/>blocks path traversal, symlink escape,<br/>out-of-scope-file edits"]
-        Shield["PromptShield<br/>nonced delimiters + injection heuristics<br/>on all untrusted text input"]
+        Guard["CommandSecurityPolicy (dormant):<br/>blocks destructive git/fs/db/system commands<br/>IMPLEMENTED + TESTED, NOT called by any subprocess call site"]
+        ScopeGuard["MutationScope (dormant):<br/>blocks path traversal, symlink escape,<br/>out-of-scope-file edits<br/>IMPLEMENTED + TESTED, NOT called by build_implement_handler.py"]
+        Shield["PromptShield (dormant):<br/>nonced delimiters + injection heuristics<br/>on all untrusted text input<br/>IMPLEMENTED + TESTED, NOT called by any design/build handler"]
     end
 
     Worktree -.->|dormant, not wired| Container
     IContainer -->|implements| Container
-    Guard --> Worktree
-    ScopeGuard --> Worktree
-    Shield --> ADesign
-    Shield --> ABuild
+    Guard -.->|dormant, not wired| Worktree
+    ScopeGuard -.->|dormant, not wired| Worktree
+    Shield -.->|dormant, not wired| ADesign
+    Shield -.->|dormant, not wired| ABuild
     IEngines --> Worktree
     IAzure -.->|opt-in, mutates real resources<br/>only with --azure az| PDeployExecute
 
