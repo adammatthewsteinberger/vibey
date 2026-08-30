@@ -47,7 +47,7 @@ jobs:
             echo "this repository provides the tooling — installing from source"
             python -m pip install --quiet -e .
           else
-            python -m pip install --quiet "vibey-gh==1.56.0"
+            python -m pip install --quiet "vibey-gh==1.58.0"
           fi
 
       # --ci skips the core.hooksPath assertion, which is per-clone local git config that
