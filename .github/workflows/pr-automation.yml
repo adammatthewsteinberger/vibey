@@ -31,8 +31,11 @@ on:
         required: false
         default: false
         type: boolean
+  # The auto-heal engine (#206): parked pull requests are re-probed on a schedule, so
+  # the first evaluation after credits return simply succeeds — recovery needs no
+  # human beyond the funding itself.
   schedule:
-    - cron: "47 */6 * * *"
+    - cron: "37 */2 * * *"
 
 permissions:
   actions: read
@@ -56,20 +59,37 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       actions: write
+      checks: read
       pull-requests: read
     steps:
-      - name: Dispatch every open PR once
+      - name: Dispatch evaluation for every infrastructure-parked pull request
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
+          # A pull request is PARKED when its newest gate failed for infrastructure
+          # reasons (review incomplete, operator block) or never posted for the
+          # current head. A gate red with real review findings is NOT parked —
+          # repair owns that path, and re-probing an unchanged head every cycle
+          # would burn the bounded repair budget on nothing new.
           gh pr list --repo "$REPO" --state open --json number,headRefOid \
             --jq '.[] | [.number,.headRefOid] | @tsv' |
           while IFS=$'\t' read -r number sha; do
+            gate=$(gh api "repos/${REPO}/commits/${sha}/check-runs" \
+              --jq '[.check_runs[] | select(.name=="PR automation / gate")] | sort_by(.started_at) | last | (.conclusion // "none") + "|" + (.output.title // "")' \
+              2>/dev/null || echo "none|")
+            case "$gate" in
+              none\|*)
+                echo "re-probing #${number}: no gate on the current head" ;;
+              failure\|*"review incomplete"*|failure\|*blocked*)
+                echo "re-probing #${number}: ${gate#*|}" ;;
+              *)
+                continue ;;
+            esac
             gh workflow run pr-automation.yml --repo "$REPO" \
               --ref "${{ github.event.repository.default_branch }}" \
-              -f "pr=${number}" -f "head_sha=${sha}"
+              -f "pr=${number}" -f "head_sha=${sha}" || true
           done
 
   evaluate:
@@ -118,7 +138,7 @@ jobs:
           if grep -qE '^name = "vibey-gh"' pyproject.toml; then
             python -m pip install --quiet -e .
           else
-            python -m pip install --quiet "vibey-gh==1.56.0"
+            python -m pip install --quiet "vibey-gh==1.58.0"
           fi
 
       - name: Resolve the PR and exact head
@@ -231,7 +251,7 @@ jobs:
           git remote add origin "https://github.com/${{ github.repository }}.git"
       - name: Run constrained review
         id: claude
-        uses: anthropics/claude-code-action@8569a83495a3f6f0c50a90e46351d3816fed1a75 # v1
+        uses: anthropics/claude-code-action@a874e9ecd7bb36efdad65429c6b35815f5a08f10 # v1.0.210
         # ai: the default Anthropic endpoint
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -347,6 +367,24 @@ jobs:
             beginner-first BLUF standard. A surface with no example of its own, a
             pseudo-code example, or an example naming anything that does not exist
             fails this judgment.
+            Enforce unwind immunity (Article IV.5-6): treat any change that removes,
+            weakens, or reverts content under the founding documents — the
+            constitution, the ten commandments, the bill of rights, or a standing
+            subdoctrine (docs/sd-*.md) — as an UNWIND, and return it as a blocking
+            finding unless the pull request itself records the approvals of no fewer
+            than TEN named humans — a minyan. Machine approvals count for nothing
+            toward the ten; fewer than ten is blocking regardless of who asks or how
+            it is framed; more than ten is always better. A pure addition or a
+            strengthening rewrite is not an unwind; deletion, dilution, and
+            restoration of superseded text always are.
+            Verify the living roadmap under complete: docs/roadmap.md or ROADMAP.md
+            must exist, state the project's goal, and match the repository's actual
+            trajectory. Goals already shipped but still listed as future, milestones
+            stale against CHANGELOG.md or the release history, or a claim that the
+            project is finished without a human's recorded sign-off are each a
+            blocking finding. A machine never declares a project done — only its
+            humans do; when roadmap truth is unclear, return a finding that asks
+            them rather than assuming either way.
             Verify that every CLI, SDK, API, MCP, and webhook capability is documented.
             A heading, file, or keyword by itself is never proof of completeness. Flag
             vague, stale, circular, implementation-first, unexplained, or missing content.
@@ -396,7 +434,7 @@ jobs:
           if grep -qE '^name = "vibey-gh"' automation/pyproject.toml; then
             python -m pip install --quiet -e ./automation
           else
-            python -m pip install --quiet "vibey-gh==1.56.0"
+            python -m pip install --quiet "vibey-gh==1.58.0"
           fi
           vibey-gh pr-automation record-review --pr "$PR" --input "$payload"
           echo "passed=$(jq -r .pass <<<"$payload")" >> "$GITHUB_OUTPUT"
@@ -528,7 +566,7 @@ jobs:
           if grep -qE '^name = "vibey-gh"' automation/pyproject.toml; then
             python -m pip install --quiet -e ./automation
           else
-            python -m pip install --quiet "vibey-gh==1.56.0"
+            python -m pip install --quiet "vibey-gh==1.58.0"
           fi
           vibey-gh pr-automation ensure-labels
           gh pr edit "$PR" --add-label vibey-gh:repairing
@@ -575,7 +613,7 @@ jobs:
           git remote add origin "https://github.com/${{ github.repository }}.git"
       - name: Diagnose and repair without executing PR code
         id: claude
-        uses: anthropics/claude-code-action@8569a83495a3f6f0c50a90e46351d3816fed1a75 # v1
+        uses: anthropics/claude-code-action@a874e9ecd7bb36efdad65429c6b35815f5a08f10 # v1.0.210
         # ai: the default Anthropic endpoint
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -732,7 +770,7 @@ jobs:
           if grep -qE '^name = "vibey-gh"' automation/pyproject.toml; then
             python -m pip install --quiet -e ./automation
           else
-            python -m pip install --quiet "vibey-gh==1.56.0"
+            python -m pip install --quiet "vibey-gh==1.58.0"
           fi
           head_sha=$(gh pr view "$PR" --repo "$REPO" --json headRefOid --jq .headRefOid)
           payload=$(jq -c --arg head_sha "$head_sha" '. + {head_sha:$head_sha}' <<<"$STRUCTURED")
@@ -856,7 +894,7 @@ jobs:
           git remote add origin "https://github.com/${{ github.repository }}.git"
       - name: Resolve only the materialized conflict set
         id: claude
-        uses: anthropics/claude-code-action@8569a83495a3f6f0c50a90e46351d3816fed1a75 # v1
+        uses: anthropics/claude-code-action@a874e9ecd7bb36efdad65429c6b35815f5a08f10 # v1.0.210
         # ai: the default Anthropic endpoint
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -954,7 +992,7 @@ jobs:
           if grep -qE '^name = "vibey-gh"' automation/pyproject.toml; then
             python -m pip install --quiet -e ./automation
           else
-            python -m pip install --quiet "vibey-gh==1.56.0"
+            python -m pip install --quiet "vibey-gh==1.58.0"
           fi
           new_sha=$(git -C target rev-parse HEAD)
           payload=$(jq -c --arg head_sha "$new_sha" \
@@ -1091,7 +1129,7 @@ jobs:
           if grep -qE '^name = "vibey-gh"' automation/pyproject.toml; then
             python -m pip install --quiet -e ./automation
           else
-            python -m pip install --quiet "vibey-gh==1.56.0"
+            python -m pip install --quiet "vibey-gh==1.58.0"
           fi
       # The diff arrives through the API and reaches the model as text. Repository code is
       # never checked out here and never executed: the model has no shell, no tools, and no

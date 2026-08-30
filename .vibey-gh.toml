@@ -48,6 +48,10 @@ trusted_only = true
 fallback_enabled = true
 
 [documentation]
+# The living-roadmap doctrine (vibey-gh#211) defaults require_roadmap to true.
+# The operator has twice declined roadmap drafts for this repository and owns the decision on its shape; the check stays off until they write the roadmap they want.
+# The exact-head review still judges roadmap liveness on every head.
+require_roadmap = false
 # The doctrine's end results, published on the docs site itself.
 generate_book = true
 generate_paper = true
