@@ -167,6 +167,3 @@ def _object(text: str) -> dict[str, object]:
     if not isinstance(value, dict):
         raise ValueError("provider JSON must be an object")
     return value
-
-
-
