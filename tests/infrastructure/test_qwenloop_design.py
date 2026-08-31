@@ -111,6 +111,75 @@ async def test_research_refuses_rather_than_inventing_a_source() -> None:
 
 
 @pytest.mark.asyncio
+async def test_research_summarises_operator_supplied_evidence(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    """The happy path: a document with a `source:` first line is summarised, and the
+    source in the result is the operator's line, never the model's."""
+    (tmp_path / "oauthdeviceflow.md").write_text(
+        "source: https://example.test/rfc8628\n\nThe device flow issues a user code.",
+        encoding="utf-8",
+    )
+    sent = _answers(monkeypatch, {"title": "Device flow basics", "content": "summary"})
+    result = await QwenloopDesignProvider(evidence_dir=tmp_path).research("OAuth device flow")
+    assert result.title == "Device flow basics"
+    assert result.source == "https://example.test/rfc8628"
+    assert result.content == "summary"
+    assert "The device flow issues a user code." in str(sent[0]["messages"][1]["content"])
+
+
+@pytest.mark.asyncio
+async def test_research_refuses_an_empty_summary_from_the_model(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    """Constrained decoding guarantees the shape, not that the fields are non-empty —
+    a summary of nothing is not a usable research result either."""
+    (tmp_path / "topic.md").write_text("source: https://example.test\n\nbody", encoding="utf-8")
+    _answers(monkeypatch, {"title": "", "content": ""})
+    with pytest.raises(ValueError, match="non-empty title and content"):
+        await QwenloopDesignProvider(evidence_dir=tmp_path).research("topic")
+
+
+@pytest.mark.asyncio
+async def test_research_refuses_when_no_evidence_file_matches(tmp_path) -> None:
+    with pytest.raises(SovereignResearchUnavailable, match="Supply the reading"):
+        await QwenloopDesignProvider(evidence_dir=tmp_path).research("something unwritten")
+
+
+@pytest.mark.asyncio
+async def test_research_refuses_a_document_with_no_source_line(tmp_path) -> None:
+    (tmp_path / "nosource.md").write_text("just some text, no provenance", encoding="utf-8")
+    with pytest.raises(SovereignResearchUnavailable, match="no `source:` first line"):
+        await QwenloopDesignProvider(evidence_dir=tmp_path).research("no source")
+
+
+@pytest.mark.asyncio
+async def test_research_refuses_an_empty_source_or_empty_body(tmp_path) -> None:
+    (tmp_path / "emptysource.md").write_text("source: \n\nbody here", encoding="utf-8")
+    with pytest.raises(SovereignResearchUnavailable, match="empty source or carries no body"):
+        await QwenloopDesignProvider(evidence_dir=tmp_path).research("empty source")
+
+    (tmp_path / "emptybody.md").write_text("source: https://example.test\n\n   ", encoding="utf-8")
+    with pytest.raises(SovereignResearchUnavailable, match="empty source or carries no body"):
+        await QwenloopDesignProvider(evidence_dir=tmp_path).research("empty body")
+
+
+def test_a_traversal_unsafe_topic_addresses_no_evidence_file(tmp_path) -> None:
+    """`topic` is model-minted text, never a trusted path component. Reducing it to an
+    alnum/-/_ stem means a topic like `../../etc/passwd` cannot walk out of the evidence
+    directory — it collapses to a stem that (almost certainly) matches nothing."""
+    provider = QwenloopDesignProvider(evidence_dir=tmp_path)
+    assert provider._evidence_for("../../etc/passwd") is None
+    assert provider._evidence_for("   ") is None
+
+
+def test_no_evidence_dir_configured_means_no_evidence(tmp_path) -> None:
+    (tmp_path / "topic.md").write_text("source: x\n\nbody", encoding="utf-8")
+    provider = QwenloopDesignProvider()
+    assert provider._evidence_for("topic") is None
+
+
+@pytest.mark.asyncio
 async def test_a_spec_is_synthesised_from_the_ledger(monkeypatch: pytest.MonkeyPatch) -> None:
     sent = _answers(monkeypatch, SPEC_PAYLOAD)
     spec = await QwenloopDesignProvider().synthesize([_event({"q": "objective", "a": "x"})])

@@ -1144,6 +1144,56 @@ def test_worker_provider_claudeloop_constructs_live_providers(tmp_path: Path) ->
 
 
 @pytest.mark.usefixtures("_fast_engine_preflight")
+def test_worker_provider_qwenloop_constructs_live_providers(tmp_path: Path) -> None:
+    """--provider qwenloop (8.a's sovereign path) builds the live design provider
+    without any network call at construction time, with no evidence dir configured."""
+
+    async def seed() -> None:
+        async with build_app() as resources:
+            await resources.projects.create("qwenloop-prov-proj", tmp_path, max_cycles=1, config={})
+
+    asyncio.run(seed())
+    from unittest.mock import AsyncMock, patch
+
+    with (
+        patch("vibey.infrastructure.db.notifier.PostgresJobReadyNotifier") as mock_notifier_cls,
+        patch.dict(os.environ, {}, clear=False),
+    ):
+        os.environ.pop("VIBEY_EVIDENCE_DIR", None)
+        mock_notifier_cls.return_value = AsyncMock()
+        res = runner.invoke(app, ["worker", "--once", "--provider", "qwenloop"])
+    assert res.exit_code == 0, res.output
+    assert "provider=qwenloop" in res.output
+    assert "no ready job" in res.output
+
+
+@pytest.mark.usefixtures("_fast_engine_preflight")
+def test_worker_provider_qwenloop_picks_up_evidence_dir(tmp_path: Path) -> None:
+    """VIBEY_EVIDENCE_DIR is how the operator hands the sovereign research stage its
+    reading; --provider qwenloop must actually read it rather than ignore it."""
+
+    async def seed() -> None:
+        async with build_app() as resources:
+            await resources.projects.create(
+                "qwenloop-evidence-proj", tmp_path, max_cycles=1, config={}
+            )
+
+    asyncio.run(seed())
+    from unittest.mock import AsyncMock, patch
+
+    evidence_dir = tmp_path / "evidence"
+    evidence_dir.mkdir()
+    with (
+        patch("vibey.infrastructure.db.notifier.PostgresJobReadyNotifier") as mock_notifier_cls,
+        patch.dict(os.environ, {"VIBEY_EVIDENCE_DIR": str(evidence_dir)}),
+    ):
+        mock_notifier_cls.return_value = AsyncMock()
+        res = runner.invoke(app, ["worker", "--once", "--provider", "qwenloop"])
+    assert res.exit_code == 0, res.output
+    assert "provider=qwenloop" in res.output
+
+
+@pytest.mark.usefixtures("_fast_engine_preflight")
 def test_worker_parallelism_spawns_gathered_loops(tmp_path: Path) -> None:
     """-j 2 continuous takes the gather branch; the mocked notifier's
     KeyboardInterrupt ends the run once both loops go idle."""
