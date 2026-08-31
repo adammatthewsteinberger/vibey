@@ -13,6 +13,15 @@ repos:
         entry: uv run pytest -q -p no:cacheprovider
         language: system
         pass_filenames: false
+        # `stages: [pre-push]`, like every other local hook below. Without it pre-commit
+        # runs this at EVERY stage, so `git commit` paid the full 1519-test suite —
+        # measured at 259s — even for a commit touching only docs or config.
+        #
+        # At pre-push it is also nearly redundant: `coverage-gates` runs the same suite
+        # with coverage, a strict superset. Between the two, one push ran the whole suite
+        # three times. Kept rather than deleted so a plain test failure is still reported
+        # as itself rather than as a coverage-gate failure.
+        stages: [pre-push]
 
       - id: mypy
         name: mypy --strict
