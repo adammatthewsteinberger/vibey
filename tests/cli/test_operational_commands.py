@@ -547,6 +547,52 @@ def test_work_once_claudeloop_provider(tmp_path: Path) -> None:
     assert "no ready job" in res.output
 
 
+def test_work_once_qwenloop_provider(tmp_path: Path) -> None:
+    """--provider qwenloop (8.a's sovereign path) on the one-shot `work` command, with
+    no VIBEY_EVIDENCE_DIR set — mirrors test_work_once_claudeloop_provider."""
+
+    async def seed() -> UUID:
+        async with build_app() as resources:
+            p = await resources.projects.create(
+                "qwenloop-work-test", tmp_path, max_cycles=1, config={}
+            )
+            await resources.projects.transition(
+                p.project_id, expected=Phase.INTAKE, to=Phase.DESIGN
+            )
+            return p.project_id
+
+    pid = asyncio.run(seed())
+    from unittest.mock import patch
+
+    with patch.dict(os.environ, {}, clear=False):
+        os.environ.pop("VIBEY_EVIDENCE_DIR", None)
+        res = runner.invoke(app, ["work", str(pid), "--provider", "qwenloop"])
+    assert res.exit_code == 0, res.output
+    assert "no ready job" in res.output
+
+
+def test_work_once_qwenloop_provider_picks_up_evidence_dir(tmp_path: Path) -> None:
+    async def seed() -> UUID:
+        async with build_app() as resources:
+            p = await resources.projects.create(
+                "qwenloop-work-evidence", tmp_path, max_cycles=1, config={}
+            )
+            await resources.projects.transition(
+                p.project_id, expected=Phase.INTAKE, to=Phase.DESIGN
+            )
+            return p.project_id
+
+    pid = asyncio.run(seed())
+    from unittest.mock import patch
+
+    evidence_dir = tmp_path / "evidence"
+    evidence_dir.mkdir()
+    with patch.dict(os.environ, {"VIBEY_EVIDENCE_DIR": str(evidence_dir)}):
+        res = runner.invoke(app, ["work", str(pid), "--provider", "qwenloop"])
+    assert res.exit_code == 0, res.output
+    assert "no ready job" in res.output
+
+
 def test_enqueue_design_unknown_project() -> None:
     from uuid import uuid4
 
