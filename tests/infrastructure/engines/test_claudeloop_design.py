@@ -163,14 +163,14 @@ async def test_object_parser_rejects_non_dict_json(tmp_path: Path) -> None:
 
 
 async def test_list_helper_rejects_non_list() -> None:
-    from vibey.infrastructure.engines.claudeloop_design import _list
+    from vibey.infrastructure.engines.design_json import as_list
 
     with pytest.raises(ValueError, match="must be a list"):
-        _list("not-a-list", "field_name")
+        as_list("not-a-list", "field_name")
 
 
 async def test_object_list_rejects_non_dict_items() -> None:
-    from vibey.infrastructure.engines.claudeloop_design import _object_list
+    from vibey.infrastructure.engines.design_json import as_object_list
 
     with pytest.raises(ValueError, match="must be an object"):
-        _object_list([1, 2], "items")
+        as_object_list([1, 2], "items")
