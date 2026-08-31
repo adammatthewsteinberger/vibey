@@ -25,6 +25,7 @@ from vibey.bootstrap import (
     build_visual_worker,
 )
 from vibey.cli.errors import guard
+from vibey.domain.config import parse_toml_string
 from vibey.domain.engine import EngineId
 from vibey.domain.errors import (
     InvalidAnswer,
@@ -224,6 +225,26 @@ def resume_design(project_id: UUID) -> None:
     """Enqueue or resume the project's DESIGN interview."""
     with guard():
         typer.echo(f"design job {asyncio.run(_enqueue_design(project_id))}")
+
+
+def _qwenloop_feature_enabled(root: Path | None = None) -> bool:
+    """Whether the sovereign engine is switched on, by environment or project config.
+
+    Mirrors `bootstrap._qwenloop_enabled` so the health check and the worker agree about
+    which engines exist. They disagreed before: the worker ran qwenloop while `doctor`
+    could not list it, so the engine an operator was depending on was invisible unless
+    they already knew to ask for it by name.
+    """
+    override = os.environ.get("VIBEY_FEATURE_QWENLOOP")
+    if override is not None:
+        return override.strip().lower() in {"1", "true", "yes", "on"}
+    config = (root or Path.cwd()) / "vibey.toml"
+    try:
+        data = parse_toml_string(config.read_text())
+    except (OSError, ValueError):
+        return False
+    features = data.get("features")
+    return isinstance(features, dict) and features.get("qwenloop") is True
 
 
 def _parse_question_answers(items: tuple[str, ...]) -> dict[str, object]:
@@ -1013,7 +1034,11 @@ def doctor(
     """Check engine health, auth status, and optionally run conformance."""
     from vibey.application.conformance import run_conformance
     from vibey.infrastructure.engines.classify import CREDITS_FIXTURES
-    from vibey.infrastructure.engines.descriptors import BY_ENGINE_ID, DEFAULT_DESCRIPTORS
+    from vibey.infrastructure.engines.descriptors import (
+        BY_ENGINE_ID,
+        DEFAULT_DESCRIPTORS,
+        QWENLOOP,
+    )
     from vibey.infrastructure.engines.loop_process_adapter import LoopProcessAdapter
 
     async def run_doctor() -> None:
@@ -1031,6 +1056,12 @@ def doctor(
             descriptors = [BY_ENGINE_ID[eid]]
         else:
             descriptors = list(DEFAULT_DESCRIPTORS)
+            # The worker already runs qwenloop when the feature is on; without this the
+            # health check was the one place that could not see it, so the engine the
+            # operator is actually depending on stayed invisible unless they knew to ask
+            # for it by name. A preferred path you cannot inspect is not a preferred path.
+            if _qwenloop_feature_enabled():
+                descriptors.append(QWENLOOP)
 
         all_ok = True
 
