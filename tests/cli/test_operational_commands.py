@@ -714,6 +714,68 @@ def test_doctor_basic_lists_all_engines() -> None:
     assert "claudeloop" in res.output
 
 
+def test_doctor_lists_the_sovereign_engine_when_it_is_switched_on(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Doctrine 8.a makes the sovereign path the preferred way to run. The worker already
+    honoured `VIBEY_FEATURE_QWENLOOP`, but `doctor` read DEFAULT_DESCRIPTORS directly — so
+    the one command whose job is answering "is my engine healthy?" could not see the engine
+    the operator was depending on, unless they already knew to ask for it by name. A
+    preferred path you cannot inspect is not a preferred path.
+    """
+    monkeypatch.setenv("VIBEY_FEATURE_QWENLOOP", "1")
+    res = runner.invoke(app, ["doctor"])
+    assert res.exit_code == 0, res.output
+    assert "qwenloop" in res.output
+    assert "claudeloop" in res.output  # the paid engines are still listed
+
+
+def test_doctor_omits_the_sovereign_engine_when_it_is_off(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("VIBEY_FEATURE_QWENLOOP", "0")
+    res = runner.invoke(app, ["doctor"])
+    assert res.exit_code == 0, res.output
+    assert "qwenloop" not in res.output
+
+
+@pytest.mark.parametrize(
+    "value, expected",
+    [("1", True), ("true", True), ("YES", True), ("on", True), ("0", False), ("nope", False)],
+)
+def test_the_feature_flag_reads_the_environment_first(
+    monkeypatch: pytest.MonkeyPatch, value: str, expected: bool
+) -> None:
+    from vibey.cli.main import _qwenloop_feature_enabled
+
+    monkeypatch.setenv("VIBEY_FEATURE_QWENLOOP", value)
+    assert _qwenloop_feature_enabled() is expected
+
+
+def test_the_feature_flag_falls_back_to_project_config(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Same precedence as `bootstrap._qwenloop_enabled`, so the health check and the
+    worker can never disagree about which engines exist."""
+    from vibey.cli.main import _qwenloop_feature_enabled
+
+    monkeypatch.delenv("VIBEY_FEATURE_QWENLOOP", raising=False)
+    assert _qwenloop_feature_enabled(tmp_path) is False  # no config at all
+
+    (tmp_path / "vibey.toml").write_text("[features]\nqwenloop = true\n", encoding="utf-8")
+    assert _qwenloop_feature_enabled(tmp_path) is True
+
+    (tmp_path / "vibey.toml").write_text("[features]\nqwenloop = false\n", encoding="utf-8")
+    assert _qwenloop_feature_enabled(tmp_path) is False
+
+    (tmp_path / "vibey.toml").write_text('[project]\nname = "x"\n', encoding="utf-8")
+    assert _qwenloop_feature_enabled(tmp_path) is False  # no features table
+
+    # A malformed config reports "off" rather than crashing a health check.
+    (tmp_path / "vibey.toml").write_text("this is not toml {{{", encoding="utf-8")
+    assert _qwenloop_feature_enabled(tmp_path) is False
+
+
 def test_doctor_specific_engine() -> None:
     res = runner.invoke(app, ["doctor", "--engine", "claudeloop"])
     assert res.exit_code == 0, res.output
