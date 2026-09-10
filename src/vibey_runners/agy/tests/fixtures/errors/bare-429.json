@@ -1,0 +1,11 @@
+{
+  "name": "bare-429",
+  "signals": {
+    "http_status": 429,
+    "status": "RESOURCE_EXHAUSTED",
+    "message": "Resource has been exhausted (e.g. check quota)."
+  },
+  "expected_state": "WindowExhausted",
+  "expected_rung": "unknown_window",
+  "expected_rate_limit_type": "unknown"
+}

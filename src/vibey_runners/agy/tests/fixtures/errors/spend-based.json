@@ -1,0 +1,10 @@
+{
+  "name": "spend-based",
+  "signals": {
+    "http_status": 429,
+    "status": "RESOURCE_EXHAUSTED",
+    "message": "You've exceeded a spend-based rate limit for your account."
+  },
+  "expected_state": "CreditsExhausted",
+  "expected_rung": "spend"
+}

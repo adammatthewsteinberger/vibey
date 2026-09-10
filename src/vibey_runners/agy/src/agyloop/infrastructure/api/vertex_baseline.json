@@ -1,0 +1,243 @@
+{
+  "lane": "vertex",
+  "discovery_id": "aiplatform:v1",
+  "revision": "20260801",
+  "method_count": 33,
+  "methods": [
+    "endpoints.countTokens",
+    "endpoints.fetchPredictOperation",
+    "endpoints.generateContent",
+    "endpoints.predict",
+    "endpoints.predictLongRunning",
+    "endpoints.streamGenerateContent",
+    "projects.locations.endpoints.countTokens",
+    "projects.locations.endpoints.directPredict",
+    "projects.locations.endpoints.directRawPredict",
+    "projects.locations.endpoints.fetchPredictOperation",
+    "projects.locations.endpoints.generateContent",
+    "projects.locations.endpoints.predict",
+    "projects.locations.endpoints.predictLongRunning",
+    "projects.locations.endpoints.rawPredict",
+    "projects.locations.endpoints.serverStreamingPredict",
+    "projects.locations.endpoints.streamGenerateContent",
+    "projects.locations.endpoints.streamRawPredict",
+    "projects.locations.publishers.models.countTokens",
+    "projects.locations.publishers.models.embedContent",
+    "projects.locations.publishers.models.fetchPredictOperation",
+    "projects.locations.publishers.models.generateContent",
+    "projects.locations.publishers.models.predict",
+    "projects.locations.publishers.models.predictLongRunning",
+    "projects.locations.publishers.models.rawPredict",
+    "projects.locations.publishers.models.serverStreamingPredict",
+    "projects.locations.publishers.models.streamGenerateContent",
+    "projects.locations.publishers.models.streamRawPredict",
+    "publishers.models.countTokens",
+    "publishers.models.fetchPredictOperation",
+    "publishers.models.generateContent",
+    "publishers.models.predict",
+    "publishers.models.predictLongRunning",
+    "publishers.models.streamGenerateContent"
+  ],
+  "details": [
+    {
+      "path": "endpoints.countTokens",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+endpoint}:countTokens",
+      "id": "aiplatform.endpoints.countTokens"
+    },
+    {
+      "path": "endpoints.fetchPredictOperation",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+endpoint}:fetchPredictOperation",
+      "id": "aiplatform.endpoints.fetchPredictOperation"
+    },
+    {
+      "path": "endpoints.generateContent",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+model}:generateContent",
+      "id": "aiplatform.endpoints.generateContent"
+    },
+    {
+      "path": "endpoints.predict",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+endpoint}:predict",
+      "id": "aiplatform.endpoints.predict"
+    },
+    {
+      "path": "endpoints.predictLongRunning",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+endpoint}:predictLongRunning",
+      "id": "aiplatform.endpoints.predictLongRunning"
+    },
+    {
+      "path": "endpoints.streamGenerateContent",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+model}:streamGenerateContent",
+      "id": "aiplatform.endpoints.streamGenerateContent"
+    },
+    {
+      "path": "projects.locations.endpoints.countTokens",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+endpoint}:countTokens",
+      "id": "aiplatform.projects.locations.endpoints.countTokens"
+    },
+    {
+      "path": "projects.locations.endpoints.directPredict",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+endpoint}:directPredict",
+      "id": "aiplatform.projects.locations.endpoints.directPredict"
+    },
+    {
+      "path": "projects.locations.endpoints.directRawPredict",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+endpoint}:directRawPredict",
+      "id": "aiplatform.projects.locations.endpoints.directRawPredict"
+    },
+    {
+      "path": "projects.locations.endpoints.fetchPredictOperation",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+endpoint}:fetchPredictOperation",
+      "id": "aiplatform.projects.locations.endpoints.fetchPredictOperation"
+    },
+    {
+      "path": "projects.locations.endpoints.generateContent",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+model}:generateContent",
+      "id": "aiplatform.projects.locations.endpoints.generateContent"
+    },
+    {
+      "path": "projects.locations.endpoints.predict",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+endpoint}:predict",
+      "id": "aiplatform.projects.locations.endpoints.predict"
+    },
+    {
+      "path": "projects.locations.endpoints.predictLongRunning",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+endpoint}:predictLongRunning",
+      "id": "aiplatform.projects.locations.endpoints.predictLongRunning"
+    },
+    {
+      "path": "projects.locations.endpoints.rawPredict",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+endpoint}:rawPredict",
+      "id": "aiplatform.projects.locations.endpoints.rawPredict"
+    },
+    {
+      "path": "projects.locations.endpoints.serverStreamingPredict",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+endpoint}:serverStreamingPredict",
+      "id": "aiplatform.projects.locations.endpoints.serverStreamingPredict"
+    },
+    {
+      "path": "projects.locations.endpoints.streamGenerateContent",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+model}:streamGenerateContent",
+      "id": "aiplatform.projects.locations.endpoints.streamGenerateContent"
+    },
+    {
+      "path": "projects.locations.endpoints.streamRawPredict",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+endpoint}:streamRawPredict",
+      "id": "aiplatform.projects.locations.endpoints.streamRawPredict"
+    },
+    {
+      "path": "projects.locations.publishers.models.countTokens",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+endpoint}:countTokens",
+      "id": "aiplatform.projects.locations.publishers.models.countTokens"
+    },
+    {
+      "path": "projects.locations.publishers.models.embedContent",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+model}:embedContent",
+      "id": "aiplatform.projects.locations.publishers.models.embedContent"
+    },
+    {
+      "path": "projects.locations.publishers.models.fetchPredictOperation",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+endpoint}:fetchPredictOperation",
+      "id": "aiplatform.projects.locations.publishers.models.fetchPredictOperation"
+    },
+    {
+      "path": "projects.locations.publishers.models.generateContent",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+model}:generateContent",
+      "id": "aiplatform.projects.locations.publishers.models.generateContent"
+    },
+    {
+      "path": "projects.locations.publishers.models.predict",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+endpoint}:predict",
+      "id": "aiplatform.projects.locations.publishers.models.predict"
+    },
+    {
+      "path": "projects.locations.publishers.models.predictLongRunning",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+endpoint}:predictLongRunning",
+      "id": "aiplatform.projects.locations.publishers.models.predictLongRunning"
+    },
+    {
+      "path": "projects.locations.publishers.models.rawPredict",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+endpoint}:rawPredict",
+      "id": "aiplatform.projects.locations.publishers.models.rawPredict"
+    },
+    {
+      "path": "projects.locations.publishers.models.serverStreamingPredict",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+endpoint}:serverStreamingPredict",
+      "id": "aiplatform.projects.locations.publishers.models.serverStreamingPredict"
+    },
+    {
+      "path": "projects.locations.publishers.models.streamGenerateContent",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+model}:streamGenerateContent",
+      "id": "aiplatform.projects.locations.publishers.models.streamGenerateContent"
+    },
+    {
+      "path": "projects.locations.publishers.models.streamRawPredict",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+endpoint}:streamRawPredict",
+      "id": "aiplatform.projects.locations.publishers.models.streamRawPredict"
+    },
+    {
+      "path": "publishers.models.countTokens",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+endpoint}:countTokens",
+      "id": "aiplatform.publishers.models.countTokens"
+    },
+    {
+      "path": "publishers.models.fetchPredictOperation",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+endpoint}:fetchPredictOperation",
+      "id": "aiplatform.publishers.models.fetchPredictOperation"
+    },
+    {
+      "path": "publishers.models.generateContent",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+model}:generateContent",
+      "id": "aiplatform.publishers.models.generateContent"
+    },
+    {
+      "path": "publishers.models.predict",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+endpoint}:predict",
+      "id": "aiplatform.publishers.models.predict"
+    },
+    {
+      "path": "publishers.models.predictLongRunning",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+endpoint}:predictLongRunning",
+      "id": "aiplatform.publishers.models.predictLongRunning"
+    },
+    {
+      "path": "publishers.models.streamGenerateContent",
+      "httpMethod": "POST",
+      "httpPath": "v1/{+model}:streamGenerateContent",
+      "id": "aiplatform.publishers.models.streamGenerateContent"
+    }
+  ],
+  "note": "Gemini-related subset of aiplatform:v1 (generateContent/predict/countTokens/embedContent family). Full Vertex AI is 1100+ methods; this lane stays disjoint from the Developer discovery tree.",
+  "aiplatform_total_methods": 1104
+}
