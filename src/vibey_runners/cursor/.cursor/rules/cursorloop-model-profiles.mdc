@@ -1,0 +1,7 @@
+---
+description: cursorloop-model-profiles
+globs:
+alwaysApply: false
+---
+
+Default composer-2.5. Grok is a ModelProfile only.

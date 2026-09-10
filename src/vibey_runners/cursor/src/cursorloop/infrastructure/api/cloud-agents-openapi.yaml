@@ -1,0 +1,70 @@
+openapi: 3.0.3
+info:
+  title: Cursor Cloud Agents API (vendored sketch)
+  version: "0.0.0-sketch"
+  description: >
+    Minimal pinned sketch of the Cloud Agents REST surface used by cursorloop's
+    M4 binder. This is NOT a complete vendor dump — see ADR-0006. Drift CI
+    re-fetches the published document and fails when the digest changes.
+servers:
+  - url: https://api.cursor.com
+paths:
+  /v1/me:
+    get:
+      operationId: getMe
+      summary: Current authenticated identity
+      responses:
+        "200":
+          description: OK
+  /v1/models:
+    get:
+      operationId: listModels
+      summary: List available models
+      responses:
+        "200":
+          description: OK
+  /v1/agents:
+    post:
+      operationId: createAgent
+      summary: Create a cloud agent
+      responses:
+        "201":
+          description: Created
+  /v1/agents/{id}:
+    get:
+      operationId: getAgent
+      summary: Get a cloud agent by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+    delete:
+      operationId: deleteAgent
+      summary: Delete a cloud agent
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No Content
+  /v1/agents/{id}/cancel:
+    post:
+      operationId: cancelAgent
+      summary: Cancel a running cloud agent
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK

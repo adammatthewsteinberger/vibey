@@ -1,0 +1,7 @@
+---
+description: cursorloop-never-block
+globs:
+alwaysApply: false
+---
+
+Managed hooks + preamble + local.force + stall watchdog. No human tool gates.

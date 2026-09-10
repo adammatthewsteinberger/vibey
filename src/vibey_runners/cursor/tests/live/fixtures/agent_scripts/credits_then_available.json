@@ -1,0 +1,22 @@
+{
+  "probes": [
+    {"signals": {"error_type": "RateLimitError", "is_retryable": false, "error_code": "insufficient_credits", "error_message": "out of credits"}},
+    {"signals": {}},
+    {"signals": {}},
+    {"signals": {}},
+    {"signals": {}},
+    {"signals": {}},
+    {"signals": {}}
+  ],
+  "turns": [
+    {
+      "signals": {"error_type": "RateLimitError", "is_retryable": false, "error_code": "insufficient_credits", "error_message": "out of credits"},
+      "output_text": ""
+    },
+    {
+      "signals": {},
+      "verdict": {"complete": true, "remaining_work": [], "blocked_on": null, "summary": "recovered"},
+      "output_text": "CURSORLOOP_TASK_FULLY_COMPLETE\n```cursorloop-verdict\n{\"complete\": true, \"remaining_work\": [], \"blocked_on\": null, \"summary\": \"recovered\"}\n```"
+    }
+  ]
+}

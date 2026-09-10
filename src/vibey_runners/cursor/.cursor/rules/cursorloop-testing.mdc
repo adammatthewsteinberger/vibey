@@ -1,0 +1,7 @@
+---
+description: cursorloop-testing
+globs:
+alwaysApply: false
+---
+
+Use system harness + scripted agent; require ALLOW_TEST_AGENT and SCRIPT env pair.

@@ -1,0 +1,14 @@
+{
+  "probes": [
+    {"signals": {"error_type": "RateLimitError", "http_status": 429, "is_retryable": true, "retry_after": "2099-01-01T00:00:00+00:00", "error_message": "rate limited"}},
+    {"signals": {"error_type": "RateLimitError", "http_status": 429, "is_retryable": true, "retry_after": "2099-01-01T00:00:00+00:00", "error_message": "rate limited"}},
+    {"signals": {"error_type": "RateLimitError", "http_status": 429, "is_retryable": true, "retry_after": "2099-01-01T00:00:00+00:00", "error_message": "rate limited"}},
+    {"signals": {"error_type": "RateLimitError", "http_status": 429, "is_retryable": true, "retry_after": "2099-01-01T00:00:00+00:00", "error_message": "rate limited"}}
+  ],
+  "turns": [
+    {
+      "signals": {"error_type": "RateLimitError", "http_status": 429, "is_retryable": true, "retry_after": "2099-01-01T00:00:00+00:00", "error_message": "rate limited"},
+      "output_text": ""
+    }
+  ]
+}

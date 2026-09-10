@@ -1,0 +1,7 @@
+---
+description: cursorloop-control-plane
+globs:
+alwaysApply: false
+---
+
+stop/prompt/status/logs/watch/runs/savepoints live under `.cursorloop/runs/`.

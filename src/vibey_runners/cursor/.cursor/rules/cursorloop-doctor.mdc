@@ -1,0 +1,7 @@
+---
+description: cursorloop-doctor
+globs:
+alwaysApply: false
+---
+
+Run `cursorloop doctor` before long runs; use `--explain-error` on captured payloads.

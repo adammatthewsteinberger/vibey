@@ -1,0 +1,52 @@
+# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+name: API drift (Cloud Agents OpenAPI)
+
+on:
+  schedule:
+    - cron: "17 6 * * 1" # weekly Monday
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "src/cursorloop/infrastructure/api/**"
+      - "tests/infrastructure/test_api_drift.py"
+
+permissions:
+  contents: read
+
+jobs:
+  vendored-digest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install package
+        run: pip install -e ".[dev]"
+      - name: Assert vendored digest + operation registry
+        run: pytest tests/infrastructure/test_api_drift.py -q
+
+  published-fetch:
+    runs-on: ubuntu-latest
+    # Optional: set repo variable CLOUD_AGENTS_OPENAPI_URL when Cursor publishes
+    # a stable OpenAPI URL. Until then this job records the deferral.
+    steps:
+      - uses: actions/checkout@v7
+      - name: Explain deferral when no published URL is configured
+        env:
+          CLOUD_AGENTS_OPENAPI_URL: ${{ vars.CLOUD_AGENTS_OPENAPI_URL }}
+        run: |
+          if [ -z "${CLOUD_AGENTS_OPENAPI_URL}" ]; then
+            echo "CLOUD_AGENTS_OPENAPI_URL unset — ADR-0006 deferral active."
+            echo "Configure the variable to enable published-spec digest drift checks."
+            exit 0
+          fi
+          curl -fsSL "$CLOUD_AGENTS_OPENAPI_URL" -o /tmp/published-openapi.yaml
+          published=$(sha256sum /tmp/published-openapi.yaml | awk '{print $1}')
+          vendored=$(sha256sum src/cursorloop/infrastructure/api/cloud-agents-openapi.yaml | awk '{print $1}')
+          echo "published=$published"
+          echo "vendored=$vendored"
+          if [ "$published" != "$vendored" ]; then
+            echo "::error::Published Cloud Agents OpenAPI digest drifted from vendored sketch"
+            exit 1
+          fi
