@@ -17,6 +17,13 @@ updates:
       - dependency-name: actions/checkout
       - dependency-name: actions/setup-python
       - dependency-name: astral-sh/setup-uv
+      - dependency-name: actions/configure-pages
+      - dependency-name: actions/deploy-pages
+      - dependency-name: actions/download-artifact
+      - dependency-name: actions/upload-artifact
+      - dependency-name: actions/upload-pages-artifact
+      - dependency-name: anthropics/claude-code-action
+      - dependency-name: oras-project/setup-oras
     groups:
       github-actions:
         patterns: ["*"]
