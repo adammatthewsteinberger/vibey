@@ -1,0 +1,73 @@
+# vibey-gh owns provenance and release automation for this repository.
+
+[fingerprint]
+sources = [
+  "src/**/*.py",
+  "tests/**/*.py",
+  "scripts/**/*.py",
+  ".github/workflows/*.yml",
+]
+
+[version]
+files         = ["pyproject.toml", "src/qwenloop/__init__.py"]
+content_paths = ["src/qwenloop/"]
+code_paths    = ["src/qwenloop/"]
+
+[branches]
+integration = "develop"
+release     = "main"
+
+[merge_train]
+owner           = "adammatthewsteinberger"
+trusted_authors = ["adammatthewsteinberger", "claude[bot]", "github-actions[bot]", "vibey[bot]"]
+
+[install]
+# Pin every rendered template to the exact version that rendered it. Without this the
+# workflows run `pip install vibey-gh` unpinned, so a runner silently adopts whatever is
+# newest -- which is how vibey-skills' CI jumped 1.2.0 -> 1.16.0 mid-week and went red on a
+# `check` that had grown teeth. `vibey-gh install` is what advances the pin now.
+pin_version = true
+# Exactly the workflows this repository already has. Left unset, the default set would
+# install several more; adopting those is a separate decision, not a version bump.
+workflows = ["merge-train.yml", "promote-to-main.yml", "provenance.yml", "release-surfaces.yml", "pr-automation.yml", "automation-bootstrap.yml"]
+
+[documentation]
+generate_book = true
+generate_paper = true
+
+# GA4 measurement id for the published docs site, rendered into release-surfaces.yml as
+# GA_ID. Public by nature -- it ships in the page source of every site that uses it.
+google_analytics_id = "G-C7DRK6WKM1"
+# Off deliberately. The contract is default-on and expects a marketplace manifest, a
+# per-agent rules tree, a mermaid architecture diagram and a dozen other files. Satisfying
+# it is a real project and a separate decision; adopting it silently as a side effect of a
+# version bump would just make `check` fail on every push.
+enabled = false
+
+[pr_automation]
+# The default set names "Docs". Nothing here answers to that name, and a gate that waits
+# for a scan which can never complete never posts at all -- made a required check, that
+# silently blocks every pull request.
+scan_workflows = ["CI", "Provenance"]
+
+[pr_automation.fallback]
+# Reviews with a local model when the paid path returns NO VERDICT AT ALL -- an exhausted
+# ANTHROPIC_API_KEY, expired credentials, an unavailable model. Without it that failure is a
+# hard stop: the gate is required, so a billing problem blocks every pull request. Observed
+# here on the gate-verification PR, where the review job failed and `Local review fallback`
+# was skipped because this was not configured.
+#
+# It never overrides a review that actually ran -- the job requires the primary to have
+# produced no verdict at all, not merely to have failed -- so genuine findings are never
+# discarded for a weaker opinion.
+#
+# The verdict is deliberately narrower than the primary's. Constrained decoding guarantees
+# the output SHAPE, not the judgments, so it assesses only what it can ground in the diff
+# and the gate titles the result "PR automation: gate (local fallback)".
+#
+# `trusted_only` is what makes a self-hosted runner defensible on a public repository:
+# GitHub says they should "almost never" be used there because anyone can open a pull
+# request against them. Excluding forks removes that exposure.
+enabled = true
+runner_label = "vibey-local-qwenloop"
+trusted_only = true
