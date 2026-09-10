@@ -40,14 +40,17 @@ class SandboxTools:
             }
             if not self.allow_network:
                 env["QWENLOOP_NETWORK"] = "disabled"
-            process = await asyncio.create_subprocess_exec(
-                *argv,
-                cwd=self.worktree,
-                env=env,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.STDOUT,
-                start_new_session=True,
-            )
+            try:
+                process = await asyncio.create_subprocess_exec(
+                    *argv,
+                    cwd=self.worktree,
+                    env=env,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.STDOUT,
+                    start_new_session=True,
+                )
+            except OSError as exc:
+                return {"error": str(exc)}
             try:
                 output, _ = await asyncio.wait_for(process.communicate(), timeout=120)
             except TimeoutError:

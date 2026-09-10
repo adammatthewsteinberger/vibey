@@ -227,6 +227,11 @@ async def test_sandbox_read_and_write_report_errors_instead_of_raising(tmp_path:
     )
     assert "error" in blocked_write
 
+    # a command the model guesses at that isn't on PATH (e.g. "pip" instead of "python3 -m
+    # pip", or a script that doesn't exist yet) must not crash the run either
+    missing_binary = await tools.execute("shell", {"argv": ["definitely-not-a-real-command-xyz"]})
+    assert "error" in missing_binary
+
 
 @pytest.mark.asyncio
 async def test_runner_fails_on_empty_response(tmp_path: Path) -> None:
