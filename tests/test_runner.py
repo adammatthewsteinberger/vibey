@@ -205,8 +205,27 @@ async def test_sandbox_rejects_escape_and_dangerous_command(tmp_path: Path) -> N
     tools = SandboxTools(tmp_path)
     with pytest.raises(ValueError):
         await tools.execute("read_file", {"path": "../secret"})
-    assert "error" in await tools.execute("run_command", {"argv": ["rm", "x"]})
+    assert "error" in await tools.execute("shell", {"argv": ["rm", "x"]})
     assert "error" in await tools.execute("unknown", {})
+
+
+@pytest.mark.asyncio
+async def test_sandbox_read_and_write_report_errors_instead_of_raising(tmp_path: Path) -> None:
+    tools = SandboxTools(tmp_path)
+    # checking whether a file exists yet is routine for an autonomous agent; it must not crash the run
+    missing = await tools.execute("read_file", {"path": "does-not-exist.md"})
+    assert "error" in missing
+
+    binary = tmp_path / "binary.dat"
+    binary.write_bytes(b"\xff\xfe\x00\x01")
+    not_utf8 = await tools.execute("read_file", {"path": "binary.dat"})
+    assert "error" in not_utf8
+
+    (tmp_path / "not-a-directory").write_text("x")
+    blocked_write = await tools.execute(
+        "write_file", {"path": "not-a-directory/child.txt", "content": "y"}
+    )
+    assert "error" in blocked_write
 
 
 @pytest.mark.asyncio
@@ -252,13 +271,13 @@ async def test_sandbox_read_write_and_commands(tmp_path: Path) -> None:
     tools = SandboxTools(tmp_path)
     await tools.execute("write_file", {"path": "x.txt", "content": "hello"})
     assert await tools.execute("read_file", {"path": "x.txt"}) == {"content": "hello"}
-    invalid = await tools.execute("run_command", {"argv": "echo"})
+    invalid = await tools.execute("shell", {"argv": "echo"})
     assert "error" in invalid
-    success = await tools.execute("run_command", {"argv": ["sh", "-c", "printf ok"]})
+    success = await tools.execute("shell", {"argv": ["sh", "-c", "printf ok"]})
     assert success["exit_code"] == 0
     assert success["output"] == "ok"
     network_tools = SandboxTools(tmp_path, allow_network=True)
-    assert (await network_tools.execute("run_command", {"argv": ["true"]}))["exit_code"] == 0
+    assert (await network_tools.execute("shell", {"argv": ["true"]}))["exit_code"] == 0
 
 
 @pytest.mark.asyncio
@@ -282,7 +301,7 @@ async def test_sandbox_command_timeout(monkeypatch: pytest.MonkeyPatch, tmp_path
         return process
 
     monkeypatch.setattr("asyncio.create_subprocess_exec", create)
-    result = await SandboxTools(tmp_path).execute("run_command", {"argv": ["slow"]})
+    result = await SandboxTools(tmp_path).execute("shell", {"argv": ["slow"]})
     assert result == {"error": "command timed out"}
     assert process.killed
 

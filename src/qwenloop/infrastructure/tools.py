@@ -14,14 +14,20 @@ class SandboxTools:
     async def execute(self, name: str, arguments: dict[str, object]) -> dict[str, object]:
         if name == "read_file":
             path = self._path(str(arguments.get("path", "")))
-            return {"content": path.read_text(encoding="utf-8")[:200_000]}
+            try:
+                return {"content": path.read_text(encoding="utf-8")[:200_000]}
+            except (OSError, UnicodeDecodeError) as exc:
+                return {"error": str(exc)}
         if name == "write_file":
             path = self._path(str(arguments.get("path", "")))
             content = str(arguments.get("content", ""))
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(content, encoding="utf-8")
+            try:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(content, encoding="utf-8")
+            except OSError as exc:
+                return {"error": str(exc)}
             return {"written": len(content)}
-        if name == "run_command":
+        if name == "shell":
             argv = arguments.get("argv")
             if not isinstance(argv, list) or not argv or not all(isinstance(x, str) for x in argv):
                 return {"error": "argv must be a non-empty string list"}
