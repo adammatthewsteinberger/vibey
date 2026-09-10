@@ -42,6 +42,7 @@ dependencies = [
     "anyio>=4.0",
     "openai>=1.40",
     "textual>=1.0",
+    "vibey-runners-common",
 ]
 
 [project.urls]
@@ -203,3 +204,6 @@ forbidden_modules = [
     "codexloop.cli",
     "codexloop.bootstrap",
 ]
+
+[tool.uv.sources]
+vibey-runners-common = { workspace = true }

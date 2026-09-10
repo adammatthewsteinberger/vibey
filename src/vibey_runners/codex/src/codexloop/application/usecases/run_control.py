@@ -9,7 +9,7 @@ from codexloop.application.interfaces import ControlInbox
 from codexloop.domain.control import ControlCommand
 
 
-def enqueue_control(inbox: ControlInbox, command: ControlCommand) -> Path:
+def enqueue_control(inbox: ControlInbox[ControlCommand], command: ControlCommand) -> Path:
     """Enqueue ``command`` and return the path written."""
     return inbox.enqueue(command)
 

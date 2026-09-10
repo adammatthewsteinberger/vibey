@@ -113,7 +113,7 @@ class RunnerContext:
     gateway: AgentGateway
     probe: CapacityProbe
     store: RunStateStore
-    control: RunControl
+    control: RunControl[ControlCommand]
     catalog: ThreadCatalog | None = None
     lock: SessionLock | None = None
     write_artifact: Callable[[str, str], None] | None = None

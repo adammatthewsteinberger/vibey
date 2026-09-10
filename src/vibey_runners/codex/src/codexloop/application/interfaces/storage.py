@@ -1,23 +1,21 @@
 # Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
-"""Durable run state: the state store, the run lock, git save points, and the
-snapshot sink."""
+"""Durable run state seams specific to codexloop's own design.
+
+``RunStateStore`` and ``SessionLock`` moved to
+``vibey_runners.common.application.interfaces.storage`` (they converge
+verbatim across the runner family). ``SavePointStore`` and
+``RunSnapshotSink`` stay here: this runner's save-point API is
+deliberately thinner than the other runners' in this family (no
+``changes_since``, plain ``str``/``Sequence[str]`` refs instead of typed
+save-point/unwind results) and its snapshot sink is a single-argument
+``write`` rather than an ``emit`` keyed by reason -- a different design,
+not a naming difference.
+"""
 
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from typing import Protocol, runtime_checkable
-
-
-@runtime_checkable
-class RunStateStore(Protocol):
-    def load(self, run_id: str) -> dict[str, object] | None: ...
-    def save(self, run_id: str, state: Mapping[str, object]) -> None: ...
-
-
-@runtime_checkable
-class SessionLock(Protocol):
-    def acquire(self, thread_id: str) -> bool: ...
-    def release(self, thread_id: str) -> None: ...
 
 
 @runtime_checkable

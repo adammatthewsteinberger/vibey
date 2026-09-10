@@ -77,7 +77,7 @@ class FileRunControl:
 class CompositeRunControl:
     """Merge polls from several RunControl adapters (drain + inbox)."""
 
-    def __init__(self, *controls: RunControl) -> None:
+    def __init__(self, *controls: RunControl[ControlCommand]) -> None:
         self._controls = controls
 
     def poll(self) -> Sequence[ControlCommand]:
