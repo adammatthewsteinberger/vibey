@@ -311,3 +311,105 @@ def test_nvidia_vram_probe_failure(monkeypatch: pytest.MonkeyPatch, failure: Exc
 
     monkeypatch.setattr(module.subprocess, "run", fail)
     assert module._nvidia_vram() == 0
+
+
+def test_run_rejects_storm_with_plan(tmp_path: Path) -> None:
+    plan = tmp_path / "plan.md"
+    plan.write_text("do it")
+    result = runner.invoke(app, ["run", str(plan), "--storm"])
+    assert result.exit_code != 0
+    assert "not both" in result.output
+
+
+def test_run_requires_plan_when_not_storm() -> None:
+    result = runner.invoke(app, ["run"])
+    assert result.exit_code != 0
+    assert "PLAN is required" in result.output
+
+
+def test_discover_storm_repos_filters_uncloned_and_handles_gh_failure(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    import qwenloop.cli.app as module
+
+    (tmp_path / "a" / ".git").mkdir(parents=True)
+    (tmp_path / "b").mkdir()  # not cloned: no .git
+    monkeypatch.setattr(module, "list_repo_names", lambda _owner: ["a", "b", "c"])
+    assert module._discover_storm_repos("owner", tmp_path) == ["a"]
+    monkeypatch.setattr(module, "list_repo_names", lambda _owner: None)
+    assert module._discover_storm_repos("owner", tmp_path) == []
+
+
+def test_storm_sweep_reports_per_repo_status_and_tally(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    (tmp_path / "a" / ".git").mkdir(parents=True)
+    (tmp_path / "b" / ".git").mkdir(parents=True)
+
+    class Server:
+        def inspect(self, _profile):  # type: ignore[no-untyped-def]
+            return ServerInfo(Backend.LLAMA_CPP, PORTABLE.name, "x", False, True)
+
+        async def health(self, _info):  # type: ignore[no-untyped-def]
+            return True
+
+    class FakeRunner:
+        def __init__(self, *_args):  # type: ignore[no-untyped-def]
+            pass
+
+        async def run(self, **kwargs):  # type: ignore[no-untyped-def]
+            status = RunStatus.COMPLETED if kwargs["cwd"].name == "a" else RunStatus.FAILED
+            return RunState(str(kwargs["run_id"]), status=status, turns=3)
+
+    monkeypatch.setattr("qwenloop.cli.app.LlamaCppServer", Server)
+    monkeypatch.setattr("qwenloop.cli.app.AutonomousRunner", FakeRunner)
+    monkeypatch.setattr("qwenloop.cli.app.list_repo_names", lambda _owner: ["a", "b"])
+    monkeypatch.setattr("qwenloop.cli.app.list_open_issues", lambda _owner, _repo: None)
+    monkeypatch.setattr("qwenloop.cli.app.list_open_pull_requests", lambda _owner, _repo: None)
+
+    result = runner.invoke(
+        app, ["run", "--storm", "--owner", "acme", "--repos-root", str(tmp_path)]
+    )
+    assert result.exit_code == 0
+    assert "a\tcompleted\t3" in result.stdout
+    assert "b\tfailed\t3" in result.stdout
+    assert "qwenstorm complete: 1/2 repos completed" in result.stdout
+
+
+def test_storm_skips_repo_not_cloned_locally(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    monkeypatch.setattr("qwenloop.cli.app.list_repo_names", lambda _owner: [])
+    result = runner.invoke(
+        app, ["run", "--storm", "--repos-root", str(tmp_path), "--repo", "missing"]
+    )
+    assert result.exit_code == 0
+    assert "skip missing: not cloned" in result.stdout
+    assert "qwenstorm complete: 0/0 repos completed" in result.stdout
+
+
+def test_storm_continues_past_unavailable_repo(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    (tmp_path / "a" / ".git").mkdir(parents=True)
+    (tmp_path / "b" / ".git").mkdir(parents=True)
+
+    class Server:
+        def inspect(self, _profile):  # type: ignore[no-untyped-def]
+            return None
+
+        async def start(self, _profile):  # type: ignore[no-untyped-def]
+            raise OSError("no runtime")
+
+    monkeypatch.setattr("qwenloop.cli.app.LlamaCppServer", Server)
+    monkeypatch.setattr("qwenloop.cli.app.list_open_issues", lambda _owner, _repo: None)
+    monkeypatch.setattr("qwenloop.cli.app.list_open_pull_requests", lambda _owner, _repo: None)
+
+    result = runner.invoke(
+        app,
+        ["run", "--storm", "--repos-root", str(tmp_path), "--repo", "a", "--repo", "b"],
+    )
+    assert result.exit_code == 0
+    assert "a\tunavailable\tno runtime" in result.stdout
+    assert "b\tunavailable\tno runtime" in result.stdout
+    assert "qwenstorm complete: 0/2 repos completed" in result.stdout

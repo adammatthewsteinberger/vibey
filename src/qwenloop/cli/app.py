@@ -18,13 +18,31 @@ from platformdirs import user_cache_path
 
 from qwenloop import __version__
 from qwenloop.application.backend_selection import Hardware, select_backend
+from qwenloop.application.interfaces import InferenceServer
 from qwenloop.application.runner import AutonomousRunner
-from qwenloop.domain.model import EXIT_CODE_WIND_DOWN, Backend, RunStatus
+from qwenloop.application.storm import build_plan
+from qwenloop.domain.model import (
+    EXIT_CODE_WIND_DOWN,
+    Backend,
+    ModelProfile,
+    RunState,
+    RunStatus,
+    ServerInfo,
+)
+from qwenloop.infrastructure.github import (
+    list_open_issues,
+    list_open_pull_requests,
+    list_repo_names,
+)
 from qwenloop.infrastructure.inference import LlamaCppServer, VllmServer
 from qwenloop.infrastructure.model_cache import ModelCache
 from qwenloop.infrastructure.profiles import NVIDIA_BF16, PORTABLE, PROFILES
 from qwenloop.infrastructure.run_store import FileRunStore
 from qwenloop.infrastructure.tools import SandboxTools
+
+_DEFAULT_STORM_OWNER = "adammatthewsteinberger"
+_DEFAULT_STORM_AUTHOR = "Adam Matthew Steinberger"
+_DEFAULT_REPOS_ROOT = Path.home() / "git"
 
 app = typer.Typer(name="qwenloop", no_args_is_help=True, add_completion=False)
 model_app = typer.Typer(no_args_is_help=True)
@@ -50,15 +68,50 @@ def root(
 
 @app.command()
 def run(
-    plan: Path,
+    plan: Annotated[Path | None, typer.Argument()] = None,
     run_id: str = typer.Option("", "--run-id"),
     cwd: Path = typer.Option(Path("."), "--cwd"),
     preset: str = typer.Option("standard", "--preset"),
     effort: str = typer.Option("standard", "--effort"),
     backend: Backend = typer.Option(Backend.AUTO, "--backend"),
     max_turns: int = typer.Option(40, "--max-turns"),
+    storm: bool = typer.Option(
+        False,
+        "--storm",
+        help="Sweep every repo's open backlog through qwenloop instead of running PLAN.",
+    ),
+    owner: str = typer.Option(
+        _DEFAULT_STORM_OWNER, "--owner", help="GitHub owner --storm discovers repos under."
+    ),
+    repos_root: Path = typer.Option(
+        _DEFAULT_REPOS_ROOT, "--repos-root", help="Directory --storm looks for cloned repos in."
+    ),
+    repo: list[str] = typer.Option(
+        [], "--repo", help="Restrict --storm to this repo (repeatable); overrides discovery."
+    ),
+    author: str = typer.Option(
+        _DEFAULT_STORM_AUTHOR, "--author", help="Author name --storm passes to vibey-gh paper/book."
+    ),
 ) -> None:
     del preset, effort
+    if storm:
+        if plan is not None:
+            raise typer.BadParameter("pass either PLAN or --storm, not both")
+        _run_storm(
+            owner=owner,
+            repos_root=repos_root,
+            repos=list(repo),
+            author=author,
+            backend=backend,
+            max_turns=max_turns,
+        )
+        return
+    if plan is None:
+        raise typer.BadParameter("PLAN is required unless --storm is set")
+    _run_single(plan, run_id, cwd, backend, max_turns)
+
+
+def _run_single(plan: Path, run_id: str, cwd: Path, backend: Backend, max_turns: int) -> None:
     actual_id = run_id or str(uuid.uuid4())
     selected = select_backend(
         backend,
@@ -67,32 +120,93 @@ def run(
     )
     profile = NVIDIA_BF16 if selected.backend is Backend.VLLM else PORTABLE
     server = VllmServer() if selected.backend is Backend.VLLM else LlamaCppServer()
-
-    async def execute() -> RunStatus:
-        info = server.inspect(profile)
-        if info is None or not await server.health(info):
-            info = await server.start(profile)
-            info = await _wait_until_ready(server, info, timeout_seconds=180)
-        runner = AutonomousRunner(server, FileRunStore(cwd), SandboxTools(cwd))
-        result = await runner.run(
-            run_id=actual_id,
-            plan=plan.read_text(encoding="utf-8"),
-            cwd=cwd.resolve(),
-            profile=profile,
-            server_info=info,
-            max_turns=max_turns,
-        )
-        return result.status
-
     try:
-        status = asyncio.run(execute())
+        state = asyncio.run(
+            _run_plan(server, profile, cwd, actual_id, plan.read_text(encoding="utf-8"), max_turns)
+        )
     except (OSError, RuntimeError) as exc:
         typer.echo(f"qwenloop unavailable: {exc}", err=True)
         raise typer.Exit(code=1) from exc
-    if status is RunStatus.WINDING_DOWN:
+    if state.status is RunStatus.WINDING_DOWN:
         raise typer.Exit(code=EXIT_CODE_WIND_DOWN)
-    if status is not RunStatus.COMPLETED:
+    if state.status is not RunStatus.COMPLETED:
         raise typer.Exit(code=1)
+
+
+async def _run_plan(
+    server: InferenceServer,
+    profile: ModelProfile,
+    cwd: Path,
+    run_id: str,
+    plan_text: str,
+    max_turns: int,
+) -> RunState:
+    """Start the managed server if needed, then drive one AutonomousRunner run to a verdict."""
+    info = server.inspect(profile)
+    if info is None or not await server.health(info):
+        info = await server.start(profile)
+        info = await _wait_until_ready(server, info, timeout_seconds=180)
+    runner = AutonomousRunner(server, FileRunStore(cwd), SandboxTools(cwd))
+    return await runner.run(
+        run_id=run_id,
+        plan=plan_text,
+        cwd=cwd.resolve(),
+        profile=profile,
+        server_info=info,
+        max_turns=max_turns,
+    )
+
+
+def _discover_storm_repos(owner: str, repos_root: Path) -> list[str]:
+    """`gh`'s repos for `owner`, filtered to the ones actually cloned under `repos_root`."""
+    names = list_repo_names(owner) or []
+    return [name for name in names if (repos_root / name / ".git").is_dir()]
+
+
+def _run_storm(
+    *,
+    owner: str,
+    repos_root: Path,
+    repos: list[str],
+    author: str,
+    backend: Backend,
+    max_turns: int,
+) -> None:
+    """Sweep every target repo's backlog through qwenloop, continuing past a failed repo."""
+    targets = repos or _discover_storm_repos(owner, repos_root)
+    selected = select_backend(
+        backend,
+        Hardware(platform.system(), _nvidia_vram()),
+        vllm_installed=shutil.which("vllm") is not None,
+    )
+    profile = NVIDIA_BF16 if selected.backend is Backend.VLLM else PORTABLE
+    server = VllmServer() if selected.backend is Backend.VLLM else LlamaCppServer()
+
+    attempted = 0
+    completed = 0
+    for name in targets:
+        repo_dir = repos_root / name
+        if not (repo_dir / ".git").is_dir():
+            typer.echo(f"skip {name}: not cloned at {repo_dir}")
+            continue
+        plan_text = build_plan(
+            repo=name,
+            issues=list_open_issues(owner, name),
+            pull_requests=list_open_pull_requests(owner, name),
+            author=author,
+        )
+        attempted += 1
+        try:
+            state = asyncio.run(
+                _run_plan(server, profile, repo_dir, str(uuid.uuid4()), plan_text, max_turns)
+            )
+        except (OSError, RuntimeError) as exc:
+            typer.echo(f"{name}\tunavailable\t{exc}")
+            continue
+        if state.status is RunStatus.COMPLETED:
+            completed += 1
+        typer.echo(f"{name}\t{state.status.value}\t{state.turns}")
+    typer.echo(f"qwenstorm complete: {completed}/{attempted} repos completed")
 
 
 @model_app.command("list")
@@ -325,7 +439,9 @@ def _nvidia_vram() -> int:
     return max(free_mib, default=0) * 1024 * 1024
 
 
-async def _wait_until_ready(server, info, *, timeout_seconds: int):  # type: ignore[no-untyped-def]
+async def _wait_until_ready(
+    server: InferenceServer, info: ServerInfo, *, timeout_seconds: int
+) -> ServerInfo:
     deadline = time.monotonic() + timeout_seconds
     while time.monotonic() < deadline:
         if await server.health(info):

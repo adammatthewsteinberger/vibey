@@ -60,6 +60,15 @@ class ChatMessage:
 
 
 @dataclass(frozen=True, slots=True)
+class RepoItem:
+    """One open issue or pull request, as reported by `gh`."""
+
+    number: int
+    title: str
+    body: str
+
+
+@dataclass(frozen=True, slots=True)
 class ChatChunk:
     text: str = ""
     tool_call: dict[str, Any] | None = None
