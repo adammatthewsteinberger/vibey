@@ -13,6 +13,45 @@ from qwenloop.domain.model import (
     ServerInfo,
 )
 
+_CHARS_PER_TOKEN = 4
+_RESPONSE_TOKEN_RESERVE = 2048
+_MAX_TOOL_RESULT_CHARS = 8_000
+
+
+def _estimate_tokens(text: str) -> int:
+    return max(1, len(text) // _CHARS_PER_TOKEN)
+
+
+def _truncate_tool_result(text: str, limit: int = _MAX_TOOL_RESULT_CHARS) -> str:
+    if len(text) <= limit:
+        return text
+    omitted = len(text) - limit
+    return f"{text[:limit]}\n...[truncated {omitted} characters]"
+
+
+def _trim_transcript(transcript: list[ChatMessage], context_window: int) -> list[ChatMessage]:
+    """Drop the oldest tool/assistant turns once history nears the context window.
+
+    The system prompt and original plan (the first two messages) are never dropped.
+    Dropped turns are replaced by a single marker so the model knows history is
+    incomplete, rather than silently losing context or crashing the run.
+    """
+    budget = max(context_window - _RESPONSE_TOKEN_RESERVE, context_window // 2)
+    total = sum(_estimate_tokens(message.content) for message in transcript)
+    if total <= budget or len(transcript) <= 2:
+        return transcript
+    head, tail = transcript[:2], list(transcript[2:])
+    dropped = 0
+    while tail and total > budget:
+        removed = tail.pop(0)
+        total -= _estimate_tokens(removed.content)
+        dropped += 1
+    marker = ChatMessage(
+        "system",
+        f"[{dropped} earlier turn(s) omitted to fit the {context_window}-token context window]",
+    )
+    return [*head, marker, *tail]
+
 
 class AutonomousRunner:
     def __init__(self, server: InferenceServer, store: RunStore, tools: ToolExecutor) -> None:
@@ -58,6 +97,7 @@ class AutonomousRunner:
                 self._store.write_snapshot(run_id, _snapshot(state))
                 return state
             state.turns = turn
+            state.transcript = _trim_transcript(state.transcript, profile.context_window)
             text_parts: list[str] = []
             tool_called = False
             async for chunk in self._server.chat_stream(server_info, state.transcript):
@@ -76,7 +116,7 @@ class AutonomousRunner:
                     self._store.append_event(
                         run_id, {"type": "tool_result", "name": name, "result": result}
                     )
-                    state.transcript.append(ChatMessage("tool", str(result)))
+                    state.transcript.append(ChatMessage("tool", _truncate_tool_result(str(result))))
             answer = "".join(text_parts)
             if answer:
                 state.transcript.append(ChatMessage("assistant", answer))

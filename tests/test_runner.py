@@ -4,7 +4,11 @@ from pathlib import Path
 
 import pytest
 
-from qwenloop.application.runner import AutonomousRunner
+from qwenloop.application.runner import (
+    AutonomousRunner,
+    _trim_transcript,
+    _truncate_tool_result,
+)
 from qwenloop.domain.model import Backend, ChatChunk, ChatMessage, RunStatus, ServerInfo
 from qwenloop.infrastructure.profiles import PORTABLE
 from qwenloop.infrastructure.run_store import FileRunStore
@@ -47,6 +51,44 @@ class FakeServer:
         ]
         for chunk in chunks:
             yield chunk
+
+
+def test_truncate_tool_result_leaves_short_text_untouched() -> None:
+    assert _truncate_tool_result("short") == "short"
+
+
+def test_truncate_tool_result_truncates_long_text() -> None:
+    text = "x" * 8_010
+    result = _truncate_tool_result(text, limit=8_000)
+    assert result.startswith("x" * 8_000)
+    assert result.endswith("...[truncated 10 characters]")
+
+
+def test_trim_transcript_noop_within_budget() -> None:
+    transcript = [ChatMessage("system", "sys"), ChatMessage("user", "plan")]
+    assert _trim_transcript(transcript, context_window=32_768) is transcript
+
+
+def test_trim_transcript_never_drops_head_even_over_budget() -> None:
+    transcript = [ChatMessage("system", "sys"), ChatMessage("user", "plan")]
+    assert _trim_transcript(transcript, context_window=1) is transcript
+
+
+def test_trim_transcript_drops_oldest_tail_and_marks_it() -> None:
+    transcript = [
+        ChatMessage("system", "sys"),
+        ChatMessage("user", "plan"),
+        ChatMessage("tool", "a" * 400),  # 100 estimated tokens, dropped first
+        ChatMessage("tool", "b" * 400),  # 100 estimated tokens, dropped second
+        ChatMessage("tool", "c" * 4),  # 1 estimated token, kept
+    ]
+    trimmed = _trim_transcript(transcript, context_window=100)
+    assert trimmed[0] == transcript[0]
+    assert trimmed[1] == transcript[1]
+    assert trimmed[2].role == "system"
+    assert "2 earlier turn(s) omitted to fit the 100-token context window" in trimmed[2].content
+    assert trimmed[3] == transcript[4]
+    assert len(trimmed) == 4
 
 
 @pytest.mark.asyncio

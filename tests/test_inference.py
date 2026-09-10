@@ -1,6 +1,7 @@
 # Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 import io
 import json
+import urllib.error
 from pathlib import Path
 
 import pytest
@@ -10,6 +11,7 @@ from qwenloop.infrastructure.inference import (
     LlamaCppServer,
     OpenAIServer,
     VllmServer,
+    _http_error_detail,
     _parse_text_tool_calls,
     _pid_alive,
 )
@@ -56,6 +58,69 @@ async def test_openai_health_and_chat(monkeypatch: pytest.MonkeyPatch, tmp_path:
     chunks = [chunk async for chunk in server.chat_stream(info, [ChatMessage("user", "x")])]
     assert chunks[0].tool_call == {"name": "read_file", "arguments": {"path": "x"}}
     assert chunks[1].text == "done"
+
+
+@pytest.mark.asyncio
+async def test_chat_stream_surfaces_context_overflow_body(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    body = json.dumps(
+        {
+            "error": {
+                "message": "request (20030 tokens) exceeds the available context size (4096 tokens)",
+            }
+        }
+    ).encode()
+
+    def urlopen(request, timeout):  # type: ignore[no-untyped-def]
+        del timeout
+        raise urllib.error.HTTPError(request.full_url, 400, "Bad Request", {}, io.BytesIO(body))
+
+    monkeypatch.setattr("urllib.request.urlopen", urlopen)
+    server = LlamaCppServer(tmp_path)
+    info = ServerInfo(Backend.LLAMA_CPP, PORTABLE.name, "http://local/v1", True, True, 1, "t")
+    with pytest.raises(RuntimeError, match="exceeds the available context size"):
+        async for _ in server.chat_stream(info, [ChatMessage("user", "x")]):
+            pass
+
+
+def test_http_error_detail_prefers_json_error_message() -> None:
+    exc = urllib.error.HTTPError(
+        "u", 400, "Bad Request", {}, io.BytesIO(json.dumps({"error": {"message": "boom"}}).encode())
+    )
+    assert _http_error_detail(exc) == "HTTP 400: boom"
+
+
+def test_http_error_detail_falls_back_to_raw_body_text() -> None:
+    exc = urllib.error.HTTPError("u", 502, "Bad Gateway", {}, io.BytesIO(b"gateway down"))
+    assert _http_error_detail(exc) == "HTTP 502: gateway down"
+
+
+def test_http_error_detail_falls_back_when_json_has_no_message() -> None:
+    exc = urllib.error.HTTPError("u", 500, "Server Error", {}, io.BytesIO(b'{"error": {}}'))
+    assert _http_error_detail(exc) == 'HTTP 500: {"error": {}}'
+
+
+def test_http_error_detail_falls_back_when_body_is_not_a_mapping() -> None:
+    exc = urllib.error.HTTPError("u", 400, "Bad Request", {}, io.BytesIO(b"[1, 2, 3]"))
+    assert _http_error_detail(exc) == "HTTP 400: [1, 2, 3]"
+
+
+def test_http_error_detail_falls_back_to_reason_on_empty_body() -> None:
+    exc = urllib.error.HTTPError("u", 503, "Unavailable", {}, io.BytesIO(b""))
+    assert _http_error_detail(exc) == "HTTP 503: Unavailable"
+
+
+def test_http_error_detail_falls_back_to_reason_when_body_unreadable() -> None:
+    class UnreadableFp:
+        def read(self) -> bytes:
+            raise OSError("closed")
+
+        def close(self) -> None:
+            return None
+
+    exc = urllib.error.HTTPError("u", 504, "Gateway Timeout", {}, UnreadableFp())  # type: ignore[arg-type]
+    assert _http_error_detail(exc) == "HTTP 504: Gateway Timeout"
 
 
 def test_server_argv_and_inspect(tmp_path: Path) -> None:

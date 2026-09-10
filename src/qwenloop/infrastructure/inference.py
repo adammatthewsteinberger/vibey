@@ -116,7 +116,10 @@ class OpenAIServer:
                 "Authorization": f"Bearer {info.token}",
             },
         )
-        response = await asyncio.to_thread(urllib.request.urlopen, request, timeout=300)
+        try:
+            response = await asyncio.to_thread(urllib.request.urlopen, request, timeout=300)
+        except urllib.error.HTTPError as exc:
+            raise RuntimeError(_http_error_detail(exc)) from exc
         data = json.loads(response.read())
         message = data["choices"][0]["message"]
         calls = message.get("tool_calls", [])
@@ -235,6 +238,24 @@ def _acquire_profile_lock(cache_dir: Path, profile: str) -> IO[str]:
 def _release_profile_lock(stream: IO[str]) -> None:
     fcntl.flock(stream.fileno(), fcntl.LOCK_UN)
     stream.close()
+
+
+def _http_error_detail(exc: urllib.error.HTTPError) -> str:
+    """Surface the server's own error body instead of urllib's generic reason phrase."""
+    try:
+        body = exc.read()
+    except OSError:
+        return f"HTTP {exc.code}: {exc.reason}"
+    message: str | None = None
+    try:
+        parsed = json.loads(body)
+        message = parsed.get("error", {}).get("message")
+    except (json.JSONDecodeError, AttributeError, TypeError):
+        message = None
+    if message:
+        return f"HTTP {exc.code}: {message}"
+    text = body.decode("utf-8", errors="replace").strip()
+    return f"HTTP {exc.code}: {text or exc.reason}"
 
 
 def _pid_alive(pid: int) -> bool:
