@@ -1,0 +1,71 @@
+site_name: claudeloop
+site_description: >-
+  Onion-architected, autonomous Claude Code session runner and full
+  Anthropic SDK CLI — never blocks on a human, distinguishes rate limits
+  from exhausted credits, and resumes safely across usage windows.
+site_url: https://adammatthewsteinberger.github.io/claudeloop/
+repo_url: https://github.com/adammatthewsteinberger/claudeloop
+repo_name: adammatthewsteinberger/claudeloop
+edit_uri: edit/develop/docs/
+
+# ProperDocs, matching vibey-gh and vibey-skills. `theme: mkdocs` rather than Material:
+# ProperDocs ships its own theme package and the Material palette/features block has no
+# equivalent here, so the styling lives in stylesheets/vibey.css instead.
+theme: mkdocs
+
+extra_css:
+  - stylesheets/vibey.css
+extra_javascript:
+  - javascripts/channel.js
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Installation: getting-started/installation.md
+      - Quickstart: getting-started/quickstart.md
+      - Configuration: getting-started/configuration.md
+  - Guides:
+      - Autonomous runs, end to end: guides/autonomous-runs.md
+      - Rate limits vs. credits: guides/rate-limits-and-credits.md
+      - Never blocking on a human: guides/never-blocking.md
+      - Completion detection: guides/completion-detection.md
+      - The generated REST surface: guides/rest-api-surface.md
+      - Live testing against a real account: guides/live-testing.md
+      - Logging and observability: guides/logging-and-observability.md
+      - Run resources and chat ops: guides/run-resources-and-chat-ops.md
+  - Architecture:
+      - Overview: architecture/overview.md
+      - Domain model: architecture/domain-model.md
+      - Ports and adapters: architecture/ports-and-adapters.md
+      - Run-loop state machine: architecture/run-loop-state-machine.md
+      - Decision records:
+          - "0001 — Onion architecture": architecture/decisions/0001-onion-architecture-with-import-linter.md
+          - "0002 — Agent SDK over subprocess": architecture/decisions/0002-agent-sdk-over-subprocess.md
+          - "0003 — CreditsExhausted is distinct": architecture/decisions/0003-credits-exhausted-distinct-from-window-exhausted.md
+          - "0004 — Adaptive probing, not sleep": architecture/decisions/0004-adaptive-waiting-with-probes-not-sleep.md
+          - "0005 — Retry watchdog off by default": architecture/decisions/0005-retry-watchdog-off-by-default.md
+          - "0006 — Generated REST surface": architecture/decisions/0006-generated-rest-surface-not-hand-written.md
+          - "0007 — AskUserQuestion denied with guidance": architecture/decisions/0007-ask-user-question-denied-with-guidance.md
+  - Reference:
+      - CLI: reference/cli.md
+      - API: reference/api.md
+  - Contributing:
+      - Development: contributing/development.md
+      - Testing: contributing/testing.md
+      - Documentation: contributing/documentation.md
+      - Release process: contributing/release-process.md
+  - Plans:
+      - Architecture & roadmap: plans/architecture-and-roadmap.md
+      - FOSS & documentation plan: plans/foss-and-documentation-plan.md
+  - Research paper: paper.md

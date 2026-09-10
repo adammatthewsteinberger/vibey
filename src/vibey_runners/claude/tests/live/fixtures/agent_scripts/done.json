@@ -1,0 +1,12 @@
+{
+  "probes": [{}],
+  "turns": [
+    {
+      "signals": {},
+      "verdict": {"complete": true, "summary": "all done"},
+      "session_id": "scripted-done",
+      "output_text": "finished",
+      "raw_events": [{"type": "assistant", "api_key": "sk-ant-abcdefghijklmnopqrstuvwxyz012345"}]
+    }
+  ]
+}

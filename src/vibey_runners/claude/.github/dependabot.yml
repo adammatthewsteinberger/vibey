@@ -1,0 +1,48 @@
+version: 2
+updates:
+  # Python dependencies (pyproject.toml)
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "build"
+    labels: ["dependencies", "python"]
+
+  # GitHub Actions — this is what makes SHA-pinning the actions in
+  # publish-to-pypi.yml sustainable rather than rot-inducing: Dependabot
+  # understands `# vX.Y.Z` trailing comments on a pinned SHA and opens a PR
+  # bumping both together.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "ci"
+    labels: ["dependencies", "github-actions"]
+
+  # pre-commit hook revisions (.pre-commit-config.yaml)
+    # vibey-gh owns the action versions in the workflows it generates and ships them
+    # through its own releases. A bump applied here makes the rendered file stop
+    # matching its template, which fails `vibey-gh check` and makes the pre-push hook
+    # refuse every push from the branch, including the promotion to main.
+    #
+    # Dependabot cannot ignore a FILE, only a dependency, so these are the actions the
+    # managed templates pin. Upgrade them by upgrading vibey-gh.
+    ignore:
+      - dependency-name: actions/checkout
+      - dependency-name: actions/configure-pages
+      - dependency-name: actions/deploy-pages
+      - dependency-name: actions/download-artifact
+      - dependency-name: actions/setup-python
+      - dependency-name: actions/upload-artifact
+      - dependency-name: actions/upload-pages-artifact
+      - dependency-name: anthropics/claude-code-action
+      - dependency-name: oras-project/setup-oras
+  - package-ecosystem: "pre-commit"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore"
+    labels: ["dependencies", "pre-commit"]
