@@ -1,0 +1,3 @@
+{"type":"thread.started","thread_id":"0199a213-81c0-7800-8aa1-bbab2a035a55"}
+{"type":"turn.started"}
+{"type":"turn.failed","error":{"message":"You have reached your usage limit. Try again later.","code":"usage_limit_reached","type":"usage_limit_reached","status":429}}

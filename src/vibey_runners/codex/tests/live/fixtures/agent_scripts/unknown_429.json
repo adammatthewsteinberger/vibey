@@ -1,0 +1,18 @@
+{
+  "probes": [{}],
+  "turns": [
+    {
+      "signals": {
+        "error_code": "some_future_code",
+        "http_status": 429
+      },
+      "thread_id": "scripted-unknown"
+    },
+    {
+      "signals": {
+        "final_message": "CODEXLOOP_TASK_FULLY_COMPLETE"
+      },
+      "thread_id": "scripted-unknown"
+    }
+  ]
+}

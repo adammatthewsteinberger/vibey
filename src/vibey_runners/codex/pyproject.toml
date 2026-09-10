@@ -1,0 +1,205 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "codexloop"
+version = "0.4.0"
+description = "Onion-architected, autonomous OpenAI Codex session runner — never blocks on a human, distinguishes rate limits from exhausted credits, and resumes safely across usage windows."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Adam Matthew Steinberger", email = "adam@matthewsteinberger.com" }]
+keywords = [
+    "codex",
+    "openai",
+    "gpt",
+    "cli",
+    "automation",
+    "agent",
+    "llm",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities",
+    "Typing :: Typed",
+]
+dependencies = [
+    "typer>=0.12",
+    "structlog>=24.1",
+    "anyio>=4.0",
+    "openai>=1.40",
+    "textual>=1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/adammatthewsteinberger/codexloop"
+Repository = "https://github.com/adammatthewsteinberger/codexloop"
+Documentation = "https://adammatthewsteinberger.github.io/codexloop/"
+Issues = "https://github.com/adammatthewsteinberger/codexloop/issues"
+Changelog = "https://github.com/adammatthewsteinberger/codexloop/blob/main/CHANGELOG.md"
+
+[project.optional-dependencies]
+dev = [
+    # Release automation and provenance guardrails, shared by every repo in
+    # the family. Stdlib-only, so adopting it in five places multiplies
+    # nobody's dependency tree.
+    "vibey-gh>=1.2",
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "pytest-xdist>=3.5",
+    "pytest-asyncio>=0.24",
+    "hypothesis>=6.100",
+    "mypy>=1.10",
+    "ruff>=0.6",
+    "import-linter>=2.0",
+    "bandit>=1.7",
+    "pip-audit>=2.7",
+    "packaging>=24.0",
+    "build>=1.2",
+    "twine>=5.0",
+    "pre-commit>=3.7",
+]
+docs = [
+    "mkdocs-material>=9.5",
+]
+
+[project.scripts]
+codexloop = "codexloop.cli.app:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/codexloop"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "C4"]
+# E501 only, and only because of the provenance header. `vibey-gh check` requires an
+# exact 230-character comment on the first line of every source file, byte-for-byte, so it
+# cannot be wrapped or annotated without failing the check that mandates it. Line width on
+# real code is still enforced -- ruff-format runs on every commit -- which is why vibey-gh
+# itself leaves E501 unselected rather than fighting its own fingerprint.
+ignore = ["E501"]
+# Typer's own idiom is `param: T = typer.Option(...)` / `typer.Argument(...)`
+# in a function signature default — B008 (no function calls in defaults)
+# exists to catch a different, real mutable-default bug and doesn't know
+# Typer's sentinels are safe here. This is the standard fix for Typer/FastAPI
+# projects rather than restructuring every command against the library's own
+# documented pattern.
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["typer.Option", "typer.Argument"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["codexloop"]
+mypy_path = "src"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Deliberately NO --cov=... and NO --cov-fail-under here. pytest-cov MERGES
+# (unions) every --cov=X flag it sees rather than letting the last one win —
+# so a blanket `--cov=` baked into addopts would silently widen every
+# explicitly-scoped invocation back out to the whole package, defeating the
+# per-layer gate without any error. Coverage scope and its gate are passed
+# explicitly at each call site instead.
+#
+# Per-layer floors no longer need one full suite run each: a single
+# instrumented run over the whole package, then `coverage report
+# --include='src/codexloop/<layer>/*' --fail-under=100` per layer, gives
+# the same per-layer granularity from one data file (the union problem
+# above is a pytest-cov behavior, not a coverage-report one). 93s -> 16s.
+addopts = "--cov-report=term-missing -m \"not live and not system\" -n auto --maxprocesses=8"
+asyncio_mode = "auto"
+markers = [
+    "live: exercises a real Codex/OpenAI account (free tier — no token spend). Opt in with -m live.",
+    "paid: additionally spends real tokens/turns. Requires --run-paid-live. Always paired with 'live'.",
+    "system: deterministic system-live harness (real FS/git/CLI adapters + scripted agent). Opt in with -m system.",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["src/codexloop"]
+
+[tool.importlinter]
+root_package = "codexloop"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Onion layering"
+type = "layers"
+layers = [
+    "codexloop.cli",
+    "codexloop.bootstrap",
+    "codexloop.application",
+    "codexloop.domain",
+]
+
+[[tool.importlinter.contracts]]
+name = "Domain and application cannot reach infrastructure"
+type = "forbidden"
+source_modules = ["codexloop.domain", "codexloop.application"]
+forbidden_modules = ["codexloop.infrastructure"]
+# Transitively sealed: application → bootstrap → infrastructure is also forbidden.
+allow_indirect_imports = false
+
+[[tool.importlinter.contracts]]
+name = "CLI cannot import infrastructure directly"
+type = "forbidden"
+source_modules = ["codexloop.cli"]
+forbidden_modules = ["codexloop.infrastructure"]
+# cli → bootstrap → infrastructure is legal; direct cli → infrastructure is not.
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Domain is pure"
+type = "forbidden"
+source_modules = ["codexloop.domain"]
+forbidden_modules = [
+    "openai",
+    "anyio",
+    "structlog",
+    "typer",
+    "textual",
+    "httpx",
+    "anthropic",
+    "claude_agent_sdk",
+    "claudeloop",
+    "pydantic",
+    "click",
+    "rich",
+    "requests",
+    "aiohttp",
+    "fastapi",
+    "flask",
+    "boto3",
+    "docker",
+    "sqlalchemy",
+]
+
+
+[[tool.importlinter.contracts]]
+name = "Interfaces declare seams, never consume them"
+type = "forbidden"
+source_modules = ["codexloop.application.interfaces"]
+forbidden_modules = [
+    "codexloop.application.runner",
+    "codexloop.application.usecases",
+    "codexloop.infrastructure",
+    "codexloop.cli",
+    "codexloop.bootstrap",
+]

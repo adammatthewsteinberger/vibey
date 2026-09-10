@@ -1,0 +1,10 @@
+{"type":"thread.started","thread_id":"0199a213-81c0-7800-8aa1-bbab2a035a54"}
+{"type":"turn.started"}
+{"type":"item.started","item":{"id":"item_1","type":"command_execution","command":"bash -lc ls","status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_1","type":"command_execution","command":"bash -lc ls","status":"completed"}}
+{"type":"item.started","item":{"id":"item_2","type":"command_execution","command":"bash -lc pwd","status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_2","type":"command_execution","command":"bash -lc pwd","status":"completed"}}
+{"type":"item.started","item":{"id":"item_3","type":"command_execution","command":"bash -lc git status","status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_3","type":"command_execution","command":"bash -lc git status","status":"completed"}}
+{"type":"item.completed","item":{"id":"item_4","type":"agent_message","text":"Listed files, printed cwd, and showed git status."}}
+{"type":"turn.completed","usage":{"input_tokens":1000,"cached_input_tokens":800,"output_tokens":50,"reasoning_output_tokens":0}}
