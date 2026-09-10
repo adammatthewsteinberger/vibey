@@ -16,6 +16,10 @@ from qwenloop.domain.model import (
 _CHARS_PER_TOKEN = 4
 _RESPONSE_TOKEN_RESERVE = 2048
 _MAX_TOOL_RESULT_CHARS = 8_000
+_CONTINUE_PROMPT = (
+    "Continue the plan. Call a tool to make progress, or finish with a "
+    "```qwenloop-verdict block and the completion marker."
+)
 
 
 def _estimate_tokens(text: str) -> int:
@@ -70,6 +74,7 @@ class AutonomousRunner:
         max_turns: int,
     ) -> RunState:
         state = RunState(run_id=run_id, status=RunStatus.RUNNING)
+        any_tool_called = False
         state.transcript.extend(
             [
                 ChatMessage("system", _system_prompt(cwd)),
@@ -108,6 +113,7 @@ class AutonomousRunner:
                     self._store.append_event(run_id, {"type": "text_delta", "text": chunk.text})
                 if chunk.tool_call is not None:
                     tool_called = True
+                    any_tool_called = True
                     name = str(chunk.tool_call.get("name", ""))
                     arguments = chunk.tool_call.get("arguments", {})
                     if not isinstance(arguments, dict):
@@ -120,7 +126,7 @@ class AutonomousRunner:
             answer = "".join(text_parts)
             if answer:
                 state.transcript.append(ChatMessage("assistant", answer))
-            if DONE_MARKER in answer and "```qwenloop-verdict" in answer:
+            if DONE_MARKER in answer and "```qwenloop-verdict" in answer and any_tool_called:
                 state.status = RunStatus.COMPLETED
                 self._store.append_event(run_id, {"type": "completed", "turn": turn})
                 self._store.write_snapshot(run_id, _snapshot(state))
@@ -128,6 +134,8 @@ class AutonomousRunner:
             if not tool_called and not answer:
                 state.status = RunStatus.FAILED
                 break
+            if state.transcript[-1].role == "assistant":
+                state.transcript.append(ChatMessage("user", _CONTINUE_PROMPT))
         if state.status is RunStatus.RUNNING:
             state.status = RunStatus.FAILED
         self._store.append_event(

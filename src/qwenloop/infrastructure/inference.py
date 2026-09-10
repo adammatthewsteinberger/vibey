@@ -316,14 +316,31 @@ _CODING_TOOLS = [
 ]
 
 
+_EMPTY_FENCE_PATTERN = re.compile(r"```(?:json)?\s*```")
+_EMPTY_TAG_PATTERN = re.compile(r"<(?:tools|tool_call)>\s*</(?:tools|tool_call)>")
+
+
 def _parse_text_tool_calls(text: str) -> tuple[list[dict[str, object]], str]:
+    """Recover a tool call the model wrote as text instead of a native tool_calls entry.
+
+    Qwen2.5-Coder does this inconsistently and unpredictably: sometimes ``<tools>``/
+    ``<tool_call>`` tags, sometimes a ```json fenced object, sometimes a bare JSON object
+    with no wrapper at all. Rather than chase each new wrapper as a separate pattern, this
+    scans for any valid JSON object with the tool call's "name"/"arguments" shape wherever
+    it appears. Anything that isn't that exact shape is left as prose, so a real completion
+    verdict is never mistaken for one.
+    """
     calls: list[dict[str, object]] = []
-    pattern = re.compile(r"<(?:tools|tool_call)>\s*(\{.*?\})\s*</(?:tools|tool_call)>", re.DOTALL)
-    for match in pattern.finditer(text):
+    spans: list[tuple[int, int]] = []
+    decoder = json.JSONDecoder()
+    index = 0
+    while (start := text.find("{", index)) != -1:
         try:
-            value = json.loads(match.group(1))
+            value, end = decoder.raw_decode(text, start)
         except json.JSONDecodeError:
+            index = start + 1
             continue
+        index = end
         if not isinstance(value, dict) or not isinstance(value.get("name"), str):
             continue
         arguments = value.get("arguments", {})
@@ -333,4 +350,12 @@ def _parse_text_tool_calls(text: str) -> tuple[list[dict[str, object]], str]:
                 "arguments": arguments if isinstance(arguments, dict) else {},
             }
         )
-    return calls, pattern.sub("", text).strip() if calls else text
+        spans.append((start, end))
+    if not calls:
+        return calls, text
+    remaining = text
+    for start, end in reversed(spans):
+        remaining = remaining[:start] + remaining[end:]
+    remaining = _EMPTY_FENCE_PATTERN.sub("", remaining)
+    remaining = _EMPTY_TAG_PATTERN.sub("", remaining)
+    return calls, remaining.strip()

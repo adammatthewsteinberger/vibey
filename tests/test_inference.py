@@ -324,6 +324,32 @@ def test_free_port_uses_loopback(monkeypatch: pytest.MonkeyPatch) -> None:
     assert inference._free_port() == 4321
 
 
+def test_qwen_fenced_json_tool_calls_are_normalized() -> None:
+    calls, remaining = _parse_text_tool_calls(
+        'before\n```json\n{\n  "name": "write_file",\n  "arguments": {\n'
+        '    "path": "smoke.txt",\n    "content": "ok"\n  }\n}\n```\nafter'
+    )
+    assert calls == [{"name": "write_file", "arguments": {"path": "smoke.txt", "content": "ok"}}]
+    assert remaining == "before\n\nafter"
+
+    bare_fence, _ = _parse_text_tool_calls('```\n{"name": "shell", "arguments": {}}\n```')
+    assert bare_fence == [{"name": "shell", "arguments": {}}]
+
+    unrelated, unchanged = _parse_text_tool_calls("```qwenloop-verdict\nall good\n```")
+    assert unrelated == []
+    assert unchanged == "```qwenloop-verdict\nall good\n```"
+
+
+def test_qwen_bare_unwrapped_json_tool_call_is_normalized() -> None:
+    # observed in the wild: no fence, no tag, just the object followed by other text
+    calls, remaining = _parse_text_tool_calls(
+        '{\n  "name": "write_file",\n  "arguments": {\n    "path": "smoke.txt",\n'
+        '    "content": "ok"\n  }\n}\n```qwenloop-verdict\ndone\n```'
+    )
+    assert calls == [{"name": "write_file", "arguments": {"path": "smoke.txt", "content": "ok"}}]
+    assert remaining == "```qwenloop-verdict\ndone\n```"
+
+
 def test_qwen_text_tool_calls_are_normalized() -> None:
     calls, remaining = _parse_text_tool_calls(
         'before <tools>{"name":"read_file","arguments":{"path":"README.md"}}</tools> after'

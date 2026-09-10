@@ -91,6 +91,88 @@ def test_trim_transcript_drops_oldest_tail_and_marks_it() -> None:
     assert len(trimmed) == 4
 
 
+class ScriptedServer:
+    """A FakeServer variant that yields a different, pre-scripted turn each call."""
+
+    def __init__(self, turns: list[list[ChatChunk]]) -> None:
+        self._turns = turns
+        self.seen: list[list[ChatMessage]] = []
+
+    def inspect(self, profile):  # type: ignore[no-untyped-def]
+        return None
+
+    async def install(self, profile):  # type: ignore[no-untyped-def]
+        raise AssertionError
+
+    async def start(self, profile):  # type: ignore[no-untyped-def]
+        raise AssertionError
+
+    async def health(self, info):  # type: ignore[no-untyped-def]
+        return True
+
+    async def stop(self, info):  # type: ignore[no-untyped-def]
+        return None
+
+    async def chat_stream(
+        self, info: ServerInfo, messages: Sequence[ChatMessage]
+    ) -> AsyncIterator[ChatChunk]:
+        del info
+        self.seen.append(list(messages))
+        for chunk in self._turns[len(self.seen) - 1]:
+            yield chunk
+
+
+@pytest.mark.asyncio
+async def test_runner_inserts_continue_prompt_after_assistant_only_turn(tmp_path: Path) -> None:
+    server = ScriptedServer(
+        [
+            [ChatChunk(text="thinking out loud")],  # no tool call: ends on "assistant"
+            [
+                ChatChunk(
+                    tool_call={"name": "write_file", "arguments": {"path": "x", "content": "y"}}
+                )
+            ],
+            [
+                ChatChunk(
+                    text="```qwenloop-verdict\npass\n```\nQWENLOOP_TASK_FULLY_COMPLETE",
+                    output_tokens=4,
+                )
+            ],
+        ]
+    )
+    info = ServerInfo(Backend.LLAMA_CPP, PORTABLE.name, "http://127.0.0.1", False, True)
+    result = await AutonomousRunner(server, FileRunStore(tmp_path), SandboxTools(tmp_path)).run(
+        run_id="nudge", plan="do it", cwd=tmp_path, profile=PORTABLE, server_info=info, max_turns=3
+    )
+    assert result.status is RunStatus.COMPLETED
+    # a bare-text turn must never leave two assistant messages back to back for the next request
+    assert [message.role for message in server.seen[1][-2:]] == ["assistant", "user"]
+    # a tool-only turn already ends on "tool", so no continuation prompt is needed or added
+    assert server.seen[2][-1].role == "tool"
+
+
+@pytest.mark.asyncio
+async def test_runner_rejects_completion_verdict_with_no_tool_call(tmp_path: Path) -> None:
+    server = FakeServer()
+    server.chunks = [
+        ChatChunk(
+            text="```qwenloop-verdict\npass\n```\nQWENLOOP_TASK_FULLY_COMPLETE",
+            output_tokens=4,
+        )
+    ]
+    info = ServerInfo(Backend.LLAMA_CPP, PORTABLE.name, "http://127.0.0.1", False, True)
+    result = await AutonomousRunner(server, FileRunStore(tmp_path), SandboxTools(tmp_path)).run(
+        run_id="premature",
+        plan="do it",
+        cwd=tmp_path,
+        profile=PORTABLE,
+        server_info=info,
+        max_turns=1,
+    )
+    # a verdict claimed without ever calling a tool is not trusted as real completion
+    assert result.status is not RunStatus.COMPLETED
+
+
 @pytest.mark.asyncio
 async def test_runner_writes_contract_artifacts(tmp_path: Path) -> None:
     info = ServerInfo(Backend.LLAMA_CPP, PORTABLE.name, "http://127.0.0.1", False, True)
