@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "vibey-gh"
-version = "1.72.0"
+version = "1.73.0"
 description = "Provenance fingerprints, derived version bumps, a merge train, and branch realignment for a GitHub repository — with no dependencies."
 readme = "README.md"
 license = { file = "LICENSE" }

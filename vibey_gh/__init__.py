@@ -18,6 +18,6 @@ verifies an artifact against a single index.
 
 from vibey_gh.config import GhConfig, load_config
 
-__version__ = "1.72.0"
+__version__ = "1.73.0"
 
 __all__ = ["GhConfig", "__version__", "load_config"]
