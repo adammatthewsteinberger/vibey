@@ -259,6 +259,12 @@ jobs:
             -o custom-columns=NAME:.metadata.name,DEL:.metadata.deletionTimestamp --no-headers \
             | awk '$2 == "<none>" {print $1}' | head -n 1)
           echo "deleting $pod"
+          # By the time a failing test reaches the diagnostics step below,
+          # the Deployment has already replaced this pod -- `kubectl logs
+          # deployment/...` would then show the REPLACEMENT's fresh startup
+          # log, not this pod's. Name it explicitly so diagnostics can still
+          # find it once it's no longer the Deployment's current pod.
+          echo "SIGTERM_TEST_POD=$pod" >> "$GITHUB_ENV"
           start=$(date +%s)
           kubectl delete pod "$pod" -n vibey --wait=true --timeout=5m
           elapsed=$(( $(date +%s) - start ))
@@ -270,5 +276,11 @@ jobs:
         run: |
           kubectl get all -n vibey || true
           kubectl describe pods -n vibey || true
+          if [ -n "${SIGTERM_TEST_POD:-}" ]; then
+            echo "--- logs: the specific pod the SIGTERM test deleted ($SIGTERM_TEST_POD) ---"
+            kubectl logs -n vibey "pod/$SIGTERM_TEST_POD" --tail=200 || true
+            echo "--- describe: same pod, for phase/conditions/events ---"
+            kubectl describe "pod/$SIGTERM_TEST_POD" -n vibey || true
+          fi
           kubectl logs -n vibey deployment/vibey-vibey-worker --tail=100 || true
           kubectl logs -n keda deployment/keda-operator --tail=50 || true
