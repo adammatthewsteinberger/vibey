@@ -114,6 +114,7 @@ jobs:
       fork: ${{ steps.meta.outputs.fork }}
       head_repo: ${{ steps.meta.outputs.head_repo }}
       base_ref: ${{ steps.meta.outputs.base_ref }}
+      sovereign_ready: ${{ steps.sovereign.outputs.ready }}
     steps:
       - name: Validate diagnostic output policy
         if: inputs.full_claude_output == true
@@ -138,8 +139,20 @@ jobs:
           if grep -qE '^name = "vibey-gh"' pyproject.toml; then
             python -m pip install --quiet -e .
           else
-            python -m pip install --quiet "vibey-gh==1.58.0"
+            python -m pip install --quiet "vibey-gh==1.72.0"
           fi
+
+      # Doctrine 8.a prefers the sovereign path, but a sovereign job scheduled against a
+      # runner that is not online does not fail — it QUEUES, forever, and the gate below
+      # `needs` it under `always()`, which waits for completion. That would block every
+      # pull request silently. So the lane is offered only when the operator's machine
+      # has said it is up, and every unreadable answer counts as "not up".
+      - name: Probe sovereign readiness
+        id: sovereign
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          vibey-gh sovereign || true
 
       - name: Resolve the PR and exact head
         id: resolve
@@ -228,6 +241,7 @@ jobs:
       pull-requests: write
     outputs:
       passed: ${{ steps.result.outputs.passed }}
+      findings: ${{ steps.result.outputs.findings }}
       structured: ${{ steps.claude.outputs.structured_output }}
     steps:
       - name: Check out trusted automation
@@ -367,6 +381,33 @@ jobs:
             beginner-first BLUF standard. A surface with no example of its own, a
             pseudo-code example, or an example naming anything that does not exist
             fails this judgment.
+            Enforce the government channel (sub-doctrine 2.a): wherever any
+            documentation channel, example set, or operational document is assigned
+            to industry or executives, judge that a government edition stands beside
+            it, of equal completeness — always, no exceptions — and that its primary
+            emphasis is the government's military arm (Article I.2: the military is
+            an explicit arm of its government, standing exactly where the government
+            stands), with civil agencies inheriting every guarantee. A repository
+            that publishes an institutional or government-facing page must keep it
+            as current as every other channel; staleness there is blocking like any
+            other channel's.
+            Enforce the clean repo (sub-doctrine 9.a): technical clutter — orphan
+            or merged-and-undeleted branches, closed-PR heads lingering, draft
+            releases and orphan tags accumulating unexplained — is drag and blocks
+            where the repository has not recorded a deliberate exception. Human
+            messiness is expressly welcome and never a finding: prose, discussions,
+            imperfect words, and work in progress are the warmth of the project.
+            Enforce the social-signals oath (sub-doctrine 4.a): where the
+            repository opts into [social_signals], every rendered signal must name a
+            real human agent — a person or an institution of persons — carry a
+            working source hyperlink at the point of reference, and carry the
+            operator's human attestation. A testimony, endorsement, review, or any
+            other social signal that is machine-authored, synthetic, unattributed,
+            or unverifiable is FALSE WITNESS and blocks, no exceptions. Verification
+            expires: a past-authentic signal is never assumed presently authentic —
+            every entry carries the date a human last verified it, stale
+            attestations block until re-verified, and a signal discovered
+            inauthentic is removed immediately and permanently, never re-attested.
             Enforce unwind immunity (Article IV.5-6): treat any change that removes,
             weakens, or reverts content under the founding documents — the
             constitution, the ten commandments, the bill of rights, or a standing
@@ -434,7 +475,7 @@ jobs:
           if grep -qE '^name = "vibey-gh"' automation/pyproject.toml; then
             python -m pip install --quiet -e ./automation
           else
-            python -m pip install --quiet "vibey-gh==1.58.0"
+            python -m pip install --quiet "vibey-gh==1.72.0"
           fi
           vibey-gh pr-automation record-review --pr "$PR" --input "$payload"
           echo "passed=$(jq -r .pass <<<"$payload")" >> "$GITHUB_OUTPUT"
@@ -566,7 +607,7 @@ jobs:
           if grep -qE '^name = "vibey-gh"' automation/pyproject.toml; then
             python -m pip install --quiet -e ./automation
           else
-            python -m pip install --quiet "vibey-gh==1.58.0"
+            python -m pip install --quiet "vibey-gh==1.72.0"
           fi
           vibey-gh pr-automation ensure-labels
           gh pr edit "$PR" --add-label vibey-gh:repairing
@@ -770,7 +811,7 @@ jobs:
           if grep -qE '^name = "vibey-gh"' automation/pyproject.toml; then
             python -m pip install --quiet -e ./automation
           else
-            python -m pip install --quiet "vibey-gh==1.58.0"
+            python -m pip install --quiet "vibey-gh==1.72.0"
           fi
           head_sha=$(gh pr view "$PR" --repo "$REPO" --json headRefOid --jq .headRefOid)
           payload=$(jq -c --arg head_sha "$head_sha" '. + {head_sha:$head_sha}' <<<"$STRUCTURED")
@@ -992,7 +1033,7 @@ jobs:
           if grep -qE '^name = "vibey-gh"' automation/pyproject.toml; then
             python -m pip install --quiet -e ./automation
           else
-            python -m pip install --quiet "vibey-gh==1.58.0"
+            python -m pip install --quiet "vibey-gh==1.72.0"
           fi
           new_sha=$(git -C target rev-parse HEAD)
           payload=$(jq -c --arg head_sha "$new_sha" \
@@ -1101,6 +1142,7 @@ jobs:
     # behaviour — a failed gate a human resolves.
     if: >-
       true &&
+      needs.evaluate.outputs.sovereign_ready == 'true' &&
       always() && !cancelled() && github.event_name != 'schedule' &&
       inputs.dry_run != true &&
       needs.review.result == 'failure' &&
@@ -1129,7 +1171,7 @@ jobs:
           if grep -qE '^name = "vibey-gh"' automation/pyproject.toml; then
             python -m pip install --quiet -e ./automation
           else
-            python -m pip install --quiet "vibey-gh==1.58.0"
+            python -m pip install --quiet "vibey-gh==1.72.0"
           fi
       # The diff arrives through the API and reaches the model as text. Repository code is
       # never checked out here and never executed: the model has no shell, no tools, and no
@@ -1178,6 +1220,12 @@ jobs:
           fi
           cat "${RUNNER_TEMP}/verdict.json"
           echo "passed=$(jq -r .pass "${RUNNER_TEMP}/verdict.json")" >> "$GITHUB_OUTPUT"
+          # `pass=false` with ZERO findings is not a defect claim — it is the reviewer
+          # saying it could not finish looking, which it does when a large diff is
+          # truncated past its context. Reported separately so the gate can tell "I found
+          # something" from "I could not see enough to say", which read identically before.
+          echo "findings=$(jq -r '(.findings // []) | length' "${RUNNER_TEMP}/verdict.json")" \
+            >> "$GITHUB_OUTPUT"
       - name: Archive the fallback verdict
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -1220,6 +1268,7 @@ jobs:
           REVIEW_PASSED: ${{ needs.review.outputs.passed }}
           REVIEW_RESULT: ${{ needs.review.result }}
           FALLBACK_PASSED: ${{ needs.review-fallback.outputs.passed }}
+          FALLBACK_FINDINGS: ${{ needs.review-fallback.outputs.findings }}
           FALLBACK_MODEL: qwen2.5-coder:14b
         run: |
           set -euo pipefail
@@ -1250,9 +1299,26 @@ jobs:
                   conclusion=success
                   title="PR automation: gate (local fallback)"
                   summary="Scans passed for this exact head. The primary exact-head review returned no verdict (review job: ${REVIEW_RESULT}), so a LOCAL FALLBACK model (${FALLBACK_MODEL}) reviewed the diff and found no blocking defect. It reviewed the DIFF ONLY — the documentation-contract fields were not evaluated, and this is a weaker signal than the primary review."
+                elif [ -n "$FALLBACK_PASSED" ] && [ "${FALLBACK_FINDINGS:-0}" -gt 0 ] 2>/dev/null; then
+                  # The local lane ran and returned a NEGATIVE verdict. This is a third
+                  # state, and collapsing it into the one below actively misleads: it told
+                  # an operator "not a defect in the pull request, go check your credits"
+                  # while a reported finding sat unmentioned in the job log. Observed live
+                  # on a release promotion, where the finding turned out to be a false
+                  # positive — which is exactly why the reader must be pointed AT it rather
+                  # than away from it.
+                  title="PR automation: local fallback found a blocking defect"
+                  summary="Scans passed for this exact head. The primary exact-head review returned no verdict (review job: ${REVIEW_RESULT}), so a LOCAL FALLBACK model (${FALLBACK_MODEL}) reviewed the diff and reported a BLOCKING finding — see the 'Local review fallback' job log and its archived verdict. Treat this as a lead, not a ruling: it is a narrower reviewer, it saw the DIFF ONLY, and on a large pull request the diff it saw was TRUNCATED, so verify the finding against the file before acting on it."
+                elif [ -n "$FALLBACK_PASSED" ]; then
+                  # Declined with nothing to point at: the reviewer is reporting that it
+                  # could not see enough to judge, not that the change is defective. Saying
+                  # "found a blocking defect" here would send someone hunting for a finding
+                  # that does not exist.
+                  title="PR automation: local fallback could not complete the review"
+                  summary="Scans passed for this exact head. The primary exact-head review returned no verdict (review job: ${REVIEW_RESULT}), and the LOCAL FALLBACK model (${FALLBACK_MODEL}) declined WITHOUT reporting any finding — which is what it does when the diff is too large to see in full. This is a limit of the fallback reviewer on a change of this size, not a defect claim about the change. Rerun once the primary reviewer is available, or split the pull request."
                 else
                   title="PR automation: review incomplete"
-                  summary="Scans passed for this exact head, but the exact-head review returned no verdict (review job: ${REVIEW_RESULT}). This is an infrastructure or operator failure rather than a defect in the pull request. Check the review job log for API credit balance, credentials, or model availability, then rerun."
+                  summary="Scans passed for this exact head, but the exact-head review returned no verdict (review job: ${REVIEW_RESULT}) and no local fallback verdict was produced either. This is an infrastructure or operator failure rather than a defect in the pull request. Check the review job log for API credit balance, credentials, or model availability, then rerun."
                 fi
                 ;;
             esac

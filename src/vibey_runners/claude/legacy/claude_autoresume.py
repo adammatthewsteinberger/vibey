@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """LEGACY REFERENCE IMPLEMENTATION — not part of the `claudeloop` package.
 
 This is the original single-file script `claudeloop` is replacing. It is kept
