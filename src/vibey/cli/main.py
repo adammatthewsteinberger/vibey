@@ -1378,15 +1378,26 @@ def worker(
                 draining.set()
 
             asyncio.get_running_loop().add_signal_handler(signal.SIGTERM, _begin_drain)
+            typer.echo("sigterm handler registered", err=True)
 
             typer.echo(
                 f"worker started: project={project.name} "
                 f"engines={engines_opt or 'all'} parallelism={count} provider={provider}"
             )
 
-            async def drive(loop_: WorkerLoop) -> None:
+            # TEMPORARY: pinning down why a scaled-in pod isn't draining within
+            # the expected ~60s on minikube (observed: stuck well past 5m, the
+            # SIGTERM handler above never firing its own echo). Cheap enough to
+            # leave on: one line per loop per iteration, nothing per-job.
+            async def drive(loop_: WorkerLoop, *, idx: int) -> None:
+                iteration = 0
                 while not draining.is_set():
+                    iteration += 1
+                    typer.echo(f"drive[{idx}] iter={iteration} calling run_once", err=True)
                     worked = await loop_.run_once(project.project_id)
+                    typer.echo(
+                        f"drive[{idx}] iter={iteration} run_once returned worked={worked}", err=True
+                    )
                     if worked:
                         typer.echo("processed one job")
                         if once:
@@ -1396,15 +1407,19 @@ def worker(
                         typer.echo("no ready job")
                         return
                     await resources.jobs.reap()
+                    typer.echo(
+                        f"drive[{idx}] iter={iteration} reap done, waiting for notify", err=True
+                    )
                     await notifier.wait_for_job_ready(
                         project.project_id, timeout=timedelta(seconds=5)
                     )
+                typer.echo(f"drive[{idx}] draining flag observed, exiting loop", err=True)
 
             try:
                 if once or count == 1:
-                    await drive(loops[0])
+                    await drive(loops[0], idx=0)
                 else:
-                    await asyncio.gather(*(drive(loop_) for loop_ in loops))
+                    await asyncio.gather(*(drive(loop_, idx=i) for i, loop_ in enumerate(loops)))
             finally:
                 await notifier.close()
 
