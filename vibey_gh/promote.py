@@ -139,8 +139,8 @@ def promote(
     result.say(f"version: {why}")
 
     if new and not dry_run:
-        versioning.apply_version(cfg, new)
-        _git(cfg, "add", *cfg.version_files)
+        written = versioning.apply_version(cfg, new)
+        _git(cfg, "add", *written)
         _git(
             cfg,
             "commit",

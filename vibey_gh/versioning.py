@@ -230,6 +230,21 @@ def apply_version(cfg: GhConfig, new: str) -> list[str]:
                 raise RuntimeError(f"{rel}: expected one __version__ line, found {n}")
             path.write_text(patched, encoding="utf-8")
         written.append(rel)
+
+    # A uv-managed project's lockfile pins its own package at the version just
+    # replaced above -- self-referencing, since `uv sync` installs the project
+    # editable. Leaving it stale doesn't fail quietly: uv.lock desync on this
+    # commit and *only* this commit, then blocks the very promotion that just
+    # produced it (`uv lock --check` fails, and CI never runs it any other
+    # time). Re-lock whenever a pyproject.toml changed and a lockfile exists.
+    if any(rel.endswith("pyproject.toml") for rel in written) and (cfg.root / "uv.lock").is_file():
+        r = subprocess.run(
+            ["uv", "lock"], cwd=cfg.root, capture_output=True, text=True, check=False
+        )
+        if r.returncode:
+            raise RuntimeError(f"uv lock: {r.stderr.strip()}")
+        written.append("uv.lock")
+
     return written
 
 

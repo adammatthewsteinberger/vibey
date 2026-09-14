@@ -519,6 +519,51 @@ def test_bumping_a_toml_touches_only_the_project_table(tmp_path):
     assert versioning.read_version(cfg) == "1.3.0"
 
 
+def test_bumping_a_toml_relocks_uv_when_a_lockfile_is_present(tmp_path):
+    """A uv.lock pins its own project's version (editable-installed, so it is
+    self-referencing) -- leave it stale and `uv lock --check` fails on this
+    commit and only this commit, which is exactly the one promotion just
+    produced. Reproduced live: vibey's own 0.5.0 and 0.6.0 releases both
+    shipped a uv.lock still reading the prior version."""
+    path = tmp_path / "pyproject.toml"
+    path.write_text('[project]\nname = "demo"\nversion = "1.2.3"\nrequires-python = ">=3.12"\n')
+    subprocess.run(["uv", "lock"], cwd=tmp_path, check=True, capture_output=True)
+    stale_lock = (tmp_path / "uv.lock").read_text()
+    assert "1.2.3" in stale_lock
+
+    cfg = cfg_with_versions(tmp_path, "pyproject.toml")
+    written = versioning.apply_version(cfg, "1.3.0")
+
+    assert written == ["pyproject.toml", "uv.lock"]
+    fresh_lock = (tmp_path / "uv.lock").read_text()
+    assert "1.3.0" in fresh_lock
+    assert fresh_lock != stale_lock
+
+
+def test_bumping_a_toml_without_a_lockfile_does_not_invent_one(tmp_path):
+    path = tmp_path / "pyproject.toml"
+    path.write_text('[project]\nname = "demo"\nversion = "1.2.3"\n')
+    cfg = cfg_with_versions(tmp_path, "pyproject.toml")
+
+    assert versioning.apply_version(cfg, "1.3.0") == ["pyproject.toml"]
+    assert not (tmp_path / "uv.lock").exists()
+
+
+def test_a_relock_failure_surfaces_as_a_runtime_error(tmp_path, monkeypatch):
+    path = tmp_path / "pyproject.toml"
+    path.write_text('[project]\nname = "demo"\nversion = "1.2.3"\n')
+    (tmp_path / "uv.lock").write_text("stale")
+    cfg = cfg_with_versions(tmp_path, "pyproject.toml")
+
+    def fake_run(cmd, **kwargs):
+        assert cmd == ["uv", "lock"]
+        return subprocess.CompletedProcess(cmd, 1, stdout="", stderr="boom")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    with pytest.raises(RuntimeError, match="uv lock: boom"):
+        versioning.apply_version(cfg, "1.3.0")
+
+
 def test_bumping_a_toml_whose_project_table_is_last(tmp_path):
     path = tmp_path / "pyproject.toml"
     path.write_text('[project]\nname = "demo"\nversion = "1.2.3"\n')
