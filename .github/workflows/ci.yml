@@ -178,6 +178,13 @@ jobs:
       - uses: azure/setup-helm@v4
 
       - name: Build the image into minikube's daemon
+        # BuildKit's default docker-container driver pulls a separate
+        # moby/buildkit image and then inspects it -- that inspect step
+        # 404s against minikube's containerd-backed docker-env shim
+        # (medyagh/setup-minikube's own docs flag this as experimental).
+        # The classic builder needs no such image, so it isn't affected.
+        env:
+          DOCKER_BUILDKIT: "0"
         run: |
           eval $(minikube docker-env)
           docker build -f deploy/docker/Dockerfile -t vibey:dev .
