@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://adammatthewsteinberger.github.io/codexloop/
+    about: Install, quickstart, guides, architecture, and contributor docs.
+  - name: Question / discussion
+    url: https://github.com/adammatthewsteinberger/codexloop/discussions
+    about: For general questions or design discussion rather than a specific bug or feature request.
+  - name: Security vulnerability
+    url: https://github.com/adammatthewsteinberger/codexloop/security/advisories/new
+    about: Please report security vulnerabilities privately — see SECURITY.md. Do not open a public issue.

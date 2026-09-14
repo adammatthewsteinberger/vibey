@@ -1,0 +1,10 @@
+{
+  "name": "unauthenticated",
+  "signals": {
+    "http_status": 401,
+    "status": "UNAUTHENTICATED",
+    "message": "API key not valid"
+  },
+  "expected_state": "AuthenticationFailed",
+  "expected_rung": "authentication"
+}

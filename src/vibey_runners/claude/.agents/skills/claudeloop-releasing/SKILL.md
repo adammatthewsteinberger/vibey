@@ -1,0 +1,83 @@
+---
+name: claudeloop-releasing
+description: Explains the gitflow branch model (feature/* -> develop -> main), Conventional Commits requirements and types, how release-please automates version bumps and changelog generation from commit history, and how PyPI Trusted Publishing (OIDC) works via publish-to-pypi.yml. Use this whenever creating a branch, writing a commit message, opening a PR, asking about versioning, releases, or publishing to PyPI, or when a commit-msg hook rejects a commit. Make sure to consult this before writing any commit message in this repo — the commit-msg git hook enforces Conventional Commits and will reject anything that doesn't match, and getting the branch target or merge strategy wrong breaks the automated release pipeline downstream.
+---
+
+# claudeloop releasing — gitflow + Conventional Commits + Trusted Publishing
+
+
+> **Codex skill mirror** of `.claude/skills/claudeloop-releasing/SKILL.md`. When this guidance changes, update Claude skill, Cursor rule, and `.agents/skills/` in the same PR.
+
+## Branch model
+
+```
+main         ← always releasable; release-please opens release PRs here
+  ▲ merge commit (preserves individual conventional commits for release-please)
+develop      ← integration branch; feature branches target this
+  ▲ squash-merge (one conventional-commit-titled squash per feature)
+feature/*    ← your work — branch from develop, never from main
+```
+
+**Never branch from `main` directly, never target `main` with a feature
+PR.** Feature work is `git checkout -b feature/<short-description> develop`,
+PR into `develop`. `develop` → `main` happens as a merge commit (not
+squashed) specifically so release-please can parse the individual commits
+when it moves `main`.
+
+## Conventional Commits — required, enforced by a git hook
+
+Every commit message: `<type>[optional scope]: <description>`. The
+`commit-msg` hook (installed by `pre-commit install`) rejects anything else
+in `--strict` mode. Types and what each triggers on release:
+
+| Type | Use for | Bump |
+|---|---|---|
+| `feat` | new feature | minor |
+| `fix` | bug fix | patch |
+| `feat!` / `fix!` / `BREAKING CHANGE:` footer | breaking change | major |
+| `docs` `style` `refactor` `test` `build` `ci` `chore` | no functional/patch/minor change | none |
+| `perf` | performance improvement | patch |
+| `revert` | reverts a prior commit | depends |
+
+```
+feat(domain): add CreditsExhausted as a distinct capacity state
+fix(waiting): clamp exponential backoff before constructing timedelta
+```
+
+Scope in parentheses is optional but strongly preferred — it makes the
+generated changelog dramatically more scannable. If a commit is rejected:
+your editor still has what you typed; fix the first line and commit again.
+
+## release-please — fully automated, one human gate
+
+release-please watches `main` and maintains a single standing
+`chore(release): x.y.z` PR, its body the generated changelog for everything
+merged since the last release, its diff bumping `pyproject.toml`'s
+`[project].version` and updating `CHANGELOG.md`. **Merging that PR is the
+release** — that merge is the human review gate; nothing else about
+versioning needs to happen by hand. Never hand-edit `CHANGELOG.md` above
+the `<!-- release-please starts and maintains ... -->` marker — it will be
+overwritten on the next run.
+
+## Publishing — PyPI Trusted Publishing (OIDC), no stored token
+
+On the release-please PR's merge, a GitHub Release is created, which
+triggers `publish-to-pypi.yml` (`on: release: published`). Two jobs: a
+`build` job with no `id-token` permission (builds the sdist/wheel, runs
+`twine check --strict`), then a `publish` job scoped to the GitHub
+environment `pypi` (requires manual approval — a second human gate) with
+`permissions: id-token: write` and nothing else, publishing via
+`pypa/gh-action-pypi-publish`. There is no PyPI API token anywhere in this
+repository's secrets — do not add one; it would disable the OIDC flow for
+no benefit.
+
+**The workflow filename `publish-to-pypi.yml` is load-bearing** — PyPI's
+pending-publisher configuration matches on it exactly. Do not rename that
+file without also updating the PyPI project's Trusted Publisher
+configuration to match.
+
+## Full reference
+
+`docs/contributing/release-process.md` (the complete manual setup steps and
+verification checklist), `docs/contributing/development.md#the-branch-model-gitflow`,
+`CONTRIBUTING.md`.

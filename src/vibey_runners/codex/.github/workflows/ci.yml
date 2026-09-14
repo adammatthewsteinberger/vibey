@@ -1,0 +1,101 @@
+# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Gates py${{ matrix.python-version }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e ".[dev]"
+      - run: ruff check src tests
+      - run: ruff format --check src tests
+      - run: mypy src/codexloop
+      - run: lint-imports
+      - run: bandit -q -r src/codexloop
+      - run: pip-audit
+      # Per layer, not in aggregate: a blanket floor lets a well-tested domain
+      # hide an untested adapter. Each floor still gets its own gate, but they
+      # now read one instrumented run instead of re-running the whole suite
+      # four times (~93s -> ~16s). `coverage report --include` filters the
+      # existing data file per layer, so granularity is unchanged: an
+      # uncovered line in one layer fails only that layer's gate.
+      - name: Instrumented suite (feeds the four coverage floors)
+        run: pytest -q --cov=codexloop --cov-branch --cov-report=
+      - name: Coverage floor - domain (100%)
+        run: coverage report --include='src/codexloop/domain/*' --fail-under=100
+      - name: Coverage floor - application (100%)
+        run: coverage report --include='src/codexloop/application/*' --fail-under=100
+      - name: Coverage floor - infrastructure (100%)
+        run: coverage report --include='src/codexloop/infrastructure/*' --fail-under=100
+      - name: Coverage floor - cli (100%)
+        run: coverage report --include='src/codexloop/cli/*' --fail-under=100
+
+  docs:
+    name: ProperDocs builds strictly
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: pip install 'properdocs==1.6.7' 'properdocs-theme-mkdocs==1.6.7'
+      - run: properdocs build --strict
+
+  uv-lock:
+    name: uv.lock is in sync with pyproject.toml
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.12.6"
+          enable-cache: true
+      - run: uv lock --check
+
+  build:
+    name: Package builds and is installable
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip build twine
+      - run: python -m build
+      - run: twine check --strict dist/*
+      - name: Confirm py.typed ships in the wheel
+        run: unzip -l dist/*.whl | grep -q py.typed
+      - name: Install the built wheel into a clean venv and run the console script
+        run: |
+          python -m venv /tmp/codexloop-smoke
+          /tmp/codexloop-smoke/bin/pip install --upgrade pip
+          /tmp/codexloop-smoke/bin/pip install dist/*.whl
+          /tmp/codexloop-smoke/bin/codexloop --version
+          /tmp/codexloop-smoke/bin/codexloop --help

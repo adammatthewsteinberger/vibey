@@ -1,0 +1,48 @@
+---
+description: QuotaExhausted has no reset field, body-first classification ladder, and waitability rules. Use when working with capacity.py or classify.py.
+alwaysApply: false
+---
+
+> **Cursor rule mirror** of `.claude/skills/codexloop-quota-and-capacity/SKILL.md`. When this guidance changes, update Claude, Cursor, Codex, and Antigravity in the same PR.
+
+# codexloop quota and capacity
+
+`QuotaExhausted` is a billing wall with no `resets_at` — it is **never
+waitable** and always needs a human to top up. Rate-limit windows *are*
+waitable.
+
+## CapacityState variants
+
+```python
+Available                # green light
+ThrottleExhausted        # retry_after: timedelta | None
+WindowExhausted          # resets_at: datetime | None, window: str
+QuotaExhausted           # reason: str — TERMINAL, never waitable
+AuthFailed               # reason: str — TERMINAL
+TransientBackendError    # retry_after: timedelta | None
+```
+
+`is_waitable(state)` returns `False` only for `QuotaExhausted` and
+`AuthFailed`.
+
+## Body-first classification
+
+`classify(signals)` in `domain/classify.py` maps `TurnSignals` to a
+`CapacityState` using this ladder:
+
+1. **Body wins.** `error.code` / `error.type` outrank HTTP status.
+2. Auth: `error.code` / `error.type` in `ErrorClass.AUTH`, or status 401
+   → `AuthFailed`.
+3. Quota: `error.code` / `error.type` in `ErrorClass.QUOTA` →
+   `QuotaExhausted` (terminal).
+4. Window: `ErrorClass.WINDOW` → `WindowExhausted` with `resets_at` from
+   plan windows.
+5. Throttle: `ErrorClass.THROTTLE` → `ThrottleExhausted` with
+   `retry_after`.
+6. Transient: `ErrorClass.TRANSIENT` or status 5xx →
+   `TransientBackendError`.
+7. Status 429 with no body marker → `WindowExhausted(resets_at=None)`.
+8. Fallback: `Available`.
+
+High `used_percent` never outranks a billing marker. Completion claims
+never outrank capacity rejection.

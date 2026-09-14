@@ -1,0 +1,144 @@
+# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint & format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e ".[dev]"
+      - run: ruff check src tests
+      - run: ruff format --check src tests
+
+  typecheck:
+    name: mypy --strict
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e ".[dev]"
+      - run: mypy --strict src/agyloop
+
+  imports:
+    name: import-linter (onion contract)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e ".[dev]"
+      - run: lint-imports
+      - name: Reject forbidden vendor imports
+        run: "! grep -R -E '(^|[[:space:]])(from|import)[[:space:]]+(anthropic|claude_agent_sdk)' src"
+
+  security:
+    name: bandit + pip-audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e ".[dev]"
+      - run: bandit -q -r src/agyloop
+      - run: pip-audit
+
+  test:
+    name: pytest (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e ".[dev]"
+      # One instrumented run feeds all four floors. `coverage report
+      # --include=` filters the written data file per layer, so each floor
+      # keeps an independent verdict (an uncovered line fails only its own
+      # layer) without re-running the suite four more times. The full suite
+      # IS this run, so it is no longer executed separately: 5 runs -> 1,
+      # ~49s -> ~9s.
+      - name: Full suite
+        run: pytest tests --cov=agyloop --cov-branch --cov-report=
+      - name: Domain coverage floor (100%)
+        run: coverage report --include='src/agyloop/domain/*' --fail-under=100
+      - name: Application coverage floor (100%)
+        run: coverage report --include='src/agyloop/application/*' --fail-under=100
+      - name: Infrastructure coverage floor (100%)
+        run: coverage report --include='src/agyloop/infrastructure/*' --fail-under=100
+      - name: CLI coverage floor (100%)
+        run: coverage report --include='src/agyloop/cli/*' --fail-under=100
+      - name: System harness
+        run: pytest -m system
+
+  docs:
+    name: properdocs build --strict
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: pip install 'properdocs==1.6.7' 'properdocs-theme-mkdocs==1.6.7'
+      - run: properdocs build --strict
+
+  uv-lock:
+    name: uv.lock is in sync with pyproject.toml
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.12.5"
+      - run: uv lock --check
+
+  build:
+    name: Package builds and is installable
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-python@v7.0.0
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip build twine
+      - run: python -m build
+      - run: twine check --strict dist/*
+      - name: Confirm py.typed ships in the wheel
+        run: unzip -l dist/*.whl | grep -q py.typed
+      - name: Install the built wheel and run the console script
+        run: |
+          python -m venv /tmp/agyloop-smoke
+          /tmp/agyloop-smoke/bin/pip install --upgrade pip
+          /tmp/agyloop-smoke/bin/pip install dist/*.whl
+          /tmp/agyloop-smoke/bin/agyloop --version
+          /tmp/agyloop-smoke/bin/agyloop --help

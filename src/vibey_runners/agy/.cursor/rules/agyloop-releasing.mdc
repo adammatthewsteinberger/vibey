@@ -1,0 +1,33 @@
+---
+description: gitflow, Conventional Commits, release-please, Trusted Publishing. Consult before branching, committing, or cutting a release.
+alwaysApply: false
+---
+
+> **Cursor rule mirror** of `.claude/skills/agyloop-releasing/SKILL.md`. When this guidance changes, update Claude, Cursor, Codex, and Antigravity in the same PR.
+
+# agyloop releasing
+
+```
+main         ← always releasable; release-please target-branch: main
+  ▲ merge commit
+develop      ← default GitHub branch; feature PRs squash here
+  ▲ squash-merge
+feature/*    ← branch from develop, never from main
+```
+
+Never implement on `main`.
+
+Commit: `<type>[scope]: <description>`. Hook `--strict`. Types: feat, fix,
+docs, style, refactor, perf, test, build, ci, chore, revert.
+
+First public tag is **v0.1.0** (already in pyproject / manifest). Later:
+release-please PR on `main`, then `publish-to-pypi.yml` (filename
+load-bearing) with OIDC environments `testpypi` / `pypi` (manual approve).
+
+TestPyPI:
+
+```bash
+pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ agyloop
+```
+
+See `docs/contributing/release-process.md`.

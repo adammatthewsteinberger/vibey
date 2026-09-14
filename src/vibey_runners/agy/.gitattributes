@@ -1,0 +1,11 @@
+# Normalize line endings for everything text-like; let git decide binary-ness.
+* text=auto eol=lf
+
+*.py text eol=lf
+*.md text eol=lf
+*.toml text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# vibey-gh: append-only files merge instead of conflicting
+CHANGELOG.md merge=union

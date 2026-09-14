@@ -1,0 +1,12 @@
+{
+  "name": "quota-exceeded-code",
+  "signals": {
+    "http_status": 429,
+    "status": "RESOURCE_EXHAUSTED",
+    "message": "quota exceeded",
+    "error_code": "quota_exceeded"
+  },
+  "expected_state": "WindowExhausted",
+  "expected_rung": "error_code_quota_exceeded",
+  "expected_rate_limit_type": "rpd"
+}

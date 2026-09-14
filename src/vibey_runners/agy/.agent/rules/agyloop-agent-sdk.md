@@ -1,0 +1,23 @@
+# agyloop-agent-sdk (Antigravity mirror of `.claude/skills/agyloop-agent-sdk/SKILL.md`)
+
+
+# agyloop + google-antigravity
+
+`infrastructure/agent/` is the only place `google.antigravity` may be
+imported.
+
+- Default gateway is the SDK (`Agent` + `LocalAgentConfig`). `--gateway cli`
+  shells out to `agy`.
+- Autonomy: `policy.allow_all()` plus workspace/destructive scopes.
+  Interactive hooks are never registered. `ask_question` is denied with
+  guidance.
+- `--unsafe-skip-permissions` is refused on the SDK path.
+- Live config pins `mcp_servers=[]` (OAuth cannot complete unattended).
+- Additive `system_instructions` only — never `CustomSystemInstructions`.
+- Input detection in Go `localharness` hardcodes withdrawn
+  `gemini-2.5-flash-lite`. agyloop retargets via env + extra `ModelTarget`,
+  then a copy-patch (`ANTIGRAVITY_HARNESS_PATH`), then monkeypatch /
+  site-packages backup / localhost rewrite proxy. See
+  `docs/contributing/harness-patch.md`.
+- Empty drain + 404 / `NOT_FOUND` / "no longer available to new users" in
+  harness logs → `AgentConfigError`, not Available.

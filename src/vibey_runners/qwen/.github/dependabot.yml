@@ -1,0 +1,29 @@
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      python-dependencies:
+        patterns: ["*"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    # vibey-gh owns the versions used by its generated workflows. Upgrade these
+    # through vibey-gh so Dependabot cannot make the canonical templates drift.
+    ignore:
+      - dependency-name: actions/checkout
+      - dependency-name: actions/setup-python
+      - dependency-name: astral-sh/setup-uv
+      - dependency-name: actions/configure-pages
+      - dependency-name: actions/deploy-pages
+      - dependency-name: actions/download-artifact
+      - dependency-name: actions/upload-artifact
+      - dependency-name: actions/upload-pages-artifact
+      - dependency-name: anthropics/claude-code-action
+      - dependency-name: oras-project/setup-oras
+    groups:
+      github-actions:
+        patterns: ["*"]

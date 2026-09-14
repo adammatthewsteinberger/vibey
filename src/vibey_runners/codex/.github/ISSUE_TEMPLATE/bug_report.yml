@@ -1,0 +1,82 @@
+name: Bug report
+description: Something isn't working the way it should.
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a report. The fields below are
+        required because a CLI bug report without them is usually
+        unreproducible.
+
+        This project supports **macOS and Linux only**. Please run
+        `codexloop doctor` before filing, and search existing issues first.
+        Usage questions belong in [Discussions](https://github.com/adammatthewsteinberger/codexloop/discussions),
+        not here.
+
+  - type: input
+    id: version
+    attributes:
+      label: codexloop version
+      description: Output of `codexloop --version`
+      placeholder: "0.3.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      description: Windows is not a supported target (see the installation guide).
+      options:
+        - macOS
+        - Linux
+        - Other Unix-like (specify below)
+    validations:
+      required: true
+
+  - type: input
+    id: python-version
+    attributes:
+      label: Python version
+      description: Output of `python3 --version`
+      placeholder: "Python 3.12.4"
+    validations:
+      required: true
+
+  - type: input
+    id: command
+    attributes:
+      label: Exact command you ran
+      placeholder: "codexloop run plan.md --max-turns 20"
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include the exact error message or unexpected output.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: >-
+        Paste relevant lines from the run's audit log (see --log-file).
+        Redact any API keys, tokens, or sensitive file contents first.
+      render: shell
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Anything else?

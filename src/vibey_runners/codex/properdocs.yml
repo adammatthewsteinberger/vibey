@@ -1,0 +1,55 @@
+site_name: codexloop
+site_description: Autonomous OpenAI Codex session runner
+site_url: https://adammatthewsteinberger.github.io/codexloop/
+repo_url: https://github.com/adammatthewsteinberger/codexloop
+repo_name: adammatthewsteinberger/codexloop
+# ProperDocs, matching vibey-gh and vibey-skills. `theme: mkdocs` rather than Material:
+# ProperDocs ships its own theme package and the Material palette/features block has no
+# equivalent here, so the styling lives in stylesheets/vibey.css instead.
+theme: mkdocs
+
+extra_css:
+  - stylesheets/vibey.css
+extra_javascript:
+  - javascripts/channel.js
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+
+exclude_docs: |
+  plans/**
+  superpowers/**
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - Guides:
+      - REST API surface: guides/rest-api-surface.md
+  - Architecture:
+      - Overview: architecture/index.md
+      - ADRs:
+          - Index: architecture/adr/index.md
+          - "0001 Onion import-linter": architecture/adr/0001-onion-import-linter.md
+          - "0002 Subprocess codex exec": architecture/adr/0002-subprocess-codex-exec.md
+          - "0003 Credits exhausted": architecture/adr/0003-credits-exhausted.md
+          - "0004 Adaptive probe loop": architecture/adr/0004-adaptive-probe-loop.md
+          - "0005 Layered capacity probe": architecture/adr/0005-layered-capacity-probe.md
+          - "0006 Generated OpenAI REST": architecture/adr/0006-generated-openai-rest.md
+          - "0007 Default approval/sandbox": architecture/adr/0007-default-approval-sandbox.md
+          - "0008 Policy via -c flags": architecture/adr/0008-policy-via-c-flags.md
+          - "0009 Optional app-server": architecture/adr/0009-optional-app-server.md
+          - "0010 Rollout best-effort": architecture/adr/0010-rollout-best-effort.md
+          - "0011 Never consume resets": architecture/adr/0011-never-consume-resets.md
+          - "0012 Minimum Codex version": architecture/adr/0012-minimum-codex-version.md
+  - Reference: reference/cli.md
+  - Contributing: contributing.md
+  - Publishing: publishing.md
+  - Research paper: paper.md
+strict: true

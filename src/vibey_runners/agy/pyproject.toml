@@ -1,0 +1,172 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agyloop"
+version = "0.5.0"
+description = "Autonomous Google Antigravity and Gemini session runner that never blocks on a human."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    { name = "Adam Matthew Steinberger", email = "adam@matthewsteinberger.com" },
+]
+keywords = ["google-antigravity", "gemini", "cli", "automation", "agent", "llm"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities",
+    "Typing :: Typed",
+]
+dependencies = [
+    "anyio>=4.0",
+    "google-antigravity>=0.1.10",
+    "structlog>=24.1",
+    "textual>=1.0",
+    "typer>=0.12",
+]
+
+[project.urls]
+Homepage = "https://adammatthewsteinberger.github.io/agyloop/"
+Documentation = "https://adammatthewsteinberger.github.io/agyloop/"
+Repository = "https://github.com/adammatthewsteinberger/agyloop"
+Issues = "https://github.com/adammatthewsteinberger/agyloop/issues"
+Changelog = "https://github.com/adammatthewsteinberger/agyloop/blob/main/CHANGELOG.md"
+
+[project.optional-dependencies]
+dev = [
+    # Release automation and provenance guardrails, shared by every repo in
+    # the family. Stdlib-only, so adopting it in five places multiplies
+    # nobody's dependency tree.
+    "vibey-gh>=1.2",
+    "bandit>=1.7",
+    "build>=1.2",
+    "hypothesis>=6.100",
+    "import-linter>=2.0",
+    "mypy>=1.10",
+    "pip-audit>=2.7",
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=6.0",
+    "pytest-xdist>=3.5",
+    "ruff>=0.6",
+    "twine>=5.0",
+]
+
+docs = [
+    "mkdocs>=1.6",
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.26",
+]
+
+[project.scripts]
+agyloop = "agyloop.cli.app:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agyloop"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/agyloop/infrastructure/api/surface_baseline.json" = "agyloop/infrastructure/api/surface_baseline.json"
+"src/agyloop/infrastructure/api/vertex_baseline.json" = "agyloop/infrastructure/api/vertex_baseline.json"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "C4"]
+# E501 only, and only because of the provenance header. `vibey-gh check` requires an
+# exact 230-character comment on the first line of every source file, byte-for-byte, so it
+# cannot be wrapped or annotated without failing the check that mandates it. Line width on
+# real code is still enforced by ruff-format, which is why vibey-gh itself leaves E501
+# unselected rather than fighting its own fingerprint.
+ignore = ["E501"]
+
+
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["agyloop"]
+mypy_path = "src"
+
+[[tool.mypy.overrides]]
+module = ["google.antigravity", "google.antigravity.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"
+addopts = "-m \"not live and not system\" -n auto --maxprocesses=8"
+markers = [
+    "live: exercises a real Google/Gemini account. Opt in with -m live.",
+    "system: deterministic system harness (real FS/git/CLI adapters + scripted agent). Opt in with -m system.",
+]
+
+[tool.importlinter]
+root_package = "agyloop"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Onion layering"
+type = "layers"
+layers = [
+    "agyloop.cli",
+    "agyloop.bootstrap",
+    "agyloop.application",
+    "agyloop.domain",
+]
+
+[[tool.importlinter.contracts]]
+name = "Infrastructure only reachable from bootstrap"
+type = "forbidden"
+source_modules = ["agyloop.cli", "agyloop.application", "agyloop.domain"]
+forbidden_modules = ["agyloop.infrastructure"]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "No Anthropic or Claude agent SDK imports"
+type = "forbidden"
+source_modules = ["agyloop"]
+forbidden_modules = ["anthropic", "claude_agent_sdk"]
+
+
+[[tool.importlinter.contracts]]
+name = "Interfaces declare seams, never consume them"
+type = "forbidden"
+source_modules = ["agyloop.application.interfaces"]
+forbidden_modules = [
+    "agyloop.application.runner",
+    "agyloop.application.usecases",
+    "agyloop.infrastructure",
+    "agyloop.cli",
+    "agyloop.bootstrap",
+]
+
+# Coverage is measured per layer, not in aggregate: a blanket number lets a
+# well-tested domain hide an untested adapter. The floors live in CI so a
+# single `--cov` here cannot union the scopes and silently defeat them.
+[tool.coverage.run]
+branch = true
+source = ["src/agyloop"]
+omit = ["src/agyloop/bootstrap.py"]
+
+[tool.coverage.report]
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "@overload",
+]

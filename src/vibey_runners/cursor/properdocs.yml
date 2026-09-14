@@ -1,0 +1,75 @@
+site_name: cursorloop
+site_description: Onion-architected, autonomous Cursor Agent session runner — never
+  blocks on a human, distinguishes rate-limit windows from exhausted credits, and
+  resumes safely across usage windows.
+site_url: https://adammatthewsteinberger.github.io/cursorloop/
+repo_url: https://github.com/adammatthewsteinberger/cursorloop
+repo_name: adammatthewsteinberger/cursorloop
+edit_uri: edit/develop/docs/
+
+# ProperDocs, matching vibey-gh and vibey-skills. `theme: mkdocs` rather than Material:
+# ProperDocs ships its own theme package and the Material palette/features block has no
+# equivalent here, so the styling lives in stylesheets/vibey.css instead. mkdocstrings is
+# dropped with it -- ProperDocs does not ship it and the API pages it generated are not
+# worth a plugin dependency the release-surfaces build would have to install.
+theme: mkdocs
+
+extra_css:
+  - stylesheets/vibey.css
+extra_javascript:
+  - javascripts/channel.js
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+
+exclude_docs: 'plans/**
+
+  superpowers/**
+
+  '
+nav:
+- Home: index.md
+- Getting started:
+  - Installation: getting-started/installation.md
+  - Quickstart: getting-started/quickstart.md
+  - Configuration: getting-started/configuration.md
+- Guides:
+  - Autonomous runs: guides/autonomous-runs.md
+  - Rate limits and credits: guides/rate-limits-and-credits.md
+  - Never blocking: guides/never-blocking.md
+  - Completion detection: guides/completion-detection.md
+  - Model profiles: guides/model-profiles.md
+  - Logging: guides/logging-and-observability.md
+  - Live testing: guides/live-testing.md
+  - Cloud agents: guides/cloud-agents.md
+- Architecture:
+  - Overview: architecture/overview.md
+  - Domain model: architecture/domain-model.md
+  - Ports and adapters: architecture/ports-and-adapters.md
+  - Run-loop state machine: architecture/run-loop.md
+  - ADR-0001 Onion: architecture/decisions/0001-onion-architecture.md
+  - ADR-0002 SDK: architecture/decisions/0002-cursor-sdk-over-cli.md
+  - ADR-0003 Credits: architecture/decisions/0003-credits-exhausted-non-waitable.md
+  - ADR-0004 Lexicon: architecture/decisions/0004-billing-lexicon-configurable.md
+  - ADR-0005 Ambiguity: architecture/decisions/0005-ambiguity-biases-credits.md
+  - ADR-0006 Cloud REST: architecture/decisions/0006-cloud-agents-rest-surface.md
+  - ADR-0007 Never-block: architecture/decisions/0007-never-block-hooks.md
+  - ADR-0008 Hooks restore: architecture/decisions/0008-hash-verified-hooks-restore.md
+  - ADR-0009 Completion: architecture/decisions/0009-completion-verdict-fence.md
+  - ADR-0010 Profiles: architecture/decisions/0010-composer-first-grok-profile.md
+- Reference:
+  - CLI: reference/cli.md
+- Contributing:
+  - Development: contributing/development.md
+  - Testing: contributing/testing.md
+  - Documentation: contributing/documentation.md
+  - Release: contributing/release.md
+- Research paper: paper.md
