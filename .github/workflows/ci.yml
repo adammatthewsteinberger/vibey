@@ -175,7 +175,7 @@ jobs:
 
       - uses: medyagh/setup-minikube@latest
 
-      - uses: azure/setup-helm@v4
+      - uses: azure/setup-helm@v5
 
       - name: Build the image into minikube's daemon
         # BuildKit's default docker-container driver pulls a separate
