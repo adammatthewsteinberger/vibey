@@ -28,6 +28,7 @@ from vibey.domain.spec import (
     DesignSpec,
     NonFunctionalRequirement,
 )
+from vibey.infrastructure.engines.design_json import as_list, as_object_list, events_json
 from vibey.infrastructure.interfaces import BoundedClaudeLoop
 
 
@@ -43,7 +44,7 @@ class ClaudeLoopDesignProvider:
             "Do not inspect files or call tools; answer immediately in this first turn. "
             'Return only JSON with shape {"questions":[{"question_id":str,'
             '"text":str,"default":str,"blocking":bool}]}.\n'
-            f"Stage: {stage.value}\nPrior ledger events: {_events_json(prior_events)}"
+            f"Stage: {stage.value}\nPrior ledger events: {events_json(prior_events)}"
         )
         raw = await self._invoke(prompt, effort=Effort.LOW)
         questions_raw = _object(raw).get("questions")
@@ -95,14 +96,14 @@ class ClaudeLoopDesignProvider:
             "constraints [{text,kind}], non_goals, criteria [{criterion_id,given,when,then,fit}], "
             "nfrs [{nfr_id,attribute,scale,meter,must,wish,fit_criterion}], and walking_skeleton. "
             "Constraint kind is hard or soft.\n"
-            f"Ledger events: {_events_json(events)}"
+            f"Ledger events: {events_json(events)}"
         )
         data = _object(await self._invoke(prompt, effort=Effort.HIGH))
         try:
-            constraints = _object_list(data.get("constraints", []), "constraints")
-            criteria = _object_list(data.get("criteria"), "criteria")
-            nfrs = _object_list(data.get("nfrs", []), "nfrs")
-            non_goals = _list(data.get("non_goals", []), "non_goals")
+            constraints = as_object_list(data.get("constraints", []), "constraints")
+            criteria = as_object_list(data.get("criteria"), "criteria")
+            nfrs = as_object_list(data.get("nfrs", []), "nfrs")
+            non_goals = as_list(data.get("non_goals", []), "non_goals")
             return DesignSpec(
                 objective=str(data["objective"]),
                 constraints=tuple(
@@ -166,31 +167,3 @@ def _object(text: str) -> dict[str, object]:
     if not isinstance(value, dict):
         raise ValueError("provider JSON must be an object")
     return value
-
-
-def _events_json(events: Sequence[DesignEvent]) -> str:
-    return json.dumps(
-        [
-            {
-                "kind": event.kind.value,
-                "provenance": event.provenance.value,
-                "produced_at": event.produced_at.isoformat(),
-                "payload": event.payload,
-            }
-            for event in events
-        ],
-        default=str,
-    )
-
-
-def _list(value: object, field: str) -> list[object]:
-    if not isinstance(value, list):
-        raise ValueError(f"{field} must be a list")
-    return value
-
-
-def _object_list(value: object, field: str) -> list[dict[str, object]]:
-    values = _list(value, field)
-    if not all(isinstance(item, dict) for item in values):
-        raise ValueError(f"every {field} item must be an object")
-    return [item for item in values if isinstance(item, dict)]

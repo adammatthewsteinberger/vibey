@@ -50,6 +50,7 @@ from vibey.infrastructure.engines.claudeloop_process import (
     ClaudeLoopProcess,
     SpendRecorder,
 )
+from vibey.infrastructure.engines.qwenloop_design import QwenloopDesignProvider
 from vibey.infrastructure.engines.scripted_design import ScriptedDesignProvider
 from vibey.infrastructure.engines.scripted_visual import ScriptedVisualProvider
 from vibey.infrastructure.logging import configure_logging
@@ -358,8 +359,18 @@ async def _work_once(project_id: UUID, provider: str, max_turns: int, max_dollar
                 process=process,
                 worktree_path=project.repo_path,
             )
+        elif provider == "qwenloop":
+            # Doctrine 8.a: the sovereign path is the preferred way to run, so it has to
+            # be selectable here rather than reachable only through a paid engine.
+            # VIBEY_EVIDENCE_DIR is where the operator leaves reading for the research
+            # stage; without it research refuses rather than inventing a source, and
+            # since synthesis depends on research the phase stops there.
+            evidence = os.environ.get("VIBEY_EVIDENCE_DIR")
+            design_provider = QwenloopDesignProvider(
+                evidence_dir=Path(evidence) if evidence else None
+            )
         else:
-            raise UnknownProvider("provider must be 'scripted' or 'claudeloop'")
+            raise UnknownProvider("provider must be 'scripted', 'claudeloop', or 'qwenloop'")
         worker = build_design_worker(
             resources=resources,
             project=project,
@@ -1192,7 +1203,9 @@ def worker(
     ] = False,
     provider: Annotated[
         str,
-        typer.Option("--provider", help="Design/decompose providers: scripted or claudeloop"),
+        typer.Option(
+            "--provider", help="Design/decompose providers: scripted, claudeloop, or qwenloop"
+        ),
     ] = "scripted",
     max_turns: Annotated[int, typer.Option("--max-turns", min=1)] = 25,
     max_dollars: Annotated[float, typer.Option("--max-dollars", min=0.01, max=10)] = 2.0,
@@ -1238,8 +1251,8 @@ def worker(
         except ValueError as exc:
             typer.echo(f"Invalid engine: {exc}")
             raise typer.Exit(2) from exc
-    if provider not in ("scripted", "claudeloop"):
-        typer.echo("provider must be 'scripted' or 'claudeloop'")
+    if provider not in ("scripted", "claudeloop", "qwenloop"):
+        typer.echo("provider must be 'scripted', 'claudeloop', or 'qwenloop'")
         raise typer.Exit(2)
     if azure not in ("memory", "az"):
         typer.echo("--azure must be 'memory' or 'az'")
@@ -1301,6 +1314,15 @@ def worker(
                     process=process,
                     worktree_path=project.repo_path,
                 )
+            elif provider == "qwenloop":
+                # Doctrine 8.a: the sovereign path is the preferred way to run, so the
+                # long-running worker has to be able to select it too, not just the
+                # one-shot `vibey work`.
+                evidence = os.environ.get("VIBEY_EVIDENCE_DIR")
+                design_provider = QwenloopDesignProvider(
+                    evidence_dir=Path(evidence) if evidence else None
+                )
+                decomposer = ScriptedWorkPlanProducer()
             else:
                 design_provider = ScriptedDesignProvider()
                 decomposer = ScriptedWorkPlanProducer()

@@ -43,11 +43,11 @@ jobs:
       - name: Install the tooling
         run: |
           set -euo pipefail
-          if grep -qE '^name = "vibey-(gh|bootstrap)"' pyproject.toml 2>/dev/null; then
+          if grep -qE '^name = "vibey-gh"' pyproject.toml 2>/dev/null; then
             echo "this repository provides the tooling — installing from source"
             python -m pip install --quiet -e .
           else
-            python -m pip install --quiet "vibey-gh==1.58.0"
+            python -m pip install --quiet "vibey-gh==1.72.0"
           fi
 
       # --ci skips the core.hooksPath assertion, which is per-clone local git config that

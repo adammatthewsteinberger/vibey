@@ -60,10 +60,10 @@ jobs:
       - name: Install the tooling
         run: |
           set -euo pipefail
-          if grep -qE '^name = "vibey-(gh|bootstrap)"' pyproject.toml 2>/dev/null; then
+          if grep -qE '^name = "vibey-gh"' pyproject.toml 2>/dev/null; then
             python -m pip install --quiet -e .
           else
-            python -m pip install --quiet "vibey-gh==1.58.0"
+            python -m pip install --quiet "vibey-gh==1.72.0"
           fi
 
       - name: Promote
