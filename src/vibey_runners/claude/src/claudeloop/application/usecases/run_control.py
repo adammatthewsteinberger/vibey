@@ -33,19 +33,19 @@ class EnqueueResult:
 
 
 def request_wind_down(
-    inbox: ControlInbox, *, reason: str = "operator", run_id: str
+    inbox: ControlInbox[ControlCommand], *, reason: str = "operator", run_id: str
 ) -> EnqueueResult:
     inbox.enqueue(WindDownCommand(reason=reason))
     return EnqueueResult(run_id=run_id, command_type="wind_down")
 
 
-def request_stop(inbox: ControlInbox, *, run_id: str) -> EnqueueResult:
+def request_stop(inbox: ControlInbox[ControlCommand], *, run_id: str) -> EnqueueResult:
     inbox.enqueue(StopCommand())
     return EnqueueResult(run_id=run_id, command_type="stop")
 
 
 def request_prompt(
-    inbox: ControlInbox, text: str, *, immediate: bool, run_id: str
+    inbox: ControlInbox[ControlCommand], text: str, *, immediate: bool, run_id: str
 ) -> EnqueueResult:
     command: ControlCommand = (
         PromptNowCommand(text=text) if immediate else PromptDeferredCommand(text=text)
@@ -57,38 +57,48 @@ def request_prompt(
     )
 
 
-def request_set_model(inbox: ControlInbox, model: str, *, run_id: str) -> EnqueueResult:
+def request_set_model(
+    inbox: ControlInbox[ControlCommand], model: str, *, run_id: str
+) -> EnqueueResult:
     inbox.enqueue(SetModelCommand(model=model))
     return EnqueueResult(run_id=run_id, command_type="set_model")
 
 
-def request_set_effort(inbox: ControlInbox, effort: str, *, run_id: str) -> EnqueueResult:
+def request_set_effort(
+    inbox: ControlInbox[ControlCommand], effort: str, *, run_id: str
+) -> EnqueueResult:
     inbox.enqueue(SetEffortCommand(effort=effort))
     return EnqueueResult(run_id=run_id, command_type="set_effort")
 
 
-def request_set_preset(inbox: ControlInbox, preset: str, *, run_id: str) -> EnqueueResult:
+def request_set_preset(
+    inbox: ControlInbox[ControlCommand], preset: str, *, run_id: str
+) -> EnqueueResult:
     inbox.enqueue(SetPresetCommand(preset=preset))
     return EnqueueResult(run_id=run_id, command_type="set_preset")
 
 
-def request_set_permission_mode(inbox: ControlInbox, mode: str, *, run_id: str) -> EnqueueResult:
+def request_set_permission_mode(
+    inbox: ControlInbox[ControlCommand], mode: str, *, run_id: str
+) -> EnqueueResult:
     inbox.enqueue(SetPermissionModeCommand(mode=mode))
     return EnqueueResult(run_id=run_id, command_type="set_permission_mode")
 
 
-def request_set_cwd(inbox: ControlInbox, path: str, *, run_id: str) -> EnqueueResult:
+def request_set_cwd(
+    inbox: ControlInbox[ControlCommand], path: str, *, run_id: str
+) -> EnqueueResult:
     inbox.enqueue(SetCwdCommand(path=path))
     return EnqueueResult(run_id=run_id, command_type="set_cwd")
 
 
-def request_slash(inbox: ControlInbox, text: str, *, run_id: str) -> EnqueueResult:
+def request_slash(inbox: ControlInbox[ControlCommand], text: str, *, run_id: str) -> EnqueueResult:
     inbox.enqueue(SlashCommand(text=text))
     return EnqueueResult(run_id=run_id, command_type="slash")
 
 
 def request_tool_decision(
-    inbox: ControlInbox,
+    inbox: ControlInbox[ControlCommand],
     request_id: str,
     *,
     allow: bool,
@@ -103,7 +113,7 @@ def request_tool_decision(
 
 
 def request_resource_mutate(
-    inbox: ControlInbox,
+    inbox: ControlInbox[ControlCommand],
     *,
     action: str,
     kind: str,
@@ -116,12 +126,12 @@ def request_resource_mutate(
 
 
 def request_response_feedback(
-    inbox: ControlInbox, verdict: str, *, note: str = "", run_id: str
+    inbox: ControlInbox[ControlCommand], verdict: str, *, note: str = "", run_id: str
 ) -> EnqueueResult:
     inbox.enqueue(ResponseFeedbackCommand(verdict=verdict, note=note))
     return EnqueueResult(run_id=run_id, command_type="response_feedback")
 
 
-def request_response_retry(inbox: ControlInbox, *, run_id: str) -> EnqueueResult:
+def request_response_retry(inbox: ControlInbox[ControlCommand], *, run_id: str) -> EnqueueResult:
     inbox.enqueue(ResponseRetryCommand())
     return EnqueueResult(run_id=run_id, command_type="response_retry")

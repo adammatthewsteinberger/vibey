@@ -15,6 +15,7 @@ import contextlib
 import json
 import os
 import tempfile
+from collections.abc import Mapping
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -31,18 +32,18 @@ class FileStateBus:
         if not self._bus_path.exists():
             self._bus_path.touch()
 
-    def publish(self, event_type: str, state: dict[str, Any]) -> None:
-        payload = redact(
+    def publish(self, event_type: str, payload: Mapping[str, object]) -> None:
+        record = redact(
             {
                 "ts": datetime.now(timezone.utc).isoformat(),
                 "run_id": self._run_id,
                 "event_type": event_type,
-                **state,
+                **payload,
             }
         )
-        self._write_status_atomic(payload)
+        self._write_status_atomic(record)
         with self._bus_path.open("a", encoding="utf-8") as f:
-            f.write(json.dumps(payload, default=str) + "\n")
+            f.write(json.dumps(record, default=str) + "\n")
             f.flush()
 
     def _write_status_atomic(self, payload: dict[str, Any]) -> None:

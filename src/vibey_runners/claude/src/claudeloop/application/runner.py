@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import contextlib
 import uuid
+from collections.abc import Sequence
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -268,7 +269,7 @@ class AutonomousRunner:
         done_marker: str | None = None,
         run_id: str = "anonymous",
         notifier: Notifier | None = None,
-        run_control: RunControl | None = None,
+        run_control: RunControl[ControlCommand] | None = None,
         event_sink: RunEventSink | None = None,
         state_store: RunStateStore | None = None,
         session_lock: SessionLock | None = None,
@@ -882,7 +883,7 @@ class AutonomousRunner:
             return initial_prompt
         return continue_prompt
 
-    def _apply_control(self, commands: list[ControlCommand], *, natural_break: bool) -> None:
+    def _apply_control(self, commands: Sequence[ControlCommand], *, natural_break: bool) -> None:
         if commands:
             self._log.debug(
                 "control.poll",

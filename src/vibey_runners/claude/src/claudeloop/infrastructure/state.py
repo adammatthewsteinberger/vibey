@@ -5,6 +5,7 @@ resumed. One JSON file per run_id under a state directory."""
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
@@ -17,7 +18,7 @@ class FileRunStateStore:
     def _path(self, run_id: str) -> Path:
         return self._directory / f"{run_id}.json"
 
-    def save(self, run_id: str, state: dict[str, Any]) -> None:
+    def save(self, run_id: str, state: Mapping[str, object]) -> None:
         self._path(run_id).write_text(json.dumps(state, default=str), encoding="utf-8")
 
     def load(self, run_id: str) -> dict[str, Any] | None:

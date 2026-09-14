@@ -12,31 +12,36 @@ application/ knows the SHAPE of a collaborator, never its concrete type.
 
 from __future__ import annotations
 
+from vibey_runners.common.application.interfaces import (
+    ApiGateway,
+    Clock,
+    ControlInbox,
+    Logger,
+    RunControl,
+    RunStateStore,
+    SessionLock,
+    Sleeper,
+    StateBus,
+    StreamUi,
+)
+
 from claudeloop.application.interfaces.agent import (
     AgentGateway,
     CapacityProbe,
     RunResources,
     SessionCatalog,
 )
-from claudeloop.application.interfaces.api import ApiGateway
-from claudeloop.application.interfaces.control import ControlInbox, RunControl
 from claudeloop.application.interfaces.doctor import DoctorEnvironment
 from claudeloop.application.interfaces.observability import (
     AuditLog,
-    Logger,
     Notifier,
     ProgressReporter,
     RunEventSink,
-    StateBus,
 )
 from claudeloop.application.interfaces.storage import (
     RunSnapshotSink,
-    RunStateStore,
     SavePointStore,
-    SessionLock,
 )
-from claudeloop.application.interfaces.system import Clock, Sleeper
-from claudeloop.application.interfaces.ui import StreamUi
 
 __all__ = [
     "AgentGateway",

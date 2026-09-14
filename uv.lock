@@ -712,6 +712,7 @@ dependencies = [
     { name = "structlog" },
     { name = "textual" },
     { name = "typer" },
+    { name = "vibey-runners-common" },
 ]
 
 [package.optional-dependencies]
@@ -768,6 +769,7 @@ requires-dist = [
     { name = "twine", marker = "extra == 'dev'", specifier = ">=5.0" },
     { name = "typer", specifier = ">=0.12" },
     { name = "vibey-gh", marker = "python_full_version >= '3.11' and extra == 'dev'", specifier = "==1.58.0" },
+    { name = "vibey-runners-common", editable = "src/vibey_runners/common" },
 ]
 provides-extras = ["dev", "docs", "voice"]
 

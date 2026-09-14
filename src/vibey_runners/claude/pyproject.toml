@@ -52,6 +52,7 @@ dependencies = [
     "anthropic==1.2.0",
     "textual>=1.0",
     "tomli>=2.0; python_version < '3.11'",
+    "vibey-runners-common",
 ]
 
 [project.urls]
@@ -194,3 +195,6 @@ forbidden_modules = [
     "claudeloop.cli",
     "claudeloop.bootstrap",
 ]
+
+[tool.uv.sources]
+vibey-runners-common = { workspace = true }
