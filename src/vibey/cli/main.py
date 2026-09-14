@@ -1274,6 +1274,34 @@ def worker(
         from vibey.bootstrap import preflight_sweep
         from vibey.infrastructure.engines.claudeloop_decompose import ClaudeLoopWorkPlanProducer
 
+        # Kubernetes scale-in is SIGTERM, a wait, then SIGKILL. A
+        # worker that ignores SIGTERM keeps claiming jobs it cannot
+        # possibly finish: the kill lands mid-session, the lease is
+        # orphaned, and a paid turn is thrown away. Draining means
+        # exactly one thing -- finish the job in hand, claim no more --
+        # so the flag is read between jobs and nowhere else. Checking
+        # it mid-job would be the very truncation it exists to avoid.
+        #
+        # SIGTERM only, deliberately. Ctrl-C keeps its immediate-abort
+        # semantics: an operator who interrupts a foreground worker
+        # means now, not "in up to two hours".
+        #
+        # Registered as the very first thing once the event loop is
+        # running -- before any I/O (DB connect, project lookup). On a
+        # freshly scaled pod, kubelet's SIGTERM can arrive within
+        # milliseconds of the process starting, and PID 1 silently
+        # drops an unhandled signal rather than queuing it: a handler
+        # installed even one await later can lose the race and never
+        # see the signal that was actually sent.
+        draining = asyncio.Event()
+
+        def _begin_drain() -> None:
+            typer.echo("draining on SIGTERM: finishing in-flight job, claiming no more")
+            draining.set()
+
+        asyncio.get_running_loop().add_signal_handler(signal.SIGTERM, _begin_drain)
+        typer.echo("sigterm handler registered", err=True)
+
         async with build_app() as resources:
 
             async def _resolve_project() -> ProjectRecord | None:
@@ -1360,26 +1388,6 @@ def worker(
             notifier = PostgresJobReadyNotifier(database_url())
             await notifier.connect()
 
-            # Kubernetes scale-in is SIGTERM, a wait, then SIGKILL. A
-            # worker that ignores SIGTERM keeps claiming jobs it cannot
-            # possibly finish: the kill lands mid-session, the lease is
-            # orphaned, and a paid turn is thrown away. Draining means
-            # exactly one thing -- finish the job in hand, claim no more --
-            # so the flag is read between jobs and nowhere else. Checking
-            # it mid-job would be the very truncation it exists to avoid.
-            #
-            # SIGTERM only, deliberately. Ctrl-C keeps its immediate-abort
-            # semantics: an operator who interrupts a foreground worker
-            # means now, not "in up to two hours".
-            draining = asyncio.Event()
-
-            def _begin_drain() -> None:
-                typer.echo("draining on SIGTERM: finishing in-flight job, claiming no more")
-                draining.set()
-
-            asyncio.get_running_loop().add_signal_handler(signal.SIGTERM, _begin_drain)
-            typer.echo("sigterm handler registered", err=True)
-
             typer.echo(
                 f"worker started: project={project.name} "
                 f"engines={engines_opt or 'all'} parallelism={count} provider={provider}"
@@ -1387,8 +1395,9 @@ def worker(
 
             # TEMPORARY: pinning down why a scaled-in pod isn't draining within
             # the expected ~60s on minikube (observed: stuck well past 5m, the
-            # SIGTERM handler above never firing its own echo). Cheap enough to
-            # leave on: one line per loop per iteration, nothing per-job.
+            # SIGTERM handler registered above never firing its own echo).
+            # Cheap enough to leave on: one line per loop per iteration,
+            # nothing per-job.
             async def drive(loop_: WorkerLoop, *, idx: int) -> None:
                 iteration = 0
                 while not draining.is_set():

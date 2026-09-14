@@ -15,5 +15,6 @@ htmlcov/
 .agyloop/
 .codexloop/
 .cursorloop/
+.qwenloop/
 .vibey-tmp/site/
 /site/
