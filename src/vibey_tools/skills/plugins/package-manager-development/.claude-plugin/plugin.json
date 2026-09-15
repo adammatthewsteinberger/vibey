@@ -1,0 +1,9 @@
+{
+  "name": "package-manager-development",
+  "version": "0.1.0",
+  "description": "Package Manager Development: version schemes and constraints, manifests, dependency resolution (backtracking, SAT, PubGrub, MVS), lockfiles and reproducibility, registry design, cache/layout/linking (flat, nested, content-addressed, PnP), publishing and authentication (trusted publishing, OIDC, provenance, Sigstore, SLSA), supply-chain attacks and defenses, lifecycle scripts, workspaces and monorepos, performance, UX, the cross-ecosystem comparison (npm, pip/uv, Cargo, Go modules, Maven, NuGet, apt/dnf, Nix), and governance.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

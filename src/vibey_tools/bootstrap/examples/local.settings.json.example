@@ -1,0 +1,36 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+
+    "COMMENT_1": "===== OPTION 1: Enterprise Configuration (App Config + Key Vault) =====",
+    "AZURE_APP_CONFIGURATION_CONNECTION_STRING": "Endpoint=https://myappconfig.azconfig.io;Id=xxx;Secret=xxx",
+    "AZURE_KEY_VAULT_URL": "https://myvault.vault.azure.net/",
+    "AZURE_APP_CONFIG_LABEL": "dev",
+
+    "COMMENT_2": "===== OPTION 2: Simple Configuration (Environment Variables Only) =====",
+    "COMMENT_3": "If not using App Config, set these directly:",
+    "DATABASE_HOST": "localhost",
+    "DATABASE_NAME": "mydb",
+    "DATABASE_USER": "postgres",
+    "DATABASE_PASSWORD": "your-password-here",
+    "ENVIRONMENT": "dev",
+    "API_KEY": "your-api-key-here",
+
+    "COMMENT_4": "===== Application Insights (Optional) =====",
+    "APPLICATIONINSIGHTS_CONNECTION_STRING": "InstrumentationKey=xxx;IngestionEndpoint=https://xxx.applicationinsights.azure.com/",
+
+    "COMMENT_5": "===== Authentication for App Config/Key Vault (Local Dev) =====",
+    "COMMENT_6": "Use Azure CLI: az login (recommended for local dev)",
+    "COMMENT_7": "OR use Service Principal:",
+    "AZURE_TENANT_ID": "your-tenant-id",
+    "AZURE_CLIENT_ID": "your-client-id",
+    "AZURE_CLIENT_SECRET": "your-client-secret",
+
+    "COMMENT_8": "===== Local Development Overrides =====",
+    "COMMENT_9": "These will override App Config values (local wins):",
+    "USE_MOCK_DATABASE": "true",
+    "USE_MOCK_EXTERNAL_API": "true"
+  }
+}

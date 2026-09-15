@@ -1,0 +1,9 @@
+{
+  "name": "arm-architecture-deep-dive",
+  "version": "0.1.0",
+  "description": "ARM — A Deep Dive: what \"ARM\" actually names, the licensing model, product families, ISA generations, AArch64, instruction set characteristics, exception levels, the memory model, MMU and translation, vector extensions including NEON, SVE, SVE2 and SME, atomics and synchronization, floating point and numerics, TrustZone, pointer authentication, BTI and MTE, CCA and realms, big.LITTLE and DynamIQ, interrupts and timers, interconnect, boot and firmware, virtualization, Cortex-M and embedded, toolchain and ABI, porting from x86, and performance analysis.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

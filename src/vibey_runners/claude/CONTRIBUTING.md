@@ -22,8 +22,8 @@ issue or a PR fixing it.
 ## Environment setup
 
 ```bash
-git clone https://github.com/adammatthewsteinberger/claudeloop.git
-cd claudeloop
+git clone https://github.com/the-vibey-project/vibey.git
+cd vibey/src/vibey_runners/claude   # claudeloop lives here in the vibey monorepo
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev,docs]"
@@ -34,7 +34,7 @@ Requires Python 3.10+ on **macOS or Linux**. Windows is not a supported
 target — CI and classifiers are Unix-only; see
 [`docs/getting-started/installation.md`](docs/getting-started/installation.md).
 The GitHub default branch is **`develop`** (the integration branch you PR
-into). `main` is the releasable line that release-please watches.
+into). `main` is the releasable line; releases are cut by vibey-gh in the vibey monorepo.
 
 See [`docs/contributing/development.md`](docs/contributing/development.md) for
 the full version of this page, including where new code belongs in the
@@ -43,27 +43,26 @@ onion architecture.
 ## The branch model (gitflow)
 
 ```
-main         ← always releasable; release-please opens release PRs against this
-  ▲ (merge commit — preserves individual conventional commits)
-develop      ← integration branch; feature branches target this
-  ▲ (squash-merge — one conventional-commit-titled squash per feature)
+main         ← the vibey monorepo's release branch
+  ▲ rebase merge — promotion PRs opened by `vibey-gh promote`
+develop      ← the monorepo's integration branch; feature branches target this
+  ▲ squash merge — one conventional-commit-titled squash per feature
 feature/*    ← your work
 ```
 
-1. `git checkout -b feature/short-description develop`
+This package is developed inside the [vibey monorepo](https://github.com/the-vibey-project/vibey)
+(`src/vibey_runners/claude`), and its branch model, merge train and release automation are the
+monorepo's: see vibey's [CONTRIBUTING](https://github.com/the-vibey-project/vibey/blob/develop/CONTRIBUTING.md)
+and [ADR-0028](https://github.com/the-vibey-project/vibey/blob/develop/docs/architecture/decisions/0028-vibey-gh-owns-release-and-provenance.md).
+release-please was retired; `vibey-gh` derives versions and publishes.
+
+1. `git checkout -b feature/short-description develop` in the vibey repository.
 2. Commit using [Conventional Commits](#conventional-commits).
-3. Open a PR **into `develop`**, not `main`. CI runs the full quality-gate
-   matrix (Python 3.10–3.13).
-4. Your feature branch is **squash-merged** into `develop` — give the
-   squash-merge title a conventional-commit-formatted summary of the whole
-   PR, even if your individual commits weren't perfectly conventional
-   along the way.
-5. Periodically, `develop` is merged into `main` as a **merge commit** (not
-   squashed) so every conventional commit that landed on `develop` survives
-   individually for release-please to parse.
-6. release-please then maintains a standing release PR on `main`; merging
-   *that* PR is what actually cuts a version and publishes to PyPI. See
-   [`docs/contributing/release-process.md`](docs/contributing/release-process.md).
+3. Open a PR **into `develop`**, not `main`. This package's own quality gates
+   still apply and run in vibey's CI.
+4. The merge train squash-merges the PR once its checks and review pass.
+5. `vibey-gh promote` opens the promotion PR into `main`; it is rebase-merged
+   and the release workflow publishes.
 
 ## Conventional Commits
 
@@ -104,7 +103,7 @@ docs(architecture): add ADR for the retry-watchdog decision
 
 The **scope** (`domain`, `waiting`, `loop`, `cli`, `docs`, ...) in
 parentheses is optional but strongly encouraged — it makes the
-release-please-generated changelog dramatically more scannable.
+history and the changelog dramatically more scannable.
 
 ## Git hooks
 
@@ -224,10 +223,10 @@ for why this was chosen over convention-only layering.
 
 | I want to... | Go here |
 |---|---|
-| User/operator docs | [https://adammatthewsteinberger.github.io/claudeloop/](https://adammatthewsteinberger.github.io/claudeloop/) |
-| Ask a question or discuss design | [GitHub Discussions](https://github.com/adammatthewsteinberger/claudeloop/discussions) |
-| Report a bug | [Bug report form](https://github.com/adammatthewsteinberger/claudeloop/issues/new?template=bug_report.yml) |
-| Propose a feature | [Feature request form](https://github.com/adammatthewsteinberger/claudeloop/issues/new?template=feature_request.yml) |
+| User/operator docs | [`docs/index.md`](https://github.com/the-vibey-project/vibey/blob/develop/src/vibey_runners/claude/docs/index.md) |
+| Ask a question or discuss design | [GitHub Discussions](https://github.com/the-vibey-project/vibey/discussions) |
+| Report a bug | [Bug report form](https://github.com/the-vibey-project/vibey/issues/new?template=bug_report.yml) |
+| Propose a feature | [Feature request form](https://github.com/the-vibey-project/vibey/issues/new?template=feature_request.yml) |
 | Report a vulnerability | [SECURITY.md](SECURITY.md) — privately |
 | Same map, shorter | [SUPPORT.md](SUPPORT.md) |
 

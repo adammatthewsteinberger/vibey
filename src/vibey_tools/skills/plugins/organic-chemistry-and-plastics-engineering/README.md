@@ -1,0 +1,14 @@
+# Organic Chemistry and Plastics Engineering Plugin
+
+Organic chemistry and the plastics engineering built on top of it, as one continuous subject. Why carbon behaves as it does, bonding and structure, functional groups, stereochemistry, acidity and basicity; reaction mechanisms as the organising idea rather than memorised reactions, reaction classes, aromaticity, kinetic versus thermodynamic control, characterization and synthesis strategy; then what makes a polymer, polymerization, molecular weight, Tg and morphology, mechanical behaviour, the commodity and engineering plastics, additives, elastomers and composites, processing, degradation and failure; plus honest treatments of recycling and bioplastics, and the health, migration and regulatory layer.
+
+One reference, split into 6 skills along its section groups so a task loads only the part it needs. Section numbers (§N) are shared across the set and cross-references into a sibling skill are written as §N → `skill`. Reference, not tutorial: sections are independent, every claim is tagged by how durable it is (stable fundamentals vs. versioned specifics vs. genuinely contested questions), and a currency snapshot (checked August 2026) flags what goes stale first.
+
+## Skills
+
+- **chem-carbon-bonding-functional-groups-and-stereochemistry** — Why Carbon, Bonding and Structure, Functional Groups, Stereochemistry, and Acidity and Basicity (§0–§5): Routing; Why Carbon; Bonding and Structure; Functional Groups; ⚠️ Stereochemistry; Acidity and Basicity.
+- **chem-mechanisms-reactions-characterization-and-synthesis** — Mechanisms, Reaction Classes, Aromaticity, Kinetic Versus Thermodynamic Control, Characterization, Synthesis Strategy, and Green Chemistry (§6–§12): ⚠️ Mechanisms; Reaction Classes; Aromaticity; Kinetic vs Thermodynamic Control; Characterization; Synthesis Strategy; Green Chemistry.
+- **chem-polymers-polymerization-molecular-weight-and-morphology** — What Makes a Polymer, Polymerization, Molecular Weight, Tg, Melting and Morphology, and Mechanical Behaviour (§13–§17): What Makes a Polymer; Polymerization; Molecular Weight; ⚠️ Tg, Melting and Morphology; Mechanical Behaviour.
+- **chem-commodity-engineering-plastics-additives-and-processing** — The Commodity Plastics, Engineering and High-Performance Polymers, Additives, Elastomers, Thermosets and Composites, Processing, and Degradation and Failure (§18–§23): The Commodity Plastics; Engineering and High-Performance Polymers; ⚠️ Additives; Elastomers, Thermosets and Composites; Processing; ⚠️ Degradation and Failure.
+- **chem-recycling-bioplastics-and-health-regulation** — Recycling Honestly, Bioplastics Honestly, and Health, Migration and Regulation (§24–§26): ⚠️ Recycling, Honestly; Bioplastics, Honestly; Health, Migration and Regulation.
+- **chem-reference** — What's Live, Misconceptions, Numbers, and Books (§27–§32): What's Live; Misconceptions; Numbers; Books; Quick Reference; Method.

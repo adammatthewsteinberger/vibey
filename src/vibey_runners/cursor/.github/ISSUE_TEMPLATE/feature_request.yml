@@ -5,11 +5,11 @@ body:
   - type: markdown
     attributes:
       value: |
-        Please search [existing issues](https://github.com/adammatthewsteinberger/cursorloop/issues)
-        and skim the [docs](https://adammatthewsteinberger.github.io/cursorloop/)
+        Please search [existing issues](https://github.com/the-vibey-project/cursorloop/issues)
+        and skim the [docs](https://the-vibey-project.github.io/cursorloop/)
         before proposing something that may already exist. Design discussion
         that is not yet a concrete request belongs in
-        [Discussions](https://github.com/adammatthewsteinberger/cursorloop/discussions).
+        [Discussions](https://github.com/the-vibey-project/cursorloop/discussions).
 
   - type: textarea
     id: problem

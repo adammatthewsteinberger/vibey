@@ -1,0 +1,13 @@
+# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
+#
+# Both branch rulesets set `require_code_owner_review: true`, but with no CODEOWNERS file
+# there were no owners for any path, so that requirement matched nothing and reviewed
+# nothing. This makes it real: every path is owned, and the owner is the person who is
+# meant to be the only one who can override anything.
+#
+# Bots do not belong here. A CODEOWNERS entry grants review AUTHORITY, and an automated
+# reviewer that can satisfy its own requirement is not a review. The bots get their trust
+# from the merge train's allow-list instead, which decides only whether a change may merge
+# unattended — never whether it was reviewed.
+
+*       @adammatthewsteinberger

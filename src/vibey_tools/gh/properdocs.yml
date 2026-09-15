@@ -1,0 +1,52 @@
+site_name: vibey-gh
+site_description: Event-driven GitHub release automation
+site_url: https://the-vibey-project.github.io/vibey-gh/
+repo_url: https://github.com/the-vibey-project/vibey-gh
+repo_name: adammatthewsteinberger/vibey-gh
+edit_uri: edit/main/docs/
+docs_dir: docs
+theme: mkdocs
+extra_css:
+  - stylesheets/vibey.css
+extra_javascript:
+  - javascripts/channel.js
+markdown_extensions:
+  - attr_list
+  - md_in_html
+# Nav order is doctrine, not taste: beginner material first (a reader with zero
+# context must be able to walk the top of the nav in order), the engineering
+# reference second, and scholarly/formal material (threat model, governance,
+# decision records) last. Executive framing has no tier.
+nav:
+  - Home: index.md
+  - Start here:
+      - Welcome: start/index.md
+      - A guided first session: start/first-session.md
+      - Glossary bridge: start/glossary.md
+  - Adoption: adoption.md
+  - Architecture: architecture.md
+  - Configuration: configuration.md
+  - CLI: cli.md
+  - Workflows: workflows.md
+  - Operations: operations.md
+  - Security: security.md
+  - Testing: testing.md
+  - Releases: releases.md
+  - Support: troubleshooting.md
+  - Contributing: development.md
+  - Dependencies: dependencies.md
+  - Theory of operation: theory.md
+  - Accessibility: accessibility.md
+  - Research paper: paper.md
+  - Sovereignty stress test: sovereignty-stress-2026-08-30.md
+  - Roadmap: roadmap.md
+  - Threat model: threat-model.md
+  - Governance: governance.md
+  - For Governments: government.md
+  - The Twelve Doctrines: doctrines.md
+  - The Constitution: constitution.md
+  - The Ten Commandments: commandments.md
+  - Bill of Rights: bill-of-rights.md
+  - SD-01 — Counterparties & Trust: sd-01-counterparties-trust-verification.md
+  - Architecture decisions: adr/README.md
+strict: true

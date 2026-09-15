@@ -1,0 +1,9 @@
+{
+  "name": "civil-industrial-engineering-for-software-devs",
+  "version": "0.1.0",
+  "description": "Civil and Industrial Engineering for Software Devs: why the engineering comparison keeps coming up, loads and structure, factor of safety, materials, foundations and soil, codes and standards, licensure and liability, failure analysis, construction sequencing, infrastructure systems, what industrial engineering actually is, queueing theory and Little's Law, the Theory of Constraints, lean and the Toyota Production System, Six Sigma and statistical process control, work measurement, scheduling and inventory, human factors and ergonomics, reliability engineering, safety engineering, and an honest account of what transfers to software and what doesn't.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

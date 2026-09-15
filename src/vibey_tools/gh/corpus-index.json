@@ -1,0 +1,236 @@
+{
+ "chunks": [
+  {
+   "anchor": "The Twelve Doctrines",
+   "document": "docs/doctrines.md",
+   "sha256": "1f46e430b7118e8b75b949edef766dd9dc2db73134b3c227b2c84f169ad4c52c",
+   "start_line": 1,
+   "text_lines": 12
+  },
+  {
+   "anchor": "1 — BLUF",
+   "document": "docs/doctrines.md",
+   "sha256": "33d28a8a8185102c71b563932a186f85ab2237191dce30304861f7530e2d7d7b",
+   "start_line": 13,
+   "text_lines": 6
+  },
+  {
+   "anchor": "2 — Audience channels",
+   "document": "docs/doctrines.md",
+   "sha256": "80973f387330f39f4627ae18373637c77d358613d6465259f5786a2be6b8999f",
+   "start_line": 19,
+   "text_lines": 13
+  },
+  {
+   "anchor": "3 — Examples",
+   "document": "docs/doctrines.md",
+   "sha256": "ff353466d65f98e1e7b13794f57a2eacce3a25fb9f782b8e70127c224acfbc3f",
+   "start_line": 32,
+   "text_lines": 5
+  },
+  {
+   "anchor": "4 — Site scope",
+   "document": "docs/doctrines.md",
+   "sha256": "0936dd0c8cb4170caddeec0d52986e943c69e67d67e2f9386abbe5d975b81052",
+   "start_line": 37,
+   "text_lines": 17
+  },
+  {
+   "anchor": "5 — The document arc",
+   "document": "docs/doctrines.md",
+   "sha256": "5d7ec696bd8c4a45bb4e179d9df2aa9756f63fa67ca2a8fcfa944c641c3ec0a7",
+   "start_line": 54,
+   "text_lines": 6
+  },
+  {
+   "anchor": "6 — The research paper",
+   "document": "docs/doctrines.md",
+   "sha256": "b5159f9defd1472ac7ae122c548d8a81d3459dbad2c8873be744fe1d7f30c95b",
+   "start_line": 60,
+   "text_lines": 5
+  },
+  {
+   "anchor": "7 — The never-lost reader",
+   "document": "docs/doctrines.md",
+   "sha256": "dc4811a79c2cc8eb5d0faa2afc5be948584697073fb330ffa73d4b85d48ad7e1",
+   "start_line": 65,
+   "text_lines": 17
+  },
+  {
+   "anchor": "8 — Local authority",
+   "document": "docs/doctrines.md",
+   "sha256": "883bcbd7f06fc80783935992a554ed0735602d26b8ba4d16dcbef2cbdfb68829",
+   "start_line": 82,
+   "text_lines": 27
+  },
+  {
+   "anchor": "9 — The vibe",
+   "document": "docs/doctrines.md",
+   "sha256": "71bd94d7661fabc2792e325309a4cef3323fc6fa0e39008acbcf80330ab56455",
+   "start_line": 109,
+   "text_lines": 16
+  },
+  {
+   "anchor": "10 — No guarantees",
+   "document": "docs/doctrines.md",
+   "sha256": "677fd38aa9853ec58bb044740f0cff31321ef441d2bfc47d3f53b87c88e1d89d",
+   "start_line": 125,
+   "text_lines": 53
+  },
+  {
+   "anchor": "11 — The living roadmap",
+   "document": "docs/doctrines.md",
+   "sha256": "2b7af17bfc318721c526df138ff45715828a18d9f4892ca8a80d194c4328548d",
+   "start_line": 178,
+   "text_lines": 7
+  },
+  {
+   "anchor": "12 — Humans first",
+   "document": "docs/doctrines.md",
+   "sha256": "6b7acfa9713992d7fc5fc4710b84c4c0a30cce6cb59440b648283bf967d4a067",
+   "start_line": 185,
+   "text_lines": 35
+  },
+  {
+   "anchor": "The Constitution",
+   "document": "docs/constitution.md",
+   "sha256": "be693d1cfa65dc7a3812cb34dd1c24544ca05017d6989371fbb966177b259e84",
+   "start_line": 1,
+   "text_lines": 7
+  },
+  {
+   "anchor": "Preamble",
+   "document": "docs/constitution.md",
+   "sha256": "9c42d9abdbd15b7684e2176045d39d79d8195a99a37c9a7ca53ebae794b5a243",
+   "start_line": 8,
+   "text_lines": 8
+  },
+  {
+   "anchor": "Article I — The Order of Authority",
+   "document": "docs/constitution.md",
+   "sha256": "c190cc2a78fae926147677200f7790edee02fb7f8b9faeb5a50e852394fa8d86",
+   "start_line": 16,
+   "text_lines": 37
+  },
+  {
+   "anchor": "Article II — Human Governance",
+   "document": "docs/constitution.md",
+   "sha256": "25d4b49548c4e6f30e185696f7144e3bd2be7a3b9aa786e3da79b57f9d0a5afb",
+   "start_line": 53,
+   "text_lines": 18
+  },
+  {
+   "anchor": "Article III — Non-Human Governance",
+   "document": "docs/constitution.md",
+   "sha256": "2650d8fb80096190c373e36a270b6c279482cf13819a55dffbe38b84e8029fd5",
+   "start_line": 71,
+   "text_lines": 19
+  },
+  {
+   "anchor": "Article IV — Amendment (the Ratchet)",
+   "document": "docs/constitution.md",
+   "sha256": "40b8d2d56e75742649903c0df09927556f80ff11a9f57dc5968022d3e57ac5d1",
+   "start_line": 90,
+   "text_lines": 28
+  },
+  {
+   "anchor": "Article V — Enforcement",
+   "document": "docs/constitution.md",
+   "sha256": "5c00f4ffa84d7c9c55cbdc9e6456dac01297973e8bb82741d6677d6d6827cbd6",
+   "start_line": 118,
+   "text_lines": 22
+  },
+  {
+   "anchor": "The Ten Commandments of Software Engineering",
+   "document": "docs/commandments.md",
+   "sha256": "0498ceb86f5891b7f5874c616d0d568c2629bb19ff439a18840cf64e39895cda",
+   "start_line": 1,
+   "text_lines": 66
+  },
+  {
+   "anchor": "The Bill of Rights of the Human Software Engineer",
+   "document": "docs/bill-of-rights.md",
+   "sha256": "db15a7a343ce53e1c4c01aa186ae2d5eab5c7cd61b554a19921c24b9bb853589",
+   "start_line": 1,
+   "text_lines": 69
+  },
+  {
+   "anchor": "",
+   "document": "docs/sd-01-counterparties-trust-verification.md",
+   "sha256": "468196f5bf36b0dd5afc88550b9116aff0bcb921ea0ab80618257590e77ca698",
+   "start_line": 1,
+   "text_lines": 13
+  },
+  {
+   "anchor": "Subdoctrine SD-01 — Counterparties, Trust, and Verification",
+   "document": "docs/sd-01-counterparties-trust-verification.md",
+   "sha256": "ea51328330a42b38539fc803cc46efb32251fe7e9ef569dc50d6cbf32b807ee9",
+   "start_line": 14,
+   "text_lines": 6
+  },
+  {
+   "anchor": "1. One standard for everyone",
+   "document": "docs/sd-01-counterparties-trust-verification.md",
+   "sha256": "52e196c17ef794bd72d08bbcbfa830ac20231d95642485a454c83d6f32ab1f29",
+   "start_line": 20,
+   "text_lines": 8
+  },
+  {
+   "anchor": "2. Default posture: unverified",
+   "document": "docs/sd-01-counterparties-trust-verification.md",
+   "sha256": "b186de7bd475e2f01962d9e72712b0aa19c7efd4d0e2f2dc3ef530d6ffd8233d",
+   "start_line": 28,
+   "text_lines": 13
+  },
+  {
+   "anchor": "3. Bad actors and corrupted states",
+   "document": "docs/sd-01-counterparties-trust-verification.md",
+   "sha256": "b92cd163550bae3e5c3a3f50a9fc805dfd57c21b0efad296b8992366e25695a9",
+   "start_line": 41,
+   "text_lines": 6
+  },
+  {
+   "anchor": "4. Nothing is presumed human",
+   "document": "docs/sd-01-counterparties-trust-verification.md",
+   "sha256": "60e372c6f60e3f26dcfad70f659a71783fcd355e5e9ecadd1b738559ade30c3a",
+   "start_line": 47,
+   "text_lines": 6
+  },
+  {
+   "anchor": "5. The law is a floor",
+   "document": "docs/sd-01-counterparties-trust-verification.md",
+   "sha256": "359a3992e9518155491613d0117de8761bb08f351cf414cc19d59aa2f0878e57",
+   "start_line": 53,
+   "text_lines": 6
+  },
+  {
+   "anchor": "6. Precedence",
+   "document": "docs/sd-01-counterparties-trust-verification.md",
+   "sha256": "87c8c9d591f43ef2c175909ee26075e10d010b9fdfd2031a72dba8ae582dc75a",
+   "start_line": 59,
+   "text_lines": 12
+  },
+  {
+   "anchor": "7. When in doubt",
+   "document": "docs/sd-01-counterparties-trust-verification.md",
+   "sha256": "47c609279bde8be7a9e6d5a9340e9846a073cfcfb9200e82006b258645811443",
+   "start_line": 71,
+   "text_lines": 4
+  },
+  {
+   "anchor": "8. Embedding",
+   "document": "docs/sd-01-counterparties-trust-verification.md",
+   "sha256": "cc56970745fe9e34ea32777bb493f29ceedd9d9746d1db4540d1eb2b69ced30b",
+   "start_line": 75,
+   "text_lines": 4
+  }
+ ],
+ "corpus_sha256": "3d7378f443004dea66a9caea3f67ac2e312c7c6593f47de1f84163ea3eaed37a",
+ "documents": [
+  "docs/doctrines.md",
+  "docs/constitution.md",
+  "docs/commandments.md",
+  "docs/bill-of-rights.md",
+  "docs/sd-01-counterparties-trust-verification.md"
+ ]
+}

@@ -1,0 +1,9 @@
+{
+  "name": "okta-api-reference",
+  "version": "0.1.0",
+  "description": "Okta API Reference: the core Management REST API and official Python SDK, the Identity Governance (OIG) API surface and its lack of a Python SDK, and the current landscape of MCP servers for Okta core and IGA automation.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

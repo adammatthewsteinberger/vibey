@@ -1,0 +1,14 @@
+# Medicine Design Software Development Plugin
+
+Building software for drug discovery, with an honest account of where computation actually helps: the pipeline and its attrition, molecular representation and cheminformatics, data sources and their quality problems, and the splitting and leakage failures that make most reported results optimistic; protein structure, structure prediction, docking, molecular dynamics and free energy methods; QSAR, ADMET prediction, generative models, active learning and the benchmarks and validation that separate real signal from leaderboard performance; then pipeline engineering, compute, reproducibility, and the regulated-software context of GxP, computer system validation and software as a medical device.
+
+One reference, split into 6 skills along its section groups so a task loads only the part it needs. Section numbers (§N) are shared across the set and cross-references into a sibling skill are written as §N → `skill`. Reference, not tutorial: sections are independent, every claim is tagged by how durable it is (stable fundamentals vs. versioned specifics vs. genuinely contested questions), and a currency snapshot (verified August 2026) flags what goes stale first.
+
+## Skills
+
+- **drugdev-pipeline-targets-and-drug-likeness** — The Pipeline and Where Software Helps, Targets and Modalities, and What Makes a Molecule a Drug (§0–§3): Routing; ⚠️ The Pipeline and Where Software Helps; Targets and Modalities; ⚠️ What Makes a Molecule a Drug.
+- **drugdev-representation-cheminformatics-data-quality-and-leakage** — Molecular Representation, Cheminformatics Toolkits, Data Sources and Their Quality, and Splitting and Leakage (§4–§7): Molecular Representation; Cheminformatics Toolkits; ⚠️ Data Sources and Their Quality; ⚠️ Splitting and Leakage.
+- **drugdev-protein-structure-docking-and-molecular-dynamics** — Protein Structure, Structure Prediction, Docking, Molecular Dynamics, and Free Energy Methods (§8–§12): Protein Structure; ⚠️ Structure Prediction; ⚠️ Docking; Molecular Dynamics; Free Energy Methods.
+- **drugdev-qsar-admet-generative-models-and-validation** — QSAR and Property Prediction, ADMET Prediction, Generative Models, Active Learning and the DMTA Loop, Benchmarks, and Validation That Means Something (§13–§18): QSAR and Property Prediction; ADMET Prediction; Generative Models; Active Learning and the DMTA Loop; ⚠️ Benchmarks; ⚠️ Validation That Means Something.
+- **drugdev-pipeline-engineering-compute-and-regulated-software** — Pipeline Engineering, Compute, Reproducibility, GxP and Validation, and Software as a Medical Device (§19–§23): Pipeline Engineering; Compute; Reproducibility; ⚠️ GxP, Validation and the Regulated Context; Software as a Medical Device.
+- **drugdev-reference** — What's Live, Misconceptions, Numbers, and Tools (§24–§29): What's Live; Misconceptions; Numbers; Tools and Resources; Quick Reference; Method.

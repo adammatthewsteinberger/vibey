@@ -1,0 +1,7 @@
+---
+description: Conventions for the vibey-skills plugin marketplace
+globs:
+alwaysApply: true
+---
+
+The conventions for this repository live in [CLAUDE.md](mdc:CLAUDE.md). Follow that file.

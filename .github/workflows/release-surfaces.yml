@@ -1,4 +1,4 @@
-# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 name: Release surfaces
 
 # The package registries remain authoritative for Python installation. This workflow adds
@@ -98,6 +98,10 @@ jobs:
     name: GitHub Package (${{ needs.context.outputs.channel }})
     needs: context
     runs-on: ubuntu-latest
+    outputs:
+      # The exact released version, read from the wheel's own metadata below; the
+      # attach job names the GitHub Release by it.
+      version: ${{ steps.metadata.outputs.version }}
     permissions:
       actions: read
       contents: read
@@ -176,25 +180,13 @@ jobs:
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
-      - name: Ship the governance corpus index (#249)
-        run: |
-          set -euo pipefail
-          # The index rides the site so a fully-local deployment carries its law
-          # searchable and integrity-checkable offline. Absent index, nothing ships —
-          # the check that ENFORCES its presence lives with the repository, not here.
-          if [ -f corpus-index.json ]; then
-            cp corpus-index.json channel-site/corpus-index.json
-            echo "corpus index shipped with the channel site"
-          else
-            echo "no corpus index in this repository — nothing to ship"
-          fi
       - name: Inject social signals (sub-doctrine 4.a)
         if: false
         run: |
           set -euo pipefail
           # Self-hosting-aware: this repository IS vibey-gh when the import already
           # resolves from source; every adopter installs the pinned release.
-          python - <<'PY' || python -m pip install --quiet "vibey-gh==1.72.0"
+          python - <<'PY' || python -m pip install --quiet "vibey-gh==1.73.0"
           import vibey_gh  # noqa: F401
           PY
           python - <<'PY'
@@ -215,6 +207,10 @@ jobs:
           export GA_ID="G-DMYG7PHCQP"
           python -m pip install --quiet \
             'properdocs==1.6.7' 'properdocs-theme-mkdocs==1.6.7'
+          # LaTeX on the site: arithmatex keeps math intact through the Markdown pass.
+          if [ "true" = "true" ]; then
+            python -m pip install --quiet 'pymdown-extensions==12.0'
+          fi
           # A site declaring plugins or markdown extensions needs them installed before
           # `--strict` will build it, and ProperDocs depends on none of them. Both hooks
           # are no-ops when unused: the list renders empty, and an absent file skips.
@@ -237,6 +233,7 @@ jobs:
           python - "$config" <<'PY'
           import os
           import pathlib
+          import re
           import shutil
           import sys
 
@@ -279,6 +276,74 @@ jobs:
           data.setdefault("repo_url", replacements["__REPOSITORY_URL__"])
           data["edit_uri"] = f"edit/{os.environ['RELEASE_BRANCH']}/docs/"
           data["docs_dir"] = str(docs_dir)
+          # LaTeX rendered on the page, never fetched from a CDN by the reader: MathJax 3.2.2
+          # comes from the npm registry at build time, pinned by version AND checksum and
+          # verified before use, and is served from this site. math.js (the managed release
+          # asset) configures it and turns ```latex environments into styled blocks.
+          if "true" == "true":
+              import hashlib
+              import io
+              import tarfile
+              import urllib.request
+
+              tarball = urllib.request.urlopen(
+                  "https://registry.npmjs.org/mathjax/-/mathjax-3.2.2.tgz", timeout=60
+              ).read()
+              digest = hashlib.sha256(tarball).hexdigest()
+              if digest != "1b9c0a1c44df864e915690558e72adb9cc5203360daefd385084ced3b6c64c09":
+                  raise SystemExit(f"MathJax tarball checksum mismatch: {digest}")
+              with tarfile.open(fileobj=io.BytesIO(tarball)) as archive:
+                  bundle = archive.extractfile("package/es5/tex-svg.js").read()
+              vendor = js_dir / "vendor"
+              vendor.mkdir(exist_ok=True)
+              (vendor / "mathjax-tex-svg.js").write_bytes(bundle)
+              shutil.copyfile(assets / "math.js", js_dir / "math.js")
+              scripts = list(data.get("extra_javascript", []))
+              for script_path in ("javascripts/math.js", "javascripts/vendor/mathjax-tex-svg.js"):
+                  if script_path not in scripts:
+                      scripts.append(script_path)
+              data["extra_javascript"] = scripts
+              extensions = list(data.get("markdown_extensions", []))
+              if not any(
+                  (entry if isinstance(entry, str) else next(iter(entry))) == "pymdownx.arithmatex"
+                  for entry in extensions
+              ):
+                  extensions.append({"pymdownx.arithmatex": {"generic": True}})
+              data["markdown_extensions"] = extensions
+              print("math: MathJax 3.2.2 verified and served from the site; arithmatex enabled")
+          # Governance in plain sight (sub-doctrine 7.b): the governance corpus is published
+          # as its own section of every channel site -- and so as chapters of the book --
+          # copied at build time from its single source, never committed twice. Constitution
+          # first, as the order of authority; then the doctrines, the commandments, the bill
+          # of rights, and every standing subdoctrine. A title keeps no colon, because the
+          # book's nav reader ends a title at the first one.
+          governance_source = "src/vibey_tools/gh/docs"
+          if governance_source:
+              source = pathlib.Path(governance_source)
+              names = ["constitution.md", "doctrines.md", "commandments.md", "bill-of-rights.md"]
+              # Only plainly named documents are published: the name becomes a URL path and a
+              # link on every page, so nothing that could carry markup or quotes gets through.
+              names += sorted(
+                  p.name for p in source.glob("sd-*.md") if re.fullmatch(r"sd-[a-z0-9][a-z0-9-]*\.md", p.name)
+              )
+              published = docs_dir / "governance"
+              entries = []
+              for page in names:
+                  origin = source / page
+                  # A configured governance document that is missing is a broken publish,
+                  # never a silent skip: the law would vanish from the site unnoticed.
+                  if not origin.is_file():
+                      raise SystemExit(f"governance source is missing {origin}")
+                  published.mkdir(exist_ok=True)
+                  shutil.copyfile(origin, published / page)
+                  heading = next(
+                      (line[2:].strip() for line in origin.read_text().splitlines() if line.startswith("# ")),
+                      page.removesuffix(".md"),
+                  )
+                  entries.append({heading.replace(":", " —"): f"governance/{page}"})
+              if entries:
+                  data["nav"] = [*data.get("nav", []), {"Governance": entries}]
+              print(f"governance: published {len(entries)} document(s) from {governance_source}")
           data.setdefault("theme", "mkdocs")
           for key, asset in (
               ("extra_css", "stylesheets/vibey.css"),
@@ -288,7 +353,11 @@ jobs:
               if asset not in values:
                   values.append(asset)
               data[key] = values
-          pathlib.Path(".properdocs-channel.yml").write_text(yaml.safe_dump(data, sort_keys=False))
+          # Unicode kept and lines never folded: the book reads chapter titles from this file line
+          # by line, and an escaped "\u2014" or a folded title would become the chapter's name.
+          pathlib.Path(".properdocs-channel.yml").write_text(
+              yaml.safe_dump(data, sort_keys=False, allow_unicode=True, width=1_000_000)
+          )
           PY
           properdocs build --strict --config-file .properdocs-channel.yml --site-dir channel-site
           # Search must demonstrably work at build time. A site can build --strict with a
@@ -309,6 +378,16 @@ jobs:
               sys.exit("search smoke: the index contains zero documents")
           print(f"search smoke: {len(docs)} documents indexed, all assets present")
           SMOKE
+          # The index rides the site so the published law is searchable and
+          # integrity-checkable offline. Shipped after the build, which cleans the site
+          # directory first. Absent index, nothing ships; the check that enforces its
+          # presence lives with the repository, not here.
+          if [ -f "src/vibey_tools/gh/corpus-index.json" ]; then
+            cp "src/vibey_tools/gh/corpus-index.json" channel-site/corpus-index.json
+            echo "corpus index shipped with the channel site"
+          else
+            echo "no corpus index at src/vibey_tools/gh/corpus-index.json — nothing to ship"
+          fi
           # The documentation as artifacts on the site itself: the doctrine's end
           # results are a KDP-shaped book and a journal-shaped paper, and a reader
           # should download them from the docs they mirror — not hunt a release page.
@@ -317,14 +396,24 @@ jobs:
             # vibey-gh. Observed as exit 127 on the first dogfooded deploy — the guard
             # printed its intent and the command did not exist. Self-hosting installs
             # from source, adopters install the published package.
-            if grep -qE '^name = "vibey-gh"' pyproject.toml 2>/dev/null; then
-              python -m pip install --quiet -e .
+            # Where this repository keeps its own copy of the tooling, from
+            # `[install] self_source` in .vibey-gh.toml -- a DECLARED path, never a search.
+            # Searching the tree for a pyproject declaring `name = "vibey-gh"` would read a
+            # pull request's own files: a branch that adds one anywhere gets it installed
+            # here, with this job's permissions, and hands the provenance gate a tool of the
+            # contributor's choosing. The path is verified below before anything runs.
+            self="src/vibey_tools/gh"
+            # Verified, not assumed: a misconfigured path must fall back to the published
+            # release rather than install whatever happens to sit there.
+            grep -qE '^name = "vibey-gh"' "$self/pyproject.toml" 2>/dev/null || self=""
+            if [ -n "$self" ]; then
+              python -m pip install --quiet -e "$self"
             else
-              python -m pip install --quiet "vibey-gh==1.72.0"
+              python -m pip install --quiet "vibey-gh==1.73.0"
             fi
           fi
           if [ "true" = "true" ]; then
-            AUTHOR=''
+            AUTHOR='Adam Matthew Steinberger'
             vibey-gh book --site-dir channel-site --config-file .properdocs-channel.yml \
               --output-dir book-out \
               --title "${GITHUB_REPOSITORY#*/} — The Documentation" \
@@ -353,7 +442,7 @@ jobs:
           fi
           if [ "true" = "true" ] && [ -f docs/paper.md ] \
               && vibey-gh paper --help >/dev/null 2>&1; then
-            AUTHOR=''
+            AUTHOR='Adam Matthew Steinberger'
             vibey-gh paper --author "${AUTHOR:-${GITHUB_REPOSITORY%%/*}}" \
               --output paper-out/paper.tex
             # Tectonic: one pinned, checksummed binary — a full TeX Live would cost
@@ -373,7 +462,7 @@ jobs:
           PREVIEW_INDEX=false \
           SEO_FAVICON='📘' SEO_OG_IMAGE='' \
           SEO_TWITTER_SITE='' SEO_TWITTER_CREATOR='' \
-          SEO_KEYWORDS='' SEO_AUTHOR='' \
+          SEO_KEYWORDS='' SEO_AUTHOR='Adam Matthew Steinberger' \
           FUNDING_BITCOIN='' FUNDING_MONERO='' \
           FUNDING_ETHEREUM='' FUNDING_LABEL='Support this work' \
           SEO_THEME_COLOR='#080b14' SEO_LOCALE='en_US' \
@@ -542,6 +631,29 @@ jobs:
               if funding_html and "</body>" in text:
                   text = text.replace("</body>", funding_html + "</body>")
               path.write_text(text.replace("</head>", metadata + "</head>"))
+          # The documentation's downloadable forms, substituted into the theme script from
+          # what THIS deploy actually produced -- never from configuration -- so no page
+          # ever links a file that was not built. Always substituted: an empty object is
+          # "nothing to show", and an unreplaced placeholder would be a syntax error.
+          site = pathlib.Path("channel-site")
+          surfaces = {
+              "paper_pdf": (site / "paper.pdf").is_file(),
+              "paper_html": (site / "paper" / "index.html").is_file(),
+              "book_epub": (site / "book.epub").is_file(),
+              "book_pdf": (site / "book.pdf").is_file(),
+              "book_print": (site / "book-print.html").is_file(),
+              "governance": sorted(
+                  p.parent.name
+                  for p in (site / "governance").glob("*/index.html")
+                  if re.fullmatch(r"[a-z0-9][a-z0-9-]*", p.parent.name)
+              ),
+          }
+          script = site / "javascripts" / "channel.js"
+          if script.is_file():
+              # Substituted into a single-quoted JavaScript string: escape what could end it.
+              encoded = json.dumps(surfaces).replace("\\", "\\\\").replace("'", "\\'").replace("</", "<\\/")
+              script.write_text(script.read_text().replace("__DOC_SURFACES__", encoded))
+          print("surfaces on this channel: " + ", ".join(k for k, v in surfaces.items() if v))
           PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -798,6 +910,12 @@ jobs:
               .card h2 { margin: auto 0 10px; font-size: clamp(1.65rem, 3vw, 2.25rem); letter-spacing: -.045em; }
               .card p { max-width: 420px; margin: 0; color: var(--muted); line-height: 1.55; }
               .branch { margin-top: 20px; color: #737991; font: 600 .76rem ui-monospace, SFMono-Regular, Menlo, monospace; }
+              .surfaces { margin-top: 34px; color: var(--muted); font-size: .95rem; line-height: 1.75; }
+              .surfaces h2 { margin: 0 0 6px; color: var(--ink); font-size: 1.05rem; letter-spacing: -.02em; }
+              .surfaces p { margin: 0; }
+              .surfaces strong { color: #a9aec1; font-weight: 650; }
+              .surfaces a { color: var(--ink); font-weight: 650; text-decoration: underline dotted; }
+              .surfaces a:hover { color: var(--cyan); }
               footer {
                 display: flex;
                 padding-top: 38px;
@@ -860,9 +978,10 @@ jobs:
                   <span class="branch">branch / develop</span>
                 </a>
               </section>
+              __SURFACES_HTML__
               <footer>
                 <span>Provenance · <strong>__REPOSITORY__@__SHORT_SHA__</strong> · branch / __RELEASE_BRANCH__ · channel / __RELEASE_CHANNEL__</span>
-                <span>Made with ❤️ by <a href="https://adammatthewsteinberger.github.io/vibey/">Vibey</a>, Developed by <a href="https://vibewithadam.matthewsteinberger.com/">Adam Matthew Steinberger</a> (<a href="https://github.com/adammatthewsteinberger/">@adammatthewsteinberger</a>).</span>
+                <span>Made with ❤️ by <a href="https://the-vibey-project.github.io/vibey/">Vibey</a>, Developed by <a href="https://vibewithadam.matthewsteinberger.com/">Adam Matthew Steinberger</a> (<a href="https://github.com/adammatthewsteinberger/">@adammatthewsteinberger</a>).</span>
               </footer>
             </main>
           </body>
@@ -891,7 +1010,54 @@ jobs:
               f"gtag('config', '{ga_id}');\n"
               "</script>"
           ) if ga_id else ""
+          # The paper and the book, per channel, from the files that were actually
+          # deployed under pages/<channel>/ -- present on the chooser only when they exist.
+          def surface_line(label, channel):
+              base = pathlib.Path("pages") / channel
+              paper = [
+                  (name, href)
+                  for name, href, file in (
+                      ("PDF", f"{channel}/paper.pdf", "paper.pdf"),
+                      ("HTML", f"{channel}/paper/", "paper/index.html"),
+                  )
+                  if (base / file).is_file()
+              ]
+              book = [
+                  (name, href)
+                  for name, href, file in (
+                      ("PDF", f"{channel}/book.pdf", "book.pdf"),
+                      ("EPUB", f"{channel}/book.epub", "book.epub"),
+                      ("print HTML", f"{channel}/book-print.html", "book-print.html"),
+                  )
+                  if (base / file).is_file()
+              ]
+              governance = (base / "governance" / "constitution" / "index.html").is_file()
+              if not paper and not book and not governance:
+                  return ""
+              links = lambda items: " · ".join(f'<a href="{href}">{name}</a>' for name, href in items)
+              parts = []
+              if paper:
+                  parts.append("<strong>Research paper</strong> " + links(paper))
+              if book:
+                  parts.append("<strong>The book</strong> " + links(book))
+              if governance:
+                  parts.append(f'<strong>Governance</strong> <a href="{channel}/governance/constitution/">the Constitution, the doctrines and the rights</a>')
+              return f"<p>{label}: " + " — ".join(parts) + "</p>"
+
+          surface_lines = [
+              line
+              for line in (
+                  surface_line("Production", "main"),
+                  surface_line("Preview", "develop"),
+              )
+              if line
+          ]
+          surfaces_html = (
+              '<section class="surfaces" aria-label="Read it offline">'
+              "<h2>Read it offline</h2>" + "".join(surface_lines) + "</section>"
+          ) if surface_lines else ""
           values = {
+              "__SURFACES_HTML__": surfaces_html,
               "__REPOSITORY_NAME__": os.environ["REPOSITORY_NAME"],
               "__REPOSITORY__": os.environ["GITHUB_REPOSITORY"],
               "__REPOSITORY_URL__": os.environ["REPOSITORY_URL"],
@@ -936,6 +1102,15 @@ jobs:
           </sitemapindex>
           EOF
           fi
+          # The paper and the book on the LLM-facing index as well, only where they exist.
+          SURFACE_LINES=""
+          [ -f pages/main/paper.pdf ] && SURFACE_LINES="${SURFACE_LINES}- [Research paper (PDF)](${PAGES_ROOT}main/paper.pdf)"$'\n'
+          [ -f pages/main/paper/index.html ] && SURFACE_LINES="${SURFACE_LINES}- [Research paper (HTML)](${PAGES_ROOT}main/paper/)"$'\n'
+          [ -f pages/main/book.pdf ] && SURFACE_LINES="${SURFACE_LINES}- [The book (PDF)](${PAGES_ROOT}main/book.pdf)"$'\n'
+          [ -f pages/main/book.epub ] && SURFACE_LINES="${SURFACE_LINES}- [The book (EPUB)](${PAGES_ROOT}main/book.epub)"$'\n'
+          [ -f pages/main/book-print.html ] && SURFACE_LINES="${SURFACE_LINES}- [The book (print HTML)](${PAGES_ROOT}main/book-print.html)"$'\n'
+          [ -f pages/main/governance/constitution/index.html ] && SURFACE_LINES="${SURFACE_LINES}- [Governance: the Constitution, the doctrines, the commandments, the bill of rights](${PAGES_ROOT}main/governance/constitution/)"$'\n'
+          [ -f pages/main/corpus-index.json ] && SURFACE_LINES="${SURFACE_LINES}- [Governance corpus index](${PAGES_ROOT}main/corpus-index.json)"$'\n'
           if true; then
             cat > pages/llms.txt <<EOF
           # ${NAME}
@@ -946,7 +1121,7 @@ jobs:
           - [Preview documentation](${PAGES_ROOT}develop/)
           - [Source repository](https://github.com/${GITHUB_REPOSITORY})
           - [Releases](https://github.com/${GITHUB_REPOSITORY}/releases)
-          - Provenance: ${GITHUB_REPOSITORY}@${{ needs.context.outputs.sha }}
+          ${SURFACE_LINES}- Provenance: ${GITHUB_REPOSITORY}@${{ needs.context.outputs.sha }}
           EOF
           fi
           if true; then
@@ -962,3 +1137,56 @@ jobs:
           path: pages
       - id: deploy
         uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
+
+  attach:
+    # The paper and the book as assets on the GitHub Release for this exact version: a
+    # site can be rebuilt or moved, a release asset is a permanent, versioned copy a
+    # reader can still find years later from the Releases page. Only on the release
+    # channel, only when GitHub Releases are on, and only when there is something to
+    # attach. Its own job so `contents: write` is granted here and nowhere else.
+    name: Attach the book and the paper to the GitHub Release
+    needs: [context, package, docs]
+    if: >-
+      true &&
+      (true || true) &&
+      needs.context.outputs.branch == 'main'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: docs-${{ needs.context.outputs.channel }}
+          path: channel-site
+      - name: Upload the documentation artifacts as release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v${{ needs.package.outputs.version }}
+        run: |
+          set -euo pipefail
+          present=()
+          for name in paper.pdf book.epub book.pdf book-print.html; do
+            if [ -s "channel-site/$name" ]; then
+              present+=("channel-site/$name")
+            fi
+          done
+          if [ "${#present[@]}" -eq 0 ]; then
+            echo "no paper or book artifact was produced on this deploy; nothing to attach"
+            exit 0
+          fi
+          # The GitHub Release is created by its own workflow from the same successful
+          # Release run; it is usually there long before the site finishes building, and
+          # this waits a bounded while for it rather than assuming an order.
+          for attempt in $(seq 1 20); do
+            if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              break
+            fi
+            if [ "$attempt" -eq 20 ]; then
+              echo "::warning::no GitHub Release $TAG appeared within 10 minutes; the artifacts remain on the documentation site"
+              exit 0
+            fi
+            sleep 30
+          done
+          gh release upload "$TAG" "${present[@]}" --clobber --repo "$GITHUB_REPOSITORY"
+          echo "attached to $TAG: ${present[*]}"

@@ -1,0 +1,9 @@
+{
+  "name": "signal-processing",
+  "version": "0.1.0",
+  "description": "Signal Processing: digital signal processing for software engineers — sampling, aliasing and quantization, the frequency domain and the FFT (including the windowing and leakage traps), filter design and the FIR/IIR trade-off, convolution and correlation, multirate processing, adaptive filtering and estimation, spectral analysis, audio and speech processing, RF and communications, image and video as 2D signals, the fixed-point and real-time implementation layer, and the classical-versus-learned convergence now reshaping audio DSP.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

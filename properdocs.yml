@@ -2,9 +2,9 @@ site_name: vibey
 site_description: >-
   A queue-based, six-phase conductor for autonomous software delivery on top of the *loop
   runners — spec interview, design, build, review, deploy. PostgreSQL-backed.
-site_url: https://adammatthewsteinberger.github.io/vibey/
-repo_url: https://github.com/adammatthewsteinberger/vibey
-repo_name: adammatthewsteinberger/vibey
+site_url: https://the-vibey-project.github.io/vibey/
+repo_url: https://github.com/the-vibey-project/vibey
+repo_name: the-vibey-project/vibey
 edit_uri: edit/main/docs/
 
 # ProperDocs, matching the rest of the family. `theme: mkdocs` because ProperDocs ships
@@ -43,20 +43,42 @@ nav:
   - Guides:
       - Kubernetes: guides/kubernetes.md
       - Greeter live demo: guides/greeter-live-demo.md
+  - Reference:
+      - CLI: reference/cli.md
+      - Configuration: reference/configuration.md
   - Architecture:
       - Decision records:
-          - "0001 — Orchestrate do not reimplement": architecture/decisions/0001-orchestrate-do-not-reimplement.md
-          - "0002 — Postgres not sqlite": architecture/decisions/0002-postgres-not-sqlite.md
-          - "0003 — Event sourced ledger": architecture/decisions/0003-event-sourced-ledger.md
-          - "0004 — No loss gate on handoff": architecture/decisions/0004-no-loss-gate-on-handoff.md
-          - "0005 — Smooth weighted round robin": architecture/decisions/0005-smooth-weighted-round-robin.md
-          - "0006 — Normalized effort ladder": architecture/decisions/0006-normalized-effort-ladder.md
-          - "0007 — Rotate at boundaries": architecture/decisions/0007-rotate-at-boundaries.md
-          - "0008 — Worktree isolation": architecture/decisions/0008-worktree-isolation.md
-          - "0009 — Human gates are parked jobs": architecture/decisions/0009-human-gates-are-parked-jobs.md
-          - "0010 — Review loopback routing": architecture/decisions/0010-review-loopback-routing.md
-          - "0011 — Agent surface provisioning": architecture/decisions/0011-agent-surface-provisioning.md
-          - "0012 — Deploy is a separate cli": architecture/decisions/0012-deploy-is-a-separate-cli.md
-          - "0013 — Deployment is a three phase stage set": architecture/decisions/0013-deployment-is-a-three-phase-stage-set.md
-          - "0014 — Optional visual design and deployment opt in": architecture/decisions/0014-optional-visual-design-and-deployment-opt-in.md
-          - "0015 — Qwenloop standby": architecture/decisions/0015-qwenloop-standby.md
+          - "0001 — Orchestrate the `*loop` runners; do not reimplement them": architecture/decisions/0001-orchestrate-do-not-reimplement.md
+          - "0002 — PostgreSQL, not SQLite, for the queue and ledger": architecture/decisions/0002-postgres-not-sqlite.md
+          - "0003 — An event-sourced ledger is the conversation's source of truth": architecture/decisions/0003-event-sourced-ledger.md
+          - "0004 — Handoffs are gated by a deterministic no-loss predicate": architecture/decisions/0004-no-loss-gate-on-handoff.md
+          - "0005 — Smooth weighted round robin, not modulo rotation": architecture/decisions/0005-smooth-weighted-round-robin.md
+          - "0006 — A normalized effort ladder with saturating per-engine projection": architecture/decisions/0006-normalized-effort-ladder.md
+          - "0007 — Rotate at boundaries, never mid-turn": architecture/decisions/0007-rotate-at-boundaries.md
+          - "0008 — Git worktree per work item; containers for real isolation": architecture/decisions/0008-worktree-isolation.md
+          - "0009 — Human gates park jobs; they never block workers": architecture/decisions/0009-human-gates-are-parked-jobs.md
+          - "0010 — Review loops back to design by default, to build on the fast path": architecture/decisions/0010-review-loopback-routing.md
+          - "0011 — One source of truth, materialized into every engine's guidance files": architecture/decisions/0011-agent-surface-provisioning.md
+          - "0012 — Deployment is a separate CLI built on `azure-bootstrap`": architecture/decisions/0012-deploy-is-a-separate-cli.md
+          - "0013 — Deployment is a three-phase stage set in the core lifecycle": architecture/decisions/0013-deployment-is-a-three-phase-stage-set.md
+          - "0014 — Optional visual design and deployment opt-in gates": architecture/decisions/0014-optional-visual-design-and-deployment-opt-in.md
+          - "0015 — qwenloop is an opt-in local engine — a standby tier for BUILD, the sovereign provider for DESIGN": architecture/decisions/0015-qwenloop-standby.md
+          - "0016 — Code lives in classes, and every class has an interface beside it": architecture/decisions/0016-classes-behind-interfaces.md
+          - "0017 — If the family already does it, the family does it here": architecture/decisions/0017-dogfood-the-family-first.md
+          - "0018 — If it can be declared in the repository, it is declared in the repository": architecture/decisions/0018-everything-as-code.md
+          - "0019 — Vibey is installable wherever its users already are": architecture/decisions/0019-installable-wherever-its-users-are.md
+          - "0020 — A governing rule belongs in the canon, ratified, or it is not a rule": architecture/decisions/0020-governing-rules-are-ratified-subdoctrines.md
+          - "0021 — One tree, history preserved — the family is absorbed as subtrees in a uv workspace": architecture/decisions/0021-one-tree-history-preserved.md
+          - "0022 — An absorbed package keeps every gate it was already held to": architecture/decisions/0022-absorbed-packages-keep-their-own-gates.md
+          - "0023 — Four layers, four floors — 100% branch coverage per layer, each its own gate": architecture/decisions/0023-four-layers-four-floors.md
+          - "0024 — Every bounded ladder ends in a park that can grant more": architecture/decisions/0024-every-bounded-ladder-parks-with-a-grant.md
+          - "0025 — Kubernetes — a chart, KEDA on claimable work, and an operator that never grows its own logic": architecture/decisions/0025-kubernetes-operator-crd-keda.md
+          - "0026 — tini is PID 1, and the SIGTERM latch is armed before the first import": architecture/decisions/0026-tini-pid1-and-the-sigterm-latch.md
+          - "0027 — A sovereign DESIGN provider — phase one runs without paid credit": architecture/decisions/0027-sovereign-design-provider.md
+          - "0028 — vibey-gh owns provenance and release; release-please is retired": architecture/decisions/0028-vibey-gh-owns-release-and-provenance.md
+          - "0029 — Integrates are serialized by a Postgres advisory lock, and contention is a Defer": architecture/decisions/0029-integrate-serialized-by-advisory-lock.md
+          - "0030 — The live harness has two modes — faked by default, paid by explicit choice": architecture/decisions/0030-two-mode-live-harness.md
+          - "0031 — Skills context is a packet compiled over a process boundary, shadow before inject": architecture/decisions/0031-skills-context-packets-over-a-process-boundary.md
+          - "0032 — The documentation ships as a research paper and a book, findable everywhere and built to outlive the site": architecture/decisions/0032-the-docs-ship-as-a-paper-and-a-book.md
+          - "0033 — Governance in plain sight — the law is as easy to find and as visible as possible, on every human-readable surface": architecture/decisions/0033-governance-in-plain-sight.md
+  - Research paper: paper.md

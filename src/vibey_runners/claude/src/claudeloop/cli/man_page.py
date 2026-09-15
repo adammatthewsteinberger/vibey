@@ -1,4 +1,4 @@
-# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """Manual-page style help for the root ``claudeloop`` command.
 
 PyPI users and packagers often expect ``--help`` to read like ``man 1`` output.
@@ -10,8 +10,8 @@ from __future__ import annotations
 
 from claudeloop import __version__
 
-_DOCS = "https://adammatthewsteinberger.github.io/claudeloop/"
-_REPO = "https://github.com/adammatthewsteinberger/claudeloop"
+_DOCS = "https://the-vibey-project.github.io/claudeloop/"
+_REPO = "https://github.com/the-vibey-project/claudeloop"
 _PYPI = "https://pypi.org/project/claudeloop/"
 _TESTPYPI = "https://test.pypi.org/project/claudeloop/"
 

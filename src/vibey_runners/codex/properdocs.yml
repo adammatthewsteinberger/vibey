@@ -1,7 +1,7 @@
 site_name: codexloop
 site_description: Autonomous OpenAI Codex session runner
-site_url: https://adammatthewsteinberger.github.io/codexloop/
-repo_url: https://github.com/adammatthewsteinberger/codexloop
+site_url: https://the-vibey-project.github.io/codexloop/
+repo_url: https://github.com/the-vibey-project/codexloop
 repo_name: adammatthewsteinberger/codexloop
 # ProperDocs, matching vibey-gh and vibey-skills. `theme: mkdocs` rather than Material:
 # ProperDocs ships its own theme package and the Material palette/features block has no

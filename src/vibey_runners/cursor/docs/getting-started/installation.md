@@ -12,7 +12,7 @@ pip install cursorloop
 From a clone:
 
 ```bash
-git clone https://github.com/adammatthewsteinberger/cursorloop.git
+git clone https://github.com/the-vibey-project/cursorloop.git
 cd cursorloop
 python3 -m venv .venv
 source .venv/bin/activate

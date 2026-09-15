@@ -1,0 +1,9 @@
+{
+  "name": "algorithms-deep-dive",
+  "version": "0.1.0",
+  "description": "Algorithms Deep Dive: choosing and reasoning about algorithms and data structures, the machine model that makes asymptotic analysis lie (cache, branches, allocation, SIMD), the core data structure families, hash tables and modern probing, trees and the B-tree/LSM storage divide, sorting as it is actually implemented today, searching and indexing, graphs, strings, dynamic programming and amortization, probabilistic and streaming structures, vector and similarity search, concurrent data structures, and the measurement discipline that separates real optimization from folklore.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

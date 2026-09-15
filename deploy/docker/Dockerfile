@@ -35,23 +35,46 @@ ENV UV_COMPILE_BYTECODE=1 \
 # Dependency layer first: the lockfile changes far less often than source,
 # so this caches across almost every rebuild.
 COPY pyproject.toml uv.lock README.md ./
+# vibey-skills is a workspace member now, not a PyPI download, so uv has to be able to
+# BUILD it in this layer -- without it the sync fails outright with "Distribution not
+# found at: .../src/vibey_tools/skills". Only this one member is needed: the runners and
+# the other tools are not dependencies of `vibey[operator,skills]`, so uv never looks for
+# them. Copying the subtree whole rather than cherry-picking its manifest is deliberate;
+# its wheel force-includes plugins/ and .claude-plugin/, and a narrower copy silently rots
+# the moment that list grows.
+COPY src/vibey_tools/skills/ ./src/vibey_tools/skills/
 # --extra operator: the same image serves the worker and the operator
 # Deployment, so kopf has to be present. --extra skills makes the optional
 # context compiler available when a VibeyProject enables it; its process is
 # never started for projects that leave the feature off.
 RUN uv sync --frozen --no-install-project --no-dev --extra operator --extra skills
 
-COPY src/ ./src/
+# src/vibey only. This was `COPY src/ ./src/`, which already shipped five runner subtrees
+# into a runtime image that cannot execute them; with three tools absorbed as well it
+# became roughly 160 MB of tests, docs and marketplace Markdown in the layer.
+COPY src/vibey/ ./src/vibey/
 COPY migrations/ ./migrations/
 RUN uv sync --frozen --no-dev --extra operator --extra skills
 
 
 FROM python:3.12-slim-bookworm AS runtime
 
+# tini is here for one reason, and it is not tidiness. Linux discards a signal sent to
+# PID 1 while its disposition is still SIG_DFL, so whatever runs as PID 1 must have its
+# handlers installed before the orchestrator can possibly signal it. A Python process
+# cannot meet that bar: interpreter start and imports take hundreds of milliseconds on a
+# cold container, and measured on minikube a pod was deleted ~600ms after its container
+# started -- inside that window. The signal was not delivered late, it was discarded, and
+# the worker then sat out its full 7200s grace period claiming jobs nobody wanted.
+#
+# tini is ready in microseconds and forwards to the child, which turns an unwinnable race
+# into an ordinary one: SIGTERM during boot terminates a worker that has claimed nothing,
+# which is both correct and prompt; SIGTERM after boot is drained gracefully.
+#
 # Git is independently a genuine runtime dependency: BUILD phase work happens
 # in real git worktrees the worker creates itself.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends git ca-certificates \
+    && apt-get install -y --no-install-recommends git ca-certificates tini \
     && rm -rf /var/lib/apt/lists/*
 
 # python:slim ships a system pip that this image never uses -- everything
@@ -83,5 +106,7 @@ USER vibey
 # No default subcommand: the chart's worker and server Deployments supply
 # their own args, and an image that silently starts a worker is a footgun
 # when someone runs it just to inspect the filesystem.
-ENTRYPOINT ["vibey"]
+# `-g` forwards to the whole process group, so an engine subprocess the worker started is
+# signalled too rather than being orphaned onto init.
+ENTRYPOINT ["/usr/bin/tini", "-g", "--", "vibey"]
 CMD ["--help"]

@@ -1,5 +1,11 @@
 # Runbook: plan-drift reconciliation — a control loop that keeps bots on plan
 
+> **Status (2026-09-15):** not started, and unblocked at the vibey altitude:
+> 05's kopf operator and `VibeyProject` CRD landed (#76, ADR-0025), so items
+> 1–5 can begin. Phase 0 has not started — `domain/spec.py`'s `Constraint` is
+> still `text` + `kind` (hard/soft), with no predicate. Runner-altitude items
+> wait on 16.
+
 ## Goal
 
 Apply Kubernetes' reconciliation model to autonomous delivery. A
@@ -8,15 +14,18 @@ against **observed state** (what the bots actually did), names the
 divergence, and takes bounded corrective action to bring the system back
 to the plan.
 
-Delivered as a kopf loop in **all five repos**, each at its own altitude:
+Delivered as a kopf loop in **all six packages of this repository**
+(vibey plus the five runners, now uv workspace members — ADR-0021), each at
+its own altitude:
 
-| Repo | Desired state | Observed state | Altitude |
+| Package | Desired state | Observed state | Altitude |
 |---|---|---|---|
 | `vibey` | accepted `DesignSpec` + `WorkPlan` + phase protocol | ledger, `job` table, worktree git history, artifacts | a project across six phases |
 | `claudeloop` | the plan file handed to the run + its run contract | own `events.jsonl`, `state.json`, rundir | one autonomous session |
 | `codexloop` | " | " | " |
 | `cursorloop` | " | " | " |
 | `agyloop` | " | " | " |
+| `qwenloop` | " | " | " |
 
 Two altitudes, one pattern. vibey answers "is this *project* still
 building what was accepted?"; each runner answers "is this *session*
@@ -98,7 +107,7 @@ enforcing constraints it cannot actually evaluate.
   marginally, or a completion claim whose ledger shows no corresponding
   work.
 
-### runner altitude (each *loop repo)
+### runner altitude (each *loop runner)
 
 - **Prompt drift** — turns spent on work the plan file does not contain.
 - **Turn-budget drift** — turns burned without advancing any plan item.
@@ -134,13 +143,16 @@ model judgment, that is a *budgeted, rate-limited job* the loop enqueues
    snapshot, return findings. Stdlib only, no I/O, no async — so it is
    property-testable and identical across replays. This is the piece that
    must be right; kopf is delivery.
-2. **kopf timer per CR.** `@kopf.timer` on `VibeyProject` (05's CRD) and
+2. **kopf timer per CR.** `@kopf.timer` on `VibeyProject` (05's CRD,
+   which already runs a 15 s reconcile timer in
+   `infrastructure/operator/handlers.py`) and
    on each runner's own run CR. The timer gathers the observation
    snapshot, calls the pure detector, writes conditions, and applies at
    most one rung.
 3. **Conditions and Events.** A shared condition vocabulary across all
-   five repos — `PlanDrift`, with `reason` drawn from the taxonomy above —
-   so one dashboard reads every repo. Divergent vocabularies across five
+   six packages — `PlanDrift`, with `reason` drawn from the taxonomy
+   above, extending the CRD's existing `Ready`/`Parked` conditions — so
+   one dashboard reads every package. Divergent vocabularies across six
    implementations is the predictable failure; a conformance suite pins
    it, the same way the engine conformance suite pins adapter behavior.
 4. **One write path.** Corrective actions call the same application
@@ -172,10 +184,12 @@ model judgment, that is a *budgeted, rate-limited job* the loop enqueues
 3. Observation snapshot assembler in `application/` (ledger + jobs + git).
 4. kopf timer on `VibeyProject`; conditions + Events; `observe` only.
 5. Action ladder rungs 2–5 behind `driftPolicy`, promoted one at a time.
-6. Runner-altitude detector in each of the four *loop repos (their own
-   `domain/`, their own coverage budget).
-7. Shared condition vocabulary + a cross-repo conformance suite.
-8. `docs/guides/drift-reconciliation.md` in each repo.
+6. Runner-altitude detector in each of the five runners (their own
+   `domain/` under `src/vibey_runners/<runner>/`, their own coverage
+   budget per ADR-0022).
+7. Shared condition vocabulary + a cross-package conformance suite.
+8. `docs/guides/drift-reconciliation.md`, plus a section in each runner's
+   docs.
 
 ## Verification
 
@@ -189,11 +203,13 @@ model judgment, that is a *budgeted, rate-limited job* the loop enqueues
 - Measured false-positive rate per drift kind over a full greeter run,
   recorded as evidence before any kind is promoted past `observe`.
 - One runner-altitude drift (verdict drift: "done" with plan items
-  unaddressed) caught in a real session in each of the four repos.
+  unaddressed) caught in a real session in each of the five runners.
 
 ## Needs from operator
 
-- 05's kopf operator and CRD landed first (this is a loop on top of it).
+- 05's kopf operator and CRD — landed (#76); the `PlanDrift` condition
+  extends the existing `Ready`/`Parked` vocabulary in
+  `deploy/helm/vibey/templates/crd-vibeyproject.yaml`.
 - 16's runner containers, for the runner-altitude loops.
 - A decision on the default `driftPolicy` ceiling in production values.
 
@@ -206,7 +222,7 @@ model judgment, that is a *budgeted, rate-limited job* the loop enqueues
   protects nothing.
 - **Reconciler cost.** The timer runs constantly and must stay cheap —
   DB queries and git, no model calls in the hot path.
-- **Five implementations diverging.** The conformance suite is not
+- **Six implementations diverging.** The conformance suite is not
   optional; without it the shared vocabulary is aspirational.
 - **Drift about drift.** The bounded action ladder is the whole mitigation.
   Resist every temptation to let the loop reason its way to a fix.

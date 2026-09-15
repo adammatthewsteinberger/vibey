@@ -1,0 +1,9 @@
+{
+  "name": "embedded-iot-controls",
+  "version": "0.1.0",
+  "description": "Embedded Systems & IoT Controls: silicon, memory, and peripherals; bare-metal, RTOS, and embedded Linux firmware models; C/C++/Rust; real-time concurrency and timing; firmware design patterns; industrial control and OT (PLC, fieldbus, OPC UA, unified namespace); control theory in firmware; connectivity (BLE, Thread, Matter, LoRaWAN, cellular, MQTT/CoAP/Sparkplug); cloud, fleet, and OTA lifecycle; device security and regulation (CRA, RED/EN 18031, IEC 62443, PSA); functional safety (IEC 61508, ISO 26262, DO-178C, IEC 62304); testing; and board bring-up.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

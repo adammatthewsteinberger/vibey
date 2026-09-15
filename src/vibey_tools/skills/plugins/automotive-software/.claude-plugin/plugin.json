@@ -1,0 +1,9 @@
+{
+  "name": "automotive-software",
+  "version": "0.2.0",
+  "description": "Automotive Software: what makes vehicle software different, E/E architecture and the shift to zonal and central compute, buses and networking (CAN and its details, Automotive Ethernet and service-oriented communication), AUTOSAR Classic and Adaptive, real-time scheduling, functional safety under ISO 26262 including ASIL determination and decomposition and SOTIF, cybersecurity under ISO/SAE 21434 and the UN R155 and R156 regulations, diagnostics, flashing and OTA, ADAS and autonomy, process and toolchain, testing, the vehicle domains, and supply chain reality.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

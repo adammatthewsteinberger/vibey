@@ -1,5 +1,8 @@
 # Front 1: Test parallelization and coverage unification — Evidence
 
+> **Status (2026-09-15):** historical record of PR #70 (2026-08-21). The hook
+> layout it describes has since changed: the test suite runs at pre-push only.
+
 ## Machine specification
 
 - **OS**: Darwin 25.6.0 (macOS), ARM64
@@ -194,6 +197,10 @@ Hook timing (3x consecutive, `pre-commit run --all-files`):
 - **Hooks in pre-commit**: ruff check, ruff-format, pytest (exactly 1 pytest invocation)
 - **Hooks moved to pre-push**: mypy, lint-imports, coverage gates, bandit, pip-audit
 
+> **Superseded (2026-09-15):** see `.pre-commit-config.yaml`. The parallel test
+> suite has since moved to the pre-push stage as well; the pre-commit stage is
+> ruff + ruff-format only.
+
 ### Protected file verification
 
 Command:
@@ -215,4 +222,5 @@ Result:
 
 ### CI duration
 
-[To be recorded from PR CI run]
+Not recorded. See `13-front1-validation.md` for the operator-measured gate
+cost (136 s for the unified coverage run plus four reports).

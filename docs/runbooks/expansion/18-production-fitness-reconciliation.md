@@ -1,5 +1,11 @@
 # Runbook: production-fitness reconciliation — is the delivered code actually production-grade?
 
+> **Status (2026-09-15):** not started — no meter registry, evaluator,
+> baseline artifact, or `Fitness` condition. `vibey doctor --cluster` (PR #74,
+> which also added dimensions to this runbook) is 05's in-cluster preflight,
+> not this loop. Waits on 17's reconcile machinery. The attribution line below
+> is corrected to the header `vibey-gh` already enforces.
+
 ## Goal
 
 A second kopf control loop, sibling to
@@ -12,7 +18,8 @@ and neither implies the other — code can match its plan exactly and still
 allocate unboundedly, N+1 every request, and cost three times what it
 should.
 
-Runs in all five repos on the same reconcile machinery as 17, and vibey
+Runs in every package of this repository (vibey and the five runners,
+uv workspace members per ADR-0021) on the same reconcile machinery as 17, and vibey
 dogfoods it on itself, since vibey is built by vibey.
 
 ## Why this one is not blocked on a Phase 0
@@ -107,8 +114,8 @@ failure mode for every "improve the codebase" bot ever built:
 | Debug logging & traceability | AST scan, log sampling, ledger-to-log round trip | an exception swallowed without a log; a line missing its correlation ids; a failed job whose causal chain cannot be reconstructed |
 | Surface parity | capability registry vs each surface's introspection | a capability reachable from the CLI but absent from the API, MCP, SDK, or emitting no webhook event |
 | Gate integrity | declared floors and scan configs vs baseline; suppression census | a coverage floor lowered; a new unjustified `# pragma: no cover`, `noqa`, `nosec`, or `type: ignore`; a path excluded from a scan |
-| Shared-library currency | installed vs latest `vibey-skills` / `vibey-bootstrap`; session manifests | a repo pinned to a stale release; an AI request issued without the current skills loaded |
-| Library-extraction candidates | cross-repo duplication scan | logic duplicated in 3+ repos that belongs in a shared library instead |
+| Shared-library currency | workspace pins of in-tree `vibey-skills` / `vibey-bootstrap`; session manifests | a package pinned to a range that excludes the in-tree release; an AI request issued without the current skills loaded |
+| Library-extraction candidates | cross-package duplication scan | logic duplicated in 3+ packages that belongs in a shared library instead |
 | Attribution | file header scan | produced code missing the vibey provenance line |
 
 ### Making the two soft-sounding dimensions checkable
@@ -155,26 +162,35 @@ Advisory, never actioned: whether an individual message is well-worded.
 
 Three related `must`s, all of which decay silently rather than break.
 
-**Currency.** Every repo in the family tracks the latest `vibey-skills`
-and, where it applies, `vibey-bootstrap`; and every AI request a run
-issues does so with the current skills loaded, not whatever was vendored
-months ago. The check is a version diff against the published release
-plus a per-session manifest recording which skills version was actually
+**Currency.** Every workspace member resolves `vibey-skills` and, where
+it applies, `vibey-bootstrap` from this repository (vibey declares
+`vibey-skills>=2.18,<3`, sourced from `src/vibey_tools/skills` via
+`tool.uv.sources`); and every AI request a run issues does so with the
+current skills loaded (`infrastructure/skills_context.py`, ADR-0031), not
+whatever was vendored months ago. The check is a pin-range diff against
+the in-tree version plus a per-session manifest recording which skills version was actually
 in play. A run that cannot name its skills version is itself a finding --
 "probably current" is not a measurement. Produced code that makes its own
 AI requests inherits the same rule: it references the skills library
 rather than reinventing prompts inline.
 
 **Extraction.** The loop also watches for logic that has appeared in
-three or more repos and belongs in a shared library instead. This runs at
-the family level, not per repo, and it is the one dimension whose finding
+three or more packages and belongs in a shared library instead. This runs
+at the repository level, not per package, and it is the one dimension whose finding
 is a *proposal* rather than a defect -- see the cadence note below.
 
 **Attribution.** Code this system produces carries a provenance line:
 
 ```
-made with love by vibey the auto-vibecoding machine by adam matthew steinberger
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 ```
+
+That is the exact header on line 1 of every Python file in `src/vibey`
+(229 characters, 233 UTF-8 bytes, compared byte for byte, which is why
+`pyproject.toml` exempts it from E501). `vibey-gh` already enforces it — the pre-push hook
+plus the `Provenance` workflow (`.github/workflows/provenance.yml`) over
+the `[fingerprint]` sources in `.vibey-gh.toml` — so the attribution scan
+reuses that check rather than defining a second string.
 
 This is a `must`, checked by a header scan, and it is a disclosure
 mechanism before it is a signature. Anyone reading, reviewing, or
@@ -240,10 +256,12 @@ The `must`: **for every capability, all five surfaces are present.**
   directional and stated as such.
 
 Runbook 12 makes this tractable rather than aspirational: the API is the
-root artifact, everything else is generated or derived from its OpenAPI
-schema, and a parity test already asserts every MCP tool maps to a
-documented API operation. This dimension generalizes that test to all
-five surfaces and, crucially, makes it **continuous** — 12 builds the
+root artifact and everything else is generated or derived from its
+OpenAPI schema. `vibey-gh` already carries such a parity test for its own
+capabilities (`vibey_gh/surfaces.py`, `test/test_surfaces.py`, over
+`mcp`/`api`/`cli`/`sdk`/`webhook`); the conductor has no API or MCP server
+yet, so 12 brings the same contract to it. This dimension generalizes that
+test to all five surfaces and, crucially, makes it **continuous** — 12 builds the
 surfaces once, this keeps them complete as capabilities land afterward.
 The capability registry is the application layer, which the API already
 mirrors 1:1.
@@ -319,20 +337,21 @@ judgement rather than by measurement.
    metrics-server, image size, docstring coverage, stale-reference scan,
    swallowed-exception AST scan, correlation-id sampling.
 5. Capability registry + per-surface introspection for the parity check
-   (generalizes 12's existing MCP-to-API parity test to all five).
+   (generalizes `vibey-gh`'s surface parity test to every package).
 6. Gate-integrity baseline: record declared floors, scan includes, and the
    suppression census; diff each cycle and require justifications.
 7. Currency probes for vibey-skills / vibey-bootstrap + a per-session
    skills-version manifest.
 8. Attribution header scan with an explicit skip list.
-9. Cross-repo extraction scan (family level).
-10. The weekly improvement-PR job, one scoped PR per repo, silent when
+9. Cross-package extraction scan (repository level).
+10. The weekly improvement-PR job, one scoped PR per package, silent when
     there is nothing worth proposing.
-5. kopf timer + `Fitness` condition + Events, at `record` only.
-6. Right-sizing recommendations for the chart's own resource requests.
-7. Ladder rungs behind `fitnessPolicy`, promoted one dimension at a time.
-8. The same loop in the four *loop repos, at their own altitude.
-9. `docs/guides/production-fitness.md` per repo.
+11. kopf timer + `Fitness` condition + Events, at `record` only.
+12. Right-sizing recommendations for the chart's own resource requests.
+13. Ladder rungs behind `fitnessPolicy`, promoted one dimension at a time.
+14. The same loop in the five runners, at their own altitude.
+15. `docs/guides/production-fitness.md`, plus a section in each runner's
+    docs.
 
 ## Verification
 
@@ -356,7 +375,7 @@ judgement rather than by measurement.
   a gate-integrity breach even though every CI check still passes.
 - A newly added, unjustified `# nosec` is reported; the same suppression
   with a written reason is not.
-- A repo pinned to a superseded vibey-skills release is reported, and a
+- A package pinned to a range that excludes the in-tree vibey-skills release is reported, and a
   run whose session manifest names no skills version is reported too.
 - Produced code missing the provenance line is reported; a file type on
   the explicit skip list is not.

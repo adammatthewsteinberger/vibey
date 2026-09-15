@@ -1,0 +1,233 @@
+# vibey-gh configuration for this marketplace.
+#
+# The tooling that used to live in tools/check_fingerprints.py, tools/next_version.py and
+# tools/dev_version.py is now the `vibey-gh` package. Same rules, one implementation, so
+# a fix reaches every repository that uses it rather than one copy of it.
+#
+# `fingerprint.text` and `fingerprint.trailer` are left at their defaults. Pin the exact
+# `vibey-gh` version everywhere it is installed (workflows, [dev] extra) rather than relying
+# on this — a floating specifier lets the defaults drift out from under this repository
+# with no warning, which is exactly what broke CI between 1.2.0 and 1.16.0.
+
+[fingerprint]
+# Files that CAN carry a header comment. Deliberately not plugins/**/*.md — those are the
+# product, verified byte-for-byte against the documents they were split from, and a header
+# would be both context noise and a diff against the source. The commit trailer covers
+# them instead, which is the whole reason the rule has two halves.
+sources = [
+  "tools/*.py",
+  "src/**/*.py",
+  "docs/*.py",
+  # Added when this package became a monorepo tenant: the vibey root fingerprints
+  # `src/**/*.py` across the whole tree, so a file stamped there but not here would be
+  # reported by one repository and not the other.
+  "tests/*.py",
+  ".github/workflows/*.yml",
+]
+
+[version]
+# BOTH sites, and they must never disagree: the CLI reports one and Claude Code reads the
+# other. The validator fails the build if they differ.
+files         = ["src/vibey_skills/__init__.py", ".claude-plugin/marketplace.json"]
+# The skills and the manifest are the product — a change here is what users receive.
+content_paths = ["plugins/", ".claude-plugin/marketplace.json"]
+# src/ alone is the packaging CLI: a fix, not new content. pyproject.toml counts with it
+# — it declares the dependencies and force-includes plugins/ into the wheel, so a change
+# there changes what an installed user gets. Left out, a dependency bump reads as "docs,
+# workflows, tooling" and the promotion publishes nothing, silently. That is exactly what
+# happened in vibey-bootstrap.
+code_paths    = ["src/", "pyproject.toml"]
+
+[install]
+# Every rendered template pins its own `pip install` to the exact vibey-gh version
+# currently installing, instead of a floating `pip install vibey-gh`. This is the fix for
+# the whole failure class that broke CI in the first place (see the top of this file):
+# `vibey-gh install` — never a hand-edit — is what advances the pin, so an upgrade is
+# always a visible, reviewed diff rather than something a runner's resolver decides on
+# its own between one push and the next.
+pin_version = true
+
+# conventional-commits.yml was excluded through 1.16.0: its "Check out trusted normalizer"
+# step installed this repo's own default branch, then called a `vibey-gh` CLI that was
+# never actually there — confirmed failing on PR #48 with "vibey-gh: command not found"
+# inside the msg-filter. Fixed upstream in 1.27.0 (same self-hosting detection
+# provenance.yml already used); re-adopted here now that it actually works.
+#
+# api-drift.yml no longer needs excluding: it was vibey-gh's own self-test (`pip install .`
+# then `import vibey_gh.surfaces`) shipped to every adopter, and upstream stopped shipping
+# it entirely — it is hand-authored in vibey-gh now, beside its `ci.yml`. Nothing to
+# exclude, so nothing is listed.
+#
+# release-repair.yml is adopted again. It was excluded because it watches for failures of
+# "GitHub Release" and spends an AI call diagnosing each, and github-release.yml used to
+# fail on most pushes to main. That stopped being true in 1.27.0: a push carrying no
+# version bump is a clean no-op now, so there is no recurring non-failure left to
+# "repair".
+#
+# release-surfaces.yml is adopted, and docs.yml is retired in the same change — the reason
+# it was excluded was that the two would fight over GitHub Pages, which is resolved by
+# there being only one of them. See [documentation].site_requirements below for what the
+# site build installs.
+#
+# codeql.yml runs "Analyze Python" only (CodeQL default setup, now switched off, also
+# scanned the "actions" language — that coverage is gone until vibey-gh's template adds
+# it). Both rulesets' required check was updated from "Analyze (python)" to
+# "Analyze Python" in the same change that installed this workflow.
+#
+# pr-automation.yml is configured below in [pr_automation]. "PR automation / gate" is a
+# required check on both rulesets.
+#
+# github-release.yml: through 1.26.0, this fired on every completed `Release` run on
+# main with no way to skip a push carrying no version bump — and most of this
+# repository's promotions are exactly that (docs- or tooling-only, per [version] above).
+# `vibey_gh.github_release.publish()` raised "refusing to move existing tag" whenever the
+# version file was unchanged, which was accepted here as a known, non-blocking failure
+# (not a required check) rather than declined outright, since release.yml's own
+# tag-triggered "github-release" job already creates a correct, artifact-carrying release
+# regardless. Fixed upstream in 1.27.0: a no-bump push is now a clean no-op
+# (`ReleaseResult(tag_created=False, release_created=False)`) rather than an error, gated
+# behind [github_release] require_new_version (left at its default `false` here — the
+# no-op is exactly the behavior this repository needs).
+# `.github/workflows/release-artifacts.yml` (hand-authored, not vibey-gh-managed) still
+# attaches build artifacts to whatever release github-release.yml creates, since
+# `vibey_gh.github_release.publish()` has no artifact-attachment capability at all.
+workflows = [
+  "merge-train.yml",
+  "promote-to-main.yml",
+  "provenance.yml",
+  "branch-intake.yml",
+  "automation-bootstrap.yml",
+  "codeql.yml",
+  "pr-automation.yml",
+  "github-release.yml",
+  "repository-profile.yml",
+  "conventional-commits.yml",
+  "release-repair.yml",
+  "release-surfaces.yml",
+]
+
+[pr_automation]
+# This repository's real workflow names, each confirmed to trigger on `pull_request` or
+# `pull_request_target` — `vibey-gh check` (1.27.0+) now validates this itself via
+# `check_scan_workflows()`, which is what caught the mistake below.
+#
+# The default also names "API drift (Cloud Agents OpenAPI)", vibey-gh's own self-test and
+# deliberately not installed here, and "Docs" — this repository's `docs.yml` is genuinely
+# named `Docs`, but it only triggers on `push: branches: [main]`, never on a pull
+# request, so it can never complete for one. Naming it here made `pr-automation.yml`'s
+# `evaluate` job wait forever, `state` never leave `pending`, and "PR automation / gate"
+# never post — which, once required on both rulesets, meant NO pull request could ever
+# merge. Confirmed live on PR #50 and #51 (the real develop -> main promotion, which had
+# to be admin-merged to unblock production) before `vibey-gh check --ci` on 1.27.0 caught
+# it outright: `pr_automation.scan_workflows names 'Docs' (.github/workflows/docs.yml),
+# which has no pull_request or pull_request_target trigger...`. The PR-time doc build
+# this repository actually cares about is the "Build docs (strict)" job inside `CI`,
+# already in this list.
+#
+# "Conventional Commits" is here for the mirror image of that mistake, which 1.31.0 fixed
+# upstream and this explicit list would otherwise have reintroduced. That workflow IS
+# installed here, and its `enforce` check counts toward the merge gate — but this list is
+# also what `pr-automation.yml` renders into its `workflow_run` trigger. Left out, it can
+# gate but never announce that it finished: the last scan to complete fires the final
+# evaluation, `enforce` completes after it, and nothing looks again. The pull request then
+# sits blocked with every check green, nothing failing and nothing to rerun, until the
+# six-hourly backstop. A check that gates has to belong to a workflow that can re-trigger.
+scan_workflows = ["CI", "Provenance", "CodeQL", "Conventional Commits"]
+
+[pr_automation.fallback]
+# Reviews with a local model when the paid path returns NO VERDICT AT ALL — an exhausted
+# ANTHROPIC_API_KEY, expired credentials, an unavailable model. That failure is why PRs
+# #50, #51 (the real develop -> main promotion), #52 and #54 all had to be admin-merged:
+# "PR automation / gate" is a required check on both rulesets, so a billing problem became
+# a hard stop on every pull request. It never overrides a review that actually ran, so
+# genuine findings are never discarded for a weaker opinion — the job requires the primary
+# to have produced no verdict at all, not merely to have failed.
+#
+# The verdict is deliberately narrower than the primary's. Ollama constrains decoding to
+# the schema, so the output SHAPE is guaranteed — a stronger guarantee than the path it
+# backs up — but the JUDGMENTS are not, and a 14B model will emit confident booleans it
+# cannot support. It assesses only what it can ground in the diff, reports the
+# documentation-contract fields as unevaluated, and the gate titles the result
+# "PR automation: gate (local fallback)" so a degraded verdict is never mistaken for a
+# full one.
+#
+# `trusted_only` is what makes this defensible on a PUBLIC repository. GitHub says
+# self-hosted runners should "almost never be used for public repositories" because any
+# user can open a pull request against them; excluding forks removes that. A fork pull
+# request falls through to the existing behaviour — a failed gate a human resolves. The
+# runner is also ephemeral (one job, then destroyed) and containerised, and the job holds
+# no secrets: it exists precisely because the key is unusable.
+#
+# Requires `ollama serve` plus the runner supervisor to be up on a machine registered with
+# the `vibey-local` label. When they are not, the job cannot be scheduled and behaviour
+# degrades to exactly what it was before — the correct fail-open direction.
+enabled      = true
+runner_label = "vibey-local"
+model        = "qwen2.5-coder:14b"
+trusted_only = true
+
+[repository_profile]
+description = "Agent Skills for vibe engineering — 644 evidence-grounded practitioner references as a Claude Code plugin marketplace"
+topics = [
+  "claude-code",
+  "agent-skills",
+  "plugin-marketplace",
+  "prompt-engineering",
+  "developer-tools",
+]
+# develop is the head of the promotion PR into main; auto-deleting it on merge would
+# delete the very branch the next promotion needs to exist.
+delete_branch_on_merge = false
+
+[branches]
+integration = "develop"
+release     = "main"
+
+[merge_train]
+owner           = "adammatthewsteinberger"
+trusted_authors = ["adammatthewsteinberger", "claude[bot]", "github-actions[bot]", "vibey[bot]"]
+
+[documentation]
+# The living-roadmap doctrine (vibey-gh#211) defaults require_roadmap to true. The
+# operator has twice declined roadmap drafts for this repository and owns the decision
+# on its shape; the deterministic presence check stays off until they write the roadmap
+# they want. The exact-head review still judges roadmap liveness on every head.
+require_roadmap = false
+# The doctrine's end results, published on the docs site itself.
+generate_book = true
+generate_paper = true
+
+# GA4 measurement id for the published docs site, rendered into release-surfaces.yml as
+# GA_ID. Public by nature -- it ships in the page source of every site that uses it.
+google_analytics_id = "G-M1TEEK5RMM"
+enabled = true
+# No narrative documentation contract is declared, which means none is enforced: every one
+# of `readme_sections`, `github_readme_sections`, `github_readme_min_words`,
+# `mermaid_terms` and `require_provenance` defaults to empty or off.
+#
+# Through 1.16.0 there was no choice — README.md had to carry vibey-gh-branded headings
+# (`## Why vibey-gh`, `## Security model`) and end with vibey-gh's own provenance
+# sentence, in the file a user opens to learn what *this* product is. 1.27.0 made that
+# configuration; this repository briefly kept declaring it anyway, which preserved the old
+# shape by hand after the requirement to have it was gone.
+#
+# This repository's product is a skills marketplace, not release tooling, and its README
+# should be free to say so. `required_files` (defaulted) still applies: those files
+# describe this project and make it navigable to an agent, which is a standard worth
+# keeping.
+# What the published-site build must install beyond ProperDocs itself. ProperDocs depends
+# on `properdocs` and its theme and on nothing this site declares, so every plugin and
+# markdown extension in `properdocs.yml` has to be named here or `properdocs build
+# --strict` fails on the first one it reaches — which is not a warning, it is the whole
+# docs channel not publishing.
+#
+# These three cover exactly what `properdocs.yml` asks for: `gen-files` and
+# `literate-nav` synthesise the skill-reference tree, and every `pymdownx.*` extension
+# comes from `pymdown-extensions`. The rest of that file — the `mkdocs` theme, `search`,
+# `admonition`, `attr_list`, `def_list`, `md_in_html`, `tables` — is built in and needs
+# nothing installed. Requires vibey-gh 1.28.0 or newer.
+site_requirements = [
+  "mkdocs-gen-files",
+  "mkdocs-literate-nav",
+  "pymdown-extensions",
+]

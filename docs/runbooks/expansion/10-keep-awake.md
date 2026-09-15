@@ -1,5 +1,8 @@
 # Runbook: keep-awake — desktops never sleep mid-run
 
+> **Status (2026-09-15):** not started — no `SleepInhibitorPort`, no
+> `infrastructure/power/`, no `--no-keep-awake` worker flag.
+
 ## Goal
 
 When vibey is conducting on a desktop/laptop, the machine must not idle-

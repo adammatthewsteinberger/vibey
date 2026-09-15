@@ -1,0 +1,9 @@
+{
+  "name": "machine-learning",
+  "version": "0.1.0",
+  "description": "Machine Learning: problem framing and when not to use ML, data work and leakage, the classical toolkit (gradient boosting, linear models, clustering), deep learning fundamentals and architectures (transformers, CNNs, diffusion), the PyTorch/JAX ecosystem and torch.compile, training at scale (DDP, FSDP, tensor/pipeline parallelism, mixed precision), fine-tuning and PEFT/LoRA, honest evaluation, debugging training, inference and serving (vLLM, SGLang, quantization, KV cache), MLOps and reproducibility, hardware and cost, and interpretability, fairness, and safety.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

@@ -56,11 +56,11 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/adammatthewsteinberger/claudeloop"
-Repository = "https://github.com/adammatthewsteinberger/claudeloop"
-Documentation = "https://adammatthewsteinberger.github.io/claudeloop/"
-Issues = "https://github.com/adammatthewsteinberger/claudeloop/issues"
-Changelog = "https://github.com/adammatthewsteinberger/claudeloop/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/the-vibey-project/claudeloop"
+Repository = "https://github.com/the-vibey-project/claudeloop"
+Documentation = "https://the-vibey-project.github.io/claudeloop/"
+Issues = "https://github.com/the-vibey-project/claudeloop/issues"
+Changelog = "https://github.com/the-vibey-project/claudeloop/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [

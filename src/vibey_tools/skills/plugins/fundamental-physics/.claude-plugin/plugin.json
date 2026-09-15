@@ -1,0 +1,9 @@
+{
+  "name": "fundamental-physics",
+  "version": "0.1.0",
+  "description": "Fundamental Physics: quantum mechanics, quantum field theory, the Standard Model, general relativity and astrophysics/cosmology as a single connected reference — the postulates and formalism of QM, path integrals and renormalization, the gauge structure and particle content of the Standard Model, special relativity and the Einstein field equations, black hole solutions and thermodynamics, gravitational waves, FLRW cosmology and ΛCDM, stellar structure and evolution, compact objects, the measurement problem and interpretations, the incompatibility of GR and QFT, and the anomalies that are currently live.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

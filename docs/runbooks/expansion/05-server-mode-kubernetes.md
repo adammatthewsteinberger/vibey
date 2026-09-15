@@ -1,5 +1,12 @@
 # Runbook: server mode — Kubernetes everywhere (minikube → AKS/EKS/GKE)
 
+> **Status (2026-09-15):** landed on minikube (PRs #73, #74, #76, 2026-08-21;
+> ADR-0025, ADR-0026) — image, Helm chart, KEDA `ScaledObject`, kopf operator
+> + `VibeyProject` CRD, `vibey doctor --cluster`, `docs/guides/kubernetes.md`.
+> Open: item 1 (engines in the image; see 16), the `server` Deployment
+> (depends on 12), item 6 (cloud presets), PodDisruptionBudget, and the paid
+> live and AKS/EKS/GKE verification runs.
+
 ## Goal
 
 vibey runs as a long-lived server deployment, not a MacBook process:
@@ -15,10 +22,21 @@ subscription login doesn't exist in a cluster.
   (`FOR UPDATE SKIP LOCKED`), leases + reaping, `LISTEN/NOTIFY`, per-kind
   leases, advisory-locked integrates — worker death is already survivable
   (idempotent replay). This is 90% of being cluster-ready.
-- Nothing is containerized; engines are installed as host CLIs; claudeloop
-  et al. currently authenticate via subscription login on the Mac.
-- `infrastructure/container/runtime.py` exists (container runtime helpers)
-  — check its scope before adding a second container path.
+- vibey ships as a two-stage, non-root image (`deploy/docker/Dockerfile`,
+  tini as PID 1 so SIGTERM reaches the worker's drain latch — ADR-0026) and
+  a Helm chart (`deploy/helm/vibey/`: worker Deployment, in-cluster
+  Postgres, KEDA `ScaledObject`, operator Deployment, `VibeyProject` CRD).
+  CI builds the image for amd64 + arm64 with four image contracts and runs
+  a minikube job with four cluster contracts (projectless worker parks,
+  in-cluster project is picked up, the `ScaledObject` reconciles against
+  real Postgres, a worker drains promptly on SIGTERM).
+- Engines are still host CLIs: the image copies `src/vibey` only and
+  carries no `*loop` binary, so in-cluster runs use `--provider scripted`.
+  claudeloop et al. still authenticate via subscription login on the Mac.
+- `infrastructure/container/runtime.py` holds container runtime helpers;
+  `infrastructure/cluster_preflight.py` backs `vibey doctor --cluster` and
+  already maps each of the four hosted-model engines (not qwenloop) to
+  the API-key environment variables it accepts.
 
 ## Design
 
@@ -40,46 +58,58 @@ subscription login doesn't exist in a cluster.
    Landed as a signal handler in the worker rather than a preStop hook: a
    preStop script cannot tell a running worker to stop claiming, and the
    drain has to be a property of the process, not of the pod spec.
-4. **kopf operator** (`deploy/operator/`): a `VibeyProject` CRD — spec
+4. **kopf operator** (landed at `src/vibey/infrastructure/operator/`, run
+   as `vibey operator`; decision logic in
+   `application/operator_projection.py`): a `VibeyProject` CRD — spec
    holds repo URL, budget caps, engine allow-list; the operator runs
    `vibey new`, watches phase, surfaces parks as CR status conditions +
    Kubernetes Events, and applies answers written into the CR
-   (`spec.answers`). Timers reap expired leases and re-run doctor sweeps.
-   AKS/EKS/GKE-specific bits (workload identity per cloud) live in values
-   presets: `values-aks.yaml`, `values-eks.yaml`, `values-gke.yaml`.
+   (`spec.answers`) through the same service `vibey answer` uses. A 15 s
+   level-triggered timer reconciles status. AKS/EKS/GKE-specific bits
+   (workload identity per cloud) are to live in values presets:
+   `values-aks.yaml`, `values-eks.yaml`, `values-gke.yaml`. These presets
+   do not exist yet; the header comment in `values.yaml` mentions them
+   ahead of their existence, and the Kubernetes guide says so.
 5. **Worktrees in-cluster**: a PVC per worker for git worktrees; repos
    cloned via deploy keys mounted as Secrets.
 6. **Keep-awake is a non-problem here** (10 covers desktops).
 
 ## Work items
 
-1. Engine API-key auth across the four runners (per-runner work items).
-2. Dockerfiles + CI image builds (multi-arch: arm64 + amd64).
+1. Engine API-key auth across the five runners (per-runner work items).
+   Open.
+2. Dockerfiles + CI image builds (multi-arch: arm64 + amd64). Done for
+   vibey (#73); engine images are 16.
 3. Helm chart + kind/minikube smoke test in CI (helm install → seed a
-   scripted-engine project → DONE local).
+   scripted-engine project → DONE local). Chart and minikube job done
+   (#73); the CI contracts stop at pickup, not DONE. No `server`
+   Deployment or PodDisruptionBudget yet.
 4. KEDA ScaledObject + scale test (enqueue 20 jobs → replicas rise → drain
-   → scale to zero).
+   → scale to zero). Done (#73); CI asserts reconcile and SIGTERM drain.
 5. kopf operator + CRD + park-to-condition flow + answer application.
    The same operator later carries the plan-drift reconcile loop --
    see `17-plan-drift-reconciliation.md`, which builds directly on this
-   CRD and its condition/Event plumbing.
+   CRD and its condition/Event plumbing. Done (#76).
 6. Cloud presets: AKS/EKS/GKE values + workload-identity wiring (reuses
-   workstream 03 tenants).
+   workstream 03 tenants). Open.
 7. `vibey doctor --cluster`: in-cluster preflight (DB, secrets, engines).
-8. Runbook doc: `docs/guides/kubernetes.md`.
+   Done (#74).
+8. Runbook doc: `docs/guides/kubernetes.md`. Done.
 
 ## Verification
 
 - minikube: `helm install` → full greeter run with scripted engines →
-  DONE, zero manual steps; KEDA scales 0→N→0 observed.
-- One paid live greeter on minikube with API-key claudeloop.
-- AKS + EKS + GKE: chart installs, a scripted-engine project completes on
+  DONE, zero manual steps; KEDA scales 0→N→0 observed. Partly done: the
+  CI minikube job proves install, pickup, reconcile and drain; a full run
+  to DONE is not in CI.
+- One paid live greeter on minikube with API-key claudeloop. Open.
+- AKS + EKS + GKE (open): chart installs, a scripted-engine project completes on
   each (managed Postgres), teardown clean.
 
 ## Needs from operator
 
-Docker/colima + minikube locally; the 03 cloud tenants; LLM API keys for
-API-key engine mode.
+The minikube path needs nothing new (CI runs it). Remaining: the 03 cloud
+tenants and LLM API keys for API-key engine mode.
 
 ## Risks
 

@@ -1,0 +1,130 @@
+#!/bin/bash
+#
+# Pre-commit hook for vibey-bootstrap
+# Runs code quality checks before allowing commit
+#
+# This hook runs:
+# 1. Black (code formatting)
+# 2. isort (import sorting)
+# 3. Ruff (linting)
+# 4. MyPy (type checking)
+# 5. Bandit (security checks)
+# 6. pip-audit (dependency security)
+# 7. pytest (tests with 85%+ coverage requirement)
+
+set -e
+
+echo "🔍 Running pre-commit checks..."
+echo ""
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Get Python executable
+if [ -f ".venv/Scripts/python.exe" ]; then
+    PYTHON=".venv/Scripts/python.exe"
+elif [ -f ".venv/bin/python" ]; then
+    PYTHON=".venv/bin/python"
+else
+    echo -e "${RED}❌ Virtual environment not found!${NC}"
+    echo "Please run: python -m venv .venv && .venv/Scripts/activate && pip install -e \".[dev]\""
+    exit 1
+fi
+
+# Function to run a check
+run_check() {
+    local name=$1
+    local command=$2
+
+    echo -e "${YELLOW}⏳ Running $name...${NC}"
+    if eval "$command"; then
+        echo -e "${GREEN}✅ $name passed${NC}"
+        echo ""
+        return 0
+    else
+        echo -e "${RED}❌ $name failed${NC}"
+        echo ""
+        return 1
+    fi
+}
+
+# Track overall status
+FAILED=0
+
+# 1. Black - Code formatting
+if ! run_check "Black (formatting)" "$PYTHON -m black --check vibey_bootstrap/ test/"; then
+    echo -e "${YELLOW}💡 Fix with: black vibey_bootstrap/ test/${NC}"
+    echo ""
+    FAILED=1
+fi
+
+# 2. isort - Import sorting
+if ! run_check "isort (import sorting)" "$PYTHON -m isort --check-only vibey_bootstrap/ test/"; then
+    echo -e "${YELLOW}💡 Fix with: isort vibey_bootstrap/ test/${NC}"
+    echo ""
+    FAILED=1
+fi
+
+# 3. Ruff - Linting
+if ! run_check "Ruff (linting)" "$PYTHON -m ruff check vibey_bootstrap/ test/"; then
+    echo -e "${YELLOW}💡 Fix with: ruff check --fix vibey_bootstrap/ test/${NC}"
+    echo ""
+    FAILED=1
+fi
+
+# 4. MyPy - Type checking
+if ! run_check "MyPy (type checking)" "$PYTHON -m mypy vibey_bootstrap/"; then
+    echo -e "${YELLOW}💡 Review type errors above${NC}"
+    echo ""
+    FAILED=1
+fi
+
+# 5. Bandit - Security checks
+if ! run_check "Bandit (security)" "$PYTHON -m bandit -r vibey_bootstrap/ -ll -q"; then
+    echo -e "${YELLOW}💡 Review security issues above${NC}"
+    echo ""
+    FAILED=1
+fi
+
+# 6. pip-audit - Dependency security (scan installed packages)
+if ! run_check "pip-audit (dependency security)" "$PYTHON -m pip_audit"; then
+    echo -e "${YELLOW}⚠️  Known vulnerabilities found in dependencies${NC}"
+    echo -e "${YELLOW}💡 Consider updating vulnerable packages${NC}"
+    echo ""
+    # Don't fail on pip-audit - just warn (non-blocking)
+fi
+
+# 7. pytest - Tests with coverage
+echo -e "${YELLOW}⏳ Running pytest (80%+ coverage required)...${NC}"
+if $PYTHON -m pytest test/ --cov=vibey_bootstrap --cov-report=term-missing --cov-fail-under=80 -q; then
+    echo -e "${GREEN}✅ pytest passed (80%+ coverage)${NC}"
+    echo ""
+else
+    echo -e "${RED}❌ pytest failed or coverage < 80%${NC}"
+    echo -e "${YELLOW}💡 Fix failing tests or improve coverage${NC}"
+    echo ""
+    FAILED=1
+fi
+
+# Summary
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+if [ $FAILED -eq 0 ]; then
+    echo -e "${GREEN}✅ All pre-commit checks passed!${NC}"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    exit 0
+else
+    echo -e "${RED}❌ Some checks failed - commit blocked${NC}"
+    echo ""
+    echo "To skip these checks (not recommended):"
+    echo "  git commit --no-verify"
+    echo ""
+    echo "To fix automatically:"
+    echo "  black vibey_bootstrap/ test/"
+    echo "  isort vibey_bootstrap/ test/"
+    echo "  ruff check --fix vibey_bootstrap/ test/"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    exit 1
+fi

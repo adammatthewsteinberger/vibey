@@ -1,0 +1,9 @@
+{
+  "name": "diy-kit-dev",
+  "version": "0.1.0",
+  "description": "DIY Kit Dev: hobbyist and maker hardware development across Raspberry Pi, Arduino, ESP32, Pico and the wider kit ecosystem — choosing the right board, the current platform lineups and what changed, the electronics fundamentals that stop you destroying things, power (the single biggest cause of mystery failures), sensors and actuators, the software layer (Arduino, MicroPython, CircuitPython, ESP-IDF), physical build and soldering, debugging hardware, networking and home automation, enclosures and fabrication, and the honest path from working prototype to shippable product.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

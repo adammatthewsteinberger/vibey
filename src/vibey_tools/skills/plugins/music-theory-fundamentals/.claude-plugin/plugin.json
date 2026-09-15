@@ -1,0 +1,9 @@
+{
+  "name": "music-theory-fundamentals",
+  "version": "0.1.0",
+  "description": "Music Theory Fundamentals: the three layers of claim music theory makes, the harmonic series, psychoacoustics, tuning and temperament, pitch, intervals and notation, scales and modes, rhythm and meter, timbre, chords, functional harmony, cadence and phrase, modulation and chromaticism, counterpoint, form, analytical methods, melody, jazz harmony, popular music, non-Western systems, twentieth-century and later practice, and music and meaning.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

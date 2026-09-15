@@ -1,4 +1,13 @@
-# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+# Armed FIRST, before typer and the rest of the tree are imported. Kubernetes deletes a
+# pod by sending SIGTERM and waiting, and Linux discards a signal sent to PID 1 while its
+# disposition is still SIG_DFL -- it is not queued for later. Everything imported below
+# this line is time during which a scale-in would be thrown away, so the latch goes above
+# it. See vibey.cli.early_signals.
+from vibey.cli.early_signals import SIGTERM_LATCH
+
+SIGTERM_LATCH.arm()
+
 import asyncio
 import json
 import os
@@ -1300,6 +1309,22 @@ def worker(
             draining.set()
 
         asyncio.get_running_loop().add_signal_handler(signal.SIGTERM, _begin_drain)
+
+        # The handler above is installed as early as the event loop allows, and that is
+        # still not early enough: everything before it -- interpreter start, imports,
+        # argument parsing -- is time in which SIGTERM sent to PID 1 is DISCARDED rather
+        # than queued, because its disposition was still SIG_DFL. A scale-in that lands in
+        # that window is not delivered late; it is never delivered, and the pod then runs
+        # until terminationGracePeriodSeconds expires. For a worker that is two hours.
+        #
+        # So ask the latch, armed at import time, whether it already happened. Observed on
+        # minikube: a pod deleted 0.2s after its container started, which then sat through
+        # the full grace period claiming jobs nobody was waiting for.
+        SIGTERM_LATCH.release()
+        if SIGTERM_LATCH.fired:
+            typer.echo("SIGTERM arrived during startup; draining immediately", err=True)
+            draining.set()
+
         typer.echo("sigterm handler registered", err=True)
 
         async with build_app() as resources:

@@ -1,0 +1,9 @@
+{
+  "name": "mobile-development",
+  "version": "0.1.0",
+  "description": "Mobile Development: enterprise mobile on Azure — React Native New Architecture, native iOS (Swift/SwiftUI) and Android (Kotlin/Compose), mobile UI/UX and design patterns, Azure hosting/Intune/CI-CD after App Center, and mobile security (OWASP MASVS, secure storage/comms, MFA/passkeys).",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """CI check: validate every .claude/skills/*/SKILL.md's YAML frontmatter.
 
 Claude Code itself performs NO validation of SKILL.md frontmatter — malformed

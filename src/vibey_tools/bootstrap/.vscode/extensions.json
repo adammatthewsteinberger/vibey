@@ -1,0 +1,28 @@
+{
+  "recommendations": [
+    // Python Development
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "ms-python.black-formatter",
+    "charliermarsh.ruff",
+
+    // Testing
+    "littlefoxteam.vscode-python-test-adapter",
+    "hbenl.vscode-test-explorer",
+
+    // Coverage Visualization
+    "ryanluker.vscode-coverage-gutters",
+
+    // Git
+    "eamodio.gitlens",
+
+    // TOML Support (for pyproject.toml)
+    "tamasfe.even-better-toml",
+
+    // Markdown
+    "yzhang.markdown-all-in-one",
+
+    // Azure
+    "ms-azuretools.vscode-azurefunctions"
+  ]
+}

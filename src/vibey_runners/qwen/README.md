@@ -1,7 +1,9 @@
 # qwenloop
 
-[![CI](https://github.com/adammatthewsteinberger/qwenloop/actions/workflows/ci.yml/badge.svg)](https://github.com/adammatthewsteinberger/qwenloop/actions/workflows/ci.yml)
-[![Provenance](https://github.com/adammatthewsteinberger/qwenloop/actions/workflows/provenance.yml/badge.svg)](https://github.com/adammatthewsteinberger/qwenloop/actions/workflows/provenance.yml)
+> **Now part of the vibey monorepo.** `qwenloop` lives in [the-vibey-project/vibey](https://github.com/the-vibey-project/vibey) at [`src/vibey_runners/qwen`](https://github.com/the-vibey-project/vibey/tree/develop/src/vibey_runners/qwen) (vibey ADR-0021). It is still published on PyPI as [`qwenloop`](https://pypi.org/project/qwenloop/).
+
+[![CI](https://github.com/the-vibey-project/vibey/actions/workflows/ci.yml/badge.svg)](https://github.com/the-vibey-project/vibey/actions/workflows/ci.yml)
+[![Provenance](https://github.com/the-vibey-project/vibey/actions/workflows/provenance.yml/badge.svg)](https://github.com/the-vibey-project/vibey/actions/workflows/provenance.yml)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Model: Apache--2.0](https://img.shields.io/badge/model-Apache--2.0-orange.svg)](https://huggingface.co/Qwen/Qwen2.5-Coder-14B-Instruct)
@@ -15,12 +17,10 @@ integration never download model weights.
 
 ## Install
 
-Until the first PyPI release, install the runner from the immutable Git tag or
-an explicit commit:
+Install the runner from [PyPI](https://pypi.org/project/qwenloop/):
 
 ```bash
-uv tool install \
-  'qwenloop @ git+https://github.com/adammatthewsteinberger/qwenloop.git@feature/qwenloop-local-engine'
+uv tool install qwenloop    # or: pipx install qwenloop
 ```
 
 The Python package never bundles model weights.

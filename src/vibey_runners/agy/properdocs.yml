@@ -1,9 +1,9 @@
 site_name: agyloop
 site_description: >-
   Onion-architected, autonomous Google Antigravity / Gemini session runner.
-site_url: https://adammatthewsteinberger.github.io/agyloop/
-repo_url: https://github.com/adammatthewsteinberger/agyloop
-repo_name: adammatthewsteinberger/agyloop
+site_url: https://the-vibey-project.github.io/agyloop/
+repo_url: https://github.com/the-vibey-project/agyloop
+repo_name: the-vibey-project/agyloop
 edit_uri: edit/main/docs/
 
 # ProperDocs, matching vibey-gh and vibey-skills. `theme: mkdocs` rather than Material:
@@ -67,6 +67,6 @@ nav:
       - Development: contributing/development.md
       - Release process: contributing/release-process.md
       - Harness patch: contributing/harness-patch.md
-  - Changelog: https://github.com/adammatthewsteinberger/agyloop/blob/main/CHANGELOG.md
+  - Changelog: https://github.com/the-vibey-project/agyloop/blob/main/CHANGELOG.md
   - Security: security.md
   - Research paper: paper.md

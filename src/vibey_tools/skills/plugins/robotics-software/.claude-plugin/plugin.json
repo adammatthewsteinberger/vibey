@@ -1,0 +1,9 @@
+{
+  "name": "robotics-software",
+  "version": "0.1.0",
+  "description": "Robotics Software: professional robotics software engineering — the architecture of a real robot stack, ROS 2 and the middleware layer, perception and sensor fusion, state estimation and SLAM, motion planning, control theory from PID through MPC and whole-body control, the learning layer (reinforcement learning, imitation learning, and the vision-language-action foundation models now reshaping the field), simulation and sim-to-real, real-time and safety-critical engineering, testing and field deployment, functional safety and the ISO 10218:2025 regime, and aerospace flight-software practice.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

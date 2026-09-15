@@ -1,0 +1,2 @@
+param location string = '{{ location }}'
+param appName string = '{{ app_name }}'

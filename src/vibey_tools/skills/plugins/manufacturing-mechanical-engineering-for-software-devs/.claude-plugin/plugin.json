@@ -1,0 +1,9 @@
+{
+  "name": "manufacturing-mechanical-engineering-for-software-devs",
+  "version": "0.1.0",
+  "description": "Manufacturing and Mechanical Engineering for Software Devs: what mechanical engineers actually do, stress, strain and deflection, failure theories and safety factors, fatigue, materials selection, machine elements, mechanisms and kinematics, tolerances and GD&T, the process families, casting and forming, machining, joining, additive manufacturing, injection moulding, sheet metal, surface treatment, design for manufacture and assembly, metrology and quality, scale economics, CAD, CAE and simulation, PLM as version control for atoms, the physical supply chain, new product introduction, and what transfers to software and what doesn't.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

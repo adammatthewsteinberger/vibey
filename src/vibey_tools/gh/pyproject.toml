@@ -1,0 +1,120 @@
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "vibey-gh"
+version = "1.73.0"
+description = "Provenance fingerprints, derived version bumps, a merge train, and branch realignment for a GitHub repository — with no dependencies."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.11"          # tomllib
+authors = [{ name = "Adam Matthew Steinberger", email = "adam@matthewsteinberger.com" }]
+maintainers = [{ name = "Adam Matthew Steinberger", email = "adam@matthewsteinberger.com" }]
+keywords = ["github", "provenance", "release", "versioning", "merge-train", "ci"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: Software Development :: Version Control :: Git",
+]
+
+# Deliberately empty, and worth keeping that way. This is release tooling: it runs in
+# every CI job of every repository that adopts it, so each dependency it grows is a
+# dependency all of them grow. Everything here is stdlib.
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4", "pytest-cov>=4.1",
+    "ruff>=0.5", "black>=24.0", "isort>=5.12", "mypy>=1.8",
+    "pyyaml>=6.0",   # test/test_templates.py parses the shipped workflow templates
+]
+
+[project.scripts]
+vibey-gh = "vibey_gh.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/the-vibey-project/vibey-gh"
+Repository = "https://github.com/the-vibey-project/vibey-gh"
+Issues = "https://github.com/the-vibey-project/vibey-gh/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["vibey_gh"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"docs/stylesheets/vibey.css" = "vibey_gh/templates/release/vibey.css"
+"docs/javascripts/channel.js" = "vibey_gh/templates/release/channel.js"
+"docs/javascripts/math.js" = "vibey_gh/templates/release/math.js"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "vibey_gh", "docs", "test", "plugins", ".claude-plugin", ".claude",
+    ".agents", ".agent", ".cursor", ".githooks", ".github",
+    "AGENTS.md", "CHANGELOG.md", "CLAUDE.md", "CODE_OF_CONDUCT.md",
+    "CONTRIBUTING.md", "GEMINI.md", "LICENSE", "NOTICE.md", "README.md",
+    "SECURITY.md", "SUPPORT.md", "properdocs.yml", ".vibey-gh.toml", "pyproject.toml",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["test"]
+addopts = [
+    "--cov=vibey_gh",
+    "--cov-branch",
+    "--cov-report=term-missing",
+    "--cov-fail-under=100",
+]
+
+[tool.coverage.run]
+source = ["vibey_gh"]
+omit = ["test/*"]
+
+[tool.coverage.report]
+exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:", "if __name__ == .__main__.:"]
+
+[tool.black]
+line-length = 100
+
+[tool.isort]
+profile = "black"
+line_length = 100
+known_first_party = ["vibey_gh"]
+# `ruff` enforces its own isort rules and `isort` enforces these; left unmatched the two
+# disagree about a module imported both plainly and under an alias, and each rejects the
+# other's output. That is unsatisfiable rather than merely untidy: it cost a repair budget
+# before it was noticed. These two keys are what make them agree.
+combine_as_imports = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint.isort]
+known-first-party = ["vibey_gh"]
+combine-as-imports = true
+
+[tool.ruff.lint.per-file-ignores]
+# Same call as vibey-bootstrap makes: dict(a=1) reads better than a literal when the
+# helper is built from keyword arguments, and test readability wins over the rule.
+"test/*.py" = ["C408"]
+
+[tool.bandit]
+# This package's whole job is driving `git` and `gh`: it shells out to them by name, on
+# PATH, with argv lists it built itself. B404 ("you imported subprocess"), B603 ("you
+# called it") and B607 ("you used a partial path") fire 106 times and say only that. A
+# hundred findings that are all the same non-finding is how the three that mean something
+# get missed -- and there ARE three, so they are justified inline instead: two `# nosec
+# B602` in failover.py (shell=True on operator-authored seat commands) and one `# nosec
+# B310` in yank.py (a literal https template). B310 stays ON: local_review.py's endpoint
+# is a command-line argument, and it is checked at the call rather than skipped.
+skips = ["B404", "B603", "B607"]
+exclude_dirs = ["test", ".venv", "build", "dist", "site"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true

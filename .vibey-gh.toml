@@ -1,6 +1,7 @@
-# vibey-gh owns provenance and release automation for this repository, exactly as it does
-# for the five *loop runners and vibey-skills. Adopted in one pass; the checklist that
-# shaped this file is the one those adoptions debugged the hard way.
+# vibey-gh owns provenance and release automation for this repository — the same tooling the
+# *loop runners and vibey-skills used as standalone repositories before they were absorbed into
+# this workspace (src/vibey_runners/*, src/vibey_tools/*; ADR-0021). The checklist that shaped
+# this file is the one those adoptions debugged the hard way.
 
 [fingerprint]
 sources = [
@@ -24,12 +25,65 @@ owner           = "adammatthewsteinberger"
 trusted_authors = ["adammatthewsteinberger", "claude[bot]", "github-actions[bot]", "vibey[bot]"]
 
 [install]
+# This repository vendors the tooling at src/vibey_tools/gh. Declared rather than
+# discovered: a workflow that searched the tree for a pyproject declaring
+# `name = "vibey-gh"` would read a pull request's own files and install what it found.
+self_source = "src/vibey_tools/gh"
 # Pin every rendered template to the version that rendered it. Unpinned, a runner adopts
 # whatever is newest -- the failure mode that took vibey-skills' CI red for two days.
 pin_version = true
-workflows = ["merge-train.yml", "promote-to-main.yml", "provenance.yml", "release-surfaces.yml", "pr-automation.yml", "automation-bootstrap.yml"]
+# github-release.yml: the immutable tag and GitHub Release for every version promoted to
+# main. Releases stopped at v0.1.2 when release-please was retired (#77) and nothing took
+# over the tagging; the book and the paper are attached to each Release from here on.
+workflows = ["merge-train.yml", "promote-to-main.yml", "provenance.yml", "release-surfaces.yml", "pr-automation.yml", "automation-bootstrap.yml", "github-release.yml"]
+
+# Declared here rather than clicked, per ADR-0018. `vibey-gh` has reconciled both of these
+# from configuration since 1.x and vibey-skills has used them for months; this repository,
+# which now CONTAINS vibey-gh, had neither -- its branch protection and its profile were
+# settings-page state with no history, no review and no way to restore them.
+#
+# These values are the live configuration as it stood on 2026-09-15, transcribed rather
+# than invented. Reconciling them is therefore a no-op; the point is that from here a
+# change to them is a pull request.
+[repository_profile]
+description = "A queue-based, six-phase conductor for autonomous software delivery on top of the *loop runners — spec interview → design → build → review → deploy. PostgreSQL-backed."
+topics = [
+  "agents", "ai-agents", "autonomous-agents", "claude", "claude-code", "cli",
+  "delivery-automation", "devtools", "gemini", "gpt", "llm", "mit-license",
+  "orchestration", "postgresql", "python",
+]
+
+[rulesets]
+enabled = true
+
+# `gates` is the whole 7-gate sweep in one job, which is why one check covers it. Bypass is
+# OrganizationAdmin plus RepositoryRole:5 (admin): the merge train needs a seat that can
+# land a green PR, and a ruleset the automation cannot satisfy is a ruleset somebody
+# switches off.
+[rulesets.integration]
+required_checks  = ["gates"]
+required_approvals = 1
+bypass_actors    = ["OrganizationAdmin", "RepositoryRole:5"]
+
+# main additionally pins the lock: every other CI job `needs` the uv-lock job, so a release
+# branch that drifts there is a release branch whose gates never ran.
+[rulesets.release]
+required_checks  = ["gates", "uv.lock is in sync with pyproject.toml"]
+required_approvals = 1
+bypass_actors    = ["OrganizationAdmin", "RepositoryRole:5"]
 
 [pr_automation]
+# The review, repair and conflict jobs load this tree's own vibey-skills marketplace, read
+# from the trusted default-branch checkout. It used to be cloned from
+# github.com/the-vibey-project/vibey-skills, which the monorepo absorption retired; that
+# clone 404'd and failed every review with no verdict (ADR-0017: the family's own copy).
+plugin_marketplaces = ["src/vibey_tools/skills"]
+plugins = [
+  "quality-engineering@vibey-skills",
+  "security-principles@vibey-skills",
+  "engineering-process@vibey-skills",
+  "software-architecture@vibey-skills",
+]
 # This repository's real PR-triggered workflows. The default set names "Docs", which
 # nothing here answers to -- a gate waiting on a scan that can never complete never posts.
 scan_workflows = ["CI", "Provenance"]
@@ -48,7 +102,17 @@ trusted_only = true
 fallback_enabled = true
 
 [documentation]
-# The living-roadmap doctrine (vibey-gh#211) defaults require_roadmap to true.
+# Governance in plain sight (sub-doctrine 7.b): the canon is published on every channel site,
+# in the book, and linked from every page, from its single source in the absorbed vibey-gh.
+governance_source = "src/vibey_tools/gh/docs"
+corpus_index = "src/vibey_tools/gh/corpus-index.json"
+# The research paper and the architecture pages carry LaTeX; render it on the site.
+math = true
+# The named author of the published paper, the book and every page's metadata. Unset, the
+# exporters fall back to the GitHub owner and the paper's byline reads "the-vibey-project".
+author = "Adam Matthew Steinberger"
+# The living-roadmap doctrine (Doctrine 11, src/vibey_tools/gh/docs/doctrines.md) defaults
+# require_roadmap to true.
 # The operator has twice declined roadmap drafts for this repository and owns the decision on its shape; the check stays off until they write the roadmap they want.
 # The exact-head review still judges roadmap liveness on every head.
 require_roadmap = false

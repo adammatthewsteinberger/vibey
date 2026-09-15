@@ -1,4 +1,4 @@
-# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 import asyncio
 import json
 import os
@@ -995,6 +995,48 @@ def test_worker_once_with_job(tmp_path: Path) -> None:
         res = runner.invoke(app, ["worker", "--once"])
     assert res.exit_code == 0, res.output
     assert "processed one job" in res.output
+
+
+@pytest.mark.usefixtures("_fast_engine_preflight")
+def test_worker_drains_at_once_when_sigterm_arrived_during_startup(tmp_path: Path) -> None:
+    """A signal delivered before the event loop existed still has to stop the worker.
+
+    Linux discards SIGTERM sent to PID 1 while its disposition is still SIG_DFL -- it is
+    not queued. A worker that only ever asks the event loop therefore never learns that
+    Kubernetes asked it to stop, and runs to its grace period: two hours. Observed on
+    minikube, where a pod deleted 0.2s after its container started sat out the whole
+    window claiming jobs nobody was waiting for.
+
+    So the latch armed at import is consulted once the real handler is in place. Note the
+    worker is started WITHOUT `--once`: the point is that a long-lived worker stops, not
+    that a single-shot one finishes.
+    """
+
+    async def seed() -> None:
+        async with build_app() as resources:
+            await resources.projects.create("drain-proj", tmp_path, max_cycles=1, config={})
+
+    asyncio.run(seed())
+    from unittest.mock import AsyncMock, patch
+
+    class _AlreadyFired:
+        fired = True
+
+        def release(self) -> None:
+            """The real handler is installed by now; nothing to hand back in a test."""
+
+    with (
+        patch("vibey.cli.main.SIGTERM_LATCH", _AlreadyFired()),
+        patch("vibey.infrastructure.db.notifier.PostgresJobReadyNotifier") as mock_notifier_cls,
+    ):
+        mock_notifier_cls.return_value = AsyncMock()
+        res = runner.invoke(app, ["worker"])
+
+    assert res.exit_code == 0, res.output
+    assert "SIGTERM arrived during startup" in res.output
+    assert "draining flag observed" in res.output
+    # It must not have claimed anything on the way out.
+    assert "processed one job" not in res.output
 
 
 @pytest.mark.usefixtures("_fast_engine_preflight")

@@ -1,0 +1,9 @@
+{
+  "name": "cad-3d-printing",
+  "version": "0.2.0",
+  "description": "CAD and 3D Printing: geometry representations and kernels, file formats and what each one loses, code-CAD and scripting including the OpenSCAD versus OCCT trade, mesh processing and repair, the slicing pipeline and G-code, the additive processes and the physics that determines part quality, design for additive manufacturing, tolerances and fits, materials, generative design and lattices, automation pipelines, and scanning and reverse engineering.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

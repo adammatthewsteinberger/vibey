@@ -5,11 +5,11 @@ body:
   - type: markdown
     attributes:
       value: |
-        Please search [existing issues](https://github.com/adammatthewsteinberger/agyloop/issues)
-        and skim the [docs](https://adammatthewsteinberger.github.io/agyloop/)
+        Please search [existing issues](https://github.com/the-vibey-project/agyloop/issues)
+        and skim the [docs](https://the-vibey-project.github.io/agyloop/)
         before proposing something that may already exist. Design discussion
         that is not yet a concrete request belongs in
-        [Discussions](https://github.com/adammatthewsteinberger/agyloop/discussions).
+        [Discussions](https://github.com/the-vibey-project/agyloop/discussions).
 
   - type: textarea
     id: problem

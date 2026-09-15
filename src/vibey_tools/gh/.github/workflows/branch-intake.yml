@@ -1,0 +1,51 @@
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+name: Branch intake
+
+# A published topic branch without an open PR gets one draft PR. This intentionally runs
+# on every push: a branch name may be reused after its previous PR was merged, and a
+# historical closed PR must never suppress intake for the new exact-head lineage.
+on:
+  push:
+    branches-ignore:
+      - develop
+      - main
+      - "vibey-gh/repair/**"
+      # Issue automation opens its own linked pull request; intake must not race it.
+      - "vibey-gh/issue/**"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: branch-intake-${{ github.repository }}-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  draft:
+    name: Open draft pull request
+    if: github.event.deleted != true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create exactly one draft PR
+        env:
+          # GitHub commonly disables "Allow Actions to create pull requests". The
+          # existing automation token is the trusted fallback in that configuration.
+          GH_TOKEN: ${{ secrets.AUTOMERGE_TOKEN || github.token }}
+          REPO: ${{ github.repository }}
+          HEAD_REF: ${{ github.ref_name }}
+          BASE_REF: develop
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          existing=$(gh pr list --repo "$REPO" --state open --head "$HEAD_REF" \
+            --json number,headRefOid --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            echo "PR #${existing} already tracks ${HEAD_REF}; no-op"
+            exit 0
+          fi
+          title=$(gh api "repos/${REPO}/commits/${HEAD_SHA}" \
+            --jq '.commit.message | split("\n")[0]')
+          gh pr create --repo "$REPO" --draft --base "$BASE_REF" --head "$HEAD_REF" \
+            --title "$title" \
+            --body $'Automatically opened as a draft for the new branch.\n\nVibey GH will mark this PR ready only after all configured scans pass for its exact current head.'

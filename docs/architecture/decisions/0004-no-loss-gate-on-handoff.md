@@ -2,6 +2,8 @@
 
 **Status:** accepted · **Date:** 2026-08-14
 
+**Owes:** a sub-doctrine (not yet proposed) — a handoff that fails the gate is a retry, an escalation to the full transcript, or a human gate, never a silent partial (nearest parent: doctrine 7, the never-lost reader).
+
 ## Context
 
 The requirement is that passing a conversation between AIs must not lose data. The
@@ -18,8 +20,16 @@ report a drop.
 matching on ids rather than on text.
 
 On failure: regenerate the brief with the specific violations fed back (≤3
-attempts) → escalate to `FULL_TRANSCRIPT` mode, inlining the entire range → raise
-a human gate. It never proceeds on a failed gate.
+attempts) → escalate to `FULL_TRANSCRIPT` mode, in which the gate waives the
+closure rules R1–R5, R7 and R9 → raise a human gate. The design inlines the entire
+range into the successor's seed so that waiver is sound; as built, the range reaches the
+successor only as `.vibey/handoff/ledger.jsonl`, named in the seed prompt, so the
+waiver rests on the successor reading that file. Inlining it, or keeping the closure
+rules on until it is inlined, is open work. It never proceeds on a failed gate. The ladder is
+`application/handoff_orchestration.py` (`MAX_STRICT_ATTEMPTS = 3`); the wind-down
+path (`application/wind_down.py`) runs it over a brief from the deterministic floor
+producer described below and parks on a `handoff_gate_failed` gate when it ends in
+`HUMAN`.
 
 ## Rationale
 
@@ -57,12 +67,15 @@ brief can waste a turn; it cannot redirect the work.
 ## Consequences
 
 **Good.** "Lossless" is a check that can fail, with a named item, not an
-aspiration. Gate outcomes are stored per attempt, so quality is measurable:
-"which rule fires most, for which engine pair, in which phase" is a query.
+aspiration. The final gate outcome of every handoff — the mode it reached
+(`gate_mode`), the attempt count (`gate_attempts`), and the violations
+(`gate_violations`) — is stored on its `handoff` row with the engine pair and
+phase, so quality is measurable: "which rule fires most, for which engine pair, in
+which phase" is a query. Intermediate attempts are not stored individually.
 
 **Bad.** Handoffs cost more — up to three brief generations, and occasionally a
-full-transcript inline that is expensive in tokens. Vibey pays it rather than
-proceed on a failed gate.
+full-transcript escalation, which is expensive in tokens once the range is inlined as
+designed. Vibey pays it rather than proceed on a failed gate.
 
 **Bad.** The gate is only as good as the id minting. If a closable thing is never
 recorded as an event, the gate cannot check it. This is the residual risk, and it

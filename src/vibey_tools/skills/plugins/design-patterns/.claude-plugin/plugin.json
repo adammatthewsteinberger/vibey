@@ -1,0 +1,9 @@
+{
+  "name": "design-patterns",
+  "version": "0.1.0",
+  "description": "Design Patterns: what a pattern actually is (a vocabulary, not a construction kit), the honest critique of the Gang of Four and which of the 23 survive in modern languages, patterns that are language deficiencies versus patterns that are timeless, the functional and data-oriented alternatives, architectural patterns (layered, hexagonal, DDD, modular monolith, microservices), distributed and resilience patterns (saga, outbox, circuit breaker, CQRS, event sourcing), concurrency patterns, the emerging LLM and agentic pattern language, and the anti-patterns of over-application.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

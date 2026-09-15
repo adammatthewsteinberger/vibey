@@ -1,0 +1,9 @@
+{
+  "name": "frontend-design",
+  "version": "0.1.0",
+  "description": "Frontend Design: graphic design and UX/UI best practices, Next.js production patterns, and full-stack performance optimization for Python, Next.js, and Azure.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

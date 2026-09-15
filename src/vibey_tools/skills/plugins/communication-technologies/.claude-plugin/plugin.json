@@ -1,0 +1,9 @@
+{
+  "name": "communication-technologies",
+  "version": "0.1.0",
+  "description": "Communication Technologies: the federated versus proprietary divide, SMTP and email architecture, retrieval protocols, message format, SPF, DKIM and DMARC, deliverability, email encryption, the PSTN, SS7 and its security problem, VoIP and SIP, VoLTE and VoNR, caller ID spoofing and robocalls, SMS, MMS, RCS, the Signal protocol, the messaging landscape, iMessage and FaceTime, WebRTC, video conferencing architecture, team platforms, push and notifications, what end-to-end encryption actually protects, metadata, interoperability and regulation, the encryption policy debate, and emergency calling and reliability.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

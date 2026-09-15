@@ -1,0 +1,9 @@
+{
+  "name": "theory-of-computation",
+  "version": "0.1.0",
+  "description": "Theory of Computation: what is computable and what isn't (halting, Rice's theorem, and why your linter has false positives), automata and the Chomsky hierarchy as a practical design tool, regular languages and the ReDoS failure mode, parsing and grammar classes, Turing machines and reductions, complexity classes and NP-completeness recognition, what to actually do when your problem is NP-hard, SAT/SMT solvers, fine-grained complexity and conditional lower bounds, space complexity and streaming, distributed computing impossibility results (FLP, CAP, consensus), type systems and Curry–Howard, and randomness and approximation.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

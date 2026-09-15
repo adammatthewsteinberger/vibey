@@ -1,0 +1,9 @@
+{
+  "name": "food-and-nutrition-science",
+  "version": "0.2.0",
+  "description": "Food and Nutrition Science: why nutrition science is hard, confounding and study design, the measurement problem, protein and amino acids, carbohydrates and fibre, fats and lipids, alcohol, vitamins, minerals, supplements, digestion and absorption, energy balance, appetite regulation, the microbiome, food composition and processing, cooking and nutrients, public health nutrition, food allergy and intolerance, dietary patterns, popular diets assessed, weight regulation, disordered eating, life stages, and how to read a nutrition claim. A technical reference, not medical or dietary advice.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

@@ -2,9 +2,17 @@
 
 **Status:** superseded by ADR-0013 · **Date:** 2026-08-14
 
+**Owes:** nothing — mechanism (ADR-0020)
+
 > Historical decision only. Deployment is now the second three-phase stage set
-> in vibey's core lifecycle. See
-> [ADR-0013](0013-deployment-is-a-three-phase-stage-set.md).
+> in vibey's core lifecycle
+> ([ADR-0013](0013-deployment-is-a-three-phase-stage-set.md)), entered only by an
+> explicit user opt-in after Phase ③
+> ([ADR-0014](0014-optional-visual-design-and-deployment-opt-in.md)). The
+> `vibey-deploy` package, the `azure-bootstrap` dependency, and
+> `vibey deploy --confirm` described below were never built. Today's `vibey deploy`
+> group reads the in-lifecycle deployment state (`status`, `inspect`); its `plan`,
+> `cancel`, and `rollback` subcommands are placeholders that do not call Azure.
 
 ## Context
 

@@ -1,4 +1,4 @@
-# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 name: Release
 
 # develop publishes a uniquely versioned dev build to TestPyPI; main publishes the
@@ -23,11 +23,44 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      # `vibey-gh version --apply` re-locks uv.lock whenever it rewrites pyproject.toml,
+      # so uv must be on PATH. Without it every develop build failed with
+      # FileNotFoundError: 'uv' once the tree's own vibey-gh started stamping versions.
+      - uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41 # v7.1.2
 
       - name: Stamp a dev version on develop
         if: github.ref == 'refs/heads/develop'
         run: |
-          python -m pip install --quiet "vibey-gh==1.56.0"
+          # This repository CARRIES vibey-gh, so the tooling that stamps the version is the
+          # tree's own copy, never a published release: `develop` is ahead of the last
+          # release nearly always, and an older parser refuses the newer configuration
+          # (observed: 1.56.0 rejected the `OrganizationAdmin` bypass actor that
+          # .vibey-gh.toml declares, and every develop release failed here). The path is
+          # the DECLARED `[install] self_source`, read at runtime rather than searched
+          # for, exactly as the managed workflows and the git hooks resolve it; an
+          # ordinary adopter, whose config declares no such path, installs the release.
+          self=$(python - <<'PY'
+          import pathlib
+          import tomllib
+          from pathlib import PurePosixPath
+
+          try:
+              data = tomllib.loads(pathlib.Path(".vibey-gh.toml").read_text(encoding="utf-8"))
+              install = data.get("install", {})
+              value = install.get("self_source", "") if isinstance(install, dict) else ""
+              path = PurePosixPath(value) if isinstance(value, str) else PurePosixPath()
+              if value and not path.is_absolute() and ".." not in path.parts and not value.startswith("~"):
+                  print(path.as_posix())
+          except (OSError, tomllib.TOMLDecodeError):
+              pass
+          PY
+          )
+          grep -qE '^name = "vibey-gh"' "${self:-.}/pyproject.toml" 2>/dev/null || self=""
+          if [ -n "$self" ]; then
+            python -m pip install --quiet -e "$self"
+          else
+            python -m pip install --quiet "vibey-gh==1.73.0"
+          fi
           # An index version is immutable, so a develop build cannot reuse the release
           # version; the dev suffix makes each push distinct and sorts it BEFORE the
           # release it anticipates, which is the correct relationship.
@@ -140,7 +173,35 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
 
-      - run: python -m pip install --quiet "vibey-gh==1.56.0"
+      # The same self-sourcing as the develop build above, for the same reason: the
+      # realign reads .vibey-gh.toml too, and an older parser refuses it.
+      - name: Install the tree's own vibey-gh
+        run: |
+          set -euo pipefail
+          # Parsed as TOML, scoped to [install], exactly as the develop build above: a
+          # regex would miss a single-quoted value or match a same-named key elsewhere.
+          self=$(python - <<'PY'
+          import pathlib
+          import tomllib
+          from pathlib import PurePosixPath
+
+          try:
+              data = tomllib.loads(pathlib.Path(".vibey-gh.toml").read_text(encoding="utf-8"))
+              install = data.get("install", {})
+              value = install.get("self_source", "") if isinstance(install, dict) else ""
+              path = PurePosixPath(value) if isinstance(value, str) else PurePosixPath()
+              if value and not path.is_absolute() and ".." not in path.parts and not value.startswith("~"):
+                  print(path.as_posix())
+          except (OSError, tomllib.TOMLDecodeError):
+              pass
+          PY
+          )
+          grep -qE '^name = "vibey-gh"' "${self:-.}/pyproject.toml" 2>/dev/null || self=""
+          if [ -n "$self" ]; then
+            python -m pip install --quiet -e "$self"
+          else
+            python -m pip install --quiet "vibey-gh==1.73.0"
+          fi
 
       # main is rebase-merged, so its commits are rewritten copies with new SHAs and
       # develop can never be fast-forwarded onto it. `realign` converges them only when

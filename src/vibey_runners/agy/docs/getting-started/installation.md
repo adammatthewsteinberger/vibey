@@ -27,7 +27,7 @@ pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/
 ## Clone / editable (contributors)
 
 ```bash
-git clone https://github.com/adammatthewsteinberger/agyloop.git
+git clone https://github.com/the-vibey-project/agyloop.git
 cd agyloop
 python3 -m venv .venv
 source .venv/bin/activate

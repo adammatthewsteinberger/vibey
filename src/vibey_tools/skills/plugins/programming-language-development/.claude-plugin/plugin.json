@@ -1,0 +1,9 @@
+{
+  "name": "programming-language-development",
+  "version": "0.1.0",
+  "description": "Programming Language Development: language design decisions and their consequences, lexing and parsing, names/scopes/modules, type systems (inference, HM, bidirectional, subtyping, generics, traits, effects, ownership, dependent types), intermediate representations (SSA, CPS, ANF, MLIR-style), optimization, code generation and backends (LLVM, Cranelift, custom, WebAssembly), runtime systems and GC, interpreters and JITs, diagnostics, incremental compilation and IDE support, testing and verification, standard library and ecosystem design, and language evolution and governance.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

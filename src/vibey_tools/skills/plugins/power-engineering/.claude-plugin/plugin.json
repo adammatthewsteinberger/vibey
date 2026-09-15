@@ -1,0 +1,9 @@
+{
+  "name": "power-engineering",
+  "version": "0.1.0",
+  "description": "Power Engineering: AC power fundamentals including real, reactive and apparent power and frequency as the balance signal, generation, transmission and distribution, power system analysis (power flow, state estimation, fault analysis, stability), protection and relaying, SCADA, EMS and DMS, the protocols, inverters, renewables and the inertia problem including grid-following versus grid-forming, storage, markets and dispatch, writing grid software and why OT is not IT, and datacenter power.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

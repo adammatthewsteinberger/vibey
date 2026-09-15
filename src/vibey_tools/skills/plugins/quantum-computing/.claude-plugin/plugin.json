@@ -1,0 +1,9 @@
+{
+  "name": "quantum-computing",
+  "version": "0.1.0",
+  "description": "Quantum Computing: the physical and mathematical foundations and the circuit model, what quantum computers can and cannot do, the algorithm canon (Shor, Grover, HHL, VQE/QAOA, quantum simulation) and their honest complexity claims, noise and the NISQ era, error correction and fault tolerance, hardware modalities and where the hardware actually is, the software stack (Qiskit, Cirq, PennyLane, CUDA-Q, OpenQASM), resource estimation, evaluating quantum-advantage claims, applications, quantum networking and sensing, and post-quantum cryptography and migration deadlines.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

@@ -1,6 +1,6 @@
 # Plan: cursorloop — autonomous Cursor Agent runner (Composer-first)
 
-> **Status.** Design plan for a full fork of [claudeloop](https://github.com/adammatthewsteinberger/claudeloop) 0.5.4 onto Cursor’s Agent SDK. Nothing in `src/cursorloop/` exists yet; this document is the approved design record that M1 will be built against. Sibling outline: [`_shared-transplant-outline.md`](_shared-transplant-outline.md). Evidence base, with citations and confidence levels: [`research-notes.md`](research-notes.md). Bite-sized build: [`../superpowers/plans/2026-08-13-cursorloop-implementation.md`](../superpowers/plans/2026-08-13-cursorloop-implementation.md).
+> **Status.** Design plan for a full fork of [claudeloop](https://github.com/the-vibey-project/claudeloop) 0.5.4 onto Cursor’s Agent SDK. Nothing in `src/cursorloop/` exists yet; this document is the approved design record that M1 will be built against. Sibling outline: [`_shared-transplant-outline.md`](_shared-transplant-outline.md). Evidence base, with citations and confidence levels: [`research-notes.md`](research-notes.md). Bite-sized build: [`../superpowers/plans/2026-08-13-cursorloop-implementation.md`](../superpowers/plans/2026-08-13-cursorloop-implementation.md).
 
 ## Context
 

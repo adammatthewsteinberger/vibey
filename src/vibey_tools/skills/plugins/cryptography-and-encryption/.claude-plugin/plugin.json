@@ -1,0 +1,9 @@
+{
+  "name": "cryptography-and-encryption",
+  "version": "0.1.0",
+  "description": "Cryptography and Encryption: what cryptography does and doesn't solve, threat models, randomness, hash functions, MACs, symmetric encryption, AEAD, public key cryptography, key exchange and forward secrecy, digital signatures, password storage and KDFs, TLS, PKI and certificates, end-to-end encrypted messaging, disk and file encryption, other protocols, implementation failure modes, key management, crypto agility, advanced constructions, blockchain cryptography, and law and policy.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

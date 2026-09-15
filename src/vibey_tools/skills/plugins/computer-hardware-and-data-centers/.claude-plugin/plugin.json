@@ -1,0 +1,9 @@
+{
+  "name": "computer-hardware-and-data-centers",
+  "version": "0.1.0",
+  "description": "Computer Hardware Engineering, Custom Rigs and Data Centres: where the bottleneck actually lives, CPU architecture, the memory hierarchy, GPUs and accelerators, storage, interconnect, power supplies, thermals, networking, specifying and assembling a build, firmware and boot, tuning and overclocking honestly, troubleshooting, benchmarking, facility basics, power distribution, cooling at scale, efficiency metrics, racks and physical infrastructure, network and storage architecture, failure at scale, operations, and AI infrastructure specifics.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

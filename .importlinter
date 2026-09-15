@@ -16,12 +16,22 @@ containers =
     vibey
 
 
+# Stdlib, itself, and any family package that is itself dependency-free (ADR-0017).
+# `vibey-gh`, `vibey-skills` and `vibey-runners-common` all declare `dependencies = []`,
+# so importing one adds nothing to the graph that stdlib-only did not already allow.
+# `vibey_bootstrap` is named below for a stated reason rather than by category: it carries
+# the Azure SDK and OpenTelemetry, so importing it here would pull a third-party graph in
+# transitively and break the invariant by the back door. Use it from infrastructure/.
+#
+# The rest of the rule is not an import question at all -- no I/O, no async, no clock, no
+# network -- and is enforced by tests/domain/test_domain_purity.py, which walks the AST.
 [importlinter:contract:domain-independence]
-name = domain imports nothing but stdlib and itself
+name = domain imports stdlib, itself, and only dependency-free family packages
 type = forbidden
 source_modules =
     vibey.domain
 forbidden_modules =
+    vibey_bootstrap
     vibey.application
     vibey.infrastructure
     vibey.cli

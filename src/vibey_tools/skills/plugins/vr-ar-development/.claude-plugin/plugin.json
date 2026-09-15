@@ -1,0 +1,9 @@
+{
+  "name": "vr-ar-development",
+  "version": "0.1.0",
+  "description": "VR and AR Development: the perceptual constraints (motion-to-photon latency, cybersickness, the vergence-accommodation conflict, presence), displays and optics, tracking, the XR rendering pipeline including reprojection and foveated rendering, input and interaction with locomotion as the highest-risk design decision, AR spatial understanding, platforms and APIs, spatial audio, comfort, safety and accessibility, UX design for 3D, and performance budgeting.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

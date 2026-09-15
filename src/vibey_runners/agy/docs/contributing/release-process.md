@@ -27,7 +27,7 @@ Documented so a fork can reproduce it.
 1. Create public repo `adammatthewsteinberger/agyloop`. Push `develop` and
    `main`. Default branch: **`develop`**.
 2. GitHub Pages: source = GitHub Actions (`docs.yml`).
-   Site: `https://adammatthewsteinberger.github.io/agyloop/`
+   Site: `https://the-vibey-project.github.io/agyloop/`
 3. Environments:
 
    | Name | URL | Required reviewers |
@@ -83,7 +83,7 @@ pip install -i https://test.pypi.org/simple/ --extra-index-url https://pypi.org/
 3. `gh release create v0.1.0` on `main` (notes from CHANGELOG). That fires
    `release: published` → approve env `pypi`.
 4. Confirm `https://pypi.org/project/agyloop/`,
-   `https://adammatthewsteinberger.github.io/agyloop/`,
+   `https://the-vibey-project.github.io/agyloop/`,
    `pip install agyloop`, and `agyloop --help`.
 
 ## Verifying a completed publish

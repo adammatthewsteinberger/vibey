@@ -1,0 +1,9 @@
+{
+  "name": "smart-tv-app-development",
+  "version": "0.1.0",
+  "description": "Smart TV App Development: the platform landscape (Roku, Tizen, webOS, Android TV/Google TV, Fire OS, Vega OS, tvOS, VIDAA, SmartCast) and programming model per platform, the 10-foot UI and focus/spatial navigation, remote-control input, video playback and adaptive streaming (HLS/DASH), DRM (Widevine, PlayReady, FairPlay), performance and memory on constrained hardware, lifecycle and deep linking, monetization and CTV advertising (VAST, SSAI, ad pods), certification and store submission, testing on real devices, analytics/QoE, cross-platform strategy, and accessibility, privacy, and ACR.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "nuclear-physics",
+  "version": "0.1.0",
+  "description": "Nuclear Physics: nuclear structure and the binding energy curve, radioactive decay, reactions and cross sections, radiation and dose, fission physics, reactor physics including criticality, moderation, delayed neutrons and reactivity feedback, reactor types, the fuel cycle and waste, reactor safety, fusion physics, magnetic and inertial confinement, why fusion is hard to engineer, and detection and measurement.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

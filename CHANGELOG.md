@@ -1,156 +1,311 @@
 # Changelog
 
-## [0.2.0]
+Every release of `vibey` on [PyPI](https://pypi.org/project/vibey/), newest first. From 0.2.0 on there
+are no `vibey-v*` tags, so headings carry the release commit's date instead of a compare link, and
+0.2.0 through 0.6.0 were reconstructed from the release commits on 2026-09-15 (ADR-0028).
+
+The design behind these releases is written up as a research paper —
+[PDF](https://the-vibey-project.github.io/vibey/main/paper.pdf) ·
+[HTML](https://the-vibey-project.github.io/vibey/main/paper/) — and the complete documentation is
+published as a book — [PDF](https://the-vibey-project.github.io/vibey/main/book.pdf) ·
+[EPUB](https://the-vibey-project.github.io/vibey/main/book.epub).
+
+## [Unreleased]
+
+## [0.7.0] (2026-09-15)
 
 ### Features
 
-* skills-context retrieval: `vibey new --skills-context-mode {off,shadow,inject}` and `--skills-context-budget`, backed by `infrastructure/skills_context.py` (`VibeySkillsContextCompiler`) and wired into the BUILD implement handler. These are CLI-flag-driven, recorded into the project's own config at creation time — there is no static `[skills_context]` `vibey.toml` table (`domain/config.py`'s `VibeyConfig` has no `skills_context` field).
+* **gh:** the book and the research paper linked from every page's navigation and footer, the channel chooser and `llms.txt`, and attached to each GitHub Release; this repository adopts `github-release.yml` ([#147](https://github.com/the-vibey-project/vibey/issues/147)) ([c696374a](https://github.com/the-vibey-project/vibey/commit/c696374a51a2c08f82d7c53f1f1fe1ecda55b22b))
+* absorb vibey-gh, vibey-skills and vibey-bootstrap into `src/vibey_tools/` with history preserved ([#140](https://github.com/the-vibey-project/vibey/issues/140)) ([ef52670b](https://github.com/the-vibey-project/vibey/commit/ef52670b3da873e471806596dc7e9c5b92f89ef5)) — imports [ce6c2cce](https://github.com/the-vibey-project/vibey/commit/ce6c2cce571c7fc29c90a25d7bff56e52b9bab1c) (vibey-gh), [bc424175](https://github.com/the-vibey-project/vibey/commit/bc42417511a52d0c35af26808656ba25c5649a18) (vibey-skills), [b49108d5](https://github.com/the-vibey-project/vibey/commit/b49108d534946b7fd7c7d81303013514f0ddbdff) (vibey-bootstrap)
+* **workspace:** register `src/vibey_tools/*` as uv workspace members and resolve the tools from the tree ([4e55a60e](https://github.com/the-vibey-project/vibey/commit/4e55a60e9007c6b98f6f05777d838d9b0eac2d7c))
+* **build:** let the image build vibey-skills from the tree, and stop shipping the subtrees ([8cbdb7b4](https://github.com/the-vibey-project/vibey/commit/8cbdb7b44bbc96e9918dfd8bd8d40f768da8c22e))
 
-## [0.1.2](https://github.com/adammatthewsteinberger/vibey/compare/vibey-v0.1.1...vibey-v0.1.2) (2026-08-20)
+* **gh:** governance published on every docs page and in the book; LaTeX rendered on the site from a self-served, checksum-verified MathJax ([#158](https://github.com/the-vibey-project/vibey/issues/158)) ([df68a084](https://github.com/the-vibey-project/vibey/commit/df68a084d1c33a730268f4e947c5d76d7b0dd1d8))
+### Bug Fixes
+
+* **gh:** review, repair and conflict jobs load plugins from a configured marketplace (this repository's own `src/vibey_tools/skills`) instead of a deleted repository ([#149](https://github.com/the-vibey-project/vibey/issues/149)) ([7a5b3b9c](https://github.com/the-vibey-project/vibey/commit/7a5b3b9c4c4631023020668b1e62e7bec61e68f4))
+* **gh:** a manual GitHub Release must prove its commit is on the release branch with a successful release run, and never executes the target's code ([#147](https://github.com/the-vibey-project/vibey/issues/147)) ([98f1c81b](https://github.com/the-vibey-project/vibey/commit/98f1c81b3d076164c04c1f420bddb8aa7dab81ed))
+* **gh:** list the print HTML book in `llms.txt` ([#147](https://github.com/the-vibey-project/vibey/issues/147)) ([683e48d8](https://github.com/the-vibey-project/vibey/commit/683e48d869331993f3c4bc888a5e322df326c85b))
+* **worker:** register the SIGTERM handler before any I/O ([2e8e48ad](https://github.com/the-vibey-project/vibey/commit/2e8e48adc39a9c14741e906dd8a6a6e99fc228d2))
+* **worker:** a SIGTERM that arrives during startup is no longer thrown away ([44c1c21a](https://github.com/the-vibey-project/vibey/commit/44c1c21a3924ed3275eb0d5fb83f69c442515364))
+* **deploy:** tini is PID 1, because a Python process cannot win this race ([5ab84605](https://github.com/the-vibey-project/vibey/commit/5ab84605269a2d621df7e90abf81b7e3727d6ebe))
+* **security:** the tooling is a declared path, never a search — and gate the absorbed suites ([7be8227d](https://github.com/the-vibey-project/vibey/commit/7be8227db595375312ab402d4a61e55a728b5a4e))
+* **build:** my own .dockerignore excluded a package, and add the guard that catches it ([64ca4562](https://github.com/the-vibey-project/vibey/commit/64ca4562c849108cd0e1d3ad692a086bc45881df))
+* ship the `vibey_bootstrap.gh` compatibility shim, and settle on one formatter ([8d468d1d](https://github.com/the-vibey-project/vibey/commit/8d468d1d99b059b850c5c895ea9fe8879ede71e7))
+* regenerate uv.lock for the v0.6.0 version bump ([711181ae](https://github.com/the-vibey-project/vibey/commit/711181ae30cfcfd6a9ea634b86607a96cb852625))
+
+* **release:** install uv where the version is stamped, so develop and promotions publish ([#160](https://github.com/the-vibey-project/vibey/issues/160)) ([2f2185a4](https://github.com/the-vibey-project/vibey/commit/2f2185a49290e220ece4135442e47842c6db49be))
+### Documentation
+
+* ADR-0016 — code lives in classes, and every class has an interface beside it ([3468bb51](https://github.com/the-vibey-project/vibey/commit/3468bb51944d7840d266a1150846bb587040edc6))
+* ADR-0017 — if the family already does it, the family does it here ([15959d87](https://github.com/the-vibey-project/vibey/commit/15959d87dd750c9e2fc4e31d16bc1dc447332bef))
+* ADR-0018 — if it can be declared in the repository, it is declared there ([9a819524](https://github.com/the-vibey-project/vibey/commit/9a819524d0bd5f0534038dfb1c82da3c019d1990))
+* ADR-0019 — vibey is installable wherever its users already are ([#141](https://github.com/the-vibey-project/vibey/issues/141)) ([16d9adad](https://github.com/the-vibey-project/vibey/commit/16d9adad2ed506d840340820e03c2c6de072d292))
+* ADR-0020 — a governing rule belongs in the canon, ratified, or it is not a rule ([#142](https://github.com/the-vibey-project/vibey/issues/142)) ([718e8980](https://github.com/the-vibey-project/vibey/commit/718e8980da52092ce019bd11f59e8bb1da1cf6ab))
+* file 12.b, because ADR-0020 was exempting itself from its own rule ([573804b7](https://github.com/the-vibey-project/vibey/commit/573804b790afc646dcd6587421f2bfa275b06498))
+
+* build out every ADR: 0015 rebuilt, 0021–0033 recorded, 0001–0020 brought up to the code ([#159](https://github.com/the-vibey-project/vibey/issues/159)) ([7cf33920](https://github.com/the-vibey-project/vibey/commit/7cf339201597969facd0137fc66f2da30413d2e9))
+* the book and the paper everywhere a reader looks; changelog, contributor docs and paper brought up to date ([#156](https://github.com/the-vibey-project/vibey/issues/156)) ([04766b44](https://github.com/the-vibey-project/vibey/commit/04766b4473dc21100a779497c1be3fc400dfc7b1))
+* **canon:** sub-doctrines 9.b, 10.e, 12.c, 2.b and 7.b ratified; 12.b cites Article II.3 ([#150](https://github.com/the-vibey-project/vibey/issues/150)) ([b8038420](https://github.com/the-vibey-project/vibey/commit/b80384202adb61b8b92ae455080b7fb7a46c0f00)) ([#151](https://github.com/the-vibey-project/vibey/issues/151)) ([fbc4de65](https://github.com/the-vibey-project/vibey/commit/fbc4de655d9a53204d3940ce9dbcbc83fa697382)) ([#152](https://github.com/the-vibey-project/vibey/issues/152)) ([5a35d9ac](https://github.com/the-vibey-project/vibey/commit/5a35d9aca5a7321951a751b80bedf05a3f1cd348)) ([#153](https://github.com/the-vibey-project/vibey/issues/153)) ([3be10eb6](https://github.com/the-vibey-project/vibey/commit/3be10eb63f2ea77e4a7925624015a2b1a3d2204f)) ([#154](https://github.com/the-vibey-project/vibey/issues/154)) ([2bab0f9f](https://github.com/the-vibey-project/vibey/commit/2bab0f9f37c554c04e7f9d10343e573c760ad1a6)) ([#157](https://github.com/the-vibey-project/vibey/issues/157)) ([061adf5d](https://github.com/the-vibey-project/vibey/commit/061adf5dfb97e7951476be0a9d040a88bbe3224f))
+### Miscellaneous Chores
+
+* repoint provenance and every family URL at the-vibey-project ([8ac15815](https://github.com/the-vibey-project/vibey/commit/8ac15815a7a47042cd6872cc6fe3d84a5eb2b043)); repo_name and vibey-skills marketplace instructions updated to match ([1d38ff12](https://github.com/the-vibey-project/vibey/commit/1d38ff1238666e38e56ee75f425aa3469986037e) and siblings)
+* **deps:** bump astral-sh/setup-uv from 3 to 7 ([#129](https://github.com/the-vibey-project/vibey/issues/129)) ([0b406f46](https://github.com/the-vibey-project/vibey/commit/0b406f46b44addbb061428c99a400e5fb66ca898))
+* **deps:** bump azure/setup-helm from 4 to 5 ([#128](https://github.com/the-vibey-project/vibey/issues/128)) ([1f23cd52](https://github.com/the-vibey-project/vibey/commit/1f23cd52a0cfceb2e2076eb39b52ce19ce255702))
+* **deps:** bump docker/build-push-action from 6 to 7 ([#127](https://github.com/the-vibey-project/vibey/issues/127)) ([ad23bce0](https://github.com/the-vibey-project/vibey/commit/ad23bce03a84cb10e578abfa91b5a3dcc1345cce))
+* **deps:** bump docker/setup-buildx-action from 3 to 4 ([#126](https://github.com/the-vibey-project/vibey/issues/126)) ([2c532632](https://github.com/the-vibey-project/vibey/commit/2c5326321f3c0b107ef66064f17165ab16162414))
+* **deps:** bump docker/setup-qemu-action from 3 to 4 ([#125](https://github.com/the-vibey-project/vibey/issues/125)) ([cff3eed0](https://github.com/the-vibey-project/vibey/commit/cff3eed0d6f5a1bbe6ab64e0669df8914e040f2e))
+* develop -> main ([#130](https://github.com/the-vibey-project/vibey/issues/130)) ([23c7c301](https://github.com/the-vibey-project/vibey/commit/23c7c30130358b852f141fe17c231193855dff9b)), reverted by [#131](https://github.com/the-vibey-project/vibey/issues/131) ([b2093525](https://github.com/the-vibey-project/vibey/commit/b20935255aae6792df5905a4b5fed2242ffa57c6))
+
+## [0.6.0] (2026-09-14)
+
+Published to PyPI 2026-09-15 from the promotion PR [#124](https://github.com/the-vibey-project/vibey/issues/124) ([8c3f3a62](https://github.com/the-vibey-project/vibey/commit/8c3f3a62eea76bda175866d7fee20173f6391655)).
+
+### Features
+
+* **runners:** import claudeloop, codexloop, cursorloop, agyloop and qwenloop into `src/vibey_runners/*` with history preserved ([#123](https://github.com/the-vibey-project/vibey/issues/123)) ([cc7e4c02](https://github.com/the-vibey-project/vibey/commit/cc7e4c021735c826d1af7d85f3f7eae822712f23))
+* **runners:** add the shared `vibey_runners.common` application package ([1cd11ab8](https://github.com/the-vibey-project/vibey/commit/1cd11ab850f6056c128a98d042ede47661617e18))
+* **workspace:** register `src/vibey_runners/*` as a uv workspace at the root ([fa6fd69b](https://github.com/the-vibey-project/vibey/commit/fa6fd69b9b219402e5aa702d77065e9e413f7423))
+
+### Bug Fixes
+
+* **ci:** disable BuildKit for the minikube image build ([233774c0](https://github.com/the-vibey-project/vibey/commit/233774c0ea1e367b1656ff5236a7e84439fba12f))
+* **ci:** capture the SIGTERM-test pod's own logs before it's replaced ([14cf1702](https://github.com/the-vibey-project/vibey/commit/14cf1702172df77ccc59fafa2c149356e2b4c269))
+* regenerate uv.lock for the v0.5.0 version bump ([829d7b50](https://github.com/the-vibey-project/vibey/commit/829d7b506875977f3947158837ae4c1c642c9265))
+
+### Miscellaneous Chores
+
+* **claude:** move cross-runner interfaces to `vibey_runners.common` ([bae04b7e](https://github.com/the-vibey-project/vibey/commit/bae04b7ec08c3594b331541b51cc105a91b91817))
+* **codex:** rewire codexloop onto the shared common interfaces ([f2ebca3f](https://github.com/the-vibey-project/vibey/commit/f2ebca3f9c52dcff05ca9ed307b5355edfa46d8c))
+* update vibey-gh workflow templates and fingerprint headers ([0e11464b](https://github.com/the-vibey-project/vibey/commit/0e11464b257c6c3a2ce97224c48401e6a17ba693))
+* instrument the worker drain loop to find where SIGTERM stalls ([ac3b2f9d](https://github.com/the-vibey-project/vibey/commit/ac3b2f9d47d411ac361d56392fd4ffaed3f1c4f5))
+
+## [0.5.0] (2026-08-31)
+
+Published to PyPI 2026-09-14 from the promotion PR [#122](https://github.com/the-vibey-project/vibey/issues/122) ([b8cf03ed](https://github.com/the-vibey-project/vibey/commit/b8cf03ed4ce3f4181767b0ce10fa2b44b8a25431)).
+
+### Features
+
+* **design:** a sovereign DESIGN provider — phase one without paid credits ([#120](https://github.com/the-vibey-project/vibey/issues/120)) ([6f86ec1e](https://github.com/the-vibey-project/vibey/commit/6f86ec1e6247bd38f7bcbf02b2761b92dccca51c))
+
+### Bug Fixes
+
+* regenerate uv.lock for the 0.4.0 bump ([#119](https://github.com/the-vibey-project/vibey/issues/119)) ([2eaea251](https://github.com/the-vibey-project/vibey/commit/2eaea2517b6a3878d71dbb6b76612efb423c06f8))
+
+## [0.4.0] (2026-08-31)
+
+### Bug Fixes
+
+* **doctor:** show the sovereign engine ([#117](https://github.com/the-vibey-project/vibey/issues/117)) ([137bba2c](https://github.com/the-vibey-project/vibey/commit/137bba2c1e5b1dc904a73dad0e699dc013627fb8))
+* **docs:** repair the five links that abort the channel-site strict build ([#108](https://github.com/the-vibey-project/vibey/issues/108)) ([dd23c762](https://github.com/the-vibey-project/vibey/commit/dd23c762fbe1d7c9253b36a270b0da44ce359241))
+* repair PR #96 ([4a4f8c12](https://github.com/the-vibey-project/vibey/commit/4a4f8c12230d82947fee083f97fdb4cc38d44af1), [ec4a9c5b](https://github.com/the-vibey-project/vibey/commit/ec4a9c5bcc00d28e4ba7ec1b7100593fca2ecd13))
+
+### Documentation
+
+* the research paper — ledger-mediated orchestration ([#101](https://github.com/the-vibey-project/vibey/issues/101)) ([352d9cbf](https://github.com/the-vibey-project/vibey/commit/352d9cbf7cd7b7738e8f1a1ad89f557463cecf27))
+* BLUF opening and legible phase numbering ([#99](https://github.com/the-vibey-project/vibey/issues/99)) ([59016e52](https://github.com/the-vibey-project/vibey/commit/59016e52189d6ef6ad79334e32e7aadf63513e86))
+* embed standing subdoctrine SD-01 — counterparties, trust, and verification ([#110](https://github.com/the-vibey-project/vibey/issues/110)) ([b4614ba3](https://github.com/the-vibey-project/vibey/commit/b4614ba30676442d2ac582e51e050f671832e8da))
+
+### Miscellaneous Chores
+
+* pin vibey-gh 1.50.0 ([#102](https://github.com/the-vibey-project/vibey/issues/102)) ([f1068f85](https://github.com/the-vibey-project/vibey/commit/f1068f85e84391c07bc0f025ffd3f2dae51ae30a))
+* pin vibey-gh 1.56.0 ([#103](https://github.com/the-vibey-project/vibey/issues/103)) ([5f3c4eb3](https://github.com/the-vibey-project/vibey/commit/5f3c4eb3f849c8b4d8ca48e7ae4aae2667567daa))
+* render the managed workflows with the real 1.56.0 tool ([#105](https://github.com/the-vibey-project/vibey/issues/105)) ([5ee93b7a](https://github.com/the-vibey-project/vibey/commit/5ee93b7a0c0d6615a57a6cebae73abc267d5c6b2))
+* pin vibey-gh 1.58.0 ([#112](https://github.com/the-vibey-project/vibey/issues/112)) ([af596f78](https://github.com/the-vibey-project/vibey/commit/af596f78043257660bd1973051b0d9392ff08012))
+
+## [0.3.0] (2026-08-29)
+
+### Bug Fixes
+
+* replace the git source pin so the package can publish at all ([#92](https://github.com/the-vibey-project/vibey/issues/92)) ([643e78e4](https://github.com/the-vibey-project/vibey/commit/643e78e4da62b595f71aaf17f72e30ea5863629f))
+* publish the TestPyPI rehearsal as vibey-dev ([#93](https://github.com/the-vibey-project/vibey/issues/93)) ([a9acd42a](https://github.com/the-vibey-project/vibey/commit/a9acd42af81bd33ddd590919dba28db6ff3d6c42))
+
+### Miscellaneous Chores
+
+* adopt vibey-gh 1.39.0 — provenance, gated automation, ProperDocs ([#91](https://github.com/the-vibey-project/vibey/issues/91)) ([80264c2b](https://github.com/the-vibey-project/vibey/commit/80264c2be624e58060fa1f263759df634a194ef8))
+* migrate the provenance URL to vibewithadam.matthewsteinberger.com ([#95](https://github.com/the-vibey-project/vibey/issues/95)) ([49c94d06](https://github.com/the-vibey-project/vibey/commit/49c94d06064808f3324dad7abf3b85fe6cfab921))
+* pin vibey-gh 1.47.0 ([#100](https://github.com/the-vibey-project/vibey/issues/100)) ([1a96df91](https://github.com/the-vibey-project/vibey/commit/1a96df918388c99379d9d1418c037ecc851f297f))
+
+## [0.2.0] (2026-08-24)
+
+Release commit [2d08a834](https://github.com/the-vibey-project/vibey/commit/2d08a834a28ae0312f31039ac2e12ffea9cb5fc6); published to PyPI 2026-08-28 once #92 and #93 (shipped in 0.3.0) unblocked the publish job.
+
+### Features
+
+* skills-context retrieval: `vibey new --skills-context-mode {off,shadow,inject}` and `--skills-context-budget`, backed by `infrastructure/skills_context.py` (`VibeySkillsContextCompiler`) and wired into the BUILD implement handler. These are CLI-flag-driven, recorded into the project's own config at creation time — there is no static `[skills_context]` `vibey.toml` table (`domain/config.py`'s `VibeyConfig` has no `skills_context` field) ([#82](https://github.com/the-vibey-project/vibey/issues/82)) ([7837d6f1](https://github.com/the-vibey-project/vibey/commit/7837d6f1764ed0f4591b53ff88fafa93f4fa2ff3))
+* add opt-in qwenloop fallback engine ([#83](https://github.com/the-vibey-project/vibey/issues/83)) ([eb57670b](https://github.com/the-vibey-project/vibey/commit/eb57670be949b08795edd29196d2ddc0e6102270))
+* `vibey recover` command ([#80](https://github.com/the-vibey-project/vibey/issues/80)) ([2438f3b9](https://github.com/the-vibey-project/vibey/commit/2438f3b9a85c66061a9c4fbc7b350be7f85fa724))
+* vibey runs on Kubernetes — image, chart, KEDA autoscaling, and graceful scale-in ([#73](https://github.com/the-vibey-project/vibey/issues/73)) ([1918e94a](https://github.com/the-vibey-project/vibey/commit/1918e94a2cb80b23d348b4a35b7554905485a9c6))
+* vibey doctor --cluster, plus four new fitness dimensions in runbook 18 ([#74](https://github.com/the-vibey-project/vibey/issues/74)) ([a4731cd6](https://github.com/the-vibey-project/vibey/commit/a4731cd6ffcd726a8800ae9ad931bf859220ba85))
+* **operator:** kopf operator and the VibeyProject CRD ([#76](https://github.com/the-vibey-project/vibey/issues/76)) ([e1820c77](https://github.com/the-vibey-project/vibey/commit/e1820c77b9f4ccfb5a00badefbc23dc373c7e7d0))
+
+### Bug Fixes
+
+* **engines:** render valid CodexLoop plans ([f2f30bfa](https://github.com/the-vibey-project/vibey/commit/f2f30bfaca96c5350ab32901e8eaef250afe3f1e))
+* **engines:** reap preflight subprocesses ([3dcebeb8](https://github.com/the-vibey-project/vibey/commit/3dcebeb89cc3f612066a19cb6ccdcce38d93962c))
+* **budget:** record DESIGN spend so the brake can actually see it ([#78](https://github.com/the-vibey-project/vibey/issues/78)) ([971bf842](https://github.com/the-vibey-project/vibey/commit/971bf84294f6b68414b97ac9f7c6120869cff810))
+* read codexloop's flat events, and accept terminal meta status as completion ([#72](https://github.com/the-vibey-project/vibey/issues/72)) ([4b5de059](https://github.com/the-vibey-project/vibey/commit/4b5de059f4c5a43917b6a66cc331252385624448))
+* cursorloop takes the plan as --plan, and the flags check stops validating values ([#69](https://github.com/the-vibey-project/vibey/issues/69)) ([119cae99](https://github.com/the-vibey-project/vibey/commit/119cae9917192586c314131793b1a250fff8051e))
+* worktree lifecycle reasserts core.bare=false on every mutating path ([#68](https://github.com/the-vibey-project/vibey/issues/68)) ([b530cffb](https://github.com/the-vibey-project/vibey/commit/b530cffbab594022ee9d5720995389ca9b6cfa80))
+* **ci:** build TestPyPI under vibey-dev, the name that project holds ([#79](https://github.com/the-vibey-project/vibey/issues/79)) ([45259a24](https://github.com/the-vibey-project/vibey/commit/45259a24ffc439b0d2786eb4f2cb533d4819b7d3))
+
+### Documentation
+
+* runbooks 19-21 and four more fitness dimensions ([#75](https://github.com/the-vibey-project/vibey/issues/75)) ([88e87c86](https://github.com/the-vibey-project/vibey/commit/88e87c8675c54deb8d3825096efb17c0fe8b3ea2))
+* runbook 15 — agent-surface sync across every installed IDE and bot ([#67](https://github.com/the-vibey-project/vibey/issues/67)) ([45da3519](https://github.com/the-vibey-project/vibey/commit/45da3519ed23261f3baa7bf2a415509f52d3817c))
+* record Front 1 validation and accept the 135s suite deviation ([#71](https://github.com/the-vibey-project/vibey/issues/71)) ([0aaf422d](https://github.com/the-vibey-project/vibey/commit/0aaf422d094e90f27e8673f1914593816470999f))
+
+### Miscellaneous Chores
+
+* adopt vibey-gh guardrails and retire release-please ([#77](https://github.com/the-vibey-project/vibey/issues/77)) ([bd0b8c2b](https://github.com/the-vibey-project/vibey/commit/bd0b8c2b643e398d0a2344078f83eb19fdb26dbb))
+* **tests:** template-database, xdist parallelism, unified coverage, hook diet ([#70](https://github.com/the-vibey-project/vibey/issues/70)) ([7067b2a3](https://github.com/the-vibey-project/vibey/commit/7067b2a35cd4e9ff202159ecb1077e6245ea2ca6))
+
+## [0.1.2](https://github.com/the-vibey-project/vibey/compare/vibey-v0.1.1...vibey-v0.1.2) (2026-08-20)
 
 
 ### Documentation
 
-* engagement refresh -- README, community files, license, templates ([#65](https://github.com/adammatthewsteinberger/vibey/issues/65)) ([48ce5ac](https://github.com/adammatthewsteinberger/vibey/commit/48ce5ac706c9b26cc036ab24d63ecd83828fdae6))
+* engagement refresh -- README, community files, license, templates ([#65](https://github.com/the-vibey-project/vibey/issues/65)) ([48ce5ac](https://github.com/the-vibey-project/vibey/commit/48ce5ac706c9b26cc036ab24d63ecd83828fdae6))
 
 
 ### Miscellaneous Chores
 
-* cut 0.1.2 -- ship the engagement refresh to PyPI ([541e820](https://github.com/adammatthewsteinberger/vibey/commit/541e820fe2d68ac3496cec2f4f7eac34f784bcc3))
+* cut 0.1.2 -- ship the engagement refresh to PyPI ([541e820](https://github.com/the-vibey-project/vibey/commit/541e820fe2d68ac3496cec2f4f7eac34f784bcc3))
 
-## [0.1.1](https://github.com/adammatthewsteinberger/vibey/compare/vibey-v0.1.0...vibey-v0.1.1) (2026-08-20)
-
-
-### Features
-
-* budget brake and escalation grants -- the last dead-end parks ([#56](https://github.com/adammatthewsteinberger/vibey/issues/56)) ([138483c](https://github.com/adammatthewsteinberger/vibey/commit/138483c430e60c7190ab9c1d132ad50352f9fe17))
-* **e1:** live engine adapters, rotation wiring, full worker, two-mode harness ([#17](https://github.com/adammatthewsteinberger/vibey/issues/17)) ([3d05a8a](https://github.com/adammatthewsteinberger/vibey/commit/3d05a8ae2204fb0d50ca97010002f6edb3934862))
-* make per-job engine rotation live in the worker (Phase 4) ([#41](https://github.com/adammatthewsteinberger/vibey/issues/41)) ([074d279](https://github.com/adammatthewsteinberger/vibey/commit/074d279621081f2b4b5d8545c68ce6b385dc5b0d))
-* paid live worker test, and the two real-engine bugs it caught ([#44](https://github.com/adammatthewsteinberger/vibey/issues/44)) ([c3885f7](https://github.com/adammatthewsteinberger/vibey/commit/c3885f7173b8d82bd3399715f808e05f5cc700fb))
-* prevent parallel-item merge conflicts and stale-finding loop-backs ([#49](https://github.com/adammatthewsteinberger/vibey/issues/49)) ([812fdd7](https://github.com/adammatthewsteinberger/vibey/commit/812fdd7930d1ad1e82e92c649a3123d22b8ff598))
-* real Azure deploy path via the az CLI, behind an explicit flag ([#57](https://github.com/adammatthewsteinberger/vibey/issues/57)) ([a254f23](https://github.com/adammatthewsteinberger/vibey/commit/a254f23dca57f4f5d8fa8ef30e132d169aa98986))
-* serialize concurrent integrates with a Postgres advisory lock (Phase 6) ([#43](https://github.com/adammatthewsteinberger/vibey/issues/43)) ([f9e519b](https://github.com/adammatthewsteinberger/vibey/commit/f9e519bfe87661174472e7cce1271d0519581a22))
-* turn deterministic verify failures into a bounded repair loop ([#48](https://github.com/adammatthewsteinberger/vibey/issues/48)) ([f793e8b](https://github.com/adammatthewsteinberger/vibey/commit/f793e8bb46ae9c1f43f42109d5f303ff95cec857))
-* verification discipline in prompts, and a race-proof conformance verdict check ([#54](https://github.com/adammatthewsteinberger/vibey/issues/54)) ([b98bf81](https://github.com/adammatthewsteinberger/vibey/commit/b98bf815cd737c44c36de4a1a94fd4a7b0014ccf))
-* wire wind-down handoff into the worker (Phase 5) ([#42](https://github.com/adammatthewsteinberger/vibey/issues/42)) ([021f6d2](https://github.com/adammatthewsteinberger/vibey/commit/021f6d28c37f5a93b8b978c9f518b78a4caeef4f))
-* worker phase 0 -- rotation-blocking bug fix, phase-aware ledger, queue primitives ([#37](https://github.com/adammatthewsteinberger/vibey/issues/37)) ([028cc6f](https://github.com/adammatthewsteinberger/vibey/commit/028cc6f4e45e7ce681e8c9a0be9a3bb5b9109fb0))
-* worker phase 1 -- vibey worker dispatches for real through every phase handler ([#38](https://github.com/adammatthewsteinberger/vibey/issues/38)) ([92e4c1c](https://github.com/adammatthewsteinberger/vibey/commit/92e4c1c5a7258592b6b0c28aa0c1d9600a208dfc))
-* worker phase 2 -- close the job chain end to end, DONE(local) reachable ([#39](https://github.com/adammatthewsteinberger/vibey/issues/39)) ([20eb081](https://github.com/adammatthewsteinberger/vibey/commit/20eb08139742deddda43ddbdf2fbc4becce06c41))
-* worker phase 3 -- deployment spec/consent persistence, DONE(deployed) reachable ([#40](https://github.com/adammatthewsteinberger/vibey/issues/40)) ([f89a46d](https://github.com/adammatthewsteinberger/vibey/commit/f89a46d42360c67161431c1e05771367579f26cf))
-* zero-touch answer contracts for interview and exhausted-repair gates ([#53](https://github.com/adammatthewsteinberger/vibey/issues/53)) ([4d40202](https://github.com/adammatthewsteinberger/vibey/commit/4d40202c15d3b43c315f1f440bb0ad974c853785))
-
-
-### Bug Fixes
-
-* a completed repair session resolves its finding, breaking the repair livelock ([#59](https://github.com/adammatthewsteinberger/vibey/issues/59)) ([c4ef91d](https://github.com/adammatthewsteinberger/vibey/commit/c4ef91dac043ff539958ea3027d95272e4d77b01))
-* a gate command that cannot start is a failing gate, not a vibey failure ([#61](https://github.com/adammatthewsteinberger/vibey/issues/61)) ([b708c7d](https://github.com/adammatthewsteinberger/vibey/commit/b708c7d34de727a0015ea21a3634f6d922b96ccd))
-* a positive rotation weight must never round down to zero ([#51](https://github.com/adammatthewsteinberger/vibey/issues/51)) ([7e3d463](https://github.com/adammatthewsteinberger/vibey/commit/7e3d463fcc3e07ca7dac5de7fa693ba75511b38f))
-* bound the integrate repair loop and give repairs actionable merge instructions ([#52](https://github.com/adammatthewsteinberger/vibey/issues/52)) ([6b186cc](https://github.com/adammatthewsteinberger/vibey/commit/6b186cc08acff70937617764bc25ad9b94b1cab4))
-* budget brake now reads the real spend engines write on TurnCompleted ([#58](https://github.com/adammatthewsteinberger/vibey/issues/58)) ([d3248e4](https://github.com/adammatthewsteinberger/vibey/commit/d3248e44e0c2225e226e3a6130abc61b8e548912))
-* four autonomy blockers from the live demo's observability class ([#46](https://github.com/adammatthewsteinberger/vibey/issues/46)) ([39c6388](https://github.com/adammatthewsteinberger/vibey/commit/39c6388c642bcb5315146efb1d4dfa5e0c0e2688))
-* implement help_text so the flags conformance check can run at all, fix two broken descriptors it found ([#33](https://github.com/adammatthewsteinberger/vibey/issues/33)) ([c923345](https://github.com/adammatthewsteinberger/vibey/commit/c923345d0d805a62b00b7378cfdd25797765d063))
-* isolate engine sessions from the orchestrator's Python environment ([#47](https://github.com/adammatthewsteinberger/vibey/issues/47)) ([dc254ee](https://github.com/adammatthewsteinberger/vibey/commit/dc254ee0a77f309a3a5a394a24a7170435b0ad6b))
-* map claudeloop's real event_type strings, same fabrication as agyloop's ([#32](https://github.com/adammatthewsteinberger/vibey/issues/32)) ([89ff3fc](https://github.com/adammatthewsteinberger/vibey/commit/89ff3fc132285b9636109f52c1093e01f1e878a6))
-* normalize model-produced work item ids to the worktree shape ([#45](https://github.com/adammatthewsteinberger/vibey/issues/45)) ([f688918](https://github.com/adammatthewsteinberger/vibey/commit/f6889185cae4d9d8ce259054f4af5ed14397bdaf))
-* only capacity Defers open circuits, and open circuits actually probe ([#50](https://github.com/adammatthewsteinberger/vibey/issues/50)) ([717c797](https://github.com/adammatthewsteinberger/vibey/commit/717c7971bd6569384c434ebfb405567fc8a26f82))
-* reassert core.bare=false after land.sh removes the last worktree ([#31](https://github.com/adammatthewsteinberger/vibey/issues/31)) ([f6ae923](https://github.com/adammatthewsteinberger/vibey/commit/f6ae9231a6b7d09f81fa14a544b333f483c6e6db))
-* replace codexloop/cursorloop's fabricated LOOP_EVENT_MAP entries with source-verified vocabulary ([#34](https://github.com/adammatthewsteinberger/vibey/issues/34)) ([1bac413](https://github.com/adammatthewsteinberger/vibey/commit/1bac413dfb67529ae4ff9be69a0b590594031b13))
-* replace vague conformance prompt with trivially-completable task ([#23](https://github.com/adammatthewsteinberger/vibey/issues/23)) ([b21cd57](https://github.com/adammatthewsteinberger/vibey/commit/b21cd57777ba0bf78da28aefdbd19807b062121d))
-* root LoopProcessAdapter run_dir under the run's own worktree, not adapter base_dir ([#21](https://github.com/adammatthewsteinberger/vibey/issues/21)) ([48fd270](https://github.com/adammatthewsteinberger/vibey/commit/48fd27023fff6eb82046ccff4acba38cbdd5841f))
-* stop overriding claudeloop's --permission-mode to acceptEdits ([#12](https://github.com/adammatthewsteinberger/vibey/issues/12)) ([b383ae9](https://github.com/adammatthewsteinberger/vibey/commit/b383ae9f0f9de9c4d65070b71ecccd43e31efd9a))
-* two production-blocking bugs found by a real subprocess conformance test ([#36](https://github.com/adammatthewsteinberger/vibey/issues/36)) ([9088919](https://github.com/adammatthewsteinberger/vibey/commit/9088919bd2b2970d40ae5aa7a9f738a4fb7cd1f9))
-
-
-### Documentation
-
-* fifteen expansion runbooks -- the platform buildout, dogfooded through vibey itself ([#60](https://github.com/adammatthewsteinberger/vibey/issues/60)) ([8bc4484](https://github.com/adammatthewsteinberger/vibey/commit/8bc44843e835f74ba9aefcf3344678bba42558a7))
-* **provision:** refer to the marketplace by its new name, vibey-skills ([#26](https://github.com/adammatthewsteinberger/vibey/issues/26)) ([3abeeb4](https://github.com/adammatthewsteinberger/vibey/commit/3abeeb4b822a54c585104fa34b8860e491536afb))
-* queue agyloop SDK harness handshake investigation (c3) ([#24](https://github.com/adammatthewsteinberger/vibey/issues/24)) ([373bdfe](https://github.com/adammatthewsteinberger/vibey/commit/373bdfe97e2008f124c7494cb7c6af26a63009e3))
-* queue dogfooded investigation of the real-engine conformance timeout ([#22](https://github.com/adammatthewsteinberger/vibey/issues/22)) ([1479cc6](https://github.com/adammatthewsteinberger/vibey/commit/1479cc65f23bea7bcc16e0c99a58f66bfe8c6846))
-* queue investigation of LoopProcessAdapter still failing against a healthy agyloop ([#25](https://github.com/adammatthewsteinberger/vibey/issues/25)) ([538d9ee](https://github.com/adammatthewsteinberger/vibey/commit/538d9ee596e3b5d481b382b9ab31070c6c0c24b7))
-* queue loop_events.py agyloop event-type mapping fix ([#28](https://github.com/adammatthewsteinberger/vibey/issues/28)) ([e6c90f2](https://github.com/adammatthewsteinberger/vibey/commit/e6c90f20ef07de93ed15cfa099bde26484520226))
-* rename e1-loop-event-map plan to match run.sh's REPO-suffix convention ([#29](https://github.com/adammatthewsteinberger/vibey/issues/29)) ([c4df145](https://github.com/adammatthewsteinberger/vibey/commit/c4df14583894e44b5cc380c182f398ab107a5ea0))
-* strengthen E1 plan against premature Done declarations ([#13](https://github.com/adammatthewsteinberger/vibey/issues/13)) ([95b1e8c](https://github.com/adammatthewsteinberger/vibey/commit/95b1e8c4464005cbc0e03e4fb1fd8d47b87384d8))
-* teach the runbook the zero-touch contracts ([#55](https://github.com/adammatthewsteinberger/vibey/issues/55)) ([9df8690](https://github.com/adammatthewsteinberger/vibey/commit/9df8690e793eb15548b28e0bfa67bf4ef3292ac7))
-* update loop_events.py verification status now that both sinks are wired ([#35](https://github.com/adammatthewsteinberger/vibey/issues/35)) ([301b3f5](https://github.com/adammatthewsteinberger/vibey/commit/301b3f53d059561240eb3cb5a8fd0b909220fbd0))
-
-## [0.1.0](https://github.com/adammatthewsteinberger/vibey/compare/vibey-v0.1.0...vibey-v0.1.0) (2026-08-16)
+## [0.1.1](https://github.com/the-vibey-project/vibey/compare/vibey-v0.1.0...vibey-v0.1.1) (2026-08-20)
 
 
 ### Features
 
-* add structured logging, a -v ladder, and operator-facing errors ([53ca473](https://github.com/adammatthewsteinberger/vibey/commit/53ca473c29c7d00cb196e6d6abba5c701cf55ff2))
-* **azure:** implement AzureClientPort and mutation-guarded adapter (task 10.4) ([34f43c4](https://github.com/adammatthewsteinberger/vibey/commit/34f43c470b491ee844b24ac34e0a152b009cc77d))
-* **build:** agent-surface provisioning into BUILD worktrees (task 6.3) ([c3fd680](https://github.com/adammatthewsteinberger/vibey/commit/c3fd680cfe3be1714c589f43f50be43fd88018c7))
-* **build:** budget check before effort escalation (task 6.7) ([8d71791](https://github.com/adammatthewsteinberger/vibey/commit/8d71791d49d825b8d876e523bfa1832f4ca13371))
-* **build:** build.implement -- engine run, tail, and ledger (task 6.4) ([fa37161](https://github.com/adammatthewsteinberger/vibey/commit/fa371612c29a280a6bb62e8d9a8a7aa7bf8b5355))
-* **build:** build.integrate -- merge, gate, isolate-not-rollback (task 6.8) ([c5f9759](https://github.com/adammatthewsteinberger/vibey/commit/c5f97592c27921cc27869bb22631805220c3616a))
-* **build:** build.verify -- gates, criterion coverage, diff review (task 6.5) ([a18a123](https://github.com/adammatthewsteinberger/vibey/commit/a18a12311f4414a98c6e18becc6f874e52089ee8))
-* **build:** BUILD→REVIEW and BUILD→DESIGN phase guards (task 6.10) ([27c13d1](https://github.com/adammatthewsteinberger/vibey/commit/27c13d171f2619672a8e82c6685599491402e2e2))
-* **build:** forced rotation constraint on effort tier crossings (task 6.6) ([be47648](https://github.com/adammatthewsteinberger/vibey/commit/be47648307d5c0a8b4f54ca84976c3813ee49caa))
-* **build:** parallelism limiter -- min(config, eligible×2, cpu) (task 6.9) ([b49d0df](https://github.com/adammatthewsteinberger/vibey/commit/b49d0df35d3840ac8b09bd6c10e4e9b4487eff60))
-* **build:** real git worktree manager for BUILD work items (task 6.2) ([e363772](https://github.com/adammatthewsteinberger/vibey/commit/e3637723335272fc037170202bd36886d37b9fbc))
-* **build:** start M6 -- build.decompose and BUILD-entry wiring (task 6.1) ([b7fa97f](https://github.com/adammatthewsteinberger/vibey/commit/b7fa97f1afa4103d45195377c5482acafe99128e))
-* **cli:** implement operational cli commands (task 8.2) ([6e30e8f](https://github.com/adammatthewsteinberger/vibey/commit/6e30e8f807fc0e496d5a40874674b5a76b692fe6))
-* **deploy:** add CLI/TUI surfaces for deployment commands (task 10.12) ([c3ec5b4](https://github.com/adammatthewsteinberger/vibey/commit/c3ec5b40db40a57e8a0747aa23e27f07cbb12697))
-* **deploy:** add full offline delivery-to-deployment system test (task 10.13) ([4d8f3f5](https://github.com/adammatthewsteinberger/vibey/commit/4d8f3f532a71598cb5a4b3d2631666b40d8e12c8))
-* **deploy:** implement deployment retry and escalation ladder (task 10.7) ([3a36710](https://github.com/adammatthewsteinberger/vibey/commit/3a3671069f083bc5d90703ca7833808138f2fed5))
-* **deploy:** implement Phase 4 deploy design interview and acceptance (task 10.3) ([ec3a924](https://github.com/adammatthewsteinberger/vibey/commit/ec3a9247021fcbbfb8e88da772460a5174fe14fe))
-* **deploy:** implement Phase 5 deploy execution graph handler (task 10.6) ([b6adba0](https://github.com/adammatthewsteinberger/vibey/commit/b6adba0efe0c0055e726fbde53d0563d978bce80))
-* **deploy:** implement Phase 6 review demo and failure triage handlers (task 10.10) ([5dc516a](https://github.com/adammatthewsteinberger/vibey/commit/5dc516a6f648458dd4b8556b0754edcfc2162cef))
-* **deploy:** implement Phase 6 review loop routing handler (task 10.11) ([3053219](https://github.com/adammatthewsteinberger/vibey/commit/305321919f5559a22d9b7537e430995af2310109))
-* **deploy:** implement progressive exposure and recovery evaluation (task 10.8) ([a9d4f71](https://github.com/adammatthewsteinberger/vibey/commit/a9d4f710c8f418af1412ced4f79f8de880dde63b))
-* **deploy:** implement runtime verification contract evaluation (task 10.9) ([c4f90eb](https://github.com/adammatthewsteinberger/vibey/commit/c4f90eba393f017e936d302d5161e8d48546ae85))
-* **deployment:** implement DeploymentSpec, consent verification, and failure routing (task 10.2) ([032e441](https://github.com/adammatthewsteinberger/vibey/commit/032e44129e098080a8f9414f95606789fc4794ea))
-* **design:** wire the DESIGN -&gt; VISUAL_DESIGN/BUILD choice gate into accept ([b1459d1](https://github.com/adammatthewsteinberger/vibey/commit/b1459d11942ee6d8a9ae62af17839aa96ffaf7cd))
-* **domain:** add media-provider capability discovery and rotation (5.9/5.10) ([8293d22](https://github.com/adammatthewsteinberger/vibey/commit/8293d22baa179a0c55f4c9c7f575647b72f065c5))
-* **domain:** add VISUAL_DESIGN phase and its opt-in guard (M5 task 5.6) ([8f4c1a9](https://github.com/adammatthewsteinberger/vibey/commit/8f4c1a9605da7cbbac3b4b42ff062cbbee2f222c))
-* **domain:** add VisualInventory, the screen/state matrix for M5 task 5.7 ([751803f](https://github.com/adammatthewsteinberger/vibey/commit/751803f065278301c4956e3a797c728525573c11))
-* **iac:** implement IaC static checks, preflight, and what-if evaluation (task 10.5) ([75fef62](https://github.com/adammatthewsteinberger/vibey/commit/75fef62e00872860e9f3f2debecc38acf975b054))
-* implement M1 pure domain (phase machine, rotation, no-loss gate) ([7114e37](https://github.com/adammatthewsteinberger/vibey/commit/7114e37f21b9ee4e0aaa96c66deadc8f9ae9f369))
-* implement M2 durable queue and crash-safe workers ([6cbff9b](https://github.com/adammatthewsteinberger/vibey/commit/6cbff9b2f2ef751b25d04ce9f8a92a50bd520693))
-* implement M3 engine adapters and conformance suite ([0b6c1cc](https://github.com/adammatthewsteinberger/vibey/commit/0b6c1cc08700fb8bbb70aeb7630bff4991ef9c39))
-* implement M4 ledger and handoff -- the no-loss critical path ([df9243f](https://github.com/adammatthewsteinberger/vibey/commit/df9243f17a47847fec2c7c1b9973a5ae95395ac3))
-* **notify:** implement desktop notifications and webhook publisher (task 8.4) ([7d2988c](https://github.com/adammatthewsteinberger/vibey/commit/7d2988cb7a1f5f63ab9118bff95c897ac0256ab7))
-* **observability:** implement opentelemetry and metrics exports (task 8.3) ([45de50a](https://github.com/adammatthewsteinberger/vibey/commit/45de50abb751084bbcdf21f451ea2d34761ef61b))
-* **phase:** expand pure phase machine to deployment stage set (task 10.1) ([cfe7357](https://github.com/adammatthewsteinberger/vibey/commit/cfe7357a9247e68ad4e82c4085b620cbaf843496))
-* **review:** implement automated findings pre-triaging (task 7.3) ([8a264ea](https://github.com/adammatthewsteinberger/vibey/commit/8a264ea3c6572651aa2ec2ae10dc2c02032df06a))
-* **review:** implement deployment opt-in handoff to deploy design (task 7.8) ([31ff71f](https://github.com/adammatthewsteinberger/vibey/commit/31ff71fc0df982eb5935f8b7f339eb95dfa3a949))
-* **review:** implement deployment-choice gate (task 7.7) ([ac9e697](https://github.com/adammatthewsteinberger/vibey/commit/ac9e6977e1c380b040a23ec8b4828d414f20cd9d))
-* **review:** implement re-entrant design scoped to findings (task 7.6) ([c916d8c](https://github.com/adammatthewsteinberger/vibey/commit/c916d8cec0d6a2aff4599b79fb5b862a50967128))
-* **review:** implement review.collect and ledger-grounded QA (task 7.2) ([b750b81](https://github.com/adammatthewsteinberger/vibey/commit/b750b816fe123035895eaf9d64b8de24121e04be))
-* **review:** implement review.demo and deltas projection (task 7.1) ([b88488e](https://github.com/adammatthewsteinberger/vibey/commit/b88488ed8e93c4843fb407a66ddc95e760d05090))
-* **review:** implement review.triage classification (task 7.4) ([ecff22f](https://github.com/adammatthewsteinberger/vibey/commit/ecff22fe724dacdbce27db1f7f618062230e481a))
-* **review:** wire loopback routing and cycle increment (task 7.5) ([ff2dea9](https://github.com/adammatthewsteinberger/vibey/commit/ff2dea91dbfc3fa53b1666a1240f604d52a95217))
-* scaffold M0 repo skeleton, onion contract, CI, and vibey.toml schema ([578421f](https://github.com/adammatthewsteinberger/vibey/commit/578421fa079bb1aa7f6c4889ab53c7a9651639df))
-* **security:** implement destructive-command prevention guard (task 9.2) ([dcb8d30](https://github.com/adammatthewsteinberger/vibey/commit/dcb8d30858f02e10faf577e1978aed1068051494))
-* **security:** implement hardened container isolation runtime (task 9.1) ([f59f630](https://github.com/adammatthewsteinberger/vibey/commit/f59f630295f61eff4c3b523534bd222d35942308))
-* **security:** implement scope-bound mutation guard (task 9.3) ([0fb9eb8](https://github.com/adammatthewsteinberger/vibey/commit/0fb9eb87481ee67405abefe02aeed000d6034fb2))
-* **security:** implement untrusted prompt defense and delimiter shielding (task 9.4) ([c7544e4](https://github.com/adammatthewsteinberger/vibey/commit/c7544e44100394596f25c575688c608ce6d76d6c))
-* **tui:** implement live dashboard TUI (task 8.1) ([8bec60f](https://github.com/adammatthewsteinberger/vibey/commit/8bec60ff8e39c40f79cf51d314376bdffe52ee8b))
-* **tui:** implement replay mode for watch command (task 8.5) ([cdb34dc](https://github.com/adammatthewsteinberger/vibey/commit/cdb34dc01ae3b0cde5ddd7b3ef84f0950fb5c50e))
-* **visual:** close the loop -- VISUAL_DESIGN -&gt; BUILD accept/waive (task 5.13) ([508bb71](https://github.com/adammatthewsteinberger/vibey/commit/508bb717830e32c894b981379dbd44678bc5a30a))
-* **visual:** wire visual.inventory/visual.plan job handlers and persistence ([6a5231c](https://github.com/adammatthewsteinberger/vibey/commit/6a5231c2d3d33a310aaba6150c160dd94d9d19c8))
+* budget brake and escalation grants -- the last dead-end parks ([#56](https://github.com/the-vibey-project/vibey/issues/56)) ([138483c](https://github.com/the-vibey-project/vibey/commit/138483c430e60c7190ab9c1d132ad50352f9fe17))
+* **e1:** live engine adapters, rotation wiring, full worker, two-mode harness ([#17](https://github.com/the-vibey-project/vibey/issues/17)) ([3d05a8a](https://github.com/the-vibey-project/vibey/commit/3d05a8ae2204fb0d50ca97010002f6edb3934862))
+* make per-job engine rotation live in the worker (Phase 4) ([#41](https://github.com/the-vibey-project/vibey/issues/41)) ([074d279](https://github.com/the-vibey-project/vibey/commit/074d279621081f2b4b5d8545c68ce6b385dc5b0d))
+* paid live worker test, and the two real-engine bugs it caught ([#44](https://github.com/the-vibey-project/vibey/issues/44)) ([c3885f7](https://github.com/the-vibey-project/vibey/commit/c3885f7173b8d82bd3399715f808e05f5cc700fb))
+* prevent parallel-item merge conflicts and stale-finding loop-backs ([#49](https://github.com/the-vibey-project/vibey/issues/49)) ([812fdd7](https://github.com/the-vibey-project/vibey/commit/812fdd7930d1ad1e82e92c649a3123d22b8ff598))
+* real Azure deploy path via the az CLI, behind an explicit flag ([#57](https://github.com/the-vibey-project/vibey/issues/57)) ([a254f23](https://github.com/the-vibey-project/vibey/commit/a254f23dca57f4f5d8fa8ef30e132d169aa98986))
+* serialize concurrent integrates with a Postgres advisory lock (Phase 6) ([#43](https://github.com/the-vibey-project/vibey/issues/43)) ([f9e519b](https://github.com/the-vibey-project/vibey/commit/f9e519bfe87661174472e7cce1271d0519581a22))
+* turn deterministic verify failures into a bounded repair loop ([#48](https://github.com/the-vibey-project/vibey/issues/48)) ([f793e8b](https://github.com/the-vibey-project/vibey/commit/f793e8bb46ae9c1f43f42109d5f303ff95cec857))
+* verification discipline in prompts, and a race-proof conformance verdict check ([#54](https://github.com/the-vibey-project/vibey/issues/54)) ([b98bf81](https://github.com/the-vibey-project/vibey/commit/b98bf815cd737c44c36de4a1a94fd4a7b0014ccf))
+* wire wind-down handoff into the worker (Phase 5) ([#42](https://github.com/the-vibey-project/vibey/issues/42)) ([021f6d2](https://github.com/the-vibey-project/vibey/commit/021f6d28c37f5a93b8b978c9f518b78a4caeef4f))
+* worker phase 0 -- rotation-blocking bug fix, phase-aware ledger, queue primitives ([#37](https://github.com/the-vibey-project/vibey/issues/37)) ([028cc6f](https://github.com/the-vibey-project/vibey/commit/028cc6f4e45e7ce681e8c9a0be9a3bb5b9109fb0))
+* worker phase 1 -- vibey worker dispatches for real through every phase handler ([#38](https://github.com/the-vibey-project/vibey/issues/38)) ([92e4c1c](https://github.com/the-vibey-project/vibey/commit/92e4c1c5a7258592b6b0c28aa0c1d9600a208dfc))
+* worker phase 2 -- close the job chain end to end, DONE(local) reachable ([#39](https://github.com/the-vibey-project/vibey/issues/39)) ([20eb081](https://github.com/the-vibey-project/vibey/commit/20eb08139742deddda43ddbdf2fbc4becce06c41))
+* worker phase 3 -- deployment spec/consent persistence, DONE(deployed) reachable ([#40](https://github.com/the-vibey-project/vibey/issues/40)) ([f89a46d](https://github.com/the-vibey-project/vibey/commit/f89a46d42360c67161431c1e05771367579f26cf))
+* zero-touch answer contracts for interview and exhausted-repair gates ([#53](https://github.com/the-vibey-project/vibey/issues/53)) ([4d40202](https://github.com/the-vibey-project/vibey/commit/4d40202c15d3b43c315f1f440bb0ad974c853785))
 
 
 ### Bug Fixes
 
-* align rotation weights with ADR-0005 ([3f63fcd](https://github.com/adammatthewsteinberger/vibey/commit/3f63fcd9d1c853dcdff16e9796e0c1e2f1e14d46))
-* **cli:** repair unreachable `vibey design accept` and cover build_app() paths ([3987618](https://github.com/adammatthewsteinberger/vibey/commit/39876189a11667e915adde0a4e404b4d0604045f))
-* **cli:** stabilize CliRunner terminal styling across all CLI test files ([#1](https://github.com/adammatthewsteinberger/vibey/issues/1)) ([ac76131](https://github.com/adammatthewsteinberger/vibey/commit/ac7613169d1308a49dc3325a9460a4f42ad4ba7f))
+* a completed repair session resolves its finding, breaking the repair livelock ([#59](https://github.com/the-vibey-project/vibey/issues/59)) ([c4ef91d](https://github.com/the-vibey-project/vibey/commit/c4ef91dac043ff539958ea3027d95272e4d77b01))
+* a gate command that cannot start is a failing gate, not a vibey failure ([#61](https://github.com/the-vibey-project/vibey/issues/61)) ([b708c7d](https://github.com/the-vibey-project/vibey/commit/b708c7d34de727a0015ea21a3634f6d922b96ccd))
+* a positive rotation weight must never round down to zero ([#51](https://github.com/the-vibey-project/vibey/issues/51)) ([7e3d463](https://github.com/the-vibey-project/vibey/commit/7e3d463fcc3e07ca7dac5de7fa693ba75511b38f))
+* bound the integrate repair loop and give repairs actionable merge instructions ([#52](https://github.com/the-vibey-project/vibey/issues/52)) ([6b186cc](https://github.com/the-vibey-project/vibey/commit/6b186cc08acff70937617764bc25ad9b94b1cab4))
+* budget brake now reads the real spend engines write on TurnCompleted ([#58](https://github.com/the-vibey-project/vibey/issues/58)) ([d3248e4](https://github.com/the-vibey-project/vibey/commit/d3248e44e0c2225e226e3a6130abc61b8e548912))
+* four autonomy blockers from the live demo's observability class ([#46](https://github.com/the-vibey-project/vibey/issues/46)) ([39c6388](https://github.com/the-vibey-project/vibey/commit/39c6388c642bcb5315146efb1d4dfa5e0c0e2688))
+* implement help_text so the flags conformance check can run at all, fix two broken descriptors it found ([#33](https://github.com/the-vibey-project/vibey/issues/33)) ([c923345](https://github.com/the-vibey-project/vibey/commit/c923345d0d805a62b00b7378cfdd25797765d063))
+* isolate engine sessions from the orchestrator's Python environment ([#47](https://github.com/the-vibey-project/vibey/issues/47)) ([dc254ee](https://github.com/the-vibey-project/vibey/commit/dc254ee0a77f309a3a5a394a24a7170435b0ad6b))
+* map claudeloop's real event_type strings, same fabrication as agyloop's ([#32](https://github.com/the-vibey-project/vibey/issues/32)) ([89ff3fc](https://github.com/the-vibey-project/vibey/commit/89ff3fc132285b9636109f52c1093e01f1e878a6))
+* normalize model-produced work item ids to the worktree shape ([#45](https://github.com/the-vibey-project/vibey/issues/45)) ([f688918](https://github.com/the-vibey-project/vibey/commit/f6889185cae4d9d8ce259054f4af5ed14397bdaf))
+* only capacity Defers open circuits, and open circuits actually probe ([#50](https://github.com/the-vibey-project/vibey/issues/50)) ([717c797](https://github.com/the-vibey-project/vibey/commit/717c7971bd6569384c434ebfb405567fc8a26f82))
+* reassert core.bare=false after land.sh removes the last worktree ([#31](https://github.com/the-vibey-project/vibey/issues/31)) ([f6ae923](https://github.com/the-vibey-project/vibey/commit/f6ae9231a6b7d09f81fa14a544b333f483c6e6db))
+* replace codexloop/cursorloop's fabricated LOOP_EVENT_MAP entries with source-verified vocabulary ([#34](https://github.com/the-vibey-project/vibey/issues/34)) ([1bac413](https://github.com/the-vibey-project/vibey/commit/1bac413dfb67529ae4ff9be69a0b590594031b13))
+* replace vague conformance prompt with trivially-completable task ([#23](https://github.com/the-vibey-project/vibey/issues/23)) ([b21cd57](https://github.com/the-vibey-project/vibey/commit/b21cd57777ba0bf78da28aefdbd19807b062121d))
+* root LoopProcessAdapter run_dir under the run's own worktree, not adapter base_dir ([#21](https://github.com/the-vibey-project/vibey/issues/21)) ([48fd270](https://github.com/the-vibey-project/vibey/commit/48fd27023fff6eb82046ccff4acba38cbdd5841f))
+* stop overriding claudeloop's --permission-mode to acceptEdits ([#12](https://github.com/the-vibey-project/vibey/issues/12)) ([b383ae9](https://github.com/the-vibey-project/vibey/commit/b383ae9f0f9de9c4d65070b71ecccd43e31efd9a))
+* two production-blocking bugs found by a real subprocess conformance test ([#36](https://github.com/the-vibey-project/vibey/issues/36)) ([9088919](https://github.com/the-vibey-project/vibey/commit/9088919bd2b2970d40ae5aa7a9f738a4fb7cd1f9))
 
 
 ### Documentation
 
-* add session handoff for continuing after M4 ([78d77b8](https://github.com/adammatthewsteinberger/vibey/commit/78d77b8b804a7653e6a6129bb10d30e80d0533f3))
-* add the agyloop invocation, and stop hardcoding one done marker ([068940c](https://github.com/adammatthewsteinberger/vibey/commit/068940ce46bafbb266f6051a0e0b1155b005a73a))
-* add the fleet program runbook ([5768382](https://github.com/adammatthewsteinberger/vibey/commit/57683820fc61d13f695ffd4dfc91356dc3c03068))
-* make visual and deployment stages opt in ([329dd2b](https://github.com/adammatthewsteinberger/vibey/commit/329dd2bf82140660a367694d47b8cf77bbcf56e7))
-* plan six-phase Azure deployment lifecycle ([30047f7](https://github.com/adammatthewsteinberger/vibey/commit/30047f754705e9b7d3dddac03a22c629e59ebf43))
-* **security:** document threat model and security policy (task 9.5) ([a254fc1](https://github.com/adammatthewsteinberger/vibey/commit/a254fc1885285ad9cd7b98d5ff9f81ce1963ef3d))
-* update README status for M7 completion and format system test ([0cf7bd3](https://github.com/adammatthewsteinberger/vibey/commit/0cf7bd3596e366929dc34e98d543e75329bcbe3c))
+* fifteen expansion runbooks -- the platform buildout, dogfooded through vibey itself ([#60](https://github.com/the-vibey-project/vibey/issues/60)) ([8bc4484](https://github.com/the-vibey-project/vibey/commit/8bc44843e835f74ba9aefcf3344678bba42558a7))
+* **provision:** refer to the marketplace by its new name, vibey-skills ([#26](https://github.com/the-vibey-project/vibey/issues/26)) ([3abeeb4](https://github.com/the-vibey-project/vibey/commit/3abeeb4b822a54c585104fa34b8860e491536afb))
+* queue agyloop SDK harness handshake investigation (c3) ([#24](https://github.com/the-vibey-project/vibey/issues/24)) ([373bdfe](https://github.com/the-vibey-project/vibey/commit/373bdfe97e2008f124c7494cb7c6af26a63009e3))
+* queue dogfooded investigation of the real-engine conformance timeout ([#22](https://github.com/the-vibey-project/vibey/issues/22)) ([1479cc6](https://github.com/the-vibey-project/vibey/commit/1479cc65f23bea7bcc16e0c99a58f66bfe8c6846))
+* queue investigation of LoopProcessAdapter still failing against a healthy agyloop ([#25](https://github.com/the-vibey-project/vibey/issues/25)) ([538d9ee](https://github.com/the-vibey-project/vibey/commit/538d9ee596e3b5d481b382b9ab31070c6c0c24b7))
+* queue loop_events.py agyloop event-type mapping fix ([#28](https://github.com/the-vibey-project/vibey/issues/28)) ([e6c90f2](https://github.com/the-vibey-project/vibey/commit/e6c90f20ef07de93ed15cfa099bde26484520226))
+* rename e1-loop-event-map plan to match run.sh's REPO-suffix convention ([#29](https://github.com/the-vibey-project/vibey/issues/29)) ([c4df145](https://github.com/the-vibey-project/vibey/commit/c4df14583894e44b5cc380c182f398ab107a5ea0))
+* strengthen E1 plan against premature Done declarations ([#13](https://github.com/the-vibey-project/vibey/issues/13)) ([95b1e8c](https://github.com/the-vibey-project/vibey/commit/95b1e8c4464005cbc0e03e4fb1fd8d47b87384d8))
+* teach the runbook the zero-touch contracts ([#55](https://github.com/the-vibey-project/vibey/issues/55)) ([9df8690](https://github.com/the-vibey-project/vibey/commit/9df8690e793eb15548b28e0bfa67bf4ef3292ac7))
+* update loop_events.py verification status now that both sinks are wired ([#35](https://github.com/the-vibey-project/vibey/issues/35)) ([301b3f5](https://github.com/the-vibey-project/vibey/commit/301b3f53d059561240eb3cb5a8fd0b909220fbd0))
+
+## [0.1.0](https://github.com/the-vibey-project/vibey/releases/tag/vibey-v0.1.0) (2026-08-16)
+
+
+### Features
+
+* add structured logging, a -v ladder, and operator-facing errors ([53ca473](https://github.com/the-vibey-project/vibey/commit/53ca473c29c7d00cb196e6d6abba5c701cf55ff2))
+* **azure:** implement AzureClientPort and mutation-guarded adapter (task 10.4) ([34f43c4](https://github.com/the-vibey-project/vibey/commit/34f43c470b491ee844b24ac34e0a152b009cc77d))
+* **build:** agent-surface provisioning into BUILD worktrees (task 6.3) ([c3fd680](https://github.com/the-vibey-project/vibey/commit/c3fd680cfe3be1714c589f43f50be43fd88018c7))
+* **build:** budget check before effort escalation (task 6.7) ([8d71791](https://github.com/the-vibey-project/vibey/commit/8d71791d49d825b8d876e523bfa1832f4ca13371))
+* **build:** build.implement -- engine run, tail, and ledger (task 6.4) ([fa37161](https://github.com/the-vibey-project/vibey/commit/fa371612c29a280a6bb62e8d9a8a7aa7bf8b5355))
+* **build:** build.integrate -- merge, gate, isolate-not-rollback (task 6.8) ([c5f9759](https://github.com/the-vibey-project/vibey/commit/c5f97592c27921cc27869bb22631805220c3616a))
+* **build:** build.verify -- gates, criterion coverage, diff review (task 6.5) ([a18a123](https://github.com/the-vibey-project/vibey/commit/a18a12311f4414a98c6e18becc6f874e52089ee8))
+* **build:** BUILD→REVIEW and BUILD→DESIGN phase guards (task 6.10) ([27c13d1](https://github.com/the-vibey-project/vibey/commit/27c13d171f2619672a8e82c6685599491402e2e2))
+* **build:** forced rotation constraint on effort tier crossings (task 6.6) ([be47648](https://github.com/the-vibey-project/vibey/commit/be47648307d5c0a8b4f54ca84976c3813ee49caa))
+* **build:** parallelism limiter -- min(config, eligible×2, cpu) (task 6.9) ([b49d0df](https://github.com/the-vibey-project/vibey/commit/b49d0df35d3840ac8b09bd6c10e4e9b4487eff60))
+* **build:** real git worktree manager for BUILD work items (task 6.2) ([e363772](https://github.com/the-vibey-project/vibey/commit/e3637723335272fc037170202bd36886d37b9fbc))
+* **build:** start M6 -- build.decompose and BUILD-entry wiring (task 6.1) ([b7fa97f](https://github.com/the-vibey-project/vibey/commit/b7fa97f1afa4103d45195377c5482acafe99128e))
+* **cli:** implement operational cli commands (task 8.2) ([6e30e8f](https://github.com/the-vibey-project/vibey/commit/6e30e8f807fc0e496d5a40874674b5a76b692fe6))
+* **deploy:** add CLI/TUI surfaces for deployment commands (task 10.12) ([c3ec5b4](https://github.com/the-vibey-project/vibey/commit/c3ec5b40db40a57e8a0747aa23e27f07cbb12697))
+* **deploy:** add full offline delivery-to-deployment system test (task 10.13) ([4d8f3f5](https://github.com/the-vibey-project/vibey/commit/4d8f3f532a71598cb5a4b3d2631666b40d8e12c8))
+* **deploy:** implement deployment retry and escalation ladder (task 10.7) ([3a36710](https://github.com/the-vibey-project/vibey/commit/3a3671069f083bc5d90703ca7833808138f2fed5))
+* **deploy:** implement Phase 4 deploy design interview and acceptance (task 10.3) ([ec3a924](https://github.com/the-vibey-project/vibey/commit/ec3a9247021fcbbfb8e88da772460a5174fe14fe))
+* **deploy:** implement Phase 5 deploy execution graph handler (task 10.6) ([b6adba0](https://github.com/the-vibey-project/vibey/commit/b6adba0efe0c0055e726fbde53d0563d978bce80))
+* **deploy:** implement Phase 6 review demo and failure triage handlers (task 10.10) ([5dc516a](https://github.com/the-vibey-project/vibey/commit/5dc516a6f648458dd4b8556b0754edcfc2162cef))
+* **deploy:** implement Phase 6 review loop routing handler (task 10.11) ([3053219](https://github.com/the-vibey-project/vibey/commit/305321919f5559a22d9b7537e430995af2310109))
+* **deploy:** implement progressive exposure and recovery evaluation (task 10.8) ([a9d4f71](https://github.com/the-vibey-project/vibey/commit/a9d4f710c8f418af1412ced4f79f8de880dde63b))
+* **deploy:** implement runtime verification contract evaluation (task 10.9) ([c4f90eb](https://github.com/the-vibey-project/vibey/commit/c4f90eba393f017e936d302d5161e8d48546ae85))
+* **deployment:** implement DeploymentSpec, consent verification, and failure routing (task 10.2) ([032e441](https://github.com/the-vibey-project/vibey/commit/032e44129e098080a8f9414f95606789fc4794ea))
+* **design:** wire the DESIGN -&gt; VISUAL_DESIGN/BUILD choice gate into accept ([b1459d1](https://github.com/the-vibey-project/vibey/commit/b1459d11942ee6d8a9ae62af17839aa96ffaf7cd))
+* **domain:** add media-provider capability discovery and rotation (5.9/5.10) ([8293d22](https://github.com/the-vibey-project/vibey/commit/8293d22baa179a0c55f4c9c7f575647b72f065c5))
+* **domain:** add VISUAL_DESIGN phase and its opt-in guard (M5 task 5.6) ([8f4c1a9](https://github.com/the-vibey-project/vibey/commit/8f4c1a9605da7cbbac3b4b42ff062cbbee2f222c))
+* **domain:** add VisualInventory, the screen/state matrix for M5 task 5.7 ([751803f](https://github.com/the-vibey-project/vibey/commit/751803f065278301c4956e3a797c728525573c11))
+* **iac:** implement IaC static checks, preflight, and what-if evaluation (task 10.5) ([75fef62](https://github.com/the-vibey-project/vibey/commit/75fef62e00872860e9f3f2debecc38acf975b054))
+* implement M1 pure domain (phase machine, rotation, no-loss gate) ([7114e37](https://github.com/the-vibey-project/vibey/commit/7114e37f21b9ee4e0aaa96c66deadc8f9ae9f369))
+* implement M2 durable queue and crash-safe workers ([6cbff9b](https://github.com/the-vibey-project/vibey/commit/6cbff9b2f2ef751b25d04ce9f8a92a50bd520693))
+* implement M3 engine adapters and conformance suite ([0b6c1cc](https://github.com/the-vibey-project/vibey/commit/0b6c1cc08700fb8bbb70aeb7630bff4991ef9c39))
+* implement M4 ledger and handoff -- the no-loss critical path ([df9243f](https://github.com/the-vibey-project/vibey/commit/df9243f17a47847fec2c7c1b9973a5ae95395ac3))
+* **notify:** implement desktop notifications and webhook publisher (task 8.4) ([7d2988c](https://github.com/the-vibey-project/vibey/commit/7d2988cb7a1f5f63ab9118bff95c897ac0256ab7))
+* **observability:** implement opentelemetry and metrics exports (task 8.3) ([45de50a](https://github.com/the-vibey-project/vibey/commit/45de50abb751084bbcdf21f451ea2d34761ef61b))
+* **phase:** expand pure phase machine to deployment stage set (task 10.1) ([cfe7357](https://github.com/the-vibey-project/vibey/commit/cfe7357a9247e68ad4e82c4085b620cbaf843496))
+* **review:** implement automated findings pre-triaging (task 7.3) ([8a264ea](https://github.com/the-vibey-project/vibey/commit/8a264ea3c6572651aa2ec2ae10dc2c02032df06a))
+* **review:** implement deployment opt-in handoff to deploy design (task 7.8) ([31ff71f](https://github.com/the-vibey-project/vibey/commit/31ff71fc0df982eb5935f8b7f339eb95dfa3a949))
+* **review:** implement deployment-choice gate (task 7.7) ([ac9e697](https://github.com/the-vibey-project/vibey/commit/ac9e6977e1c380b040a23ec8b4828d414f20cd9d))
+* **review:** implement re-entrant design scoped to findings (task 7.6) ([c916d8c](https://github.com/the-vibey-project/vibey/commit/c916d8cec0d6a2aff4599b79fb5b862a50967128))
+* **review:** implement review.collect and ledger-grounded QA (task 7.2) ([b750b81](https://github.com/the-vibey-project/vibey/commit/b750b816fe123035895eaf9d64b8de24121e04be))
+* **review:** implement review.demo and deltas projection (task 7.1) ([b88488e](https://github.com/the-vibey-project/vibey/commit/b88488ed8e93c4843fb407a66ddc95e760d05090))
+* **review:** implement review.triage classification (task 7.4) ([ecff22f](https://github.com/the-vibey-project/vibey/commit/ecff22fe724dacdbce27db1f7f618062230e481a))
+* **review:** wire loopback routing and cycle increment (task 7.5) ([ff2dea9](https://github.com/the-vibey-project/vibey/commit/ff2dea91dbfc3fa53b1666a1240f604d52a95217))
+* scaffold M0 repo skeleton, onion contract, CI, and vibey.toml schema ([578421f](https://github.com/the-vibey-project/vibey/commit/578421fa079bb1aa7f6c4889ab53c7a9651639df))
+* **security:** implement destructive-command prevention guard (task 9.2) ([dcb8d30](https://github.com/the-vibey-project/vibey/commit/dcb8d30858f02e10faf577e1978aed1068051494))
+* **security:** implement hardened container isolation runtime (task 9.1) ([f59f630](https://github.com/the-vibey-project/vibey/commit/f59f630295f61eff4c3b523534bd222d35942308))
+* **security:** implement scope-bound mutation guard (task 9.3) ([0fb9eb8](https://github.com/the-vibey-project/vibey/commit/0fb9eb87481ee67405abefe02aeed000d6034fb2))
+* **security:** implement untrusted prompt defense and delimiter shielding (task 9.4) ([c7544e4](https://github.com/the-vibey-project/vibey/commit/c7544e44100394596f25c575688c608ce6d76d6c))
+* **tui:** implement live dashboard TUI (task 8.1) ([8bec60f](https://github.com/the-vibey-project/vibey/commit/8bec60ff8e39c40f79cf51d314376bdffe52ee8b))
+* **tui:** implement replay mode for watch command (task 8.5) ([cdb34dc](https://github.com/the-vibey-project/vibey/commit/cdb34dc01ae3b0cde5ddd7b3ef84f0950fb5c50e))
+* **visual:** close the loop -- VISUAL_DESIGN -&gt; BUILD accept/waive (task 5.13) ([508bb71](https://github.com/the-vibey-project/vibey/commit/508bb717830e32c894b981379dbd44678bc5a30a))
+* **visual:** wire visual.inventory/visual.plan job handlers and persistence ([6a5231c](https://github.com/the-vibey-project/vibey/commit/6a5231c2d3d33a310aaba6150c160dd94d9d19c8))
+
+
+### Bug Fixes
+
+* align rotation weights with ADR-0005 ([3f63fcd](https://github.com/the-vibey-project/vibey/commit/3f63fcd9d1c853dcdff16e9796e0c1e2f1e14d46))
+* **cli:** repair unreachable `vibey design accept` and cover build_app() paths ([3987618](https://github.com/the-vibey-project/vibey/commit/39876189a11667e915adde0a4e404b4d0604045f))
+* **cli:** stabilize CliRunner terminal styling across all CLI test files ([#1](https://github.com/the-vibey-project/vibey/issues/1)) ([ac76131](https://github.com/the-vibey-project/vibey/commit/ac7613169d1308a49dc3325a9460a4f42ad4ba7f))
+
+
+### Documentation
+
+* add session handoff for continuing after M4 ([78d77b8](https://github.com/the-vibey-project/vibey/commit/78d77b8b804a7653e6a6129bb10d30e80d0533f3))
+* add the agyloop invocation, and stop hardcoding one done marker ([068940c](https://github.com/the-vibey-project/vibey/commit/068940ce46bafbb266f6051a0e0b1155b005a73a))
+* add the fleet program runbook ([5768382](https://github.com/the-vibey-project/vibey/commit/57683820fc61d13f695ffd4dfc91356dc3c03068))
+* make visual and deployment stages opt in ([329dd2b](https://github.com/the-vibey-project/vibey/commit/329dd2bf82140660a367694d47b8cf77bbcf56e7))
+* plan six-phase Azure deployment lifecycle ([30047f7](https://github.com/the-vibey-project/vibey/commit/30047f754705e9b7d3dddac03a22c629e59ebf43))
+* **security:** document threat model and security policy (task 9.5) ([a254fc1](https://github.com/the-vibey-project/vibey/commit/a254fc1885285ad9cd7b98d5ff9f81ce1963ef3d))
+* update README status for M7 completion and format system test ([0cf7bd3](https://github.com/the-vibey-project/vibey/commit/0cf7bd3596e366929dc34e98d543e75329bcbe3c))
 
 
 ### Miscellaneous Chores
 
-* cut the first vibey release ([ee841fa](https://github.com/adammatthewsteinberger/vibey/commit/ee841fa65b92e9911c8bdeb595577ebb1321d82e))
+* cut the first vibey release ([ee841fa](https://github.com/the-vibey-project/vibey/commit/ee841fa65b92e9911c8bdeb595577ebb1321d82e))
