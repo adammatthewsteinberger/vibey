@@ -621,6 +621,72 @@ def test_the_site_publishes_its_own_book_and_paper_when_enabled(tmp_path):
     assert on.index("sha256sum -c") < on.index("tar -xzf /tmp/tectonic.tar.gz")
 
 
+def test_the_book_and_the_paper_are_findable_on_every_published_surface(tmp_path):
+    """The two end results of the documentation doctrine must be as easy to find as the
+    documentation itself: linked from every page's navigation and footer, from the
+    channel chooser, from the LLM-facing index, and kept as immutable assets on the
+    GitHub Release for that exact version. Every link is rendered from what the deploy
+    actually produced -- file presence in the built site -- never from configuration, so
+    a page can never link a PDF that was not built."""
+    from vibey_gh.config import DocumentationConfig, GhConfig, GithubReleaseConfig
+    from vibey_gh.install import SOURCE_RELEASE_ASSETS, render_workflow
+
+    source = WORKFLOWS / "release-surfaces.yml"
+    on = render_workflow(
+        source,
+        GhConfig(
+            root=tmp_path,
+            documentation=DocumentationConfig(generate_book=True, generate_paper=True),
+        ),
+    )
+    # Every page: the theme script learns which forms exist from the built site.
+    assert '"paper_pdf": (site / "paper.pdf").is_file()' in on
+    assert '"book_epub": (site / "book.epub").is_file()' in on
+    assert 'replace("__DOC_SURFACES__", json.dumps(surfaces))' in on
+    script = (SOURCE_RELEASE_ASSETS / "javascripts" / "channel.js").read_text(encoding="utf-8")
+    assert "'__DOC_SURFACES__'" in script
+    # An unsubstituted placeholder must degrade to "nothing to show", never a syntax error.
+    assert 'surfacesRaw.startsWith("{") ? JSON.parse(surfacesRaw) : {}' in script
+    assert 'className = "nav-link surface-link"' in script
+    assert 'className = "release-surfaces"' in script
+    # The channel chooser: a section filled per channel from pages/<channel>/.
+    assert "__SURFACES_HTML__" in on
+    assert 'aria-label="Read it offline"' in on
+    assert "(base / file).is_file()" in on
+    # The LLM-facing index, only where the files exist.
+    assert "[ -f pages/main/paper.pdf ] && SURFACE_LINES=" in on
+    assert "${SURFACE_LINES}- Provenance:" in on
+    # Immutable copies: an attach job, and the only job allowed to write contents.
+    parsed = yaml.safe_load(on)
+    attach = parsed["jobs"]["attach"]
+    assert attach["needs"] == ["context", "package", "docs"]
+    assert attach["permissions"] == {"actions": "read", "contents": "write"}
+    assert "true && (true || true) && needs.context.outputs.branch == 'main'" in attach["if"]
+    for name, job in parsed["jobs"].items():
+        if name != "attach":
+            assert job.get("permissions", {}).get("contents") != "write", name
+    assert (
+        parsed["jobs"]["package"]["outputs"]["version"] == "${{ steps.metadata.outputs.version }}"
+    )
+    assert "TAG: v${{ needs.package.outputs.version }}" in on
+    assert 'gh release upload "$TAG" "${present[@]}" --clobber' in on
+    # It waits a bounded while for the Release rather than assuming an order, and a
+    # missing Release is a warning, not a failed docs deploy.
+    assert "no GitHub Release $TAG appeared within 10 minutes" in on
+
+    # GitHub Releases off, or a different tag prefix: the gate and the tag follow.
+    off = render_workflow(
+        source,
+        GhConfig(
+            root=tmp_path,
+            github_release=GithubReleaseConfig(enabled=False, tag_prefix="release-"),
+        ),
+    )
+    off_attach = yaml.safe_load(off)["jobs"]["attach"]
+    assert off_attach["if"].startswith("false &&")
+    assert "TAG: release-${{ needs.package.outputs.version }}" in off
+
+
 def test_funding_signage_is_opt_in_validated_and_verbatim(tmp_path):
     """#198: an opt-in contribution line beside the footer provenance. Off by default —
     no default address ever ships, because a payment default is one typo away from

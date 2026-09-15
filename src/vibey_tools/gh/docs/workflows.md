@@ -322,6 +322,21 @@ channel's existing site alongside it. When `documentation.google_analytics_id` i
 same GA4 measurement ID is injected into every generated page and the channel-picker page;
 left empty (the default), no analytics script is emitted anywhere.
 
+With `documentation.generate_book` and `generate_paper`, the same `docs` job exports the
+built site as a book and renders `docs/paper.md` as a journal-class PDF, publishes them at
+the root of the channel site, and then makes them findable from everywhere the site is:
+the theme script gains a **Paper** and a **Book** entry in every page's primary navigation
+and a reading line beside every footer's provenance, the channel picker gains a *Read it
+offline* section, and `llms.txt` lists them. Each link is rendered from the files that
+exist on that deploy, never from the flags. A fourth job, `attach` (`actions: read`,
+`contents: write` — the only job in the workflow that may write), runs on the release
+channel only, when `[github_release]` is enabled: it downloads the deployed site
+artifact, waits a bounded while for the GitHub Release that `github-release.yml` creates
+for the same commit, and uploads `paper.pdf`, `book.epub`, `book.pdf` and
+`book-print.html` as release assets — a permanent, versioned copy a reader can still find
+from the Releases page after the site has been rebuilt or moved. A Release that never
+appears is a warning, not a failed documentation deploy.
+
 ## Repository profile
 
 `Repository profile` runs on completion of `Release surfaces` or manual dispatch, with
