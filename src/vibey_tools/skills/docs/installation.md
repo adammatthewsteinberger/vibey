@@ -6,7 +6,7 @@ The native route. Claude Code reads the marketplace manifest and manages plugins
 
 ```bash
 # From the Git remote
-/plugin marketplace add adammatthewsteinberger/vibey-skills
+/plugin marketplace add the-vibey-project/vibey-skills
 
 # ...or from a local clone
 /plugin marketplace add /path/to/vibey-skills
