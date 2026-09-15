@@ -1,9 +1,21 @@
-# There was none, so `COPY` sent the whole working tree -- .git included -- to the builder
-# on every build. These are the entries that are never right to ship and never right to
-# upload. Note what is deliberately NOT here: **/*.md. vibey-skills' 644 SKILL.md are
-# product data that its wheel force-includes, and excluding them would build a wheel that
-# fails its own "carries every skill" contract.
+# There was none, so `COPY` sent the entire working tree -- .git included -- to the
+# builder on every build. These are the entries that are never right to ship.
+#
+# Two deliberate omissions, both learned the hard way:
+#
+# `**/*.md` is NOT here. vibey-skills' 644 SKILL.md are product data that its wheel
+# force-includes, and excluding them builds a wheel that fails its own "carries every
+# skill" contract.
+#
+# `**/build` and `**/dist` are NOT here either. `src/vibey/infrastructure/build/` is a
+# PACKAGE, not a build artifact, and an unanchored pattern excluded it -- the image then
+# built clean and died on `vibey --version` with
+# `ModuleNotFoundError: No module named 'vibey.infrastructure.build'`. Build output is
+# anchored to the roots that actually produce it.
 .git
+/build
+/dist
+/site
 **/.venv
 **/site
 **/htmlcov
@@ -14,5 +26,3 @@
 **/.coverage
 **/coverage.xml
 **/*.egg-info
-**/build
-**/dist
