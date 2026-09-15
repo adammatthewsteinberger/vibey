@@ -1,4 +1,4 @@
-# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 name: __VIBEY_GH_WF_RELEASE_REPAIR__
 
 # PR failures are repaired by PR automation. This workflow covers the other half of the
@@ -94,7 +94,7 @@ jobs:
             actions: read
             checks: read
           plugin_marketplaces: |
-            https://github.com/adammatthewsteinberger/vibey-skills.git
+            https://github.com/the-vibey-project/vibey-skills.git
           plugins: |
             quality-engineering@vibey-skills
             security-principles@vibey-skills
@@ -164,7 +164,7 @@ jobs:
           git -C target config user.email "adam@matthewsteinberger.com"
           git -C target add -A
           git -C target commit -m "Repair failed ${FAILED_NAME} release scan" \
-            -m "Made-With: Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/))."
+            -m "Made-With: Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/))."
           gh auth setup-git
           git -C target remote set-url origin "https://github.com/${REPO}.git"
           # A non-empty source refspec can update only the new repair branch. Never push

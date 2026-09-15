@@ -1,7 +1,7 @@
 # NOTICE
 
 `vibey-gh` was extracted from the `vibey_bootstrap.gh` subpackage of
-[vibey-bootstrap](https://github.com/adammatthewsteinberger/vibey-bootstrap), where it
+[vibey-bootstrap](https://github.com/the-vibey-project/vibey-bootstrap), where it
 first shipped in 4.1.0.
 
 It was split out because it has **no dependencies** while vibey-bootstrap pulls the Azure

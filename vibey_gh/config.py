@@ -1,4 +1,4 @@
-# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """Configuration for the GitHub automation, read from `.vibey-gh.toml`.
 
 Every project-specific decision lives here so the logic beside it can stay general:
@@ -42,7 +42,7 @@ from pathlib import Path
 CONFIG_NAME = ".vibey-gh.toml"
 
 DEFAULT_TEXT = (
-    "Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), "
+    "Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), "
     "Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) "
     "([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/))."
 )
@@ -55,6 +55,16 @@ DEFAULT_TEXT = (
 DEFAULT_SUPERSEDED_TEXTS = (
     # The old text keeps the OLD url on purpose: this list exists to RECOGNISE what was
     # previously stamped, and a sweep that "fixes" this line breaks the recognition.
+    #
+    # The repositories moved to the `the-vibey-project` organisation, and GitHub Pages
+    # follows the repository: `adammatthewsteinberger.github.io/vibey/` now lives only as
+    # long as GitHub's transfer redirect does. The product link in the header had to move
+    # with it. The author link did not — the person is unchanged by the transfer.
+    (
+        "Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), "
+        "Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) "
+        "([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/))."
+    ),
     (
         "Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), "
         "Developed by [Adam Matthew Steinberger](https://hire.adam.matthewsteinberger.com/) "

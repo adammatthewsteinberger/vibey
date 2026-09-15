@@ -59,9 +59,7 @@ and request-size limits in their chosen server framework.
 ```python
 from vibey_gh.surfaces import api_dispatch, mcp_dispatch
 
-status, response = api_dispatch(
-    "POST", "/v1/capabilities/check", b'{"arguments":["--ci"]}'
-)
+status, response = api_dispatch("POST", "/v1/capabilities/check", b'{"arguments":["--ci"]}')
 tools = mcp_dispatch({"jsonrpc": "2.0", "id": 1, "method": "tools/list"})
 ```
 

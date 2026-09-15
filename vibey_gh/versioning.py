@@ -1,4 +1,4 @@
-# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """Derive the release version from what actually changed.
 
 This has to be automatic, not remembered. A PyPI upload with `skip-existing` turns an
@@ -173,7 +173,7 @@ def owed_at(cfg: GhConfig, since: str, head: str) -> tuple[str | None, str]:
         return None, f"cannot read a version at {head}; refusing to guess"
     if staged != released:
         return None, (
-            f"already at {staged} while {since} is {released} — " "a deliberate bump is in place"
+            f"already at {staged} while {since} is {released} — a deliberate bump is in place"
         )
     return _classify(cfg, since, head, staged)
 

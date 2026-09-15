@@ -1,4 +1,4 @@
-# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """The paths the happy-path tests do not reach: refusals, re-runs, and drift.
 
 Where the module shells out, these tests give it a real thing to shell out to — a fake
@@ -679,8 +679,8 @@ def test_pinning_the_tooling_version_is_a_visible_one_line_diff(repo):
     assert "python -m pip install --quiet vibey-gh\n" not in pinned
     # The self-hosting branch is untouched either way — it cannot pin to a published
     # release that may not exist yet.
-    assert "python -m pip install --quiet -e .\n" in floating
-    assert "python -m pip install --quiet -e .\n" in pinned
+    assert 'python -m pip install --quiet -e "$self"\n' in floating
+    assert 'python -m pip install --quiet -e "$self"\n' in pinned
 
 
 # ---------------------------------------------------------------- holding for review

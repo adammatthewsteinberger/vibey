@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes are recorded in immutable [GitHub Releases](https://github.com/adammatthewsteinberger/vibey-gh/releases).
+All notable changes are recorded in immutable [GitHub Releases](https://github.com/the-vibey-project/vibey-gh/releases).
 This file follows Keep a Changelog and semantic versioning conventions.
 
 ## Unreleased

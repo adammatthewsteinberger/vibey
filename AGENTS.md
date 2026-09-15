@@ -16,7 +16,7 @@ This repository ships security-sensitive GitHub automation. Read `README.md`,
 Repository-specific skills live in `.agents/skills/`. Architecture and operational
 details live in `docs/architecture.md` and `docs/operations.md`.
 
-Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 
 ## Standing subdoctrine SD-01 (carried verbatim per its §8)
 

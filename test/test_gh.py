@@ -1,4 +1,4 @@
-# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """Tests for the vibey-gh automation.
 
 The readiness gate and the version decision are the parts most worth testing: both were
@@ -178,6 +178,41 @@ def test_nonconventional_commit_is_reported(repo):
     assert len(invalid) == 1 and "Not conventional" in invalid[0]
     with pytest.raises(RuntimeError, match="cannot read"):
         fingerprints.commits_with_invalid_subject("missing-ref..HEAD", cfg)
+
+
+def test_an_imported_history_is_not_this_branch_s_to_answer_for(repo):
+    """Both commit gates walk the first-parent line only.
+
+    A `git subtree add` without `--squash` attaches another repository's whole history as
+    the merge's second parent. Those commits are admitted history, not authored work, and
+    the only way to make them satisfy this repository's rules is to rewrite them — which
+    changes the SHA the merge's `git-subtree-split` trailer records.
+    """
+    base = git(repo, "rev-parse", "HEAD").strip()
+
+    # An unrelated history, exactly as an upstream repository would arrive: no trailer,
+    # no Conventional Commits.
+    git(repo, "checkout", "-q", "--orphan", "upstream")
+    git(repo, "rm", "-rq", "--cached", ".")
+    (repo / "vendored.txt").write_text("from somewhere else\n")
+    git(repo, "add", "-A")
+    git(repo, "commit", "-qm", "Initial import of somebody else's code")
+    upstream = git(repo, "rev-parse", "HEAD").strip()
+
+    git(repo, "checkout", "-q", base)
+    git(repo, "checkout", "-qb", "trunk")
+    git(repo, "merge", "-q", "--no-ff", "--allow-unrelated-histories", upstream, "-m", "merged")
+    git(repo, "commit", "-q", "--allow-empty", "-m", f"feat: ours\n\n{cfg_for(repo).trailer}")
+
+    cfg = cfg_for(repo)
+    rev_range = f"{base}..HEAD"
+    assert fingerprints.commits_missing_trailer(rev_range, cfg) == []
+    assert fingerprints.commits_with_invalid_subject(rev_range, cfg) == []
+
+    # And the gate still sees what this branch actually authored.
+    git(repo, "commit", "-q", "--allow-empty", "-m", "Ours, and wrong")
+    assert len(fingerprints.commits_missing_trailer(rev_range, cfg)) == 1
+    assert len(fingerprints.commits_with_invalid_subject(rev_range, cfg)) == 1
 
 
 # ------------------------------------------------------------------------ versioning

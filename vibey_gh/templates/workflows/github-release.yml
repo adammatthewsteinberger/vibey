@@ -1,4 +1,4 @@
-# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 name: __VIBEY_GH_WF_GITHUB_RELEASE__
 
 # Package publication owns artifact verification. This workflow reacts only after that
@@ -41,8 +41,19 @@ jobs:
       - name: Install trusted release tooling
         run: |
           set -euo pipefail
-          if grep -qE '^name = "vibey-gh"' pyproject.toml 2>/dev/null; then
-            python -m pip install --quiet -e .
+          # The pyproject that DECLARES the tooling, wherever it sits: the top of the tree
+          # in the standalone repository, under src/ in the monorepo that absorbed it. A
+          # repository that carries it must install that source, never a published release
+          # that is always behind its own integration branch.
+          self=""
+          for candidate in $(git ls-files --full-name '*pyproject.toml'); do
+            grep -qE '^name = "vibey-gh"' "$candidate" || continue
+            self=${candidate%/pyproject.toml}
+            if [ "$self" = "$candidate" ]; then self=.; fi
+            break
+          done
+          if [ -n "$self" ]; then
+            python -m pip install --quiet -e "$self"
           else
             python -m pip install --quiet vibey-gh
           fi

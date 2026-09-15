@@ -22,7 +22,7 @@ inspector can read it later.
 ## Mission assurance, claim by claim
 
 - **Chain of custody is total.** Every source file carries a provenance header and every
-  change a provenance trailer ([the fingerprint](https://github.com/adammatthewsteinberger/vibey-gh/blob/main/README.md)),
+  change a provenance trailer ([the fingerprint](https://github.com/the-vibey-project/vibey-gh/blob/main/README.md)),
   enforced by a required check — not by directive. An artifact of unknown origin cannot
   enter the chain.
 - **Decisions bind to evidence — configuration control by construction.** A review
@@ -34,7 +34,7 @@ inspector can read it later.
   automatically ([sovereign operation](paper.md)); the fallback ladder is ordered by
   refusability, so the last rung — local models on local hardware — answers to no one's
   permission. Contested and disconnected environments are the design case, not an
-  afterthought (doctrine [10.a](https://github.com/adammatthewsteinberger/vibey-gh/issues/210)).
+  afterthought (doctrine [10.a](https://github.com/the-vibey-project/vibey-gh/issues/210)).
 - **No captive dependencies, ever.** Zero runtime dependencies, keyless publishing via
   [OIDC Trusted Publishing](https://docs.pypi.org/trusted-publishers/), full rebuild
   from source on any machine — documentation, book, and

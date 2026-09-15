@@ -1,4 +1,4 @@
-# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """The fit calculus (#263): both sides measured, the projection stated, the floor loud."""
 
 from __future__ import annotations
@@ -163,8 +163,10 @@ def test_sample_model_reads_the_runner(monkeypatch):
     monkeypatch.setattr(
         fit,
         "_run",
-        lambda *cmd: '{"models": [{"name": "qwen2.5-coder:14b", "size": 10520000000,'
-        ' "context_length": 9390}]}',
+        lambda *cmd: (
+            '{"models": [{"name": "qwen2.5-coder:14b", "size": 10520000000,'
+            ' "context_length": 9390}]}'
+        ),
     )
     model = sample_model("qwen2.5-coder:14b")
     assert model is not None and model.size_gb == 10.52 and model.context_length == 9390

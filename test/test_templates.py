@@ -1,4 +1,4 @@
-# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """The shipped templates are product, so they get tested like product.
 
 A workflow template that does not parse installs cleanly and then fails in the consuming
@@ -12,6 +12,7 @@ import dataclasses
 import json
 import re
 import shlex
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -605,7 +606,7 @@ def test_the_site_publishes_its_own_book_and_paper_when_enabled(tmp_path):
     assert "vibey-gh book --site-dir channel-site" in on
     # The exporters must be installed before they are invoked: the build step's venv
     # holds only ProperDocs, and the first dogfooded deploy failed with exit 127.
-    assert on.index("pip install --quiet -e .") < on.index("vibey-gh book --site-dir")
+    assert on.index('pip install --quiet -e "$self"') < on.index("vibey-gh book --site-dir")
     assert "cp book-out/book.epub channel-site/book.epub" in on
     # The finished KDP interior: one headless-Chromium print of the 6x9 print HTML.
     # Soft-fails to the print HTML rather than killing a docs deploy over one artifact.
@@ -773,6 +774,72 @@ def _contrast(foreground: str, background: str) -> float:
     return (lighter + 0.05) / (darker + 0.05)
 
 
+def _resolver(hook: str) -> str:
+    """The `vibey_gh_self` function as the hook template actually carries it."""
+    text = (TEMPLATES / hook).read_text(encoding="utf-8")
+    start = text.index("vibey_gh_self() {")
+    return text[start : text.index("\n}\n", start) + 3]
+
+
+def _run_resolver(hook: str, cwd) -> str:
+    script = _resolver(hook) + "\nvibey_gh_self\n"
+    # `set -eu` on purpose: pre-push runs under it, and an unguarded `[ a = b ] && x`
+    # inside the resolver would abort the hook instead of falling through.
+    done = subprocess.run(
+        ["sh", "-c", "set -eu\n" + script], cwd=cwd, capture_output=True, text=True, check=False
+    )
+    assert done.returncode == 0, done.stderr
+    return done.stdout
+
+
+@pytest.mark.parametrize("hook", ["pre-push", "commit-msg"])
+def test_the_tooling_is_found_wherever_the_tree_keeps_it(hook, tmp_path):
+    """Standalone repository, monorepo tenant, and ordinary adopter — one resolver.
+
+    The path used to be hard-coded to the repository root, which is right for the
+    standalone repository and wrong for a monorepo that absorbed it: the root pyproject
+    there says `name = "vibey"`, so every workflow fell through to a published release
+    and then judged the in-tree templates against its own older copies.
+    """
+
+    def commit(root):
+        subprocess.run(["git", "init", "-q", "."], cwd=root, check=True)
+        subprocess.run(["git", "add", "-A"], cwd=root, check=True)
+        subprocess.run(
+            ["git", "-c", "user.email=t@e.com", "-c", "user.name=t", "commit", "-qm", "base"],
+            cwd=root,
+            check=True,
+        )
+
+    standalone = tmp_path / "standalone"
+    (standalone / "vibey_gh").mkdir(parents=True)
+    (standalone / "pyproject.toml").write_text('name = "vibey-gh"\n')
+    (standalone / "vibey_gh" / "__init__.py").write_text("")
+    commit(standalone)
+    assert _run_resolver(hook, standalone) == "."
+
+    monorepo = tmp_path / "monorepo"
+    tenant = monorepo / "src" / "vibey_tools" / "gh"
+    (tenant / "vibey_gh").mkdir(parents=True)
+    (monorepo / "pyproject.toml").write_text('name = "vibey"\n')
+    (tenant / "pyproject.toml").write_text('name = "vibey-gh"\n')
+    (tenant / "vibey_gh" / "__init__.py").write_text("")
+    commit(monorepo)
+    assert _run_resolver(hook, monorepo) == "src/vibey_tools/gh"
+
+    # An ordinary adopter resolves to nothing and falls through to its installed CLI.
+    adopter = tmp_path / "adopter"
+    adopter.mkdir()
+    (adopter / "pyproject.toml").write_text('name = "something-else"\n')
+    commit(adopter)
+    assert _run_resolver(hook, adopter) == ""
+
+    # A vendored copy under an ignored directory is not this repository's tooling.
+    (adopter / ".venv" / "vibey_gh").mkdir(parents=True)
+    (adopter / ".venv" / "pyproject.toml").write_text('name = "vibey-gh"\n')
+    assert _run_resolver(hook, adopter) == ""
+
+
 @pytest.mark.parametrize("hook", ["pre-push", "commit-msg"])
 def test_a_repository_that_is_vibey_gh_runs_its_own_working_tree(hook):
     """An installed copy must never be what validates the tool's own repository.
@@ -787,7 +854,7 @@ def test_a_repository_that_is_vibey_gh_runs_its_own_working_tree(hook):
     virtualenv — only that this branch is tried before `command -v`.
     """
     text = (TEMPLATES / hook).read_text(encoding="utf-8")
-    self_hosting = text.find("grep -qE '^name = \"vibey-gh\"' pyproject.toml")
+    self_hosting = text.find("vibey_gh_self")
     installed_copy = text.find("command -v vibey-gh")
     assert self_hosting != -1, "the self-hosting branch is gone"
     assert installed_copy != -1
@@ -797,7 +864,7 @@ def test_a_repository_that_is_vibey_gh_runs_its_own_working_tree(hook):
     )
     # Narrow on purpose: an adopting repository must fall straight through to its
     # installed CLI, so the test is the package name *and* the package directory.
-    assert "[ -d vibey_gh ]" in text
+    assert '[ -d "$dir/vibey_gh" ]' in text
 
 
 def test_no_code_token_can_keep_a_colour_meant_for_a_white_page():
@@ -1182,8 +1249,8 @@ def test_conventional_commits_installs_the_published_package_not_the_adopting_re
     """
     text = (WORKFLOWS / "conventional-commits.yml").read_text(encoding="utf-8")
     assert "pip install --quiet ./automation" not in text
-    assert "grep -qE '^name = \"vibey-gh\"' pyproject.toml" in text
-    assert "python -m pip install --quiet -e ." in text
+    assert """grep -qE '^name = "vibey-gh"' "$candidate\"""" in text
+    assert 'python -m pip install --quiet -e "$self"' in text
     assert "python -m pip install --quiet vibey-gh" in text
     assert "name: Check out trusted automation" in text
     assert "name: Check out trusted normalizer" not in text
@@ -1205,7 +1272,7 @@ def test_pr_automation_never_assumes_the_adopting_repos_own_package_is_vibey_gh(
     """
     text = (WORKFLOWS / "pr-automation.yml").read_text(encoding="utf-8")
     assert "pip install --quiet ./automation" not in text
-    checks = re.findall(r"""grep -qE '\^name = "vibey-gh"' automation/pyproject\.toml""", text)
+    checks = re.findall(r"git -C automation ls-files --full-name '\*pyproject\.toml'", text)
     assert len(checks) == 5  # review, repair, resolve-conflict, escalate, review-fallback
     installs = re.findall(r"python -m pip install --quiet vibey-gh\b", text)
     assert len(installs) == 6  # the five guarded installs above plus the evaluate job's own

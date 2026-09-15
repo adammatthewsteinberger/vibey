@@ -1,4 +1,4 @@
-# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """Enforce that every code change is attributable.
 
 Two places, because a change can be either:
@@ -28,6 +28,19 @@ from vibey_gh.config import GhConfig, load_config
 # How far into a file the header may sit: enough for a shebang and a blank line, not
 # enough for it to be buried where nobody reads.
 HEAD_LINES = 5
+
+# What "the commits in this range" means, for both commit gates.
+#
+# `--first-parent` is the load-bearing half. A history-preserving import — `git subtree
+# add` without `--squash` — attaches another repository's entire history as a merge
+# commit's SECOND parent. Those commits were authored in that repository, under whatever
+# rules it had at the time, and were never authored onto this branch. Without this flag a
+# single import makes the gate fail on hundreds of commits nobody here wrote, and the only
+# way to "fix" them is to rewrite them — which changes the SHA that the merge's
+# `git-subtree-split` trailer records, destroying the history the import exists to
+# preserve. First-parent is exactly "what this branch added on its own line", which is
+# what the gate has always meant.
+COMMIT_RANGE_SCOPE = ("--no-merges", "--first-parent")
 CONVENTIONAL_SUBJECT = re.compile(r"^(?:[a-z][a-z0-9-]*)(?:\([a-z0-9][a-z0-9._/-]*\))?!?: [^\s].*$")
 
 
@@ -71,7 +84,7 @@ def normalize_commit_message(message: str) -> str:
 
 def commits_with_invalid_subject(rev_range: str, cfg: GhConfig) -> list[str]:
     result = subprocess.run(
-        ["git", "log", "--no-merges", "--format=%H%x1f%s%x1e", rev_range],
+        ["git", "log", *COMMIT_RANGE_SCOPE, "--format=%H%x1f%s%x1e", rev_range],
         cwd=cfg.root,
         capture_output=True,
         text=True,
@@ -159,7 +172,7 @@ def dedupe_header(text: str, cfg: GhConfig) -> str:
 
 def commits_missing_trailer(rev_range: str, cfg: GhConfig) -> list[str]:
     result = subprocess.run(
-        ["git", "log", "--no-merges", "--format=%H%x1f%s%x1f%b%x1e", rev_range],
+        ["git", "log", *COMMIT_RANGE_SCOPE, "--format=%H%x1f%s%x1f%b%x1e", rev_range],
         cwd=cfg.root,
         capture_output=True,
         text=True,

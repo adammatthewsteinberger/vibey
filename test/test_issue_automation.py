@@ -1,4 +1,4 @@
-# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """Policy, persistence, and privileged-workflow tests for autonomous issue solutions.
 
 The interesting cases here are all refusals. Anyone can open an issue, so the tests that
@@ -428,7 +428,8 @@ def test_the_workflow_installs_the_published_package_for_adopters():
     """Issue #55's bug class: never assume the adopting repository *is* vibey-gh."""
     text = (WORKFLOWS / "issue-automation.yml").read_text(encoding="utf-8")
     # 4: recovery, solve, exhausted, and the local triage fallback added alongside them.
-    assert text.count("""if grep -qE '^name = "vibey-gh"'""") == 4
+    assert text.count('grep -qE \'^name = "vibey-gh"\' "') == 4
+    assert text.count('self=""') == 4
     assert text.count("python -m pip install --quiet vibey-gh") == 4
     assert text.count("command -v vibey-gh >/dev/null") == 3
     assert "python -m pip install --quiet ./target" not in text

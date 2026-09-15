@@ -1,4 +1,4 @@
-# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """Comprehensive documentation configuration and deterministic contracts."""
 
 import json
@@ -286,10 +286,8 @@ def test_the_required_automation_doc_is_not_a_name_github_hijacks():
 
     hijacking = {".github/README.md", ".github/readme.md"}
     assert DEFAULT_AUTOMATION_DOC not in hijacking
-    assert not hijacking & set(DEFAULT_DOCUMENTATION_FILES), (
-        "a required file would become the repository's landing README, displacing the "
-        "adopter's own"
-    )
+    displaced = hijacking & set(DEFAULT_DOCUMENTATION_FILES)
+    assert not displaced, f"{displaced} would displace the adopter's own landing README"
     # The root README must still be required: it is the product-facing document, and the
     # whole point is that it is the one GitHub shows.
     assert "README.md" in DEFAULT_DOCUMENTATION_FILES

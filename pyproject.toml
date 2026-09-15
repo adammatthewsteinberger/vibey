@@ -1,4 +1,4 @@
-# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -40,9 +40,9 @@ dev = [
 vibey-gh = "vibey_gh.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/adammatthewsteinberger/vibey-gh"
-Repository = "https://github.com/adammatthewsteinberger/vibey-gh"
-Issues = "https://github.com/adammatthewsteinberger/vibey-gh/issues"
+Homepage = "https://github.com/the-vibey-project/vibey-gh"
+Repository = "https://github.com/the-vibey-project/vibey-gh"
+Issues = "https://github.com/the-vibey-project/vibey-gh/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["vibey_gh"]
