@@ -205,6 +205,8 @@ machine alike: spoken tongues, programming languages, technology stacks — and 
 survive all such changes, always. Meaning lives in plain structured text; the formal
 core is re-implementable from its specification.
 
+**12.c — the declared state** *(ratified by the merge that carried this entry)*: anything that can be declared in the repository is declared in the repository — infrastructure, configuration, policy, pipelines, documentation, repository settings — reviewed in a pull request and reconciled from the file: never clicked, never run by hand and left unrecorded. Declared, not merely documented: the test is whether a stranger with a clone and admin rights can restore the state from the tree. Reconciled, not merely written: where a reconciler exists it runs in automation, and where none can, the desired state is still recorded in the file that would own it and reality is checked against it. No convenience ever trades this away. And everything that can be made generic and configurable is made so, and nothing is ever changed to a state that is less generic or less configurable: a hard-coded value that could have been a key is a decision taken away from the next human adopter, silently. A default is configurability with an opinion; a constant is not. This stands under humans first because clicked state is state no human reviewed and no human agreed to — the configuration-shaped twin of 12.b.
+
 ---
 
 *The counts are sealed — twelve doctrines, ten rights, ten commandments — and the
