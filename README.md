@@ -233,7 +233,7 @@ things those runners deliberately do not do:
 | [Rotation & engines](docs/plans/rotation-and-engines.md) | Capability matrix, effort normalization, smooth weighted round robin |
 | [Phase protocols](docs/plans/phase-protocols.md) | What all six phases do, turn by turn |
 | [Implementation plan](docs/plans/implementation-plan.md) | Milestone-by-milestone, test-first task breakdown |
-| [Decision records](docs/architecture/decisions/) | Why each hard call was made (31 ADRs) |
+| [Decision records](docs/architecture/decisions/) | Why each hard call was made (33 ADRs) |
 
 ## Status
 

@@ -1177,3 +1177,5 @@ Detail, with test-first task breakdowns, in
 | [0029](../architecture/decisions/0029-integrate-serialized-by-advisory-lock.md) | Integrates are serialized by a Postgres advisory lock, and contention is a Defer |
 | [0030](../architecture/decisions/0030-two-mode-live-harness.md) | The live harness has two modes: faked by default, paid by explicit choice |
 | [0031](../architecture/decisions/0031-skills-context-packets-over-a-process-boundary.md) | Skills context is a packet compiled over a process boundary, shadow before inject |
+| [0032](../architecture/decisions/0032-the-docs-ship-as-a-paper-and-a-book.md) | The documentation ships as a research paper and a book, findable everywhere and built to outlive the site |
+| [0033](../architecture/decisions/0033-governance-in-plain-sight.md) | Governance in plain sight: the law is as easy to find and as visible as possible, on every human-readable surface |

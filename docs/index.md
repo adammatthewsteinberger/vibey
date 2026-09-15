@@ -208,7 +208,7 @@ things those runners deliberately do not do:
 | [Rotation & engines](https://github.com/the-vibey-project/vibey/blob/main/docs/plans/rotation-and-engines.md) | Capability matrix, effort normalization, smooth weighted round robin |
 | [Phase protocols](https://github.com/the-vibey-project/vibey/blob/main/docs/plans/phase-protocols.md) | What all six phases do, turn by turn |
 | [Implementation plan](https://github.com/the-vibey-project/vibey/blob/main/docs/plans/implementation-plan.md) | Milestone-by-milestone, test-first task breakdown |
-| [Decision records](https://github.com/the-vibey-project/vibey/blob/main/docs/architecture/decisions/) | Why each hard call was made (31 ADRs) |
+| [Decision records](https://github.com/the-vibey-project/vibey/blob/main/docs/architecture/decisions/) | Why each hard call was made (33 ADRs) |
 
 ## Status
 

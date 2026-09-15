@@ -43,6 +43,9 @@ nav:
   - Guides:
       - Kubernetes: guides/kubernetes.md
       - Greeter live demo: guides/greeter-live-demo.md
+  - Reference:
+      - CLI: reference/cli.md
+      - Configuration: reference/configuration.md
   - Architecture:
       - Decision records:
           - "0001 — Orchestrate the `*loop` runners; do not reimplement them": architecture/decisions/0001-orchestrate-do-not-reimplement.md
@@ -76,3 +79,6 @@ nav:
           - "0029 — Integrates are serialized by a Postgres advisory lock, and contention is a Defer": architecture/decisions/0029-integrate-serialized-by-advisory-lock.md
           - "0030 — The live harness has two modes — faked by default, paid by explicit choice": architecture/decisions/0030-two-mode-live-harness.md
           - "0031 — Skills context is a packet compiled over a process boundary, shadow before inject": architecture/decisions/0031-skills-context-packets-over-a-process-boundary.md
+          - "0032 — The documentation ships as a research paper and a book, findable everywhere and built to outlive the site": architecture/decisions/0032-the-docs-ship-as-a-paper-and-a-book.md
+          - "0033 — Governance in plain sight — the law is as easy to find and as visible as possible, on every human-readable surface": architecture/decisions/0033-governance-in-plain-sight.md
+  - Research paper: paper.md
