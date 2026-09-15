@@ -12,6 +12,8 @@ published as a book — [PDF](https://the-vibey-project.github.io/vibey/main/boo
 
 ## [Unreleased]
 
+## [0.7.0] (2026-09-15)
+
 ### Features
 
 * **gh:** the book and the research paper linked from every page's navigation and footer, the channel chooser and `llms.txt`, and attached to each GitHub Release; this repository adopts `github-release.yml` ([#147](https://github.com/the-vibey-project/vibey/issues/147)) ([c696374a](https://github.com/the-vibey-project/vibey/commit/c696374a51a2c08f82d7c53f1f1fe1ecda55b22b))
@@ -19,6 +21,7 @@ published as a book — [PDF](https://the-vibey-project.github.io/vibey/main/boo
 * **workspace:** register `src/vibey_tools/*` as uv workspace members and resolve the tools from the tree ([4e55a60e](https://github.com/the-vibey-project/vibey/commit/4e55a60e9007c6b98f6f05777d838d9b0eac2d7c))
 * **build:** let the image build vibey-skills from the tree, and stop shipping the subtrees ([8cbdb7b4](https://github.com/the-vibey-project/vibey/commit/8cbdb7b44bbc96e9918dfd8bd8d40f768da8c22e))
 
+* **gh:** governance published on every docs page and in the book; LaTeX rendered on the site from a self-served, checksum-verified MathJax ([#158](https://github.com/the-vibey-project/vibey/issues/158)) ([df68a084](https://github.com/the-vibey-project/vibey/commit/df68a084d1c33a730268f4e947c5d76d7b0dd1d8))
 ### Bug Fixes
 
 * **gh:** review, repair and conflict jobs load plugins from a configured marketplace (this repository's own `src/vibey_tools/skills`) instead of a deleted repository ([#149](https://github.com/the-vibey-project/vibey/issues/149)) ([7a5b3b9c](https://github.com/the-vibey-project/vibey/commit/7a5b3b9c4c4631023020668b1e62e7bec61e68f4))
@@ -32,6 +35,7 @@ published as a book — [PDF](https://the-vibey-project.github.io/vibey/main/boo
 * ship the `vibey_bootstrap.gh` compatibility shim, and settle on one formatter ([8d468d1d](https://github.com/the-vibey-project/vibey/commit/8d468d1d99b059b850c5c895ea9fe8879ede71e7))
 * regenerate uv.lock for the v0.6.0 version bump ([711181ae](https://github.com/the-vibey-project/vibey/commit/711181ae30cfcfd6a9ea634b86607a96cb852625))
 
+* **release:** install uv where the version is stamped, so develop and promotions publish ([#160](https://github.com/the-vibey-project/vibey/issues/160)) ([2f2185a4](https://github.com/the-vibey-project/vibey/commit/2f2185a49290e220ece4135442e47842c6db49be))
 ### Documentation
 
 * ADR-0016 — code lives in classes, and every class has an interface beside it ([3468bb51](https://github.com/the-vibey-project/vibey/commit/3468bb51944d7840d266a1150846bb587040edc6))
@@ -41,6 +45,9 @@ published as a book — [PDF](https://the-vibey-project.github.io/vibey/main/boo
 * ADR-0020 — a governing rule belongs in the canon, ratified, or it is not a rule ([#142](https://github.com/the-vibey-project/vibey/issues/142)) ([718e8980](https://github.com/the-vibey-project/vibey/commit/718e8980da52092ce019bd11f59e8bb1da1cf6ab))
 * file 12.b, because ADR-0020 was exempting itself from its own rule ([573804b7](https://github.com/the-vibey-project/vibey/commit/573804b790afc646dcd6587421f2bfa275b06498))
 
+* build out every ADR: 0015 rebuilt, 0021–0033 recorded, 0001–0020 brought up to the code ([#159](https://github.com/the-vibey-project/vibey/issues/159)) ([7cf33920](https://github.com/the-vibey-project/vibey/commit/7cf339201597969facd0137fc66f2da30413d2e9))
+* the book and the paper everywhere a reader looks; changelog, contributor docs and paper brought up to date ([#156](https://github.com/the-vibey-project/vibey/issues/156)) ([04766b44](https://github.com/the-vibey-project/vibey/commit/04766b4473dc21100a779497c1be3fc400dfc7b1))
+* **canon:** sub-doctrines 9.b, 10.e, 12.c, 2.b and 7.b ratified; 12.b cites Article II.3 ([#150](https://github.com/the-vibey-project/vibey/issues/150)) ([b8038420](https://github.com/the-vibey-project/vibey/commit/b80384202adb61b8b92ae455080b7fb7a46c0f00)) ([#151](https://github.com/the-vibey-project/vibey/issues/151)) ([fbc4de65](https://github.com/the-vibey-project/vibey/commit/fbc4de655d9a53204d3940ce9dbcbc83fa697382)) ([#152](https://github.com/the-vibey-project/vibey/issues/152)) ([5a35d9ac](https://github.com/the-vibey-project/vibey/commit/5a35d9aca5a7321951a751b80bedf05a3f1cd348)) ([#153](https://github.com/the-vibey-project/vibey/issues/153)) ([3be10eb6](https://github.com/the-vibey-project/vibey/commit/3be10eb63f2ea77e4a7925624015a2b1a3d2204f)) ([#154](https://github.com/the-vibey-project/vibey/issues/154)) ([2bab0f9f](https://github.com/the-vibey-project/vibey/commit/2bab0f9f37c554c04e7f9d10343e573c760ad1a6)) ([#157](https://github.com/the-vibey-project/vibey/issues/157)) ([061adf5d](https://github.com/the-vibey-project/vibey/commit/061adf5dfb97e7951476be0a9d040a88bbe3224f))
 ### Miscellaneous Chores
 
 * repoint provenance and every family URL at the-vibey-project ([8ac15815](https://github.com/the-vibey-project/vibey/commit/8ac15815a7a47042cd6872cc6fe3d84a5eb2b043)); repo_name and vibey-skills marketplace instructions updated to match ([1d38ff12](https://github.com/the-vibey-project/vibey/commit/1d38ff1238666e38e56ee75f425aa3469986037e) and siblings)
