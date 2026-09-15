@@ -1,0 +1,64 @@
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+name: __VIBEY_GH_WF_GITHUB_RELEASE__
+
+# Package publication owns artifact verification. This workflow reacts only after that
+# release succeeds on the configured release branch, then creates an immutable tag and
+# an idempotent GitHub Release for the exact released commit.
+on:
+  workflow_run:
+    workflows: ["__VIBEY_GH_WF_RELEASE__"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Exact release commit SHA (blank uses the selected ref)"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: github-release-${{ inputs.target || github.event.workflow_run.head_sha || github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Tag and publish
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == '__VIBEY_GH_RELEASE_BRANCH__')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ inputs.target || github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 1
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+      - name: Install trusted release tooling
+        run: |
+          set -euo pipefail
+          # The pyproject that DECLARES the tooling, wherever it sits: the top of the tree
+          # in the standalone repository, under src/ in the monorepo that absorbed it. A
+          # repository that carries it must install that source, never a published release
+          # that is always behind its own integration branch.
+          self=""
+          for candidate in $(git ls-files --full-name '*pyproject.toml'); do
+            grep -qE '^name = "vibey-gh"' "$candidate" || continue
+            self=${candidate%/pyproject.toml}
+            if [ "$self" = "$candidate" ]; then self=.; fi
+            break
+          done
+          if [ -n "$self" ]; then
+            python -m pip install --quiet -e "$self"
+          else
+            python -m pip install --quiet vibey-gh
+          fi
+      - name: Create immutable tag and GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET: ${{ inputs.target || github.event.workflow_run.head_sha || github.sha }}
+        run: vibey-gh github-release --target "$TARGET"

@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        <link rel="canonical" href="https://adammatthewsteinberger.github.io/vibey-gh/cli/">
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>CLI - vibey-gh</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../css/brands.min.css" rel="stylesheet">
+        <link href="../css/solid.min.css" rel="stylesheet">
+        <link href="../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <link href="../stylesheets/vibey.css" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">vibey-gh</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href=".." class="nav-link">Home</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../architecture/" class="nav-link">Architecture</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../configuration/" class="nav-link">Configuration</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="./" class="nav-link active" aria-current="page">CLI</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../workflows/" class="nav-link">Workflows</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../security/" class="nav-link">Security</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../threat-model/" class="nav-link">Threat model</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../adoption/" class="nav-link">Adoption</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../operations/" class="nav-link">Operations</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../development/" class="nav-link">Contributing</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../testing/" class="nav-link">Testing</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../releases/" class="nav-link">Releases</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../troubleshooting/" class="nav-link">Support</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../governance/" class="nav-link">Governance</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../accessibility/" class="nav-link">Accessibility</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../dependencies/" class="nav-link">Dependencies</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../roadmap/" class="nav-link">Roadmap</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../adr/" class="nav-link">Architecture decisions</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#properdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a rel="prev" href="../configuration/" class="nav-link">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a rel="next" href="../workflows/" class="nav-link">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="https://github.com/adammatthewsteinberger/vibey-gh/edit/main/docs/cli.md" class="nav-link">Edit on adammatthewsteinberger/vibey-gh
+                                    </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#cli-reference" class="nav-link">CLI reference</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#library-and-server-adapters" class="nav-link">Library and server adapters</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="cli-reference">CLI reference</h1>
+<p>All commands return zero on success and a nonzero status on validation, policy, or
+transport failure. Run <code>vibey-gh COMMAND --help</code> for argparse's generated reference.</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Arguments and options</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>check</code></td>
+<td><code>--apply</code>, <code>--commits RANGE</code>, <code>--quiet</code>, <code>--ci</code></td>
+<td>Verify assets, fingerprints, documentation, provenance, that every <code>scan_workflows</code> entry present in <code>.github/workflows/</code> can fire for a pull request, and optionally a commit range. <code>--apply</code> adds missing headers and collapses a header duplicated within a file; <code>--ci</code> skips the local hooks-path check.</td>
+</tr>
+<tr>
+<td><code>install</code></td>
+<td>none</td>
+<td>Render configured workflows, install/chains hooks, and install release-site assets.</td>
+</tr>
+<tr>
+<td><code>version</code></td>
+<td><code>--since REF</code> (default <code>origin/main</code>), <code>--dev BUILD</code>, <code>--apply</code>, <code>--explain</code></td>
+<td>Derive, explain, or write the semantic version.</td>
+</tr>
+<tr>
+<td><code>trailer</code> / <code>trailer-key</code></td>
+<td>none</td>
+<td>Print the configured provenance trailer or only its key.</td>
+</tr>
+<tr>
+<td><code>conventional-message</code></td>
+<td><code>--file COMMIT_EDITMSG</code> or stdin</td>
+<td>Normalize the first line without changing the remaining bytes. This git-hook helper is intentionally CLI-only because it edits a local file or stdin.</td>
+</tr>
+<tr>
+<td><code>conventional-check</code></td>
+<td>required <code>--commits BASE..HEAD</code></td>
+<td>Audit every subject in an explicit revision range. This local/CI git helper is intentionally CLI-only, not a remote automation capability.</td>
+</tr>
+<tr>
+<td><code>merge-train</code></td>
+<td><code>--method squash\|rebase\|merge</code>, <code>--pr N</code>, <code>--dry-run</code>, <code>--label LABEL</code>, <code>--summary FILE</code></td>
+<td>Revalidate and merge one or all policy-ready exact heads.</td>
+</tr>
+<tr>
+<td><code>pr-automation evaluate</code></td>
+<td>required <code>--pr N --head-sha SHA</code></td>
+<td>Classify one exact PR head and emit stable JSON.</td>
+</tr>
+<tr>
+<td><code>pr-automation ready-draft</code></td>
+<td>required <code>--pr N --head-sha SHA</code></td>
+<td>Convert a stable exact draft head to ready-for-review.</td>
+</tr>
+<tr>
+<td><code>pr-automation record-review</code></td>
+<td>required <code>--pr N --input JSON\|FILE\|-</code></td>
+<td>Persist a structured exact-head review. Use <code>-</code> for large stdin payloads.</td>
+</tr>
+<tr>
+<td><code>pr-automation record-repair</code></td>
+<td>required <code>--pr N --input JSON\|FILE\|-</code></td>
+<td>Persist a structured repair attempt.</td>
+</tr>
+<tr>
+<td><code>pr-automation mirror-fork</code></td>
+<td>required <code>--pr N</code></td>
+<td>Create a linked repository-owned replacement when a fork needs edits.</td>
+</tr>
+<tr>
+<td><code>pr-automation ensure-labels</code></td>
+<td>none</td>
+<td>Create or reconcile all managed labels idempotently.</td>
+</tr>
+<tr>
+<td><code>issue-automation evaluate</code></td>
+<td>required <code>--issue N</code></td>
+<td>Classify one issue and emit stable JSON, including the derived solution branch and a Conventional Commit <code>pr_title</code>.</td>
+</tr>
+<tr>
+<td><code>issue-automation context</code></td>
+<td>required <code>--issue N</code>; optional <code>--output FILE</code>, <code>--max-bytes N</code></td>
+<td>Render one issue as a bounded, explicitly untrusted briefing. Writes to stdout when <code>--output</code> is omitted; parent directories are created.</td>
+</tr>
+<tr>
+<td><code>issue-automation record-solution</code></td>
+<td>required <code>--issue N --input JSON\|FILE\|-</code></td>
+<td>Persist a structured solution attempt against the issue's content lineage.</td>
+</tr>
+<tr>
+<td><code>issue-automation list-eligible</code></td>
+<td>none</td>
+<td>Emit the JSON array of open issues a recovery sweep should dispatch.</td>
+</tr>
+<tr>
+<td><code>issue-automation ensure-labels</code></td>
+<td>none</td>
+<td>Create or reconcile the issue automation labels idempotently.</td>
+</tr>
+<tr>
+<td><code>github-release</code></td>
+<td>required <code>--target SHA</code>; optional <code>--version VERSION</code></td>
+<td>Create or reuse an immutable tag and GitHub Release.</td>
+</tr>
+<tr>
+<td><code>promote</code></td>
+<td><code>--method rebase\|squash\|merge</code>, <code>--dry-run</code>, <code>--wait</code> or <code>--no-wait</code>, <code>--summary FILE</code></td>
+<td>Open/reuse the integration-to-release PR. Event-driven <code>--no-wait</code> is the default.</td>
+</tr>
+<tr>
+<td><code>realign</code></td>
+<td>none</td>
+<td>Bring the integration branch forward after release without rewriting it.</td>
+</tr>
+<tr>
+<td><code>pr-automation self-heal</code></td>
+<td><code>--pr N</code> optional</td>
+<td>Refill a spent repair budget, itself bounded by <code>branch_sync.max_self_heals</code>. Omit <code>--pr</code> to sweep every exhausted pull request.</td>
+</tr>
+<tr>
+<td><code>conversation evaluate</code></td>
+<td>required <code>--subject N</code>; optional <code>--comment-id ID</code></td>
+<td>Decide whether one comment gets a response, and how far it may reach.</td>
+</tr>
+<tr>
+<td><code>conversation context</code></td>
+<td>required <code>--subject N</code>; optional <code>--comment-id ID</code>, <code>--output FILE</code>, <code>--max-bytes N</code></td>
+<td>Render the thread as a bounded, explicitly untrusted briefing.</td>
+</tr>
+<tr>
+<td><code>conversation reply</code></td>
+<td>required <code>--subject N --body TEXT\|FILE\|-</code></td>
+<td>Post an answer. A trusted step calls this; the model never gets the tool.</td>
+</tr>
+<tr>
+<td><code>conversation record-response</code></td>
+<td>required <code>--subject N --input JSON\|FILE\|-</code></td>
+<td>Persist one interaction against the thread's budget.</td>
+</tr>
+<tr>
+<td><code>reconcile-branches</code></td>
+<td><code>--dry-run</code></td>
+<td>Rebase, close, or leave each open pull-request branch stranded by a realign rewrite. <code>--dry-run</code> decides without mutating anything. Realign calls this itself; the command exists for recovery and inspection.</td>
+</tr>
+<tr>
+<td><code>rulesets</code></td>
+<td><code>--dry-run</code></td>
+<td>Reconcile the integration and release branch rulesets declared by <code>[rulesets]</code>. <code>--dry-run</code> reports drift without creating or updating anything. <code>repository-profile.yml</code> calls this itself; the command exists for recovery and inspection.</td>
+</tr>
+<tr>
+<td><code>api</code>, <code>mcp</code>, <code>sdk</code></td>
+<td><code>CAPABILITY</code>, <code>--arguments JSON_ARRAY</code></td>
+<td>Invoke a canonical capability through that adapter.</td>
+</tr>
+<tr>
+<td><code>webhook</code></td>
+<td><code>CAPABILITY</code>, <code>--arguments JSON_ARRAY</code>, required <code>--delivery ID</code></td>
+<td>Sign and dispatch locally using <code>VIBEY_GH_WEBHOOK_SECRET</code>; claims persist by default.</td>
+</tr>
+</tbody>
+</table>
+<p><code>VIBEY_GH_WEBHOOK_STATE_DIR</code> overrides the default
+<code>.vibey-gh/webhook-deliveries</code> store. The CLI atomically creates a mode-0600 SHA-256 marker
+for every accepted delivery ID in a mode-0700 directory, so rejection survives restarts
+and concurrent invocations. Put it on durable storage when the CLI receives webhooks.</p>
+<h2 id="library-and-server-adapters">Library and server adapters</h2>
+<p>SDK, API, MCP, and webhook implementations are dependency-free application callables, not
+bundled network daemons. Adopters own TLS, authentication, process management, rate limits,
+and request-size limits in their chosen server framework.</p>
+<pre><code class="language-python">from vibey_gh.surfaces import api_dispatch, mcp_dispatch
+
+status, response = api_dispatch(
+    &quot;POST&quot;, &quot;/v1/capabilities/check&quot;, b'{&quot;arguments&quot;:[&quot;--ci&quot;]}'
+)
+tools = mcp_dispatch({&quot;jsonrpc&quot;: &quot;2.0&quot;, &quot;id&quot;: 1, &quot;method&quot;: &quot;tools/list&quot;})
+</code></pre>
+<p>Map HTTP <code>POST /v1/capabilities/{name}</code> to <code>api_dispatch</code> and MCP JSON-RPC objects to
+<code>mcp_dispatch</code>. For an inbound webhook, retain the sender's raw bytes and signature:</p>
+<pre><code class="language-python">from pathlib import Path
+from vibey_gh.surfaces import WebhookDispatcher
+
+webhooks = WebhookDispatcher(secret, delivery_dir=Path(&quot;/var/lib/vibey-gh/deliveries&quot;))
+status, response = webhooks.dispatch(delivery_id, signature_header, raw_body)
+</code></pre>
+<p>Never put the secret in arguments or logs. The convenience CLI computes its signature for
+integration and smoke testing; an HTTP adapter must forward and verify the sender's HMAC.</p></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://properdocs.org/">ProperDocs</a>.</p>
+        </footer>
+        <script src="../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js"></script>
+        <script src="../javascripts/channel.js"></script>
+        <script src="../search/main.js"></script>
+
+        <div class="modal" id="properdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="properdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="properdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="properdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

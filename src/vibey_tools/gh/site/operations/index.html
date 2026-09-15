@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        <link rel="canonical" href="https://adammatthewsteinberger.github.io/vibey-gh/operations/">
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>Operations - vibey-gh</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../css/brands.min.css" rel="stylesheet">
+        <link href="../css/solid.min.css" rel="stylesheet">
+        <link href="../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <link href="../stylesheets/vibey.css" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">vibey-gh</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href=".." class="nav-link">Home</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../architecture/" class="nav-link">Architecture</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../configuration/" class="nav-link">Configuration</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../cli/" class="nav-link">CLI</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../workflows/" class="nav-link">Workflows</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../security/" class="nav-link">Security</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../threat-model/" class="nav-link">Threat model</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../adoption/" class="nav-link">Adoption</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="./" class="nav-link active" aria-current="page">Operations</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../development/" class="nav-link">Contributing</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../testing/" class="nav-link">Testing</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../releases/" class="nav-link">Releases</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../troubleshooting/" class="nav-link">Support</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../governance/" class="nav-link">Governance</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../accessibility/" class="nav-link">Accessibility</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../dependencies/" class="nav-link">Dependencies</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../roadmap/" class="nav-link">Roadmap</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../adr/" class="nav-link">Architecture decisions</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#properdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a rel="prev" href="../adoption/" class="nav-link">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a rel="next" href="../development/" class="nav-link">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="https://github.com/adammatthewsteinberger/vibey-gh/edit/main/docs/operations.md" class="nav-link">Edit on adammatthewsteinberger/vibey-gh
+                                    </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#operations" class="nav-link">Operations</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#what-automerge_token-must-be-able-to-do" class="nav-link">What AUTOMERGE_TOKEN must be able to do</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#everything-else-in-this-document-enable-actions-write-permissions-pr-creation" class="nav-link">Everything else in this document Enable Actions write permissions, PR creation,</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="operations">Operations</h1>
+<p><code>ANTHROPIC_API_KEY</code> is required. Add <code>AUTOMERGE_TOKEN</code> only when the default
+<code>GITHUB_TOKEN</code> cannot satisfy branch rulesets or repository-settings writes; PyPI/TestPyPI
+use trusted publishing environments.</p>
+<h2 id="what-automerge_token-must-be-able-to-do">What <code>AUTOMERGE_TOKEN</code> must be able to do</h2>
+<p>The token appears in a minority of the workflows' <code>GH_TOKEN</code> assignments — reading the
+pull request, commenting, labelling, merging, and pushing the promotion's version bump.
+For a fine-grained personal access token that means exactly:</p>
+<table>
+<thead>
+<tr>
+<th>Permission</th>
+<th>Level</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Contents</td>
+<td>Read and write</td>
+</tr>
+<tr>
+<td>Pull requests</td>
+<td>Read and write</td>
+</tr>
+<tr>
+<td>Actions</td>
+<td>Read</td>
+</tr>
+<tr>
+<td>Metadata</td>
+<td>Read (mandatory)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Checks is deliberately absent, and the fine-grained token UI offers no such permission.</strong>
+Check runs can only be created by a GitHub App, so the gate is published with
+<code>GITHUB_TOKEN</code> — which is one — and no PAT permission exists or is needed for it. The
+workflows' own <code>permissions:</code> blocks govern <code>GITHUB_TOKEN</code>, not this PAT; do not read
+<code>checks: read</code> there as a token requirement.</p>
+<p>Three failure modes worth knowing before they cost an afternoon, because each presented as
+something else in production:</p>
+<ul>
+<li><strong>A fine-grained token expires</strong> (a year at most) and returns as <code>HTTP 401: Bad
+  credentials</code> inside a step whose name says nothing about credentials. A classic token
+  with the single <code>repo</code> scope covers everything above and supports no expiration — the
+  trade is that it reaches every repository the account can.</li>
+<li><strong>A fine-grained token only reaches the repositories in its own grant list.</strong> The secret
+  being set on a repository proves nothing: two repositories out of a token's list behaved
+  identically to two inside it for reads, then failed every privileged write. The merge
+  train reported each failure as <em>"the ruleset refused it"</em> until it learned to print the
+  API's own error.</li>
+<li><strong>The account behind the token is what bypasses rulesets.</strong> The merge train's <code>--admin</code>
+  fallback works only if that account holds a bypass role on the ruleset; the token's
+  permissions cannot add standing its owner does not have.</li>
+</ul>
+<h2 id="everything-else-in-this-document-enable-actions-write-permissions-pr-creation">Everything else in this document Enable Actions write permissions, PR creation,</h2>
+<p>GitHub Pages via Actions, Packages, Releases, and Deployments. Use workflow dispatch for
+recovery. Inspect exact run and head SHA before retrying. Never solve a blocked release by
+deleting, force-pushing, weakening a gate, or switching production to TestPyPI.</p>
+<p>To retry one issue, dispatch <code>Issue automation</code> with its number; <code>vibey-gh
+issue-automation list-eligible</code> shows what the scheduled sweep would pick up. A redispatch
+of unchanged issue text is a no-op, so retrying is safe. An issue labelled
+<code>vibey-gh:solve-blocked</code> is waiting on a human decision named in the issue's state comment,
+and one labelled <code>vibey-gh:solve-exhausted</code> has spent its budget; editing the issue body
+restates the request and starts a new lineage. To stop the feature without uninstalling it,
+set <code>[issue_automation].enabled = false</code> in reviewed configuration.</p>
+<p>When a bug in privileged workflow code itself blocks a repair PR from repairing its own
+gate, dispatch <code>Automation bootstrap</code> (see <a href="../workflows/">Workflows</a>) with the exact PR
+number, exact head SHA, and explicit authorization. It requires administrator permission
+and every independent gate already passing on that SHA, and it is the only path that
+squash-merges to <code>develop</code> without an ordinary PR automation review.</p>
+<p>To preview what <code>Branch sync</code> would rebase, close, update, or leave without mutating
+anything, dispatch it manually with <code>dry_run = true</code>; the decisions are printed to the run
+summary. The nightly schedule run of its <code>heal</code> job refills the repair budget of every pull
+request labeled <code>vibey-gh:repair-exhausted</code>, up to <code>branch_sync.max_self_heals</code> times per
+lineage, and re-dispatches <code>PR automation</code> against each healed PR's exact head SHA. Once
+that budget is spent for a lineage, the label stays and only a human — typically by pushing
+a new commit or editing the PR — starts a fresh lineage. See <a href="../workflows/">Workflows</a> and
+<code>[branch_sync]</code> in <a href="../configuration/">Configuration</a>.</p>
+<p>When Conventional Commits rewrites a topic branch, synchronize the local checkout before
+new work. Preserve unpushed work first, then use <code>git fetch origin</code> and rebase it onto the
+new remote head; if there is no unpushed work, reset the local topic branch to its explicit
+<code>origin/&lt;branch&gt;</code> ref. Never run either operation against <code>develop</code> or <code>main</code>. The workflow
+has no per-run bypass: correct the commit locally when a fork or merge-containing branch
+cannot be repaired automatically. Disable the managed workflow only through reviewed
+<code>[install].workflows</code> configuration, which makes the policy change visible to CI.</p></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://properdocs.org/">ProperDocs</a>.</p>
+        </footer>
+        <script src="../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js"></script>
+        <script src="../javascripts/channel.js"></script>
+        <script src="../search/main.js"></script>
+
+        <div class="modal" id="properdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="properdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="properdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="properdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

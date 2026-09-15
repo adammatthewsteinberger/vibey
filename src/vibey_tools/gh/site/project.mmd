@@ -1,0 +1,229 @@
+%% Made with ❤️ by Vibey; developed by Adam Matthew Steinberger.
+%% Canonical whole-project architecture. The deterministic and semantic documentation
+%% gates require this file to remain synchronized with every public and operational path.
+flowchart TB
+  subgraph People["People and repository events"]
+    Maintainer[Maintainer]
+    Contributor[Contributor]
+    Push[Branch push]
+    PullRequest[Pull request]
+    Issue[Published issue]
+    Comment[Comment mentioning the configured trigger]
+  end
+
+  subgraph Interfaces["Complete public interface parity"]
+    CLI[CLI]
+    SDK[SDK]
+    API[API]
+    MCP[MCP]
+    Webhook[Webhook]
+  end
+
+  subgraph Core["Dependency-free vibey-gh core"]
+    Config[Configuration and policy]
+    Install[Installer and rendered templates]
+    Fingerprints[Conventional Commits and Provenance]
+    Debugging["Debugging (opt-in, tamper-evident branch tracing)"]
+    Documentation[Documentation contract]
+    PRAutomation[PR Automation]
+    IssueAutomation[Issue Automation]
+    Conversation["Conversation (comment-driven answer and bounded change, vibey_gh.conversation)"]
+    GithubState["Durable marker-comment state (vibey_gh.github_state)"]
+    MergeTrain[Merge train]
+    Promotion[Promotion]
+    Versioning[Versioning]
+    PublishRelease["Release (hand-authored PyPI/TestPyPI publish)"]
+    Release[GitHub releases]
+    CapabilitySurfaces["Capability surfaces (vibey_gh.surfaces)"]
+    ReleaseSurfaces[Release surfaces publishing]
+    Realign[Realign released branches]
+    Reconcile["Stranded-branch reconciliation (vibey_gh.reconcile)"]
+    Rulesets["Branch ruleset reconciliation (vibey_gh.rulesets)"]
+  end
+
+  subgraph Security["Security Boundary"]
+    Trusted[Trusted base-branch automation]
+    Untrusted[Untrusted PR source and model output]
+    Sandbox[Constrained read/edit tools]
+    EphemeralGit[Credential-free ephemeral Git context]
+    CredentialHelper[Token-free action credential helper]
+    SafeProgress[Sanitized Claude progress and restricted artifacts]
+    ProgressGuard[Supported-event progress guard]
+    RawOutput[Manual private-only raw Claude diagnostics]
+    Diagnostics[Bounded exact-head failed-check evidence]
+    Guard[Exact SHA, branch, lease, and policy guards]
+    Bootstrap[Admin-authorized automation bootstrap]
+    ReviewIncomplete["Review incomplete: no verdict, operator action required"]
+    UntrustedIssue[Untrusted contributor issue text]
+    Briefing[Bounded untrusted issue briefing]
+    IssueTrust["Issue eligibility policy (author trust, labels, budget)"]
+    Fork[Untrusted fork PR head]
+    MirrorFork["Repository-owned replacement PR (mirror-fork)"]
+    UntrustedComment[Untrusted contributor comment text]
+    ConversationBriefing[Bounded untrusted conversation briefing]
+    ConversationTrust["Conversation eligibility policy (mention, trust, interaction budget, self-reply loop guard)"]
+  end
+
+  subgraph Delivery["Event-driven delivery"]
+    BranchIntake[Branch intake]
+    IssueSolution[Guarded issue solution branch and linked PR]
+    CI[CI, tests, lint, build]
+    CodeQL[CodeQL security analysis]
+    APIDrift[API drift and five-surface parity]
+    Provenance[Provenance workflow]
+    Docs[Documentation and Mermaid review]
+    Conventional[Conventional Commits self-heal]
+    Review[Claude exact-head review]
+    Repair[Bounded self-healing repair]
+    Develop[develop]
+    Main[main]
+    TestPyPI[TestPyPI]
+    PyPI[PyPI]
+    Packages[GitHub Packages]
+    Pages[GitHub Pages]
+    RepositoryProfile[Repository profile]
+    ReleaseRepair[Release repair]
+    Conflict[Guarded same-repository conflict resolution]
+    BranchSync[Branch sync]
+    SelfHeal[Self-heal spent repair budgets]
+    ConversationReply[Guarded conversation reply and optional bounded commit]
+  end
+
+  Maintainer --> CLI
+  Contributor --> Push
+  Contributor --> Issue
+  Contributor --> Comment
+  Maintainer --> Issue
+  Maintainer --> Comment
+  Push --> BranchIntake
+  BranchIntake --> PullRequest
+  CLI --> CapabilitySurfaces
+  SDK --> CapabilitySurfaces
+  API --> CapabilitySurfaces
+  MCP --> CapabilitySurfaces
+  Webhook --> CapabilitySurfaces
+  CapabilitySurfaces --> Config
+  Config --> Install
+  Install --> PRAutomation
+  Install --> IssueAutomation
+  Install --> MergeTrain
+  Issue --> IssueAutomation
+  Issue --> UntrustedIssue
+  IssueAutomation --> IssueTrust
+  IssueTrust -->|ineligible: skipped or blocked| Issue
+  IssueTrust -->|eligible| Briefing
+  UntrustedIssue --> Briefing
+  Briefing --> Sandbox
+  Sandbox --> IssueSolution
+  IssueSolution --> Guard
+  Guard --> PullRequest
+  IssueAutomation --> GithubState
+  PRAutomation --> GithubState
+  IssueAutomation --> Trusted
+  BranchIntake -->|yields the issue branch namespace| IssueSolution
+  MergeTrain -->|merged solution closes the issue| Issue
+  PullRequest --> CI
+  PullRequest --> CodeQL
+  PullRequest --> APIDrift
+  PullRequest --> Provenance
+  PullRequest --> Conventional
+  Conventional --> Guard
+  Guard --> PullRequest
+  PullRequest --> Docs
+  CI --> PRAutomation
+  CodeQL --> PRAutomation
+  APIDrift --> PRAutomation
+  Provenance --> PRAutomation
+  Docs --> PRAutomation
+  PRAutomation --> Trusted
+  Untrusted --> Sandbox
+  EphemeralGit --> Sandbox
+  Trusted --> Sandbox
+  Sandbox --> Review
+  Review --> Repair
+  Repair --> Guard
+  Review -->|no verdict| ReviewIncomplete
+  ReviewIncomplete -->|operator corrects condition, then reruns| Review
+  Trusted --> EphemeralGit
+  EphemeralGit --> CredentialHelper
+  Sandbox --> SafeProgress
+  ProgressGuard --> SafeProgress
+  Guard --> RawOutput
+  CI --> Diagnostics
+  Diagnostics --> Sandbox
+  Guard --> PullRequest
+  Review --> MergeTrain
+  PullRequest --> Fork
+  Fork --> Untrusted
+  PRAutomation -->|fork PR needs repair| MirrorFork
+  MirrorFork --> Guard
+  PRAutomation -->|same-repository merge conflict| Conflict
+  Sandbox --> Conflict
+  Conflict --> Guard
+  Maintainer -->|explicit admin authorization| Bootstrap
+  CI --> Bootstrap
+  CodeQL --> Bootstrap
+  APIDrift --> Bootstrap
+  Docs --> Bootstrap
+  Provenance --> Bootstrap
+  Bootstrap -->|admin squash merge bypasses PRAutomation and Guard| Develop
+  MergeTrain --> Develop
+  Develop --> Promotion
+  Promotion --> PullRequest
+  Promotion --> Conventional
+  Conventional -->|protected history: verify without rewrite| Promotion
+  MergeTrain --> Main
+  Develop --> PublishRelease
+  Main --> PublishRelease
+  PublishRelease --> TestPyPI
+  PublishRelease --> PyPI
+  PublishRelease --> Release
+  Main --> Realign
+  Realign --> Develop
+  Realign --> Guard
+  Realign -->|rewrite may strand open topic branches| Reconcile
+  Develop --> Packages
+  Main --> Packages
+  Develop --> Pages
+  Main --> Pages
+  Versioning --> Promotion
+  ReleaseSurfaces --> Packages
+  ReleaseSurfaces --> Pages
+  TestPyPI --> ReleaseSurfaces
+  PyPI --> ReleaseSurfaces
+  ReleaseSurfaces --> RepositoryProfile
+  RepositoryProfile --> Rulesets
+  Rulesets --> Develop
+  Rulesets --> Main
+  Rulesets -->|allow_force_pushes/allow_deletions rejected at load time| Guard
+  CI --> ReleaseRepair
+  PublishRelease --> ReleaseRepair
+  Release --> ReleaseRepair
+  ReleaseSurfaces --> ReleaseRepair
+  ReleaseRepair --> Guard
+  Fingerprints --> Provenance
+  Fingerprints --> Docs
+  CapabilitySurfaces --> APIDrift
+  Documentation --> Docs
+  Guard --> Fingerprints
+  CLI --> Debugging
+  Debugging --> Fingerprints
+  Develop -->|push| BranchSync
+  BranchSync --> Reconcile
+  Reconcile -->|rebase or delete: force-with-lease and exact-ref guards| Guard
+  Reconcile -->|close duplicate or leave with a comment| PullRequest
+  Reconcile -->|forward-merge only, never rewritten| Fork
+  BranchSync --> SelfHeal
+  SelfHeal -->|refill a repair-exhausted PR's budget| PRAutomation
+  SelfHeal --> PullRequest
+  Comment --> Conversation
+  Comment --> UntrustedComment
+  Conversation --> ConversationTrust
+  ConversationTrust -->|ineligible: skipped or blocked| Comment
+  ConversationTrust -->|eligible| ConversationBriefing
+  UntrustedComment --> ConversationBriefing
+  ConversationBriefing --> Sandbox
+  Sandbox --> ConversationReply
+  ConversationReply --> Guard
+  Conversation --> GithubState
+  Conversation --> Trusted

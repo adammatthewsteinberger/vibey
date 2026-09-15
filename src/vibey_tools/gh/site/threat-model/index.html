@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        <link rel="canonical" href="https://adammatthewsteinberger.github.io/vibey-gh/threat-model/">
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>Threat model - vibey-gh</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../css/brands.min.css" rel="stylesheet">
+        <link href="../css/solid.min.css" rel="stylesheet">
+        <link href="../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <link href="../stylesheets/vibey.css" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">vibey-gh</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href=".." class="nav-link">Home</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../architecture/" class="nav-link">Architecture</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../configuration/" class="nav-link">Configuration</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../cli/" class="nav-link">CLI</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../workflows/" class="nav-link">Workflows</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../security/" class="nav-link">Security</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="./" class="nav-link active" aria-current="page">Threat model</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../adoption/" class="nav-link">Adoption</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../operations/" class="nav-link">Operations</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../development/" class="nav-link">Contributing</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../testing/" class="nav-link">Testing</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../releases/" class="nav-link">Releases</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../troubleshooting/" class="nav-link">Support</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../governance/" class="nav-link">Governance</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../accessibility/" class="nav-link">Accessibility</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../dependencies/" class="nav-link">Dependencies</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../roadmap/" class="nav-link">Roadmap</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../adr/" class="nav-link">Architecture decisions</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#properdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a rel="prev" href="../security/" class="nav-link">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a rel="next" href="../adoption/" class="nav-link">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="https://github.com/adammatthewsteinberger/vibey-gh/edit/main/docs/threat-model.md" class="nav-link">Edit on adammatthewsteinberger/vibey-gh
+                                    </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#threat-model" class="nav-link">Threat model</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="threat-model">Threat model</h1>
+<p>Protected assets include repository contents, permanent branches, secrets, packages,
+releases, Pages deployments, provenance, and maintainer identity. Adversaries may control
+fork contents, PR metadata, logs, model prompts, generated output, and dependency names.
+Controls include no privileged execution of PR code, exact-SHA decisions, argument/path
+validation, bounded attempts, guarded refspecs, immutable pins, independent CI, no
+delete/force operations on main or develop, and an optimistic-concurrency recheck of the PR
+head immediately before and after every repair or conflict publish, which converts a
+concurrent human or bot update into a stale no-op instead of overwriting it. The narrow
+exception is a lease-protected force-update of a same-repository topic branch to repair
+commit subjects; exact-head, linear-history, repository-ownership, and permanent-branch
+guards all precede it. A fork, merge commit, stale event, or concurrent push fails closed.
+Operators must protect repository secrets and review changes to <code>.vibey-gh.toml</code>'s
+<code>[rulesets]</code> block, especially <code>bypass_actors</code>. That field defaults to the repository
+admin role rather than to nobody, which is a deliberate availability trade: a ruleset has
+no "include administrators" toggle, so an empty bypass list turns any check that stops
+reporting — an outage, an exhausted budget, a renamed job — into a branch nobody can merge
+to. The default grants no authority it does not already imply, since anyone able to bypass
+a ruleset can equally rewrite it; a repository wanting the stricter posture sets
+<code>bypass_actors = []</code> and accepts that recovery then means editing the ruleset by hand.</p>
+<p>The integration and release branch rulesets are themselves reconciled, not merely assumed:
+<code>vibey_gh.rulesets</code> builds each desired ruleset from configuration and compares it against
+what GitHub actually has before <code>repository-profile.yml</code> applies the difference.
+<code>RulesetConfig</code> refuses to construct at all when <code>allow_force_pushes</code> or <code>allow_deletions</code>
+is <code>true</code>, so the non-deletion, non-rewrite guarantee this document claims cannot be
+disabled by a single configuration key — that path fails at load time, before any workflow
+runs. A rule type an existing ruleset carries that configuration does not mention is never
+removed; it is merged back into the payload untouched and reported as unexpected, so a
+reconciliation can never look like a deletion. A ruleset the API refuses raises rather than
+being swallowed, because a skipped reconciliation is indistinguishable from a satisfied
+one from the outside — the same failure mode the exact-head gate and branch reconciliation
+below already refuse to risk.</p>
+<p>Comments are the least guarded input in a repository: anyone with an account can write one,
+on anything, at any time. Conversation therefore answers only a configured mention, and
+only from the owner or a trusted author unless <code>respond_to_untrusted</code> is deliberately set —
+answering everyone is a spending decision, not a default. Comment text reaches the model
+only through a bounded briefing written by a trusted step; the model holds no <code>Bash</code>, <code>gh</code>,
+<code>Agent</code>, or Git tool, and the answer is posted by a trusted step rather than by the model.
+File changes are narrower still: only on a pull request, only from a trusted commenter,
+never on a fork or a permanent branch, and never more than one commit. Interactions per
+thread are budgeted so a conversation cannot become an unbounded work queue. The loop guard
+comes first in every path — the automation's own reply contains the trigger, so answering
+itself would recurse and bill indefinitely; <code>ignore_actors</code> cannot be emptied while
+conversation is enabled, and the workflow additionally refuses any sender GitHub reports as
+a bot before a runner is claimed.</p>
+<p>An outside author cannot steer automation at a permanent branch from either end. GitHub
+already refuses them write access; behind that, <code>evaluate</code> terminally blocks any untrusted
+pull request whose head ref is the configured integration or release branch (whose repair
+push would land there) and any aimed at the release branch, which must only ever receive a
+promotion. Blocked is terminal, so no review, repair, conflict resolution, or gate runs for
+either shape. A fork is moved forward only through GitHub's update-branch endpoint, which
+merges rather than rewrites and succeeds only where the contributor enabled maintainer
+edits; rebasing, closing, and deleting a fork are unreachable under every configuration.</p>
+<p>Branch reconciliation after realign is the second deliberate force-update path, and the
+only automated deletion path besides merged-topic cleanup. Both are confined by
+<code>vibey_gh.reconcile.deletable()</code>, which refuses the configured integration and release
+branches, the literal <code>develop</code> and <code>main</code> independently, every fork branch, and any ref
+that is empty, begins with <code>-</code>, or contains <code>:</code> or <code>..</code>. <code>rebase_branch()</code> and
+<code>delete_branch()</code> each re-check that predicate and raise rather than proceed, so no caller
+can reach a protected ref by passing one in. Rebases publish with an exact-SHA
+<code>--force-with-lease</code>, so a branch that moved in the meantime refuses the push instead of
+being overwritten. A pull request is closed only when <code>git cherry</code> reports that every one
+of its commits is already upstream by patch identity; a ref that cannot be read reports
+unique work instead, so an unreadable branch fails closed. A contributor's branch carrying
+unique work is never rewritten, deleted, or closed — it receives a comment.</p>
+<p>Published issues are a distinct adversary-controlled asset with a lower barrier than a
+fork PR: anyone with an account can create one, and the <code>issues</code> event runs privileged
+default-branch workflow code. The controls are authority, shape, and budget. Authority: the
+<code>solve</code> job runs only for an explicit <code>solve</code> decision from <code>vibey_gh.issue_automation</code>,
+which refuses an outside author's issue until a maintainer applies the configured label.
+Shape: issue text reaches the model only through a bounded briefing file written by a
+trusted step, labelled as an untrusted report, with the model holding no <code>Bash</code>, <code>gh</code>,
+<code>Agent</code>, or Git tool; branch names derive from the issue number and a SHA-256 of its
+content, and a trusted publisher independently re-validates the namespace, the
+permanent-branch denylist, and the update-only refspec before pushing. Budget: attempts are
+counted per content fingerprint, so a redispatch cannot spend the budget twice and a
+resource-exhaustion attempt through repeated events is bounded by <code>max_attempts</code>. The
+resulting pull request receives ordinary review, repair, and merge-train treatment; nothing
+about its origin exempts it.</p>
+<p>The repair/solve attempt budget itself is adversary-reachable. <code>vibey_gh.github_state</code>
+locates the one marker comment holding <code>attempts</code>, <code>heals</code>, and the last reviewed SHA by
+regexing the newest comment body for <code>&lt;!-- marker:{...} --&gt;</code>; it does not check who posted
+that comment. On a public repository, any accountholder who can comment on the PR or
+issue — including its own author — can post a hidden marker resetting the stored counters,
+and <code>upsert_comment</code> locates "the existing" comment the same unauthenticated way, so a later
+legitimate update silently edits the forged one instead of rejecting it. This cannot force
+an unreviewed merge: <code>PRAutomation</code>'s review job re-runs whenever <code>evaluate</code> reaches <code>ready</code>
+or <code>review</code> regardless of the stored <code>review_passed</code> value, and every merge still requires
+the exact-head gates above. What a forged marker can do is defeat <code>max_repair_attempts</code>,
+<code>max_self_heals</code>, and <code>max_attempts</code> as cost controls, turning the advertised bounded
+repair/solve budget into repeated paid Claude invocations. The reusable Python capability
+does not itself bind state to a trusted author or sign the payload; operators who need a
+hard cost ceiling on a public repository should restrict who can comment on
+automation-managed PRs and issues.</p>
+<p>Fork PR heads are a distinct adversary-controlled asset: the fork owner controls the head
+commit but never receives privileged credentials. When a fork PR needs a repair it cannot
+receive directly, the <code>mirror-fork</code> job (<code>contents: write</code>, <code>issues: write</code>,
+<code>pull-requests: write</code>, gated on <code>needs.evaluate.outputs.fork == 'true'</code>) calls
+<code>vibey_gh.pr_automation.mirror_fork()</code> to open a repository-owned replacement PR that
+mirrors the exact fork head with attribution; the original fork branch is never pushed to,
+and the replacement PR carries the <code>vibey-gh:external-repair</code> label and re-enters ordinary
+<code>PRAutomation</code>/<code>Guard</code> review from there. Same-repository merge conflicts take a narrower
+path: the <code>resolve-conflict</code> job checks out the exact conflicting head with
+<code>persist-credentials: false</code>, materializes only the paths Git reports as unresolved, runs
+the model against that bounded set with edits restricted to those paths and no command
+execution, then independently re-verifies the resolved diff touches only the materialized
+conflict paths and that the PR head still matches the expected exact SHA before pushing one
+guarded resolution commit — the same optimistic-concurrency recheck used elsewhere converts
+a concurrent update into a no-op rather than an overwrite.</p>
+<p>The second narrow exception is the manually dispatched automation-bootstrap admin merge,
+used only to recover from a broken privileged workflow that a normal PR cannot repair
+because privileged workflow code is loaded from the trusted base branch, not the PR head.
+Only a repository administrator can trigger it, and only with explicit <code>workflow_dispatch</code>
+authorization naming an exact PR and head SHA. Before merging, the workflow independently
+re-verifies that the PR is open, non-draft, targets <code>develop</code>, and matches the supplied head
+exactly; that its changed files are confined to workflow, template, or automation-core
+paths; and that every non-gate check run on that exact SHA — including CodeQL, API drift,
+documentation, provenance, build, and lint — completed successfully. It then performs a
+<code>--match-head-commit</code> admin squash merge, which bypasses ordinary <code>PRAutomation</code> and <code>Guard</code>
+review but never deletes a permanent branch. This trades the semantic review step for an
+administrator's explicit authorization plus the same independent deterministic gates,
+scoped to the one case those gates cannot otherwise unblock.</p>
+<p>The AI action's Git-discovery requirement is isolated from source and persisted credentials.
+During model execution, workspace-root <code>.git</code> points only to an ephemeral empty repository.
+Its clean <code>origin</code> satisfies action initialization, while a nonmatching actor sentinel selects
+the token-free credential-helper and secret-scrubbing path without authorizing anyone.
+Exact source is a separate <code>target/</code> checkout with persisted credentials disabled. The
+context is destroyed before trusted code authenticates and publishes. Tests require this
+ordering and fail if a Claude-facing target checkout persists credentials.</p></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://properdocs.org/">ProperDocs</a>.</p>
+        </footer>
+        <script src="../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js"></script>
+        <script src="../javascripts/channel.js"></script>
+        <script src="../search/main.js"></script>
+
+        <div class="modal" id="properdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="properdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="properdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="properdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

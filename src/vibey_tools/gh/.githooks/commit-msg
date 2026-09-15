@@ -1,0 +1,95 @@
+#!/bin/sh
+# Installed by `vibey-gh install` — do not edit; edit the template in vibey-gh.
+#
+# Appends the provenance trailer to any commit message that lacks it, so the rule holds
+# locally without anyone having to remember it. CI enforces the same trailer, so a commit
+# made without this hook fails the pull request rather than slipping through.
+
+
+# Resolve the CLI. `vibey-gh` on PATH is the normal case, but a project virtualenv that
+# has not been activated is just as normal — and a gate that reports "not installed"
+# when the tool IS installed is a gate people learn to bypass. Look where it actually
+# lives before giving up. Hooks run from the top of the working tree.
+# Where this repository's own copy of vibey-gh lives, printed as a directory — or
+# nothing, which is the ordinary case for a repository that merely adopted it.
+#
+# What is looked for is the pyproject that DECLARES the distribution, not a fixed path.
+# It sits at the top of the tree in the standalone repository and under `src/` in the
+# monorepo that absorbed it, and hard-coding either one breaks the other. `git ls-files`
+# keeps the search bounded to tracked files, so a vendored copy under `.venv/` or
+# `site/` can never match, and it is available here by definition: hooks run inside a
+# git repository, from the top of the working tree.
+vibey_gh_self() {
+  # A plain loop, not a pipeline: `set -e` is on in pre-push, and a `break` out of a
+  # `while read` would SIGPIPE `git ls-files`, which under `pipefail` fails the hook.
+  for candidate in $(git ls-files --full-name '*pyproject.toml' 2>/dev/null); do
+    grep -qE '^name = "vibey-gh"' "$candidate" 2>/dev/null || continue
+    dir=${candidate%/pyproject.toml}
+    if [ "$dir" = "$candidate" ]; then
+      dir=.
+    fi
+    [ -d "$dir/vibey_gh" ] || continue
+    printf '%s' "$dir"
+    return 0
+  done
+}
+
+
+vibey_gh() {
+  # A repository that CARRIES vibey-gh must run that source, never an installed copy.
+  # Its `develop` is ahead of the last release nearly always, so a globally installed
+  # vibey-gh compares the repository's managed assets against the older ones it bundles,
+  # reports them out of date, and refuses every push — a contributor who installed the
+  # tool the obvious way cannot commit to it. The package is dependency-free stdlib, so
+  # `python3 -m` against the checkout needs no install and no virtualenv at all.
+  if [ -z "${_VIBEY_GH_SELF+x}" ]; then
+    _VIBEY_GH_SELF=$(vibey_gh_self)
+  fi
+  if [ -n "$_VIBEY_GH_SELF" ] && PYTHONPATH="$_VIBEY_GH_SELF${PYTHONPATH:+:$PYTHONPATH}" \
+      python3 -c "import vibey_gh.cli" >/dev/null 2>&1; then
+    PYTHONPATH="$_VIBEY_GH_SELF${PYTHONPATH:+:$PYTHONPATH}" python3 -m vibey_gh.cli "$@"
+  elif command -v vibey-gh >/dev/null 2>&1; then
+    vibey-gh "$@"
+  elif [ -n "${VIRTUAL_ENV:-}" ] && [ -x "${VIRTUAL_ENV}/bin/vibey-gh" ]; then
+    "${VIRTUAL_ENV}/bin/vibey-gh" "$@"
+  elif [ -x ".venv/bin/vibey-gh" ]; then
+    ./.venv/bin/vibey-gh "$@"
+  elif [ -x "venv/bin/vibey-gh" ]; then
+    ./venv/bin/vibey-gh "$@"
+  elif python3 -c "import vibey_gh.cli" >/dev/null 2>&1; then
+    python3 -m vibey_gh.cli "$@"
+  elif python3 -c "import vibey_bootstrap.gh.cli" >/dev/null 2>&1; then
+    python3 -m vibey_bootstrap.gh.cli "$@"   # pre-split layout
+  else
+    return 127
+  fi
+}
+
+
+msg_file="$1"
+key=$(vibey_gh trailer-key 2>/dev/null || echo "Made-With")
+trailer=$(vibey_gh trailer 2>/dev/null || echo "Made-With: Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).")
+
+# A pre-existing project hook runs first and may do its own thing.
+[ -x "$(dirname "$0")/commit-msg.local" ] && "$(dirname "$0")/commit-msg.local" "$@"
+
+# Normalize the subject without assuming the Python package is importable in the hook's
+# process. The body and existing trailers remain unchanged.
+subject=$(sed -n '1p' "$msg_file")
+if [ -n "$subject" ] && ! printf '%s\n' "$subject" | grep -Eq '^[a-z][a-z0-9-]*(\([a-z0-9][a-z0-9._/-]*\))?!?: [^[:space:]].*$'; then
+  tmp="${msg_file}.vibey-gh.tmp"
+  { printf 'chore: %s\n' "$subject"; sed '1d' "$msg_file"; } > "$tmp"
+  mv "$tmp" "$msg_file"
+fi
+
+# Already present in any case — nothing to do.
+if grep -qiE "^${key}:[[:space:]]*[^[:space:]]" "$msg_file"; then
+  exit 0
+fi
+
+# A comment-only or empty message means an aborted commit; leave it alone.
+if ! grep -qvE '^\s*(#.*)?$' "$msg_file"; then
+  exit 0
+fi
+
+printf '\n%s\n' "$trailer" >> "$msg_file"

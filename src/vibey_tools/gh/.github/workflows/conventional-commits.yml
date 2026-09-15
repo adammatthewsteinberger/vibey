@@ -1,0 +1,111 @@
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+name: Conventional Commits
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: conventional-commits-${{ github.repository }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  enforce:
+    # Promotion PRs carry the protected integration branch itself. Its history was
+    # already admitted commit-by-commit and must never be rewritten by this job.
+    if: >-
+      github.event.pull_request.head.ref != 'develop' &&
+      github.event.pull_request.head.ref != 'main' &&
+      github.event.pull_request.head.ref != 'develop' &&
+      github.event.pull_request.head.ref != 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reject unsafe or stale targets
+        env:
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          REPO: ${{ github.repository }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          INTEGRATION_BRANCH: develop
+          RELEASE_BRANCH: main
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$HEAD_REPO" = "$REPO" || { echo "fork history is never rewritten"; exit 1; }
+          case "$HEAD_REF" in
+            "$INTEGRATION_BRANCH"|"$RELEASE_BRANCH"|develop|main)
+              echo "permanent branch history is never rewritten"
+              exit 1
+              ;;
+          esac
+          actual=$(gh pr view "${{ github.event.pull_request.number }}" --repo "$REPO" --json headRefOid --jq .headRefOid)
+          test "$actual" = "$HEAD_SHA"
+      - name: Check out trusted automation
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          path: automation
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with: { python-version: "3.12" }
+      # A repository that IS the tooling installs itself; everyone else takes the
+      # published package. Never assume `pip install .` on the adopting repo's own
+      # source happens to yield the vibey-gh CLI.
+      - name: Install the tooling
+        working-directory: automation
+        run: |
+          set -euo pipefail
+          # The pyproject that DECLARES the tooling, wherever it sits: the top of the tree
+          # in the standalone repository, under src/ in the monorepo that absorbed it. A
+          # repository that carries it must install that source, never a published release
+          # that is always behind its own integration branch.
+          self=""
+          for candidate in $(git ls-files --full-name '*pyproject.toml'); do
+            grep -qE '^name = "vibey-gh"' "$candidate" || continue
+            self=${candidate%/pyproject.toml}
+            if [ "$self" = "$candidate" ]; then self=.; fi
+            break
+          done
+          if [ -n "$self" ]; then
+            echo "this repository provides the tooling — installing from source"
+            python -m pip install --quiet -e "$self"
+          else
+            python -m pip install --quiet vibey-gh
+          fi
+      - name: Check out exact topic head without executing it
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: target
+          fetch-depth: 0
+          token: ${{ secrets.AUTOMERGE_TOKEN || github.token }}
+      - name: Normalize every nonconforming commit message
+        working-directory: target
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          set -euo pipefail
+          command -v vibey-gh >/dev/null || {
+            echo "::error::vibey-gh is not on PATH; cannot check or normalize commit subjects" >&2
+            exit 1
+          }
+          if vibey-gh conventional-check --commits "${BASE_SHA}..${HEAD_SHA}"; then
+            echo "Every commit already conforms."
+            exit 0
+          fi
+          test "$(git rev-list --merges --count "${BASE_SHA}..${HEAD_SHA}")" = 0 || {
+            echo "Refusing automatic rewrite of merge commits"
+            exit 1
+          }
+          git switch -C "$HEAD_REF" "$HEAD_SHA"
+          FILTER_BRANCH_SQUELCH_WARNING=1 git filter-branch -f \
+            --msg-filter 'vibey-gh conventional-message' "${BASE_SHA}..${HEAD_REF}"
+          current=$(git ls-remote origin "refs/heads/${HEAD_REF}" | cut -f1)
+          test "$current" = "$HEAD_SHA"
+          git push --force-with-lease="refs/heads/${HEAD_REF}:${HEAD_SHA}" \
+            origin "HEAD:refs/heads/${HEAD_REF}"

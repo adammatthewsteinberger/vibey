@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        <link rel="canonical" href="https://adammatthewsteinberger.github.io/vibey-gh/configuration/">
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>Configuration - vibey-gh</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../css/brands.min.css" rel="stylesheet">
+        <link href="../css/solid.min.css" rel="stylesheet">
+        <link href="../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <link href="../stylesheets/vibey.css" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">vibey-gh</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href=".." class="nav-link">Home</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../architecture/" class="nav-link">Architecture</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="./" class="nav-link active" aria-current="page">Configuration</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../cli/" class="nav-link">CLI</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../workflows/" class="nav-link">Workflows</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../security/" class="nav-link">Security</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../threat-model/" class="nav-link">Threat model</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../adoption/" class="nav-link">Adoption</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../operations/" class="nav-link">Operations</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../development/" class="nav-link">Contributing</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../testing/" class="nav-link">Testing</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../releases/" class="nav-link">Releases</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../troubleshooting/" class="nav-link">Support</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../governance/" class="nav-link">Governance</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../accessibility/" class="nav-link">Accessibility</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../dependencies/" class="nav-link">Dependencies</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../roadmap/" class="nav-link">Roadmap</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../adr/" class="nav-link">Architecture decisions</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#properdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a rel="prev" href="../architecture/" class="nav-link">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a rel="next" href="../cli/" class="nav-link">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="https://github.com/adammatthewsteinberger/vibey-gh/edit/main/docs/configuration.md" class="nav-link">Edit on adammatthewsteinberger/vibey-gh
+                                    </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#configuration-reference" class="nav-link">Configuration reference</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#fingerprint" class="nav-link">[fingerprint]</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#version" class="nav-link">[version]</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#branches-merge_train-and-install" class="nav-link">[branches], [merge_train], and [install]</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#ai" class="nav-link">[ai]</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#pr_automation" class="nav-link">[pr_automation]</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#conversation" class="nav-link">[conversation]</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#branch_sync" class="nav-link">[branch_sync]</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#realign" class="nav-link">[realign]</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#issue_automation" class="nav-link">[issue_automation]</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#yank" class="nav-link">[yank]</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#github_release" class="nav-link">[github_release]</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#rulesets" class="nav-link">[rulesets]</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#repository_profile" class="nav-link">[repository_profile]</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#documentation" class="nav-link">[documentation]</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#advanced-debug-environment" class="nav-link">Advanced debug environment</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="configuration-reference">Configuration reference</h1>
+<p>Configuration lives in <code>.vibey-gh.toml</code>. Every key is optional; omitted values use the
+defaults below. Paths are repository-relative unless stated otherwise.</p>
+<h2 id="fingerprint"><code>[fingerprint]</code></h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type / default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>text</code></td>
+<td>string / built-in provenance sentence</td>
+<td>Required source-header text.</td>
+</tr>
+<tr>
+<td><code>trailer</code></td>
+<td>string / <code>Made-With: ...</code></td>
+<td>Required commit trailer.</td>
+</tr>
+<tr>
+<td><code>sources</code></td>
+<td>string list / Python and workflow globs</td>
+<td>Files checked for headers.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="version"><code>[version]</code></h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type / default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>files</code></td>
+<td>string list / empty</td>
+<td>Version-bearing files updated by <code>version --apply</code>.</td>
+</tr>
+<tr>
+<td><code>content_paths</code></td>
+<td>string list / empty</td>
+<td>Paths whose changes produce a minor bump.</td>
+</tr>
+<tr>
+<td><code>code_paths</code></td>
+<td>string list / <code>["src/"]</code></td>
+<td>Paths whose changes produce a patch bump.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="branches-merge_train-and-install"><code>[branches]</code>, <code>[merge_train]</code>, and <code>[install]</code></h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type / default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>branches.integration</code></td>
+<td>string / <code>develop</code></td>
+<td>Integration and preview branch.</td>
+</tr>
+<tr>
+<td><code>branches.release</code></td>
+<td>string / <code>main</code></td>
+<td>Production branch; managed automation never deletes it.</td>
+</tr>
+<tr>
+<td><code>merge_train.owner</code></td>
+<td>string / empty</td>
+<td>Normalized repository-owner login.</td>
+</tr>
+<tr>
+<td><code>merge_train.trusted_authors</code></td>
+<td>string list / empty</td>
+<td>Authors exempt from outside-author review.</td>
+</tr>
+<tr>
+<td><code>install.workflows</code></td>
+<td>string list / all managed workflows</td>
+<td>Exact managed subset; <code>[]</code> installs hooks and CLI assets only.</td>
+</tr>
+<tr>
+<td><code>install.union_merge_paths</code></td>
+<td>string list / <code>["CHANGELOG.md"]</code></td>
+<td>Files declared <code>merge=union</code> in <code>.gitattributes</code>, so two branches appending to the same section merge instead of conflicting. Appended to an existing <code>.gitattributes</code>, never rewriting it. <code>[]</code> declares none.</td>
+</tr>
+<tr>
+<td><code>install.pin_version</code></td>
+<td>boolean / <code>false</code></td>
+<td>Pin every managed workflow's <code>pip install vibey-gh</code> to the exact version that rendered it (<code>vibey-gh==X.Y.Z</code>), instead of the latest release on every run. <code>false</code> keeps the historical floating install. The self-hosting path (this repository, and anything else installing from its own <code>pyproject.toml</code>) is never pinned — it installs from source regardless. Running <code>vibey-gh install</code> from a newer release moves the pin forward as one visible diff.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="ai"><code>[ai]</code></h2>
+<p>Where every AI step sends its requests. Unset, nothing changes: requests go to Anthropic
+exactly as before this existed.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type / default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>base_url</code></td>
+<td>URL / empty</td>
+<td>Endpoint override. Empty uses the Anthropic default. Must be <code>http(s)</code> and contain no whitespace.</td>
+</tr>
+<tr>
+<td><code>auth_secret</code></td>
+<td>secret name / <code>ANTHROPIC_API_KEY</code></td>
+<td>The repository secret authorising those requests. A name only — never a token; this file is committed.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="running-the-automation-somewhere-other-than-anthropic">Running the automation somewhere other than Anthropic</h3>
+<p>Every AI step runs Claude Code, which honours <code>ANTHROPIC_BASE_URL</code>. Any gateway serving
+the Anthropic Messages API — LiteLLM and similar translate it to Gemini, Qwen, GitHub
+Models, a model on your own machine — therefore works without this project learning a
+second vendor's request shape:</p>
+<pre><code class="language-toml">[ai]
+base_url = &quot;https://your-gateway.example/v1&quot;
+auth_secret = &quot;LITELLM_KEY&quot;
+</code></pre>
+<p>That secret fills both <code>x-api-key</code> and <code>Authorization</code>, because Claude Code sends the
+former while some gateways read the latter. A gateway must serve <code>/v1/messages</code> <strong>and</strong>
+<code>/v1/messages/count_tokens</code>, and forward the <code>anthropic-beta</code> and <code>anthropic-version</code>
+headers.</p>
+<p>One caveat worth testing before you rely on it: the review and repair steps depend on
+structured JSON output and tool calls, and translation layers vary in how faithfully they
+carry <code>tool_use</code> arguments across providers. A provider that mangles them makes the gate
+report <code>review incomplete</code> rather than approving anything — it fails closed — but the
+review is then no longer running. Verify against a real pull request before turning off
+the endpoint you trust.</p>
+<p><code>auth_secret</code> is validated as a bare secret identifier. It is rendered inside a
+<code>${{ secrets.… }}</code> expression in a privileged workflow, so a name that could close that
+expression is refused at load time.</p>
+<h2 id="pr_automation"><code>[pr_automation]</code></h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type / default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>enabled</code></td>
+<td>boolean / <code>true</code></td>
+<td>Enable event-driven evaluation, review, repair, and gating.</td>
+</tr>
+<tr>
+<td><code>scan_workflows</code></td>
+<td>string list / CI, Provenance, CodeQL, Docs</td>
+<td>Workflow names that trigger evaluation. Every name must be a workflow with a <code>pull_request</code> or <code>pull_request_target</code> trigger — one that only runs on <code>push</code> can never complete for a pull request, so <code>state</code> never leaves <code>pending</code>, the gate never publishes, and — made a required check — no pull request can ever merge. <code>vibey-gh check</code> fails on any named workflow that exists but cannot fire for a pull request; a name absent from <code>.github/workflows/</code> is not an error.</td>
+</tr>
+<tr>
+<td><code>ignored_checks</code></td>
+<td>string list / orchestration checks</td>
+<td>Checks excluded from the ordinary rollup. Own checks are always ignored.</td>
+</tr>
+<tr>
+<td><code>max_repair_attempts</code></td>
+<td>integer / <code>3</code> (1–10)</td>
+<td>Repair budget per contributor lineage.</td>
+</tr>
+<tr>
+<td><code>model</code></td>
+<td>string / <code>claude-sonnet-5</code></td>
+<td>Review and repair model.</td>
+</tr>
+<tr>
+<td><code>review_untrusted_authors</code></td>
+<td>boolean / <code>true</code></td>
+<td>Require exact-head outside-author review.</td>
+</tr>
+<tr>
+<td><code>repair_untrusted_authors</code></td>
+<td>boolean / <code>true</code></td>
+<td>Permit constrained outside-author repairs.</td>
+</tr>
+<tr>
+<td><code>replace_fork_prs</code></td>
+<td>boolean / <code>true</code></td>
+<td>Repair forks through linked repository-owned PRs.</td>
+</tr>
+<tr>
+<td><code>retain_schedule_backstop</code></td>
+<td>boolean / <code>true</code></td>
+<td>Retain scheduled recovery beside event triggers.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="pr_automationobservability"><code>[pr_automation.observability]</code></h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type / default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sanitized_progress</code></td>
+<td>boolean / <code>true</code></td>
+<td>Request safe action progress only for Claude-supported direct PR/issue events; automated workflow events retain phase-level job visibility.</td>
+</tr>
+<tr>
+<td><code>archive_execution_file</code></td>
+<td>boolean / <code>true</code></td>
+<td>Retain each Claude execution record as a 90-day workflow artifact.</td>
+</tr>
+<tr>
+<td><code>allow_private_full_output</code></td>
+<td>boolean / <code>false</code></td>
+<td>Permit an explicit manual diagnostic run to emit raw Claude JSON, but only in a private repository.</td>
+</tr>
+</tbody>
+</table>
+<p>Raw output additionally requires a manual <code>workflow_dispatch</code> with
+<code>full_claude_output = true</code>. Event-triggered runs can never enable it, and the workflow
+fails closed when repository visibility is not private.</p>
+<h3 id="pr_automationfallback"><code>[pr_automation.fallback]</code></h3>
+<p>Reviews with a local model when the paid path returns <strong>no verdict at all</strong> — an exhausted
+API key, expired credentials, an unavailable model. Because the gate is a required check,
+that failure otherwise turns a billing problem into a hard stop on every pull request.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type / default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>enabled</code></td>
+<td>boolean / <code>false</code></td>
+<td>Off unless a repository opts in. It needs a self-hosted runner, so nothing should inherit it.</td>
+</tr>
+<tr>
+<td><code>runner_label</code></td>
+<td>string / <code>"vibey-local"</code></td>
+<td>Label the fallback job targets, alongside <code>self-hosted</code>.</td>
+</tr>
+<tr>
+<td><code>model</code></td>
+<td>string / <code>"qwen2.5-coder:14b"</code></td>
+<td>Model tag served by the Ollama-compatible endpoint.</td>
+</tr>
+<tr>
+<td><code>base_url</code></td>
+<td>string / <code>"http://127.0.0.1:11434"</code></td>
+<td>Where the local model listens.</td>
+</tr>
+<tr>
+<td><code>trusted_only</code></td>
+<td>boolean / <code>true</code></td>
+<td>Never run the fallback for a fork pull request.</td>
+</tr>
+<tr>
+<td><code>max_diff_chars</code></td>
+<td>integer / <code>60000</code></td>
+<td>Diff is truncated past this, and the model is told it was.</td>
+</tr>
+<tr>
+<td><code>timeout_seconds</code></td>
+<td>integer / <code>600</code></td>
+<td>Bound on one review.</td>
+</tr>
+</tbody>
+</table>
+<p>It never overrides a review that actually ran: the job requires the primary to have
+produced no verdict, so findings are never discarded in favour of a weaker opinion. The
+diff is passed to the model as text — repository code is never executed, and the model has
+no shell, no tools, and no network beyond the local port.</p>
+<p>The verdict is deliberately narrower than the primary review's. Ollama constrains decoding
+to the schema, so the output <em>shape</em> is guaranteed; the <em>judgments</em> are not, and a 14B model
+will emit confident booleans it has no basis for. So it assesses only what it can ground in
+a diff — <code>pass</code>, <code>summary</code>, <code>findings</code> — and reports the documentation-contract fields as
+unevaluated. The gate titles the result <code>PR automation: gate (local fallback)</code> so a
+degraded verdict is never mistaken for a full one.</p>
+<p><code>trusted_only</code> carries the safety argument. GitHub says self-hosted runners should "almost
+never be used for public repositories" because any user can open a pull request against
+them; excluding forks is what removes that. Leave it on, register the runner as ephemeral
+so it takes one job and exits, and run it in a container rather than on the host.</p>
+<h2 id="conversation"><code>[conversation]</code></h2>
+<p>Answers a mention in a comment on an issue or pull request. Comments are the least guarded
+input a repository has, so the defaults are closed.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type / default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>enabled</code></td>
+<td>boolean / <code>true</code></td>
+<td>Respond to mentions at all.</td>
+</tr>
+<tr>
+<td><code>trigger</code></td>
+<td>string / <code>@vibey-gh</code></td>
+<td>The mention that addresses the automation. Matched on a word boundary, so <code>@vibey-gh-bot</code> is not a mention.</td>
+</tr>
+<tr>
+<td><code>model</code></td>
+<td>string / <code>claude-sonnet-5</code></td>
+<td>Model that reads the thread and answers.</td>
+</tr>
+<tr>
+<td><code>max_interactions</code></td>
+<td>integer / <code>10</code> (1–100)</td>
+<td>Responses per thread, so a conversation cannot become an unbounded work queue.</td>
+</tr>
+<tr>
+<td><code>respond_to_untrusted</code></td>
+<td>boolean / <code>false</code></td>
+<td>Answer commenters outside the owner/trusted set. A response costs tokens, so answering everyone is a deliberate spending decision.</td>
+</tr>
+<tr>
+<td><code>allow_changes</code></td>
+<td>boolean / <code>true</code></td>
+<td>Permit file changes. Only ever on a pull request, only from a trusted commenter, and never on a fork or permanent branch.</td>
+</tr>
+<tr>
+<td><code>ignore_actors</code></td>
+<td>string list / the automation's own bot identities</td>
+<td><strong>The loop guard.</strong> Its own reply mentions the trigger too; answering it would run and bill forever. Cannot be empty while enabled.</td>
+</tr>
+</tbody>
+</table>
+<p>An issue is answered in words only — there is nowhere to put a commit. A pull request from
+a trusted commenter may also receive one guarded commit on its own branch.</p>
+<h2 id="branch_sync"><code>[branch_sync]</code></h2>
+<p>Keeps open branches current so conflicts never accumulate, and refills a spent repair
+budget a bounded number of times so a transient outage does not become a permanent stop.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type / default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>enabled</code></td>
+<td>boolean / <code>true</code></td>
+<td>Run the sync and self-heal jobs at all.</td>
+</tr>
+<tr>
+<td><code>update_contributor_branches</code></td>
+<td>boolean / <code>true</code></td>
+<td>Merge the integration branch forward into branches this automation does not own, using GitHub's own update-branch endpoint. Never a rewrite.</td>
+</tr>
+<tr>
+<td><code>max_self_heals</code></td>
+<td>integer / <code>2</code> (0–10)</td>
+<td>How many times one lineage's repair budget may be refilled before it stays exhausted for a human. <code>0</code> disables self-healing.</td>
+</tr>
+</tbody>
+</table>
+<p>A fork is only ever moved <em>forward</em>, never rewritten: <code>update-branch</code> succeeds only where
+the contributor left "allow maintainer edits" enabled, so it carries their consent.
+Rebasing, closing, and deleting are unreachable for a fork under every setting.</p>
+<h2 id="realign"><code>[realign]</code></h2>
+<p>Realign converges the integration branch onto the release branch with a lease-protected
+force update, which replaces commits with rewritten copies and strands any topic branch cut
+from one of them. These keys decide how much the automation may do about that unaided.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type / default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>reconcile_branches</code></td>
+<td>boolean / <code>true</code></td>
+<td>Reconcile open pull-request branches after a realign rewrite.</td>
+</tr>
+<tr>
+<td><code>automation_prefixes</code></td>
+<td>string list / <code>["vibey-gh/"]</code></td>
+<td>Branch prefixes this automation may rebase on its own. Everything else is a human's to rebase.</td>
+</tr>
+<tr>
+<td><code>close_duplicates</code></td>
+<td>boolean / <code>true</code></td>
+<td>Close a pull request whose every commit is already upstream by patch identity.</td>
+</tr>
+<tr>
+<td><code>delete_duplicate_branches</code></td>
+<td>boolean / <code>true</code></td>
+<td>Delete that branch too. Permanent, fork, and unsafe refs are refused by name regardless.</td>
+</tr>
+<tr>
+<td><code>notify_contributor_branches</code></td>
+<td>boolean / <code>true</code></td>
+<td>Comment on a human's stranded branch with the rebase command instead of rewriting it.</td>
+</tr>
+</tbody>
+</table>
+<p>Decisions use <code>git cherry</code>, which compares by patch identity, so a commit re-created
+upstream under a new SHA is correctly recognised as already present. A ref that cannot be
+read reports unique work rather than none, so an unreadable branch is never closed.</p>
+<h2 id="issue_automation"><code>[issue_automation]</code></h2>
+<p>Turns a published issue into a reviewable pull request. Every field exists because an
+adopting repository could reasonably disagree with the default; the defaults themselves are
+closed, because anyone with a GitHub account can open an issue.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type / default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>enabled</code></td>
+<td>boolean / <code>true</code></td>
+<td>Enable evaluation and autonomous solution proposals. <code>false</code> keeps the workflow installed and inert.</td>
+</tr>
+<tr>
+<td><code>model</code></td>
+<td>string / <code>claude-sonnet-5</code></td>
+<td>Model used to design and implement the proposed solution.</td>
+</tr>
+<tr>
+<td><code>max_attempts</code></td>
+<td>integer / <code>2</code> (1–10)</td>
+<td>Solution budget per issue content lineage.</td>
+</tr>
+<tr>
+<td><code>max_turns</code></td>
+<td>integer / <code>200</code> (1–1000)</td>
+<td>Turn budget for one attempt. An attempt that exhausts it produces nothing, so raise it for a repository whose issues are routinely large — or split the issue, which is usually the better answer.</td>
+</tr>
+<tr>
+<td><code>branch_prefix</code></td>
+<td>string / <code>vibey-gh/issue</code></td>
+<td>Namespace every proposal branch lives under. Validated against the configured permanent branches and rendered into <code>branch-intake.yml</code>'s ignore list.</td>
+</tr>
+<tr>
+<td><code>base_branch</code></td>
+<td>string / empty</td>
+<td>Branch a solution is built on. Blank uses <code>branches.integration</code>.</td>
+</tr>
+<tr>
+<td><code>solve_untrusted_authors</code></td>
+<td>boolean / <code>false</code></td>
+<td>Permit issues from outside the owner/trusted-author set without a maintainer label.</td>
+</tr>
+<tr>
+<td><code>required_label</code></td>
+<td>string / <code>vibey-gh:solve</code></td>
+<td>Label that opts an outside author's issue in. Empty disables that path entirely.</td>
+</tr>
+<tr>
+<td><code>trigger_labels</code></td>
+<td>string list / empty</td>
+<td>When set, only issues carrying one of these labels are ever attempted.</td>
+</tr>
+<tr>
+<td><code>ignored_labels</code></td>
+<td>string list / question, discussion, duplicate, wontfix, <code>vibey-gh:solve-blocked</code></td>
+<td>Issues carrying one of these are never attempted, whoever wrote them.</td>
+</tr>
+<tr>
+<td><code>open_pull_request</code></td>
+<td>boolean / <code>true</code></td>
+<td>Open a linked pull request after publishing the branch.</td>
+</tr>
+<tr>
+<td><code>draft_pull_request</code></td>
+<td>boolean / <code>true</code></td>
+<td>Open that pull request as a draft, letting PR automation promote it when its exact head is green.</td>
+</tr>
+<tr>
+<td><code>retain_schedule_backstop</code></td>
+<td>boolean / <code>true</code></td>
+<td>Retain the scheduled recovery sweep beside the event triggers.</td>
+</tr>
+</tbody>
+</table>
+<p>An issue's attempt budget is keyed to a SHA-256 fingerprint of its title and body, so
+re-running automation on unchanged text cannot spend the budget twice and editing the issue
+starts a fresh lineage. Managed labels are <code>vibey-gh:solve</code>, <code>vibey-gh:solving</code>,
+<code>vibey-gh:solution-proposed</code>, <code>vibey-gh:solve-exhausted</code>, and <code>vibey-gh:solve-blocked</code>.</p>
+<h3 id="documenting-your-project-not-this-one">Documenting your project, not this one</h3>
+<p>A repository that installs vibey-gh documents <strong>its own product</strong>. It is still held to the
+agent-docs <em>layout</em> — those files describe the adopter's project and make it navigable to an
+agent — but nothing about their contents describes vibey-gh: no <code>## Why vibey-gh</code> heading in
+their product README, no branded provenance sentence, no architecture surfaces named after
+this tool's modules.</p>
+<p>Every entry in <code>required_files</code> is required: having one never excuses another.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type / default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>required_files</code></td>
+<td>string list / the agent-docs layout</td>
+<td>Files that must exist and be non-empty, each one individually.</td>
+</tr>
+<tr>
+<td><code>readme_sections</code></td>
+<td>string list / empty</td>
+<td>Headings required in <code>README.md</code>, in your own words.</td>
+</tr>
+<tr>
+<td><code>automation_doc</code></td>
+<td>path / <code>.github/AUTOMATION.md</code></td>
+<td>Where this repository's automation documentation lives. <strong>Not <code>.github/README.md</code></strong> — GitHub resolves that as the repository's landing README ahead of the root one, so naming it that replaces your product README on your repository's front page.</td>
+</tr>
+<tr>
+<td><code>automation_doc_sections</code></td>
+<td>string list / empty</td>
+<td>Headings required in <code>automation_doc</code>. Also read from the former name <code>github_readme_sections</code>.</td>
+</tr>
+<tr>
+<td><code>automation_doc_min_words</code></td>
+<td>integer / <code>0</code></td>
+<td>Minimum length for <code>automation_doc</code>; <code>0</code> disables. Also read from the former name <code>github_readme_min_words</code>.</td>
+</tr>
+<tr>
+<td><code>mermaid_terms</code></td>
+<td>string list / empty</td>
+<td>Surfaces that must appear in <code>docs/project.mmd</code>.</td>
+</tr>
+<tr>
+<td><code>mermaid_min_edges</code></td>
+<td>integer / <code>0</code></td>
+<td>Minimum <code>--&gt;</code> edges in that diagram; <code>0</code> disables.</td>
+</tr>
+<tr>
+<td><code>require_provenance</code></td>
+<td>boolean / <code>false</code></td>
+<td>Require the Vibey provenance sentence in <code>provenance_files</code>.</td>
+</tr>
+<tr>
+<td><code>provenance_files</code></td>
+<td>string list / <code>README.md</code>, <code>docs/index.md</code></td>
+<td>Where that sentence is required, when it is.</td>
+</tr>
+</tbody>
+</table>
+<p>This repository declares the full contract for itself in its own <code>.vibey-gh.toml</code>, which is
+both the dogfooding rule the rest of the tool follows and the reason its own requirements
+are visible rather than compiled in.</p>
+<h2 id="yank"><code>[yank]</code></h2>
+<p>Report which releases on an index the just-published version supersedes.</p>
+<p><strong>It reports. It cannot yank, and neither can anything else you write.</strong> PyPI exposes no
+API for yanking. The legacy upload endpoint answers <code>405 Method Not Allowed</code> for
+<code>:action=yank</code> (a recognised action such as <code>:action=file_upload</code> answers <code>403</code> on bad
+credentials, so authentication is never even reached), and the <code>/manage/...</code> route the web
+UI uses is CSRF-protected against non-browser callers. Programmatic access is an open
+upstream request, not a shipped capability:</p>
+<ul>
+<li><a href="https://github.com/pypa/packaging-problems/issues/633">pypa/packaging-problems#633</a></li>
+<li><a href="https://github.com/pypi/warehouse/issues/12708">pypi/warehouse#12708</a></li>
+</ul>
+<p><a href="https://docs.pypi.org/project-management/yanking/">PyPI's own documentation</a> gives exactly
+one method: the release management page, <strong>Options → Yank</strong>. No token changes this; do not
+try to add one.</p>
+<p>That is arguably the right design. <a href="https://peps.python.org/pep-0592/">PEP 592</a> defines a
+yanked release as one with <em>"a serious problem which should prevent it from being
+installed"</em> — a distress signal, not a tidiness marker. Installers still resolve a yanked
+version when a pin demands one, so nothing is reclaimed; what changes is that everyone
+pinned to it starts seeing a warning about a release that may be perfectly good. The manual
+click is the friction that keeps that deliberate.</p>
+<p>So this automates the analysis and leaves the click: it works out exactly which releases
+are superseded and prints them with a link to the page that can action them.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type / default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pypi</code></td>
+<td>boolean / <code>false</code></td>
+<td>Report superseded PyPI releases after a publish.</td>
+</tr>
+<tr>
+<td><code>testpypi</code></td>
+<td>boolean / <code>false</code></td>
+<td>Report superseded TestPyPI releases.</td>
+</tr>
+<tr>
+<td><code>keep</code></td>
+<td>integer / <code>0</code></td>
+<td>How many releases below the newest to leave out of the report, so a rollback target is never suggested.</td>
+</tr>
+</tbody>
+</table>
+<p>Two invariants hold regardless of configuration:</p>
+<ul>
+<li><strong>the version just published is never listed</strong>, excluded by identity rather than by
+  version ordering;</li>
+<li><strong>a version this cannot parse is never listed.</strong> Ordering covers <code>N.N.N</code> and
+  <code>N.N.N.devN</code>, which is what this tooling publishes. Epochs, local segments, post- and
+  pre-releases are left out, because half a PEP 440 parser mis-orders them silently and
+  here that means naming a good release as a candidate for yanking.</li>
+</ul>
+<p>Run it from a release workflow after the upload step. No credentials are involved — the
+index JSON it reads is public:</p>
+<pre><code class="language-bash">vibey-gh report-superseded --index pypi --project my-package --version &quot;$VERSION&quot;
+</code></pre>
+<p>It always exits 0: the package is already published by the time it runs, so a bookkeeping
+failure is reported rather than turning a successful release red.</p>
+<h2 id="github_release"><code>[github_release]</code></h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type / default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>enabled</code></td>
+<td>boolean / <code>true</code></td>
+<td>Enable immutable tags and GitHub Releases.</td>
+</tr>
+<tr>
+<td><code>tag_prefix</code></td>
+<td>string / <code>v</code></td>
+<td>Nonempty, whitespace-free tag prefix.</td>
+</tr>
+<tr>
+<td><code>generate_notes</code></td>
+<td>boolean / <code>true</code></td>
+<td>Ask GitHub to generate release notes.</td>
+</tr>
+<tr>
+<td><code>require_new_version</code></td>
+<td>boolean / <code>false</code></td>
+<td>Fail instead of silently doing nothing when a release-branch push does not carry a new version (the tag it would need already exists at a different commit). Leave off for a repository where a docs-only or tooling-only promotion is a normal, frequent, versionless push.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="rulesets"><code>[rulesets]</code></h2>
+<p>Reconciles GitHub repository rulesets for the integration and release branches, so the
+protection <code>repository-profile.yml</code> has always only <em>verified</em> is actually <em>set</em>. Branch
+names are not configured here — <code>[rulesets.integration]</code> always targets
+<code>branches.integration</code> and <code>[rulesets.release]</code> always targets <code>branches.release</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type / default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>enabled</code></td>
+<td>boolean / <code>true</code></td>
+<td>Reconcile both rulesets at all. <code>false</code> leaves the repository untouched, exactly as before this feature existed.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="rulesetsintegration-and-rulesetsrelease"><code>[rulesets.integration]</code> and <code>[rulesets.release]</code></h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type / default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>required_checks</code></td>
+<td>string list / integration: <code>["Provenance", "Analyze Python", "Documentation contract", "PR automation / gate"]</code>; release: the same without the gate</td>
+<td>Required status-check contexts — <strong>check-run names, not workflow names</strong> (see below). Empty omits the check requirement entirely.</td>
+</tr>
+<tr>
+<td><code>strict_required_checks</code></td>
+<td>boolean / <code>true</code></td>
+<td>Require the branch to be up to date with its base before merging.</td>
+</tr>
+<tr>
+<td><code>required_approvals</code></td>
+<td>integer / integration: <code>0</code>, release: <code>1</code> (0–6)</td>
+<td>Required approving reviews. Integration defaults to <code>0</code> because PR automation gates it instead.</td>
+</tr>
+<tr>
+<td><code>dismiss_stale_reviews</code></td>
+<td>boolean / <code>true</code></td>
+<td>Dismiss stale reviews when new commits are pushed.</td>
+</tr>
+<tr>
+<td><code>require_conversation_resolution</code></td>
+<td>boolean / <code>true</code></td>
+<td>Require every review thread to be resolved before merging.</td>
+</tr>
+<tr>
+<td><code>require_linear_history</code></td>
+<td>boolean / <code>true</code></td>
+<td>Forbid merge commits onto the branch.</td>
+</tr>
+<tr>
+<td><code>require_signed_commits</code></td>
+<td>boolean / <code>false</code></td>
+<td>Require every commit to be signed.</td>
+</tr>
+<tr>
+<td><code>allow_force_pushes</code></td>
+<td>boolean / <code>false</code></td>
+<td><strong>Rejected at load time if <code>true</code>.</strong> A permanent branch can never be configured to allow force pushes.</td>
+</tr>
+<tr>
+<td><code>allow_deletions</code></td>
+<td>boolean / <code>false</code></td>
+<td><strong>Rejected at load time if <code>true</code>.</strong> A permanent branch can never be configured to allow deletion.</td>
+</tr>
+<tr>
+<td><code>bypass_actors</code></td>
+<td>string list / <code>["RepositoryRole:5"]</code></td>
+<td><code>"&lt;ActorType&gt;:&lt;id&gt;"</code> entries granted to bypass the ruleset. The default is the repository admin role. <code>[]</code> means nobody — including the owner.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="required_checks-names-check-runs-not-workflows"><code>required_checks</code> names check runs, not workflows</h3>
+<p>This is the one field here that can lock a branch with no way out, so it is worth stating
+plainly. A required status check matches a <strong>check run</strong>, and for GitHub Actions a check
+run is named for its <strong>job</strong>, not its workflow. The <code>CI</code> workflow in this repository
+reports as <code>Lint</code>, <code>Build</code>, and <code>Test (3.12)</code>; nothing ever reports as <code>CI</code>.</p>
+<p>Requiring a name nothing produces does not fail — it <em>waits</em>. The branch reports
+<code>N of M required status checks are expected</code> forever, and because a ruleset has no
+"include administrators" toggle the way classic branch protection did, an empty
+<code>bypass_actors</code> means no one can merge past it. The only exit is editing the ruleset.</p>
+<p>Two habits avoid it: name the job, and keep a bypass actor. <code>[pr_automation].scan_workflows</code>
+names <em>workflows</em> and looks like a tempting list to reuse here — it is not one. To find the
+real names, open a recent pull request's checks tab, or:</p>
+<pre><code class="language-bash">gh api &quot;repos/OWNER/REPO/commits/$(git rev-parse HEAD)/check-runs&quot; \
+  --jq '.check_runs[].name' | sort -u
+</code></pre>
+<p>Reconciliation is idempotent read-compare-write, the same shape <code>repository-profile.yml</code>
+already uses for settings and topics: an existing rule type the configuration does not
+mention is never removed, only reported. A ruleset the API refuses fails the job with the
+API's own reason rather than being silently skipped — a skipped reconciliation would look
+identical to a satisfied one. Run <code>vibey-gh rulesets --dry-run</code> to inspect the diff before
+a workflow run applies it.</p>
+<h2 id="repository_profile"><code>[repository_profile]</code></h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type / default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>enabled</code></td>
+<td>boolean / <code>true</code></td>
+<td>Reconcile repository settings.</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>string / derived</td>
+<td>Description, at most 350 characters.</td>
+</tr>
+<tr>
+<td><code>topics</code></td>
+<td>string list / five automation topics</td>
+<td>Lowercase topics, maximum 20.</td>
+</tr>
+<tr>
+<td><code>has_issues</code>, <code>has_projects</code>, <code>has_discussions</code></td>
+<td>boolean / <code>true</code></td>
+<td>Enable collaboration features.</td>
+</tr>
+<tr>
+<td><code>has_wiki</code></td>
+<td>boolean / <code>false</code></td>
+<td>Enable the wiki.</td>
+</tr>
+<tr>
+<td><code>allow_squash_merge</code>, <code>allow_rebase_merge</code>, <code>allow_auto_merge</code></td>
+<td>boolean / <code>true</code></td>
+<td>Allowed merge mechanisms.</td>
+</tr>
+<tr>
+<td><code>allow_merge_commit</code></td>
+<td>boolean / <code>false</code></td>
+<td>Permit merge commits.</td>
+</tr>
+<tr>
+<td><code>delete_branch_on_merge</code></td>
+<td>boolean / <code>false</code></td>
+<td>GitHub's own blanket auto-delete-on-merge. Keep false because <code>develop</code> heads promotion PRs and would itself be deleted. This is independent of branch cleanup: the merge train and Automation bootstrap already delete a merged PR's head branch themselves, through a guarded API call, whenever it is not a permanent, integration, or release branch and not a fork — regardless of this setting.</td>
+</tr>
+<tr>
+<td><code>web_commit_signoff_required</code></td>
+<td>boolean / <code>true</code></td>
+<td>Require web-editor signoff.</td>
+</tr>
+<tr>
+<td><code>vulnerability_alerts</code>, <code>automated_security_fixes</code></td>
+<td>boolean / <code>true</code></td>
+<td>Enable dependency security services.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="documentation"><code>[documentation]</code></h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type / default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>enabled</code>, <code>ai_maintenance</code></td>
+<td>boolean / <code>true</code></td>
+<td>Require and AI-maintain the documentation suite.</td>
+</tr>
+<tr>
+<td><code>model</code></td>
+<td>string / <code>claude-sonnet-5</code></td>
+<td>Documentation model.</td>
+</tr>
+<tr>
+<td><code>required_files</code></td>
+<td>string list / built-in FOSS and agent suite</td>
+<td>Required documentation paths.</td>
+</tr>
+<tr>
+<td><code>production_label</code>, <code>preview_label</code></td>
+<td>strings / <code>Production</code>, <code>Preview</code></td>
+<td>Human-facing channel names.</td>
+</tr>
+<tr>
+<td><code>production_indexing</code></td>
+<td>boolean / <code>true</code></td>
+<td>Permit production indexing.</td>
+</tr>
+<tr>
+<td><code>preview_indexing</code></td>
+<td>boolean / <code>false</code></td>
+<td>Permit preview indexing.</td>
+</tr>
+<tr>
+<td><code>generate_robots</code>, <code>generate_sitemap_index</code>, <code>generate_llms_txt</code>, <code>generate_llms_full_txt</code>, <code>generate_json_ld</code></td>
+<td>boolean / <code>true</code></td>
+<td>Generate robot, search, LLM, and structured metadata.</td>
+</tr>
+<tr>
+<td><code>author_name</code></td>
+<td>string / <code>Adam Matthew Steinberger</code></td>
+<td>Reserved documentation-provenance author label. Parsed and validated (non-empty), but not yet emitted into any generated asset.</td>
+</tr>
+<tr>
+<td><code>author_url</code></td>
+<td>URL / <code>https://vibewithadam.matthewsteinberger.com</code></td>
+<td>Reserved documentation-provenance author destination. Same current scope as <code>author_name</code>.</td>
+</tr>
+<tr>
+<td><code>google_analytics_id</code></td>
+<td>string / empty (disabled)</td>
+<td>GA4 measurement ID (<code>G-&lt;alphanumeric&gt;</code>) injected into every page of both generated documentation channels and the channel-picker page. Empty disables Google Analytics entirely: no script tag is emitted and no request ever reaches Google.</td>
+</tr>
+<tr>
+<td><code>site_requirements</code></td>
+<td>string list / empty</td>
+<td>Extra packages installed before the published site is built, as PEP 508 requirement specifiers. Each is shell-quoted, so <code>"mkdocs-material[imaging] &gt;= 9.5"</code> stays one argument.</td>
+</tr>
+<tr>
+<td><code>site_requirements_file</code></td>
+<td>path / <code>docs/requirements.txt</code></td>
+<td>Installed with <code>pip install -r</code> when the file exists. Absent, the step is skipped; empty disables the hook entirely.</td>
+</tr>
+<tr>
+<td><code>properdocs_version</code></td>
+<td>string / <code>1.6.7</code></td>
+<td>The <code>properdocs</code> and <code>properdocs-theme-mkdocs</code> version the site build pins.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="installing-what-your-site-actually-needs">Installing what your site actually needs</h3>
+<p>ProperDocs depends on <code>properdocs</code> and its theme, and on nothing your <code>properdocs.yml</code>
+declares. A site configuring <code>mkdocs-gen-files</code>, <code>mkdocs-literate-nav</code>, a Material theme,
+or any <code>pymdownx.*</code> markdown extension needs those packages present, or the <code>--strict</code>
+build fails on the first one it reaches — the plugin is simply not installed.</p>
+<p>Declare them once, either inline or in the conventional requirements file:</p>
+<pre><code class="language-toml">[documentation]
+site_requirements = [
+  &quot;mkdocs-gen-files&quot;,
+  &quot;mkdocs-literate-nav&quot;,
+  &quot;pymdown-extensions&gt;=10.7&quot;,
+]
+</code></pre>
+<p>Both hooks are no-ops when unused, so a repository whose site needs nothing extra is
+unaffected. This cannot have a useful default: which packages a site needs follows from
+that site's own configuration.</p>
+<p><code>author_name</code> and <code>author_url</code> exist for a planned author credit in the generated
+Pages sites and are exercised by config parsing, validation, and tests today. The
+<code>release-surfaces.yml</code> JSON-LD record currently emits only <code>@context</code>, <code>@type</code>,
+<code>name</code>, <code>codeRepository</code>, <code>url</code>, and <code>version</code> — no author field — so setting these
+two keys has no visible effect on a generated site yet.</p>
+<p>Run <code>vibey-gh install</code>, review and commit generated assets, then run
+<code>vibey-gh check --ci</code>. Identity and Pages URLs are derived at runtime.</p>
+<h2 id="advanced-debug-environment">Advanced debug environment</h2>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>VIBEY_GH_DEBUG</code></td>
+<td>unset</td>
+<td>Set to <code>1</code>, <code>true</code>, <code>yes</code>, or <code>on</code> to enable structured branch tracing.</td>
+</tr>
+<tr>
+<td><code>VIBEY_GH_DEBUG_LOG</code></td>
+<td>stderr</td>
+<td>Append JSONL trace events to this operator-controlled path.</td>
+</tr>
+<tr>
+<td><code>VIBEY_GH_TRACE_ID</code></td>
+<td>generated UUID</td>
+<td>Correlate the trace with a wider diagnostic session.</td>
+</tr>
+</tbody>
+</table>
+<p>GitHub correlation is read from <code>GITHUB_RUN_ID</code>, <code>GITHUB_RUN_ATTEMPT</code>, and <code>GITHUB_SHA</code>.
+These controls affect diagnostics only; source validation always confirms that every
+configured Python control-flow opcode can be represented by the tracer.</p>
+<p>These environment variables only ever scope the tracer to <code>vibey_gh</code>'s own installed
+package directory; there is no CLI flag or environment variable to point it at a
+consuming project's source tree. A project embedding <code>vibey_gh.debugging</code> directly can
+call <code>enable(roots=(...))</code> with its own package directories to trace its own code instead.</p></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://properdocs.org/">ProperDocs</a>.</p>
+        </footer>
+        <script src="../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js"></script>
+        <script src="../javascripts/channel.js"></script>
+        <script src="../search/main.js"></script>
+
+        <div class="modal" id="properdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="properdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="properdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="properdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

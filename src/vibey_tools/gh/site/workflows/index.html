@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        <link rel="canonical" href="https://adammatthewsteinberger.github.io/vibey-gh/workflows/">
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>Workflows - vibey-gh</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/fontawesome.min.css" rel="stylesheet">
+        <link href="../css/brands.min.css" rel="stylesheet">
+        <link href="../css/solid.min.css" rel="stylesheet">
+        <link href="../css/v4-font-face.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link id="hljs-light" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" >
+        <link id="hljs-dark" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" disabled>
+        <link href="../stylesheets/vibey.css" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">vibey-gh</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar-collapse" aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="nav-item">
+                                <a href=".." class="nav-link">Home</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../architecture/" class="nav-link">Architecture</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../configuration/" class="nav-link">Configuration</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../cli/" class="nav-link">CLI</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="./" class="nav-link active" aria-current="page">Workflows</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../security/" class="nav-link">Security</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../threat-model/" class="nav-link">Threat model</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../adoption/" class="nav-link">Adoption</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../operations/" class="nav-link">Operations</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../development/" class="nav-link">Contributing</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../testing/" class="nav-link">Testing</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../releases/" class="nav-link">Releases</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../troubleshooting/" class="nav-link">Support</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../governance/" class="nav-link">Governance</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../accessibility/" class="nav-link">Accessibility</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../dependencies/" class="nav-link">Dependencies</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../roadmap/" class="nav-link">Roadmap</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="../adr/" class="nav-link">Architecture decisions</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ms-md-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#properdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                            <li class="nav-item">
+                                <a rel="prev" href="../cli/" class="nav-link">
+                                    <i class="fa fa-arrow-left"></i> Previous
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a rel="next" href="../security/" class="nav-link">
+                                    Next <i class="fa fa-arrow-right"></i>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="https://github.com/adammatthewsteinberger/vibey-gh/edit/main/docs/workflows.md" class="nav-link">Edit on adammatthewsteinberger/vibey-gh
+                                    </a>
+                            </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-bs-toggle="collapse" data-bs-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-body-tertiary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-bs-level="1"><a href="#workflow-reference" class="nav-link">Workflow reference</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-bs-level="2"><a href="#issue-automation" class="nav-link">Issue automation</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#conversation" class="nav-link">Conversation</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#codeql" class="nav-link">CodeQL</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#api-drift-not-installed-and-not-yours" class="nav-link">API drift — not installed, and not yours</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#conventional-commits" class="nav-link">Conventional Commits</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#branch-intake" class="nav-link">Branch intake</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#ci" class="nav-link">CI</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#provenance" class="nav-link">Provenance</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#docs-documentation-contract-and-maintenance" class="nav-link">Docs (documentation contract and maintenance)</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#pr-automation" class="nav-link">PR automation</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#merge-train" class="nav-link">Merge train</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#branch-sync" class="nav-link">Branch sync</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#promote" class="nav-link">Promote</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#release" class="nav-link">Release</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#github-release" class="nav-link">GitHub Release</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#release-surfaces" class="nav-link">Release surfaces</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#repository-profile" class="nav-link">Repository profile</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#release-repair" class="nav-link">Release repair</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#automation-bootstrap" class="nav-link">Automation bootstrap</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="workflow-reference">Workflow reference</h1>
+<p>Repair and conflict publication are optimistic exact-head updates. Immediately before
+committing, and again after any non-fast-forward push rejection, the trusted publisher
+compares the PR head with the SHA that was evaluated. A concurrent update converts the old
+run into a successful stale no-op; it never force-pushes, overwrites newer work, consumes a
+repair attempt, or mutates a permanent branch from an obsolete checkout.</p>
+<p>Issue automation turns an eligible published issue into one guarded solution branch and
+linked pull request, which then enters this same path with no exemption. Branch intake
+opens draft PRs. CI and provenance validate code. Documentation validates
+the complete docs contract and periodically authors guarded refresh PRs. PR automation
+aggregates exact-head scans, reviews outside contributions, repairs failures, and resolves
+conflicts. The merge train squash-merges to develop and rebase-merges promotions to main.
+Release publishes develop builds to TestPyPI and main builds to PyPI. Release surfaces
+publish branch-specific ProperDocs and GHCR artifacts; repository profile maintains
+description, homepage, topics, and verifies releases, deployments, and packages. If a
+trusted post-merge workflow fails on <code>develop</code> or <code>main</code>, release repair reviews its logs
+and returns a fixable problem through an ordinary guarded PR.</p>
+<p><code>CI</code> and <code>Release</code> are not managed templates; <code>vibey-gh install</code> never writes them, because
+every repository's build, test, and publish steps differ. They must exist under those exact
+names, because <code>github-release.yml</code>, <code>release-surfaces.yml</code>, and <code>release-repair.yml</code> all
+key off a <code>workflow_run</code> named <code>Release</code> (and <code>release-repair.yml</code> also watches <code>CI</code>). A
+<code>Release</code> workflow that runs on <code>develop</code>/<code>main</code>, derives the version with <code>vibey-gh
+version --apply</code>, builds, and publishes through the <code>testpypi</code>/<code>pypi</code> trusted-publishing
+environments is what the rest of this reference assumes exists.</p>
+<h2 id="issue-automation">Issue automation</h2>
+<p><code>Issue automation</code> runs on <code>issues</code> (<code>opened</code>, <code>reopened</code>, <code>labeled</code>), <code>workflow_dispatch</code>
+with an issue number, and — when <code>[issue_automation].retain_schedule_backstop</code> is set — a
+twice-daily recovery sweep that dispatches only the issues <code>vibey-gh issue-automation
+list-eligible</code> reports.</p>
+<p>The <code>evaluate</code> job holds <code>contents: read</code> and <code>issues: read</code>. It runs trusted default-branch
+workflow code, installs the published <code>vibey-gh</code> package (never the adopting repository's
+own package), and emits one structured decision: <code>solve</code>, <code>skip</code>, or <code>blocked</code>, each with a
+stated reason. Only <code>solve</code> starts the privileged <code>solve</code> job; <code>blocked</code> labels and comments
+once through the <code>exhausted</code> job.</p>
+<p>The <code>solve</code> job checks out trusted automation under <code>automation/</code> and the configured base
+branch under <code>target/</code> with <code>persist-credentials: false</code>. A trusted step renders the issue
+into <code>briefing/issue.md</code>; the pinned Claude Code Action then runs from a disposable
+credential-free Git context with <code>Read,Glob,Grep,Edit,Write</code> and no <code>Bash</code>, <code>gh</code>, or
+<code>Agent</code> tool, and is told the briefing is an untrusted report rather than an instruction.
+It edits files only.</p>
+<p>Publication is a separate trusted step that validates the branch against the configured
+namespace and the permanent branches, normalizes provenance headers with
+<code>vibey-gh check --ci --apply</code>, commits with the repository's own configured trailer from
+<code>vibey-gh trailer</code>, pushes one non-empty-source refspec, and opens one linked pull request
+containing <code>Closes #N</code>. It publishes nothing when the agent returned <code>solved=false</code> or
+produced no diff. <code>branch-intake.yml</code> is rendered to ignore the same namespace so the two
+never race. From there the proposal is an ordinary pull request with no exemption from
+scans, review, repair, or the merge train.</p>
+<p>Attempts are budgeted per issue content fingerprint and stored in one machine-readable
+issue comment, so a redispatch of unchanged text is a no-op and an edit starts a new
+lineage.</p>
+<h2 id="conversation">Conversation</h2>
+<p><code>Conversation</code> runs on <code>issue_comment</code> (<code>created</code>) and <code>pull_request_review_comment</code>
+(<code>created</code>) against any thread, plus <code>workflow_dispatch</code> with a subject number and an
+optional exact comment ID. The cheapest possible loop guard runs before a runner is even
+claimed: <code>github.event.sender.type != 'Bot'</code>, combined with a check that the triggering
+comment contains the configured mention (<code>workflow_dispatch</code> is exempt, since a human
+explicitly named the subject). This is the one failure mode unique to conversation — a
+reply that mentions the trigger again would otherwise recurse and bill indefinitely — so it
+is excluded before anything else is considered.</p>
+<p>The <code>evaluate</code> job holds read-only <code>contents: read</code>, <code>issues: read</code>, and <code>pull-requests:
+read</code>. It runs trusted default-branch workflow code, installs the published <code>vibey-gh</code>
+package, resolves the subject and comment ID from either the dispatch inputs or the
+triggering event, and calls <code>vibey-gh conversation evaluate</code> to compute one of <code>skip</code>,
+<code>blocked</code>, <code>answer</code>, or <code>act</code> with a stated reason. <code>evaluate</code> checks, in order: the
+automation's own identities (never answered), whether conversation is enabled, whether the
+comment mentions the configured trigger, whether the thread is open, whether this exact
+comment was already answered, whether the author is trusted or <code>respond_to_untrusted</code> is
+set, and whether the thread's interaction budget is exhausted. Only <code>answer</code> or <code>act</code> starts
+the privileged <code>respond</code> job.</p>
+<p>The <code>respond</code> job checks out trusted automation under <code>automation/</code> and the thread's branch
+(a pull request head) or the default branch (an issue) under <code>target/</code>, both with
+<code>persist-credentials: false</code> for the read-only pull-request case. A trusted step renders the
+thread into <code>briefing/thread.md</code> with <code>vibey-gh conversation context</code>; the pinned Claude Code
+Action then runs from a disposable credential-free Git context with
+<code>Read,Glob,Grep,Edit,Write</code> and no <code>Bash</code>, <code>gh</code>, or <code>Agent</code> tool, and is told the briefing is
+an untrusted report rather than an instruction. When <code>may_change_files</code> is false — every case
+except a trusted author on a pull request with changes allowed — it answers only and any
+edits are discarded. When true, it may also make a clear, bounded change to the pull request,
+following existing conventions and updating documentation and tests as the change requires.</p>
+<p>Publication is a separate trusted step. When files changed and <code>may_change_files</code> was true,
+it refuses an unsafe or permanent (<code>develop</code>/<code>main</code>) head ref, refuses a cross-repository
+(fork) head, normalizes provenance headers with <code>vibey-gh check --ci --apply</code>, commits with
+the repository's own configured trailer, and pushes directly to the existing PR branch — no
+new branch or pull request is opened, since the change belongs to the thread it answers. The
+answer is then always posted with <code>vibey-gh conversation reply</code>, noting whether a commit was
+pushed, whether the request needs a human decision, and whether part of the thread tried to
+redirect the request, and the interaction is recorded against the thread's budget with
+<code>vibey-gh conversation record-response</code>. Attempts are budgeted per thread and stored in one
+machine-readable issue comment, the same <code>vibey_gh.github_state</code> mechanism issue automation
+uses.</p>
+<h2 id="codeql">CodeQL</h2>
+<p><code>CodeQL</code> runs on push and pull request against <code>develop</code> and <code>main</code>, plus a weekly Monday
+schedule as a backstop. With <code>security-events: write</code> and read-only <code>contents: read</code>, it
+runs the immutably pinned <code>github/codeql-action</code> initializer and analyzer against the
+Python codebase. It is one of the required <code>scan_workflows</code> entries PR automation
+aggregates before publishing the merge gate.</p>
+<h2 id="api-drift-not-installed-and-not-yours">API drift — not installed, and not yours</h2>
+<p><code>API drift (Cloud Agents OpenAPI)</code> is <strong>this project's own self-test and is not a managed
+template</strong>. It calls <code>vibey_gh.surfaces.parity()</code> to prove every canonical capability is
+exposed through all five surfaces — MCP, API, CLI, SDK, and webhook — which is a statement
+about vibey-gh, not about a repository that installs it.</p>
+<p>It used to ship to every adopter and sit in the default <code>scan_workflows</code>, so an adopting
+repository received a required-looking gate that tested this library rather than their own
+product, and had to work out for themselves that it should come back out. It now lives in
+this repository's own <code>.github/workflows/</code>, hand-authored, exactly as <code>ci.yml</code> and
+<code>release.yml</code> do — what is specific to one repository is that repository's to author.</p>
+<h2 id="conventional-commits">Conventional Commits</h2>
+<p><code>Conventional Commits</code> runs from trusted base-branch workflow code on PR open, reopen,
+synchronization, and ready-for-review events. It inspects the exact PR head without
+executing repository code. For same-repository, linear topic branches, it normalizes every
+nonconforming subject, preserves commit bodies and provenance trailers, and publishes the
+rewritten history with an exact-SHA <code>--force-with-lease</code>. It refuses forks, merge commits,
+stale heads, and any branch named by the configured integration or release branch; the
+literal <code>develop</code> and <code>main</code> names are denied independently as defense in depth. It never
+deletes a branch. The resulting synchronize event reruns all ordinary scans.</p>
+<h2 id="branch-intake">Branch intake</h2>
+<p><code>Branch intake</code> runs on every push whose branch is not <code>develop</code>, <code>main</code>, or under the
+<code>vibey-gh/repair/</code> or <code>vibey-gh/issue/</code> namespaces — issue automation and repair publish
+their own linked pull requests, and intake must not race them. With <code>contents: read</code> and
+<code>pull-requests: write</code>, it opens exactly one draft pull request against <code>develop</code> for a
+branch that has no open PR yet. This intentionally runs on every push rather than once per
+branch name: a branch name reused after its previous PR merged must still get a fresh
+draft, since a historical closed PR must never suppress intake for the new lineage.</p>
+<h2 id="ci">CI</h2>
+<p><code>CI</code> and <code>Release</code> are the two workflows <code>vibey-gh install</code> never renders, because every
+repository's build, test, and publish steps differ; they must exist under those exact
+names because other release workflows key off a <code>workflow_run</code> named <code>Release</code> (and
+<code>release-repair.yml</code> also watches <code>CI</code>). <code>CI</code> runs on push and pull request against
+<code>develop</code> and <code>main</code> with the default read-only token. Its <code>test</code> job runs pytest across
+Python 3.11–3.13; <code>lint</code> runs Black, isort, Ruff, and mypy, then dogfoods the managed
+automation by asserting <code>vibey_gh.install.installed()</code> reports no drift between the
+repository's rendered workflows and its configuration; <code>build</code> builds the wheel and sdist,
+checks them with <code>twine check</code>, and asserts every managed template and release theme asset
+is packaged inside the wheel. <code>CI</code> is one of the required <code>scan_workflows</code> entries PR
+automation aggregates.</p>
+<h2 id="provenance">Provenance</h2>
+<p><code>Provenance</code> runs on push to every branch and on every pull request, with read-only
+<code>contents: read</code>. It installs the tooling (from source when the repository under test is
+<code>vibey-gh</code>/<code>vibey-bootstrap</code> itself, otherwise the published package) and runs <code>vibey-gh
+check --ci</code>, which performs the fingerprint and Conventional Commits verification that is
+the server-side half of the provenance rule — backstopping the pre-push hook, which lives
+in a clone and can be skipped with <code>--no-verify</code> or simply never installed. A promotion PR
+from <code>develop</code> into <code>main</code> checks provenance without rewriting or re-auditing
+already-admitted history; an ordinary PR checks only the commits it adds, via <code>--commits
+BASE_SHA..HEAD</code>.</p>
+<h2 id="docs-documentation-contract-and-maintenance">Docs (documentation contract and maintenance)</h2>
+<p><code>Docs</code> (workflow file <code>documentation.yml</code>) runs on pull request, push to <code>develop</code>/<code>main</code>,
+a weekly Monday 07:23 UTC schedule, and manual dispatch. Its <code>contract</code> job holds
+read-only <code>contents: read</code> and runs <code>vibey-gh check --ci</code> — the same fingerprint-checking
+entry point <code>Provenance</code> uses — to verify every required documentation surface exists and
+is current. Its <code>maintain</code> job runs only on schedule or <code>workflow_dispatch</code>, holds
+<code>contents: write</code>, <code>id-token: write</code>, and <code>pull-requests: write</code>, checks out <code>develop</code>
+onto a fresh <code>vibey-gh/docs/refresh-&lt;run_id&gt;</code> branch, and runs the pinned Claude Code
+Action as a comprehensive documentation author restricted to <code>Read,Glob,Grep,Edit,Write</code>.
+The job fails unless Claude's structured result reports <code>complete=true</code> with zero
+<code>gaps_remaining</code>; only then does a trusted step commit, push the branch, and open one pull
+request against <code>develop</code>.</p>
+<h2 id="pr-automation">PR automation</h2>
+<p><code>PR automation</code> is the aggregation, review, repair, and merge-gating hub. It triggers on
+<code>pull_request_target</code> (opened, reopened, synchronize, ready-for-review) against
+<code>develop</code>/<code>main</code>; on completion of every workflow named in <code>scan_workflows</code> (<code>CI</code>,
+<code>Provenance</code>, <code>CodeQL</code>, and <code>Docs</code> by default); on a six-hourly recovery schedule; and on
+manual dispatch.
+Top-level permissions are <code>actions: read</code>, <code>checks: read</code>, <code>contents: read</code>, and
+<code>pull-requests: read</code>, with individual jobs elevating further. <code>evaluate</code> resolves the PR
+and its exact head SHA and calls <code>vibey-gh pr-automation evaluate</code> to compute an aggregate
+<code>state</code> (<code>ready</code>, <code>review</code>, <code>repair</code>, <code>conflict</code>, <code>blocked</code>, or <code>pending</code>). <code>review</code>
+(when state is <code>ready</code> or <code>review</code>) checks out the untrusted head read-only beside trusted
+automation and runs the pinned Claude Code Action, restricted to <code>Read,Glob,Grep</code> plus a
+scoped inline-comment tool and read-only <code>gh pr</code> commands, to produce the structured
+semantic review this repair task itself receives as input. <code>mirror-fork</code> opens a
+repository-owned replacement PR when a fork needs repair or has a conflict. <code>repair</code>
+collects exact-head failed-check evidence into <code>diagnostics/</code>, runs Claude with
+<code>Read,Glob,Grep,Edit,Write</code> and no execution tools, and — only when the branch is still at
+the expected head — publishes one commit back to the PR branch. <code>resolve-conflict</code>
+materializes a same-repository merge conflict, lets Claude edit only the conflicting
+paths, and publishes one resolution commit. <code>escalate</code> labels and comments once when the
+repair-attempt budget is exhausted. <code>gate</code> publishes the final <code>PR automation / gate</code>
+check run for the exact head and, on success, dispatches <code>merge-train.yml</code>.</p>
+<p>Every <code>[pr_automation].scan_workflows</code> entry names a <code>workflow_run</code> this aggregation
+waits on, so each one must be a workflow that runs on <code>pull_request</code> or
+<code>pull_request_target</code>. A workflow that only triggers on <code>push</code> can never complete for a
+pull request: <code>state</code> never leaves <code>pending</code>, <code>gate</code> — which requires <code>state !=
+'pending'</code> — never runs, and the <code>PR automation / gate</code> check-run is never published. Made
+a required check on the branch ruleset, that is a silent, total, and permanent lockout.
+<code>vibey-gh check</code> fails on any named workflow that exists but cannot fire for a pull
+request; a name absent from <code>.github/workflows/</code> is not an error, since it may live
+elsewhere or under another name.</p>
+<h2 id="merge-train">Merge train</h2>
+<p><code>Merge train</code> runs on completion of <code>PR automation</code>, a weekly Monday recovery schedule,
+and manual dispatch (optionally scoped to one PR, optionally <code>dry_run</code>). With <code>actions:
+read</code>, <code>contents: write</code>, and <code>pull-requests: write</code>, it resolves the gated PR and runs
+<code>vibey-gh merge-train</code>, which squash-merges every currently ready PR into <code>develop</code>.</p>
+<h2 id="branch-sync">Branch sync</h2>
+<p><code>Branch sync</code> runs on every push to <code>develop</code>, a nightly <code>37 5 * * *</code> schedule, and manual
+dispatch with an optional <code>dry_run</code> input. Top-level permissions are read-only
+<code>contents: read</code>; each job elevates only what it needs. It holds two independent jobs that
+never run in the same trigger.</p>
+<p>The <code>sync</code> job (push or manual dispatch, never schedule; <code>contents: write</code>,
+<code>pull-requests: write</code>) checks out trusted default-branch automation and runs <code>vibey-gh
+reconcile-branches</code>, the CLI entry point over <code>vibey_gh/reconcile.py</code>. For every open pull
+request it classifies the branch by <code>git cherry</code> patch identity against <code>develop</code>: a branch
+with nothing unique has its PR closed and (when configured) its branch deleted; a branch
+automation owns and that is behind is rebased onto the new tip, dropping the
+now-duplicated commits; a contributor's own branch is left untouched and, when behind,
+either merged forward through GitHub's update-branch endpoint (with the contributor's
+consent implied by "allow maintainer edits") or left with an explanatory comment. Forks are
+only ever moved forward, never rewritten, rebased, closed, or deleted. <code>dry_run</code> decides
+and reports without mutating anything. <code>[branch_sync]</code> and <code>[realign]</code> in configuration
+control this behavior; see <a href="../configuration/">Configuration</a>.</p>
+<p>The <code>heal</code> job (schedule only; <code>actions: write</code>, <code>contents: read</code>, <code>pull-requests: write</code>)
+runs <code>vibey-gh pr-automation self-heal</code> to refill the repair budget of every pull request
+labeled <code>vibey-gh:repair-exhausted</code>, up to <code>branch_sync.max_self_heals</code> refills per lineage,
+so a transient outage does not permanently strand a PR that a human has not yet noticed.
+Each healed pull request then has <code>pr-automation.yml</code> re-dispatched against its exact head
+SHA, returning it to ordinary review and repair with no exemption.</p>
+<h2 id="promote">Promote</h2>
+<p><code>Promote</code> (workflow file <code>promote-to-main.yml</code>) runs on completion of <code>Merge train</code>, a
+weekly Monday schedule, and manual dispatch. With <code>contents: write</code> and <code>pull-requests:
+write</code>, it runs <code>vibey-gh promote</code>, which compares <code>develop</code> and <code>main</code> by tree content
+rather than commit count, derives the next version, and opens or reuses a promotion pull
+request; that PR then goes through the same scans, <code>PR automation</code> gate, and a rebase
+merge to <code>main</code> as any other change. <code>AUTOMERGE_TOKEN</code> is required here because a
+ruleset-required approving review cannot be satisfied by the default <code>GITHUB_TOKEN</code>.</p>
+<h2 id="release">Release</h2>
+<p><code>Release</code> (not a managed template) runs on push to <code>main</code> and <code>develop</code> with read-only
+<code>contents: read</code>. Its <code>build</code> job dogfoods <code>vibey_gh.install.installed()</code> before
+publishing, stamps a <code>--dev</code> version on <code>develop</code> builds via <code>vibey-gh version --apply</code>,
+and builds the wheel and sdist. <code>testpypi</code> (needs <code>build</code>, <code>develop</code> only) and <code>pypi</code>
+(needs <code>build</code>, <code>main</code> only) each hold <code>id-token: write</code> and publish through
+trusted-publishing environments pinned to their respective branch. <code>realign</code> (needs
+<code>build</code> and <code>pypi</code>, <code>main</code> only, <code>contents: write</code>) runs <code>vibey-gh realign</code> to converge
+<code>develop</code> back onto <code>main</code> when their trees are content-identical; it never force-pushes
+over unmerged <code>develop</code> work and skips gracefully when <code>AUTOMERGE_TOKEN</code> is absent. A
+successful realign then reconciles every open pull request against the rewritten
+<code>develop</code>, the same as <a href="#branch-sync">Branch sync</a>; because this job only holds
+<code>contents: write</code>, that follow-up can fail for lack of <code>pull-requests: write</code> or because
+GitHub is unreachable, and such a failure is logged rather than failing the job — the
+realign already succeeded and must stand regardless of whether the follow-up reconciled
+every branch.</p>
+<h2 id="github-release">GitHub Release</h2>
+<p><code>GitHub Release</code> runs on completion of <code>Release</code> (only when it succeeded on <code>main</code>) or
+manual dispatch with an explicit target SHA. With <code>contents: write</code>, it checks out the
+exact released commit and runs <code>vibey-gh github-release --target &lt;sha&gt;</code> to create an
+immutable tag and an idempotent GitHub Release for that commit.</p>
+<h2 id="release-surfaces">Release surfaces</h2>
+<p><code>Release surfaces</code> runs on completion of <code>Release</code> on <code>develop</code> or <code>main</code>, or manual
+dispatch naming a channel and a source run. Its <code>context</code> job resolves the channel;
+<code>package</code> (<code>actions: read</code>, <code>contents: read</code>, <code>packages: write</code>) publishes the built wheel
+and sdist as an OCI artifact to GitHub Packages, tagged with the channel and <code>latest</code> on
+<code>main</code>; <code>docs</code> (<code>actions: read</code>, <code>contents: read</code>, <code>pages: write</code>, <code>id-token: write</code>)
+builds a branch-specific ProperDocs site with the managed release theme and deploys it to
+the shared <code>github-pages</code> environment under a channel-specific path, restoring the other
+channel's existing site alongside it. When <code>documentation.google_analytics_id</code> is set, the
+same GA4 measurement ID is injected into every generated page and the channel-picker page;
+left empty (the default), no analytics script is emitted anywhere.</p>
+<h2 id="repository-profile">Repository profile</h2>
+<p><code>Repository profile</code> runs on completion of <code>Release surfaces</code> or manual dispatch, with
+read-only <code>actions: read</code>, <code>contents: read</code>, <code>deployments: read</code>, and <code>packages: read</code>. It
+reconciles the repository's description, homepage, topics, and collaboration/security
+settings to the configured values, then — when <code>[rulesets].enabled</code> — checks out the
+default branch, installs <code>vibey-gh</code>, and reconciles the integration and release branch
+rulesets from <code>[rulesets]</code> before verifying the public release surfaces are actually live:
+the Pages homepage responds, at least one release and one deployment exist, the GHCR
+package is reachable, and <code>develop</code>/<code>main</code> remain protected. Ruleset reconciliation runs
+before that verification step in the same job, so the branches it protects are already
+current by the time the check runs. A ruleset the API refuses fails the job with the API's
+own reason instead of being silently skipped.</p>
+<h2 id="release-repair">Release repair</h2>
+<p><code>Release repair</code> runs on completion of <code>CI</code>, <code>Provenance</code>, <code>Release</code>, <code>Release surfaces</code>,
+or <code>GitHub Release</code> on <code>develop</code> or <code>main</code>, only when that run's conclusion was <code>failure</code>.
+With <code>contents: write</code>, <code>id-token: write</code>, <code>issues: write</code>, <code>pull-requests: write</code>, and
+read-only <code>actions</code>/<code>checks</code>, it first confirms the branch is still at the failed SHA (a
+stale failure is a no-op) and that no repair branch already exists for that run. It checks
+out the exact failed revision, runs Claude in a credential-free context restricted to
+<code>Read,Glob,Grep,Edit,Write</code> plus read-only CI-log tools, and — only when the structured
+result reports <code>fixable=true</code> and the branch is still current — publishes one commit to a
+new <code>vibey-gh/repair/release-&lt;branch&gt;-&lt;run_id&gt;</code> branch and opens an ordinary pull request
+that re-enters the same scans, review, and merge train as any other change. It never
+pushes directly to or deletes a permanent branch.</p>
+<h2 id="automation-bootstrap">Automation bootstrap</h2>
+<p><code>Automation bootstrap</code> is a manual <code>workflow_dispatch</code> with three required inputs: the PR
+number, the exact reviewed head SHA, and an explicit <code>authorize</code> boolean. It exists only for
+the case where privileged workflow code itself is broken and a PR therefore cannot repair
+its own gate. With <code>contents: write</code>, <code>pull-requests: write</code>, and <code>checks: read</code>, the job
+verifies that the dispatching actor holds administrator permission; that the PR is open,
+non-draft, targets <code>develop</code>, and exactly matches the dispatched head SHA; that changed
+files are confined to workflow, template, or automation-core paths; and that every non-gate
+check run on that exact SHA — including CodeQL, the Documentation contract,
+Provenance, Build, and Lint — completed successfully. Only then does it perform an
+admin <code>--match-head-commit</code> squash merge into <code>develop</code>, bypassing ordinary PR automation
+review, and delete the source branch, and only when that branch is same-repository and not
+a configured or literal permanent branch. See <a href="../security/">Security</a> and
+<a href="../threat-model/">Threat model</a> for the full rationale.</p></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://properdocs.org/">ProperDocs</a>.</p>
+        </footer>
+        <script src="../js/bootstrap.bundle.min.js"></script>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js"></script>
+        <script src="../javascripts/channel.js"></script>
+        <script src="../search/main.js"></script>
+
+        <div class="modal" id="properdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="properdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="properdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="properdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
