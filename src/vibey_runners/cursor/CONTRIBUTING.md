@@ -8,7 +8,7 @@ issue or a PR fixing it.
 ## Environment setup
 
 ```bash
-git clone https://github.com/adammatthewsteinberger/cursorloop.git
+git clone https://github.com/the-vibey-project/cursorloop.git
 cd cursorloop
 python3 -m venv .venv
 source .venv/bin/activate
@@ -144,10 +144,10 @@ Enforced by `import-linter` in CI and pre-commit — not by convention. See
 
 | I want to... | Go here |
 |---|---|
-| User/operator docs | [https://adammatthewsteinberger.github.io/cursorloop/](https://adammatthewsteinberger.github.io/cursorloop/) |
-| Ask a question or discuss design | [GitHub Discussions](https://github.com/adammatthewsteinberger/cursorloop/discussions) |
-| Report a bug | [Bug report form](https://github.com/adammatthewsteinberger/cursorloop/issues/new?template=bug_report.yml) |
-| Propose a feature | [Feature request form](https://github.com/adammatthewsteinberger/cursorloop/issues/new?template=feature_request.yml) |
+| User/operator docs | [https://the-vibey-project.github.io/cursorloop/](https://the-vibey-project.github.io/cursorloop/) |
+| Ask a question or discuss design | [GitHub Discussions](https://github.com/the-vibey-project/cursorloop/discussions) |
+| Report a bug | [Bug report form](https://github.com/the-vibey-project/cursorloop/issues/new?template=bug_report.yml) |
+| Propose a feature | [Feature request form](https://github.com/the-vibey-project/cursorloop/issues/new?template=feature_request.yml) |
 | Report a vulnerability | [SECURITY.md](SECURITY.md) — privately |
 | Design context | [`docs/plans/architecture-and-roadmap.md`](docs/plans/architecture-and-roadmap.md) |
 | Same map, shorter | [SUPPORT.md](SUPPORT.md) |

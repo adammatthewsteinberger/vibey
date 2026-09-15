@@ -1,0 +1,9 @@
+{
+  "name": "how-cars-work-and-how-mechanics-work",
+  "version": "0.1.0",
+  "description": "How Cars Work — and How Mechanics Do Their Jobs: the four-stroke cycle, engine anatomy, the air path, fuel and injection, ignition and knock, engine management and closed-loop control, cooling and lubrication, emissions aftertreatment, diesel specifics, transmissions, driveline and differentials, suspension, steering and alignment, brakes, tyres, the 12V system, vehicle networks, ADAS, air conditioning, EV architecture, batteries and degradation, high-voltage safety, hybrids, corrosion, diagnostic method, OBD-II and scan data, tools, common misdiagnoses, and maintenance and shop economics.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

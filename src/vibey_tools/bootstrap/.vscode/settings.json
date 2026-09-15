@@ -1,0 +1,76 @@
+{
+  // Python Configuration
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/Scripts/python.exe",
+
+  // Testing Configuration
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestArgs": [
+    "test",
+    "-v",
+    "--tb=short",
+    "--color=yes"
+  ],
+
+  // Test Discovery
+  "python.testing.autoTestDiscoverOnSaveEnabled": true,
+  "python.testing.cwd": "${workspaceFolder}",
+
+  // Coverage Configuration (optional - shows coverage in gutters)
+  "coverage-gutters.coverageFileNames": [
+    "coverage.xml",
+    "htmlcov/index.html"
+  ],
+
+  // Editor Configuration
+  "editor.rulers": [100],
+  "editor.formatOnSave": true,
+
+  // Python Formatting
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "explicit"
+    }
+  },
+
+  // Black Formatter Settings
+  "black-formatter.args": [
+    "--line-length=100"
+  ],
+
+  // Ruff Linter Settings
+  "ruff.lint.args": [
+    "--line-length=100"
+  ],
+
+  // File Associations
+  "files.associations": {
+    "*.pyc": "python",
+    "*.pyi": "python"
+  },
+
+  // Files to Exclude from Explorer
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    "**/.pytest_cache": true,
+    "**/htmlcov": true,
+    "**/.coverage": true,
+    "**/dist": true,
+    "**/build": true,
+    "**/*.egg-info": true
+  },
+
+  // Search Exclusions
+  "search.exclude": {
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    "**/.pytest_cache": true,
+    "**/htmlcov": true,
+    "**/dist": true,
+    "**/build": true,
+    "**/*.egg-info": true
+  }
+}

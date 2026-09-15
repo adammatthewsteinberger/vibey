@@ -1,0 +1,14 @@
+# Locomotion and Train Technologies Plugin
+
+Rail engineering from the contact patch up, organised around the one number that explains rail: steel wheel on steel rail has roughly an order of magnitude less rolling resistance than rubber on road — which is why rail is efficient, and equally why trains cannot stop quickly or climb steeply. Adhesion and resistance, traction and braking physics, the wheel-rail interface, gradients and cant; steam, diesel, electric and alternative traction; track structure, continuous welded rail, switches and electrification; block signalling, interlocking, ATP and ETCS; rolling stock, braking, capacity, freight and maintenance; high-speed rail, metro and maglev.
+
+One reference, split into 6 skills along its section groups so a task loads only the part it needs. Section numbers (§N) are shared across the set and cross-references into a sibling skill are written as §N → `skill`. Reference, not tutorial: sections are independent, every claim is tagged by how durable it is (stable fundamentals vs. versioned specifics vs. genuinely contested questions), and a currency snapshot (verified August 2026) flags what goes stale first.
+
+## Skills
+
+- **rail-adhesion-resistance-traction-physics-and-geometry** — Adhesion and Resistance, Traction and Braking, the Wheel-Rail Interface, and Gradients, Curves and Cant (§0–§4): Routing; ⚠️ Adhesion and Resistance; Traction and Braking; ⚠️ The Wheel-Rail Interface; Gradients, Curves and Cant.
+- **rail-steam-diesel-electric-and-alternative-traction** — Steam, Diesel Traction, Electric Traction, Power Electronics and Regeneration, and Alternative Traction (§5–§9): Steam; Diesel Traction; Electric Traction; Power Electronics and Regeneration; Alternative Traction.
+- **rail-track-structure-welded-rail-switches-and-electrification** — Track Structure, Continuous Welded Rail and Thermal Stress, Switches and Crossings, and Electrification Infrastructure (§10–§13): Track Structure; ⚠️ Continuous Welded Rail and Thermal Stress; Switches and Crossings; Electrification Infrastructure.
+- **rail-signalling-interlocking-train-protection-and-safety** — Block Signalling, Interlocking, Train Protection with ATP, ETCS, PTC and CBTC, and Safety and Failure Modes (§14–§17): ⚠️ Block Signalling; Interlocking; Train Protection: ATP, ETCS, PTC, CBTC; Safety and Failure Modes.
+- **rail-rolling-stock-braking-capacity-and-service-types** — Rolling Stock and Bogies, Braking, Capacity, Freight, Maintenance, High-Speed Rail, Urban Rail, and Maglev (§18–§25): Rolling Stock and Bogies; Braking; ⚠️ Capacity; Freight; Maintenance; High-Speed Rail; Urban Rail; ⚠️ Maglev and Hyperloop.
+- **rail-reference** — What's Live, Misconceptions, Numbers, and Books (§26–§31): What's Live; Misconceptions; Numbers; Books and Resources; Quick Reference; Method.

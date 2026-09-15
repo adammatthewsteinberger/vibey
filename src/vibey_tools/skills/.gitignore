@@ -1,0 +1,36 @@
+# Archived working material, research sources, and pre-built bundles —
+# not part of the published marketplace.
+archive/
+
+# claudeloop run artifacts: the migration plan, its audit log, and the scrub
+# gate. The gate greps for strings that must never appear in this repo, so it
+# cannot live in the tree it protects.
+.claudeloop/
+
+# Local agent session state. .claude/settings.json and .claude/skills/ are the
+# project-level, checked-in exceptions — vibey-gh's documentation contract also expects
+# them to exist on disk.
+.remember/
+.claude/*
+!.claude/settings.json
+!.claude/skills/
+
+# mkdocs build output and its throwaway venv
+site/
+.venv-docs/
+
+# Python build artifacts
+dist/
+build/
+*.egg-info/
+__pycache__/
+.venv/
+.vibey-skills/
+packet.md
+packet.json
+
+# macOS
+.DS_Store
+
+# Source docs staged for plugin conversion (see CLAUDE.md); not part of the deliverable
+new/

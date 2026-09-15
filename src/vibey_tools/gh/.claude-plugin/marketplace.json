@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "vibey-gh",
+  "version": "1.0.0",
+  "description": "Complete development, documentation, release-security, and PR-automation skills for vibey-gh adopters.",
+  "owner": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  },
+  "metadata": {
+    "pluginRoot": "./plugins"
+  },
+  "plugins": [
+    {"name":"vibey-gh-development","source":"./plugins/vibey-gh-development","version":"1.0.0","category":"development","description":"Architecture, implementation, testing, and dependency policy."},
+    {"name":"vibey-gh-documentation","source":"./plugins/vibey-gh-documentation","version":"1.0.0","category":"documentation","description":"Comprehensive FOSS, API, SEO, crawler, and LLM documentation maintenance."},
+    {"name":"vibey-gh-release-security","source":"./plugins/vibey-gh-release-security","version":"1.0.0","category":"security","description":"Safe releases, provenance, publishing, branch protection, and incident response."},
+    {"name":"vibey-gh-pr-automation","source":"./plugins/vibey-gh-pr-automation","version":"1.0.0","category":"productivity","description":"Exact-head PR review, repair, conflict resolution, and merge-train operations."}
+  ]
+}

@@ -1,4 +1,4 @@
-# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 name: Promote
 
 # The other half of the flow. The merge train fills the integration branch; this moves it
@@ -60,10 +60,20 @@ jobs:
       - name: Install the tooling
         run: |
           set -euo pipefail
-          if grep -qE '^name = "vibey-gh"' pyproject.toml 2>/dev/null; then
-            python -m pip install --quiet -e .
+          # Where this repository keeps its own copy of the tooling, from
+          # `[install] self_source` in .vibey-gh.toml -- a DECLARED path, never a search.
+          # Searching the tree for a pyproject declaring `name = "vibey-gh"` would read a
+          # pull request's own files: a branch that adds one anywhere gets it installed
+          # here, with this job's permissions, and hands the provenance gate a tool of the
+          # contributor's choosing. The path is verified below before anything runs.
+          self="src/vibey_tools/gh"
+          # Verified, not assumed: a misconfigured path must fall back to the published
+          # release rather than install whatever happens to sit there.
+          grep -qE '^name = "vibey-gh"' "$self/pyproject.toml" 2>/dev/null || self=""
+          if [ -n "$self" ]; then
+            python -m pip install --quiet -e "$self"
           else
-            python -m pip install --quiet "vibey-gh==1.72.0"
+            python -m pip install --quiet "vibey-gh==1.73.0"
           fi
 
       - name: Promote

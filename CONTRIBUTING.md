@@ -22,7 +22,7 @@ issue or a PR fixing it.
 ## Environment setup
 
 ```bash
-git clone https://github.com/adammatthewsteinberger/vibey.git
+git clone https://github.com/the-vibey-project/vibey.git
 cd vibey
 uv sync --extra dev
 pre-commit install
@@ -129,7 +129,7 @@ belongs in a skill.
 ## Getting help
 
 See [SUPPORT.md](SUPPORT.md) for the right channel. Usage questions belong
-in [Discussions](https://github.com/adammatthewsteinberger/vibey/discussions),
+in [Discussions](https://github.com/the-vibey-project/vibey/discussions),
 not bug reports.
 
 ## Code of Conduct

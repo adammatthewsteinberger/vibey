@@ -1,0 +1,9 @@
+{
+  "name": "medicine-and-pharmacology-fundamentals",
+  "version": "0.1.0",
+  "description": "Fundamentals of Medicine and Pharmacology: how to read this field, homeostasis and physiological organization, drug targets, pathophysiology, clinical reasoning, diagnostic testing and its Bayesian logic, pharmacokinetics, pharmacodynamics, dose-response and the therapeutic window, drug interactions, variability between people, adverse effects, the major drug classes across cardiovascular, anti-infective, analgesic, neurological, psychiatric, endocrine, immunological and oncological medicine, evidence-based medicine, trial methodology and its pathologies, drug development and regulation, patient safety, screening and overdiagnosis, and clinical ethics. A technical reference, not medical advice.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

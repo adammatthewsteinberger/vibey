@@ -1,0 +1,183 @@
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+name: Release
+
+# develop publishes a dev build to TestPyPI; main publishes the real thing directly to
+# PyPI. Keep the two deployment paths disjoint: the TestPyPI environment intentionally
+# permits only develop, so a main job must never request that environment.
+on:
+  push:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+
+      - name: Dogfood the exact managed workflows before publishing
+        run: |
+          python -m pip install --quiet -e .
+          python - <<'PY'
+          from vibey_gh.config import load_config
+          from vibey_gh.install import installed
+
+          ok, problems = installed(load_config(), local=False)
+          if not ok:
+              raise SystemExit("refusing release with automation drift:\n" + "\n".join(problems))
+          print("managed PR, merge, promotion, provenance, and GitHub Release workflows are current")
+          PY
+
+      - name: Stamp a dev version on develop
+        if: github.ref == 'refs/heads/develop'
+        run: |
+          # An index version is immutable, so a develop build cannot reuse the release
+          # version; the dev suffix makes each push distinct and sorts it BEFORE the
+          # release it anticipates, which is the correct relationship.
+          vibey-gh version --dev "${GITHUB_RUN_NUMBER}" --apply
+
+      - id: v
+        # Indented inside the block scalar on purpose: a heredoc body written at column 0
+        # would terminate the scalar and the workflow would not parse at all.
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import pathlib
+          import tomllib
+
+          data = tomllib.loads(pathlib.Path("pyproject.toml").read_text())
+          print("version=" + data["project"]["version"])
+          PY
+
+      - run: python -m pip install --quiet build && python -m build
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: dist
+          path: dist/
+
+  testpypi:
+    name: Publish to TestPyPI
+    needs: build
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    environment: testpypi
+    permissions:
+      id-token: write            # trusted publishing; no token is stored anywhere
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with: { name: dist, path: dist }
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          skip-existing: true
+
+      # Reports what this release supersedes; it cannot yank, because PyPI has no API
+      # for that (see vibey_gh/yank.py). No token is involved -- the index JSON is public.
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        with:
+          # Article V.4 evaluation diffs the push's `before` SHA against HEAD; a
+          # shallow clone cannot see it, and 1.58.0's first activation had to be
+          # evaluated by hand because of exactly that (run 33300227861).
+          fetch-depth: 0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with: { python-version: "3.12" }
+      - name: Report superseded releases on testpypi
+        run: |
+          set -euo pipefail
+          python -m pip install --quiet -e .
+          vibey-gh report-superseded --governance-since "${{ github.event.before }}" \
+            --index testpypi \
+            --project vibey-gh \
+            --version "$(vibey-gh version --dev)" >> "$GITHUB_STEP_SUMMARY"
+
+  pypi:
+    name: Publish to PyPI
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with: { name: dist, path: dist }
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
+        with:
+          skip-existing: true
+
+      # Reports what this release supersedes; it cannot yank, because PyPI has no API
+      # for that (see vibey_gh/yank.py). No token is involved -- the index JSON is public.
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+        with:
+          # Article V.4 evaluation diffs the push's `before` SHA against HEAD; a
+          # shallow clone cannot see it, and 1.58.0's first activation had to be
+          # evaluated by hand because of exactly that (run 33300227861).
+          fetch-depth: 0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with: { python-version: "3.12" }
+      - name: Report superseded releases on pypi
+        run: |
+          set -euo pipefail
+          python -m pip install --quiet -e .
+          vibey-gh report-superseded --governance-since "${{ github.event.before }}" \
+            --index pypi \
+            --project vibey-gh \
+            --version "$(vibey-gh version)" >> "$GITHUB_STEP_SUMMARY"
+
+  realign:
+    name: Realign develop with main
+    needs: [build, pypi]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    # The workflow default is contents: read, which is right for the publishing jobs and
+    # wrong for this one — it pushes. Without this the push is a 403 that reads like a
+    # ruleset refusal and is not one.
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          # Same reason as the promotion: checkout's extraheader beats a remote URL, so
+          # the force-with-lease push needs the token here.
+          token: ${{ secrets.AUTOMERGE_TOKEN || github.token }}
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with: { python-version: "3.12" }
+
+      - run: python -m pip install --quiet -e .
+
+      # main is rebase-merged, so its commits are rewritten copies with new SHAs and
+      # develop can never be fast-forwarded onto it. `realign` converges them only when
+      # the two TREES are identical, so it cannot discard work — if develop has anything
+      # main does not, it says so and stops.
+      # Needs a token with the admin role. develop's ruleset has a non_fast_forward rule
+      # and GitHub Actions is not one of its bypass actors, so the default GITHUB_TOKEN
+      # cannot force-push there no matter what `permissions` says. Skipping is honest
+      # when the secret is absent; failing every release for a missing optional secret
+      # trains people to ignore a red release.
+      #
+      # Nothing downstream depends on this. Promotion compares the branches by CONTENT,
+      # and neither ruleset uses a strict up-to-date policy, so a divergent develop does
+      # not block the next release — it is tidiness, not a gate.
+      - name: Realign
+        env:
+          HAS_TOKEN: ${{ secrets.AUTOMERGE_TOKEN != '' }}
+        run: |
+          set -euo pipefail
+          if [ "${HAS_TOKEN}" != "true" ]; then
+            echo "::notice::AUTOMERGE_TOKEN is not set, so develop cannot be realigned \
+          from here. Harmless: promotion compares by content, so a divergent develop does \
+          not block a release. To realign by hand: git push --force-with-lease origin main:develop"
+            exit 0
+          fi
+          git config user.name "vibey[bot]"
+          git config user.email "adam@matthewsteinberger.com"
+          vibey-gh realign

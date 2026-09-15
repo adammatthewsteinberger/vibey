@@ -1,0 +1,9 @@
+{
+  "name": "geospatial-software",
+  "version": "0.1.0",
+  "description": "Geospatial Software: coordinate systems and the axis-order problem, projections, vector and raster data models, file formats, spatial indexing, spatial databases, tiling, rendering, routing and route-finding, geocoding, GNSS and positioning including real accuracy and the altitude trap, spatial analysis, remote sensing, data sources, and location privacy.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

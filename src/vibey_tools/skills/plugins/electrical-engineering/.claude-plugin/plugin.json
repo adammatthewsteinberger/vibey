@@ -1,0 +1,9 @@
+{
+  "name": "electrical-engineering",
+  "version": "0.2.0",
+  "description": "Electrical Engineering: circuit fundamentals, real component behaviour and parasitics, DC analysis, AC impedance and filters, semiconductors (diodes, BJTs, MOSFETs, thermal), op-amps, digital logic and interfacing, power and regulators, signal integrity and grounding, EMC and EMI, PCB design, test equipment and how not to lie to yourself with a scope, datasheets and part selection, electrical safety, and hardware debugging.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

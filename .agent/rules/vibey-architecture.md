@@ -2,8 +2,9 @@
 
 # vibey architecture
 
-Dependencies point inward. `import-linter` enforces this in CI via three
-contracts: onion-layers, domain-independence, and application-independence.
+Dependencies point inward. `import-linter` enforces this in CI via four
+contracts: onion-layers, domain-independence, application-independence, and
+interfaces-declare-only.
 
 ```
 src/vibey/
@@ -29,11 +30,99 @@ src/vibey/
 When in doubt, push logic inward. `lint-imports` names the broken contract
 when you violate the onion.
 
+## Shape: classes, behind interfaces
+
+Code lives in **class objects**. A module-level function is the method of last
+resort — a package's `__all__` façade, a `__main__` entry point, a bare function
+some library contract requires — and where you use one, write the reason at the
+definition. "It is only a few lines" is not a reason.
+
+**Every class has an interface beside it**, in a mirrored `interfaces/` directory:
+
+```
+src/vibey/services/github_service.py
+src/vibey/services/interfaces/github_service_interface.py
+```
+
+The mapping is mechanical: the directory gains an `interfaces/` child, the module
+gains an `_interface` suffix. Interfaces **declare**; they never consume — an
+interface module imports the standard library and other interfaces, nothing else
+from its own tree. That is the `interfaces-declare-only` contract, and it applies
+to every `interfaces/` package, not just `application/interfaces`.
+
+Why: a class behind an interface is substituted at its seam. The caller takes the
+interface, the test passes a double, and nothing is patched — so the test depends
+on the contract, which is meant to be stable, rather than on the import graph,
+which is not. With a 100% branch floor that is not a style preference: a branch
+reachable only by `monkeypatch.setattr` is a branch whose test breaks for reasons
+unrelated to its subject.
+
+This applies to **new and changed code**. The existing tree (289 module-level
+functions, 288 unfaced classes, measured 2026-09-15) converges module by module,
+and the absorbed subtrees under `src/vibey_runners/` and `src/vibey_tools/`
+converge as they are touched — rewriting them on import would destroy the
+property their import exists to create. `domain/` gets no exemption: a pure
+function becomes a method on a stateless class, and purity is preserved, because
+purity was never about the absence of a class.
+
+See ADR-0016.
+
+## Dogfood the family first
+
+If a capability exists inside this family, use it. Do not reimplement it, and do
+not reach for a third-party equivalent. The bar is not "is ours better" — it is
+"does ours do this at all".
+
+Between `vibey_bootstrap`'s retry and a retry loop, use theirs. Between its
+dead-letter routing and a hand-rolled failure path, use its. Between its
+correlation scope and threading a request id by hand, use its. When the choice is
+between using a family feature and not using it, **always prefer using it**.
+
+The shape is the one this codebase already uses: a Protocol in
+`application/interfaces/`, an adapter in `infrastructure/` that satisfies it with
+the family package, and a line in `bootstrap.py`. Dogfooding is not a new pattern
+here — it is the existing one, applied to ourselves.
+
+A new implementation of something the family already ships needs a written reason
+at the call site, and the reason must be a capability gap. If ours is missing
+something, the fix is to add it to ours.
+
+Measured 2026-09-15: `src/vibey` imports **zero** family packages. See ADR-0017
+for the parity backlog.
+
+## Everything-as-code, and never less of it
+
+If a thing can be declared in the repository and reconciled from it, that is how
+it is done. Branch protection and the repository profile live in `.vibey-gh.toml`
+(`[rulesets]`, `[repository_profile]`) and are reconciled by `vibey-gh`; pipelines
+are rendered from templates; policy is `.importlinter` and the coverage gates. No
+settings page, no one-off `gh api`, no runbook step that says "then set X".
+
+And **everything that can be generic and configurable must be.** A hard-coded
+value that could have been a key, a special case that could have been a rule, a
+path that could have been discovered — each takes a decision away from whoever
+adopts this next, silently. Never change anything to a state that is less generic
+or less configurable. A default is fine; a default is configurability with an
+opinion. A constant is not.
+
+Worked example: `find_root` walked to `.git`, which broke the moment a project
+lived inside a repository belonging to something else. The fix was not an
+explicit root at the two call sites that noticed — it was that a directory
+carrying its own `.vibey-gh.toml` stops the walk. Same work, aimed at the general
+shape. See ADR-0018.
+
 ## The forbidden imports
 
 `domain/` must never import:
 - Any layer: `vibey.application`, `vibey.infrastructure`, `vibey.cli`, `vibey.tui`
 - Third-party: `asyncpg`, `psycopg`, `httpx`, `typer`, `structlog`, `pydantic`, `textual`
+- `vibey_bootstrap` — named rather than categorised: it carries the Azure SDK and
+  OpenTelemetry, so importing it here pulls a third-party graph in transitively
+
+`domain/` **may** import a family package that is itself dependency-free —
+`vibey_gh`, `vibey_skills`, `vibey_runners.common` all declare `dependencies = []`,
+so they add nothing to the graph that stdlib-only did not already allow. This is the
+ADR-0017 caveat to the stdlib-only rule: a first-party package is not third-party.
 - I/O from stdlib: tested by `tests/domain/test_domain_purity.py` (an
   AST-walking test that scans for `open()`, `pathlib`, `subprocess`, `os.environ`,
   `datetime.now()`, `async def`, `await`)

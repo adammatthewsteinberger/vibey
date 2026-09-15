@@ -22,7 +22,7 @@ issue or a PR fixing it.
 ## Environment setup
 
 ```bash
-git clone https://github.com/adammatthewsteinberger/agyloop.git
+git clone https://github.com/the-vibey-project/agyloop.git
 cd agyloop
 python3 -m venv .venv
 source .venv/bin/activate
@@ -160,10 +160,10 @@ Enforced by `import-linter`. See
 
 | I want to... | Go here |
 |---|---|
-| User/operator docs | [https://adammatthewsteinberger.github.io/agyloop/](https://adammatthewsteinberger.github.io/agyloop/) |
-| Ask a question or discuss design | [GitHub Discussions](https://github.com/adammatthewsteinberger/agyloop/discussions) |
-| Report a bug | [Bug report form](https://github.com/adammatthewsteinberger/agyloop/issues/new?template=bug_report.yml) |
-| Propose a feature | [Feature request form](https://github.com/adammatthewsteinberger/agyloop/issues/new?template=feature_request.yml) |
+| User/operator docs | [https://the-vibey-project.github.io/agyloop/](https://the-vibey-project.github.io/agyloop/) |
+| Ask a question or discuss design | [GitHub Discussions](https://github.com/the-vibey-project/agyloop/discussions) |
+| Report a bug | [Bug report form](https://github.com/the-vibey-project/agyloop/issues/new?template=bug_report.yml) |
+| Propose a feature | [Feature request form](https://github.com/the-vibey-project/agyloop/issues/new?template=feature_request.yml) |
 | Report a vulnerability | [SECURITY.md](SECURITY.md) — privately |
 | Same map, shorter | [SUPPORT.md](SUPPORT.md) |
 

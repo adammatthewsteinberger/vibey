@@ -39,11 +39,11 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://adammatthewsteinberger.github.io/agyloop/"
-Documentation = "https://adammatthewsteinberger.github.io/agyloop/"
-Repository = "https://github.com/adammatthewsteinberger/agyloop"
-Issues = "https://github.com/adammatthewsteinberger/agyloop/issues"
-Changelog = "https://github.com/adammatthewsteinberger/agyloop/blob/main/CHANGELOG.md"
+Homepage = "https://the-vibey-project.github.io/agyloop/"
+Documentation = "https://the-vibey-project.github.io/agyloop/"
+Repository = "https://github.com/the-vibey-project/agyloop"
+Issues = "https://github.com/the-vibey-project/agyloop/issues"
+Changelog = "https://github.com/the-vibey-project/agyloop/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [

@@ -1,0 +1,9 @@
+{
+  "name": "reporting-and-dashboards",
+  "version": "0.1.0",
+  "description": "Reporting and Dashboards: the analytics architecture, dimensional modelling, the aggregation traps (fan-out, the chasm trap, additivity, and why distinct counts do not decompose), metric definition pitfalls, the semantic layer, time handling, query performance, caching and freshness, dashboard design, chart selection, alerting, access control, embedded analytics, and testing analytics.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

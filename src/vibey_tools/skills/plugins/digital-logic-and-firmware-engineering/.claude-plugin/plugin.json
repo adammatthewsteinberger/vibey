@@ -1,0 +1,9 @@
+{
+  "name": "digital-logic-and-firmware-engineering",
+  "version": "0.1.0",
+  "description": "CMOS, Logic Gates and Firmware Engineering: the two layers, diodes, transistors as switches, MOSFET switching behaviour, static CMOS gates, sizing and drive strength, other logic families, power in CMOS, standard cells, Boolean algebra, minimization, combinational building blocks, arithmetic circuits, latches and flip-flops, timing and metastability, state machines, clock domain crossing, HDL and synthesis, test and DFT, the firmware landscape, the boot sequence, root of trust and verified boot, ACPI and platform interfaces, embedded firmware practice, and firmware security.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

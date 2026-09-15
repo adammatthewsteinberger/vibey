@@ -1,0 +1,20 @@
+{
+  "extraKnownMarketplaces": {
+    "vibey-gh": {
+      "source": {
+        "source": "github",
+        "repo": "adammatthewsteinberger/vibey-gh"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "vibey-gh-development@vibey-gh": true,
+    "vibey-gh-documentation@vibey-gh": true,
+    "vibey-gh-release-security@vibey-gh": true,
+    "vibey-gh-pr-automation@vibey-gh": true
+  },
+  "permissions": {
+    "allow": ["Read", "Glob", "Grep", "Edit", "Write"],
+    "deny": ["Bash(git push:*)", "Bash(git branch -D:*)", "Bash(git push --force:*)"]
+  }
+}

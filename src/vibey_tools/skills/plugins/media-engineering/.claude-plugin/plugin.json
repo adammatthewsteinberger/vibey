@@ -1,0 +1,9 @@
+{
+  "name": "media-engineering",
+  "version": "0.1.0",
+  "description": "Media Engineering: music, audio, video, TV, film and podcast engineering for software engineers — the fundamentals of digital media, containers and codecs as engineering choices, audio production and plugin formats, video production, colour and timecode, loudness standards and why your mix is quiet on streaming, transcoding pipelines and ABR packaging, streaming delivery (HLS, DASH, CMAF, WebRTC and Media over QUIC), DRM, captions and accessibility, podcast infrastructure and dynamic ad insertion, metadata and rights identifiers, and the AI generation layer with its live licensing fight.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "flight-software",
+  "version": "0.1.0",
+  "description": "Flight Software: what makes spacecraft software different, flight software architecture and the frameworks worth knowing (cFS, F Prime), languages and coding standards including Rust's actual status, flight processors, radiation effects expressed in software terms, real-time discipline and RTOS choice, FDIR, time and clocks, command and telemetry, data handling and in-flight update, GNC software, verification and validation, the ground segment, onboard autonomy and AI, and the failure case studies that produced the rules.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "wireless-technologies-and-rf-engineering",
+  "version": "0.1.0",
+  "description": "Wireless Technologies — RF, Standards, Building and Programming: why wireless is hard, propagation and the link budget, modulation and multiple access, antennas, spectrum and regulation, Wi-Fi and Wi-Fi in practice, Bluetooth and BLE programming, NFC and RFID, Thread, Zigbee and Matter, LoRa and LPWAN, cellular and cellular IoT, UWB, choosing a radio, antenna integration, certification, low-power design, provisioning and onboarding, RF debugging, wireless security, coexistence, and positioning and sensing.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

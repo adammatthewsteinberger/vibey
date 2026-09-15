@@ -1,0 +1,9 @@
+{
+  "name": "engineering-process",
+  "version": "0.1.0",
+  "description": "Engineering Process: requirements gathering and elicitation, SDLC models and practices, process engineering and project management frameworks, and research methodology with Turabian citation standards.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

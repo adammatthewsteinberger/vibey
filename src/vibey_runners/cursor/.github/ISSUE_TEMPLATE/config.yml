@@ -1,11 +1,11 @@
 blank_issues_enabled: false
 contact_links:
   - name: Documentation
-    url: https://adammatthewsteinberger.github.io/cursorloop/
+    url: https://the-vibey-project.github.io/cursorloop/
     about: Install, quickstart, guides, architecture, and contributor docs.
   - name: Question / discussion
-    url: https://github.com/adammatthewsteinberger/cursorloop/discussions
+    url: https://github.com/the-vibey-project/cursorloop/discussions
     about: For general questions or design discussion rather than a specific bug or feature request.
   - name: Security vulnerability
-    url: https://github.com/adammatthewsteinberger/cursorloop/security/advisories/new
+    url: https://github.com/the-vibey-project/cursorloop/security/advisories/new
     about: Please report security vulnerabilities privately — see SECURITY.md. Do not open a public issue.

@@ -1,0 +1,9 @@
+{
+  "name": "assembly-programming",
+  "version": "0.1.0",
+  "description": "Assembly Programming: instruction-level reference for x86-64, AArch64, and RISC-V — the machine model, calling conventions and ABIs, assemblers and toolchains, reading disassembly, performance engineering, SIMD/vector (SSE/AVX/AVX-512, NEON/SVE2/SME, RVV), systems and constant-time cryptographic assembly, inline assembly and intrinsics, and debugging/verification.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

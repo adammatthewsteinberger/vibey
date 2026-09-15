@@ -1,0 +1,9 @@
+{
+  "name": "economics-accounting-tax",
+  "version": "0.1.0",
+  "description": "Economics, Accounting and Tax: how economics knows what it claims, microeconomics, firms and market structure, market failure, macroeconomics, money and monetary policy, fiscal policy and debt, trade and growth, behavioural findings, double-entry bookkeeping, the three statements, accrual accounting and revenue recognition, the judgement-heavy areas, ratio analysis, GAAP versus IFRS, audit and controls, deliberately general tax fundamentals, book-tax differences and deferred tax, and entity choice.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

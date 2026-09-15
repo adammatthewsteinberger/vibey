@@ -1,0 +1,83 @@
+# vibey GitHub automation — see the `gh` subpackage of this library, which this
+# repository both provides and consumes. Dogfooding is not decoration: the tool is only
+# trustworthy if the project shipping it is held to the same rule.
+
+[fingerprint]
+sources = [
+  "vibey_bootstrap/gh/*.py",   # now just the compatibility shim
+  ".githooks/*.sh",
+  ".github/workflows/*.yml",
+]
+
+[version]
+# BOTH sites, because they must never disagree: pyproject.toml is what the wheel
+# carries and vibey_bootstrap.__version__ is what an installed app reports.
+files         = ["pyproject.toml", "vibey_bootstrap/__init__.py"]
+content_paths = ["vibey_bootstrap/"]
+# pyproject.toml counts too. It declares the DEPENDENCIES, and changing them changes what
+# an installed user gets — bumping the vibey-gh floor from >=1.0.0 to >=1.2.0 reached
+# every consumer, and the derivation called it "docs, workflows, tooling" and proposed
+# releasing nothing. A dependency change is a patch.
+code_paths    = ["vibey_bootstrap/", "pyproject.toml"]
+
+[branches]
+integration = "develop"
+release     = "main"
+
+[merge_train]
+owner           = "adammatthewsteinberger"
+trusted_authors = ["adammatthewsteinberger", "claude[bot]", "github-actions[bot]", "vibey[bot]"]
+
+[install]
+# Pin every rendered template to the version that rendered it -- unpinned, a runner adopts
+# whatever is newest, the failure mode that took vibey-skills' CI red for two days.
+pin_version = true
+workflows = ["merge-train.yml", "promote-to-main.yml", "provenance.yml", "pr-automation.yml", "automation-bootstrap.yml", "release-surfaces.yml"]
+
+[workflow_names]
+# `release-surfaces.yml` chains off the publishing workflow by `workflow_run`, which
+# matches a workflow's DISPLAY NAME. vibey-gh's default is "Release"; this repository's
+# publishing workflow is `ci-cd.yml`, named "CI/CD Pipeline". Nothing here is named
+# "Release", so the trigger matched nothing and the channel site never deployed — with
+# no failed run to notice, because a trigger that never fires reports nothing at all.
+# The Pages root has been serving a fossil while /develop/ and /main/ both 404.
+release = "CI/CD Pipeline"
+ci = "CI/CD Pipeline"
+
+[pr_automation]
+# This repository's real PR-triggered workflows. The default set names "Docs" -- and this
+# repo HAS a docs.yml that never triggers on pull requests, which is the exact trap that
+# silently blocked every PR on vibey-skills. Named explicitly so the gate can always post.
+scan_workflows = ["CI/CD Pipeline", "Provenance"]
+
+[pr_automation.fallback]
+# Reviews with a local model when the paid path returns no verdict at all. Same shape as
+# the rest of the family; shares the household Ollama.
+enabled = true
+runner_label = "vibey-local-bootstrap"
+trusted_only = true
+
+[issue_automation]
+fallback_enabled = true
+
+[documentation]
+generate_book = true
+generate_paper = true
+
+enabled = false
+# GA4 measurement id. This repository publishes docs via its own mkdocs docs.yml today,
+# so the id is ALSO wired there; recorded here so an eventual release-surfaces adoption
+# picks it up with no further change.
+google_analytics_id = "G-R2BE84LHZS"
+# Every page of this site is GENERATED -- gen_pages.py via gen-files, the API reference via
+# mkdocstrings + literate-nav + section-index -- so the release build must install the
+# machinery, and the package itself so mkdocstrings can import it.
+site_requirements = [
+  "mkdocs-gen-files",
+  "mkdocs-literate-nav",
+  "mkdocstrings[python]",
+  # black: mkdocstrings uses it to format signatures; without it they render unwrapped.
+  "black",
+  "pymdown-extensions",
+  ".",
+]

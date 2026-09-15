@@ -1,0 +1,13 @@
+# CMOS, Logic Gates and Firmware Engineering Plugin
+
+Digital hardware from the transistor up to the firmware that boots it, as two layers of one stack. Diodes, transistors as switches, MOSFET switching behaviour, static CMOS gates, sizing, logic families and where power actually goes; standard cells, Boolean algebra, minimization, combinational blocks and arithmetic circuits; latches, flip-flops, timing and metastability, state machines, clock domain crossing, HDL and synthesis, test and DFT; then the firmware landscape, the boot sequence, root of trust and verified boot, ACPI, embedded firmware practice and firmware security.
+
+One reference, split into 5 skills along its section groups so a task loads only the part it needs. Section numbers (§N) are shared across the set and cross-references into a sibling skill are written as §N → `skill`. Reference, not tutorial: sections are independent, every claim is tagged by how durable it is (stable fundamentals vs. versioned specifics vs. genuinely contested questions), and a currency snapshot (checked August 2026) flags what goes stale first.
+
+## Skills
+
+- **logic-devices-transistors-cmos-gates-and-power** — The Two Layers, Diodes, Transistors as Switches, MOSFET Switching, Static CMOS Gates, Sizing, Logic Families, and Power in CMOS (§0–§8): Routing; The Two Layers; ⚠️ Diodes; Transistors as Switches; MOSFET Switching Behaviour; ⚠️ Static CMOS Gates; Sizing and Drive Strength; Other Logic Families; ⚠️ Power in CMOS.
+- **logic-standard-cells-boolean-minimization-and-arithmetic** — Standard Cells, Boolean Algebra, Minimization, Combinational Building Blocks, and Arithmetic Circuits (§9–§13): Standard Cells; ⚠️ Boolean Algebra; Minimization; Combinational Building Blocks; ⚠️ Arithmetic Circuits.
+- **logic-sequential-timing-metastability-cdc-and-hdl** — Latches and Flip-Flops, Timing and Metastability, State Machines, Clock Domain Crossing, HDL and Synthesis, and Test and DFT (§14–§19): ⚠️ Latches and Flip-Flops; ⚠️ Timing and Metastability; State Machines; ⚠️ Clock Domain Crossing; HDL and Synthesis; Test and DFT.
+- **logic-firmware-boot-root-of-trust-embedded-practice-and-security** — The Firmware Landscape, the Boot Sequence, Root of Trust and Verified Boot, ACPI and Platform Interfaces, Embedded Firmware Practice, and Firmware Security (§20–§25): The Firmware Landscape; ⚠️ The Boot Sequence; ⚠️ Root of Trust and Verified Boot; ACPI and Platform Interfaces; Embedded Firmware Practice; ⚠️ Firmware Security.
+- **logic-reference** — What's Live, Misconceptions, Numbers, and Sources (§26–§31): What's Live; Misconceptions; Numbers; Sources; Quick Reference; Method.

@@ -65,7 +65,19 @@ packages = ["src/vibey"]
 allow-direct-references = true
 
 [tool.uv.workspace]
-members = ["src/vibey_runners/*"]
+# Two grouping directories, two globs. Both are globs so a new member registers itself,
+# which is why `common` needed no wiring when it was added after the runner import.
+members = ["src/vibey_runners/*", "src/vibey_tools/*"]
+
+[tool.uv.sources]
+# This repository is now the source of truth for both, so the workspace resolves them from
+# the tree rather than from PyPI. This is NOT a direct reference: `tool.uv.sources` is uv
+# metadata, stripped at build time, and the requirement strings in the published METADATA
+# stay exactly as `[project.optional-dependencies]` declares them below. That distinction
+# is the whole difference from the git pin that once broke publishing outright with PyPI's
+# "400 Can't have direct dependency".
+vibey-gh = { workspace = true }
+vibey-skills = { workspace = true }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -86,10 +98,18 @@ include = ["src/**/*.py", "tests/**/*.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
-# E501 only, and only because of the provenance header: an exact 230-character line
+# E501 only, and only because of the provenance header: an exact 234-character line
 # compared byte-for-byte, unwrappable without failing the check that mandates it. Width on
 # real code is still enforced by the formatter.
 ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# E402 (import not at top of file) for exactly one file, for exactly one statement.
+# `vibey/cli/main.py` arms the SIGTERM latch BEFORE importing typer and the rest of the
+# tree, because Linux discards a signal sent to PID 1 while its disposition is still
+# SIG_DFL -- every import below that line is time in which a Kubernetes scale-in would be
+# thrown away. The placement IS the fix; moving those imports up would undo it.
+"src/vibey/cli/main.py" = ["E402"]
 
 [tool.mypy]
 python_version = "3.12"

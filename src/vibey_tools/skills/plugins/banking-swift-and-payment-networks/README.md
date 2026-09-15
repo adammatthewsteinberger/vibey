@@ -1,0 +1,14 @@
+# Banking, SWIFT and Payment Networks Plugin
+
+How money actually moves, with the pieces people routinely conflate kept carefully apart. What a payment is, what a bank is and how deposits are created, central bank reserves and settlement, the payment system taxonomy, clearing, netting and settlement risk, and correspondent banking; SWIFT as a messaging network rather than a payment rail, the MT to ISO 20022 migration, gpi, and the governance and sanctions layer; Ripple, XRP and the XRP Ledger with the distinctions kept straight and an honest assessment; then instant payments, stablecoins, CBDCs and tokenized deposits, plus compliance, security and the economics of remittances.
+
+One reference, split into 6 skills along its section groups so a task loads only the part it needs. Section numbers (§N) are shared across the set and cross-references into a sibling skill are written as §N → `skill`. Reference, not tutorial: sections are independent, every claim is tagged by how durable it is (stable fundamentals vs. versioned specifics vs. genuinely contested questions), and a currency snapshot (checked August 2026) flags what goes stale first.
+
+## Skills
+
+- **banking-payments-banks-reserves-and-settlement** — What a Payment Actually Is, What a Bank Is, Central Banks and Reserves, the Payment System Taxonomy, and Clearing, Netting and Settlement Risk (§0–§5): Routing; What a Payment Actually Is; ⚠️ What a Bank Is; Central Banks and Reserves; The Payment System Taxonomy; ⚠️ Clearing, Netting and Settlement Risk.
+- **banking-correspondent-swift-iso20022-and-governance** — Correspondent Banking, What SWIFT Actually Is, Message Formats from MT to ISO 20022, gpi and Tracking, Governance and Sanctions, and Alternatives (§6–§11): ⚠️ Correspondent Banking; ⚠️ What SWIFT Actually Is; ⚠️ Message Formats: MT to ISO 20022; gpi and Tracking; ⚠️ Governance, Sanctions and Geopolitics; Alternatives and Parallel Systems.
+- **banking-ripple-xrp-ledger-and-honest-assessment** — Ripple Versus XRP Versus the XRP Ledger, XRP Ledger Mechanics, Ripple's Products, Legal Status, and an Honest Assessment (§12–§16): ⚠️ Ripple versus XRP versus the XRP Ledger; XRP Ledger Mechanics; Ripple's Products; Legal Status; ⚠️ An Honest Assessment.
+- **banking-instant-payments-stablecoins-cbdcs-and-tokenization** — Instant Payment Systems, Stablecoins, CBDCs, and Tokenized Deposits and Wholesale Settlement (§17–§20): Instant Payment Systems; ⚠️ Stablecoins; CBDCs; Tokenized Deposits and Wholesale Settlement.
+- **banking-compliance-security-and-remittance-costs** — Compliance, Security, and Costs and Remittances (§21–§23): ⚠️ Compliance; ⚠️ Security; ⚠️ Costs and Remittances.
+- **banking-reference** — What's Live, Misconceptions, Numbers and Dates, and Sources (§24–§29): What's Live; Misconceptions; Numbers and Dates; Sources; Quick Reference; Method.

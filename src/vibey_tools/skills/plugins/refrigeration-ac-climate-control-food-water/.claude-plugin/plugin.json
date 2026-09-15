@@ -1,0 +1,9 @@
+{
+  "name": "refrigeration-ac-climate-control-food-water",
+  "version": "0.1.0",
+  "description": "Refrigeration, AC, Climate Control and Food/Water Storage: the vapour-compression cycle in practice, components, refrigerant properties and safety classification, charge, evacuation and leaks, diagnosis by superheat and subcooling, alternative cooling approaches, load calculation, air distribution, humidity control, ventilation and indoor air quality, heat pumps, controls, the building envelope, why food spoils, the cold chain as a system, temperature limits, chilling and freezing, controlled atmosphere, transport refrigeration, monitoring and validation, the pharmaceutical cold chain, preservation without refrigeration, and water storage and treatment.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

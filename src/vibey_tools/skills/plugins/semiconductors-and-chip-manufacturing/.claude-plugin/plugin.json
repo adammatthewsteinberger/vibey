@@ -1,0 +1,9 @@
+{
+  "name": "semiconductors-and-chip-manufacturing",
+  "version": "0.1.0",
+  "description": "Semiconductors and Chip Manufacturing: the abstraction stack, carriers, doping and silicon, junctions and contacts, the MOSFET, scaling and what ended, transistor architectures, interconnect, memory, from sand to wafer, the cleanroom, lithography, deposition, etch, implant and anneal, CMP, process integration, yield, metrology and inspection, test, advanced packaging, PCB fabrication, assembly and soldering, reliability, design flow, economics, and supply chain concentration.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

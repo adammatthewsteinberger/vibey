@@ -1,0 +1,9 @@
+{
+  "name": "quantum-cryptography-and-quantum-internet",
+  "version": "0.1.0",
+  "description": "Quantum Cryptography, Quantum Encryption and the Quantum Internet: why QKD and post-quantum cryptography are two completely different things, qubits and measurement, the no-cloning theorem, entanglement and Bell inequalities, quantum channels and loss, BB84, entanglement-based and continuous-variable QKD, key distillation, what unconditional security actually claims, attacks on real QKD systems, device-independent approaches, trusted nodes, quantum repeaters, quantum memory, entanglement distribution, satellite QKD, the quantum internet roadmap, quantum random number generation, the quantum computing threat, and how to choose.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

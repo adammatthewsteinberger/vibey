@@ -1,0 +1,9 @@
+{
+  "name": "weather-science",
+  "version": "0.2.0",
+  "description": "Weather Science: the structure of the atmosphere, radiation and the energy budget, thermodynamics and stability, moisture and clouds, the dynamical balances (geostrophic, thermal wind, vorticity), the general circulation, synoptic meteorology and baroclinic instability, thunderstorms and severe weather, tropical cyclones, the boundary layer, observation, numerical weather prediction including data assimilation and ensembles, forecast verification, predictability and chaos, machine-learning weather prediction, and the weather-versus-climate distinction.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

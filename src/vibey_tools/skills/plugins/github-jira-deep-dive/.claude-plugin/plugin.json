@@ -1,0 +1,9 @@
+{
+  "name": "github-jira-deep-dive",
+  "version": "0.2.0",
+  "description": "GitHub and Jira — A Deep Dive: why the tool is not the process, Git's actual data model, branching, merging and rebasing, recovery, GitHub repos, organizations and permissions, pull requests and review, rulesets and branch protection, Actions, the security products, issues and Projects, the API, Apps and webhooks, enterprise identity, Jira's configuration model, team- versus company-managed projects, workflows and statuses, JQL, boards, sprints and estimation, reports, automation, permissions, Jira Service Management, configuration hygiene, integration patterns, metrics, and anti-patterns.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

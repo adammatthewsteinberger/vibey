@@ -1,0 +1,9 @@
+{
+  "name": "os-development-kernel-shell",
+  "version": "0.1.0",
+  "description": "OS Development (Linux Kernel & Shell): kernel architecture and programming in C and Rust, modules and drivers, kernel concurrency, syscalls and the userspace ABI, eBPF and sched_ext, boot and init, systemd/cgroups/containers, the kernel development process, debugging and tracing (ftrace, perf, KASAN, crash dumps), security and hardening, plus the shell layer — POSIX sh/bash/zsh/fish/nushell semantics and their traps, choosing a shell, defensive scripting, and the coreutils/systemd userland.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

@@ -1,0 +1,226 @@
+# vibey-gh configuring itself. Dogfooding is not decoration: the tool is only
+# trustworthy if the project shipping it is held to the same rule.
+
+[fingerprint]
+sources = [
+  "vibey_gh/*.py",
+  ".github/workflows/*.yml",
+]
+
+[version]
+files         = ["pyproject.toml", "vibey_gh/__init__.py"]
+content_paths = ["vibey_gh/"]
+code_paths    = ["vibey_gh/"]
+
+[branches]
+integration = "develop"
+release     = "main"
+
+[merge_train]
+owner           = "adammatthewsteinberger"
+trusted_authors = ["adammatthewsteinberger", "claude[bot]", "github-actions[bot]", "vibey[bot]"]
+
+[pr_automation]
+enabled = true
+scan_workflows = ["CI", "Provenance", "CodeQL", "Docs", "Conventional Commits", "API drift (Cloud Agents OpenAPI)"]
+ignored_checks = ["PR automation / gate", "gate", "Merge train / merge"]
+max_repair_attempts = 3
+model = "claude-sonnet-5"
+review_untrusted_authors = true
+repair_untrusted_authors = true
+replace_fork_prs = true
+retain_schedule_backstop = true
+
+[pr_automation.observability]
+sanitized_progress = true
+archive_execution_file = true
+allow_private_full_output = false
+
+[pr_automation.fallback]
+# This project ships the fallback; not using it here meant its own pull requests still
+# stopped dead when the API key ran out of credit — the exact failure the feature exists to
+# absorb, and the reason several recent merges here needed an administrator override while
+# the first adopter's went through untouched.
+#
+# A runner is per-repository on a user account (organisation-wide runners are not available
+# outside an organisation), so this needs its own registration rather than sharing the
+# adopter's. The supervisor reads `VIBEY_REPO_URL`, so one script serves both; the distinct
+# label is what keeps the two from answering each other's jobs.
+#
+# `trusted_only` keeps fork pull requests off the runner, which is what makes a self-hosted
+# runner defensible on a public repository at all. When the runner is not up the job cannot
+# be scheduled and behaviour degrades to what it was before — a failed gate a human
+# resolves, which is the correct direction to fail.
+enabled      = true
+runner_label = "vibey-local-gh"
+model        = "qwen2.5-coder:14b"
+trusted_only = true
+
+# 600 timed out in production on this repository's own PR #140: a ~700-line diff, the 14B
+# model cold-loading, and seven runner containers sharing the machine. The fallback failed
+# closed exactly as designed -- but a fallback that cannot finish is no fallback, and the
+# cost of a longer wait is only paid on the degraded path.
+timeout_seconds = 1800
+
+[conversation]
+enabled = true
+trigger = "@vibey-gh"
+model = "claude-sonnet-5"
+max_interactions = 10
+respond_to_untrusted = false
+allow_changes = true
+ignore_actors = ["vibey[bot]", "github-actions[bot]", "claude[bot]"]
+
+[branch_sync]
+enabled = true
+update_contributor_branches = true
+max_self_heals = 2
+
+[realign]
+reconcile_branches = true
+automation_prefixes = ["vibey-gh/"]
+close_duplicates = true
+delete_duplicate_branches = true
+notify_contributor_branches = true
+
+[issue_automation]
+# The issue path's local fallback, sharing [pr_automation.fallback]'s runner and model.
+# Observed need: with credits exhausted, issue solving failed silently red — the artifact
+# read "Credit balance is too low" and the issue got nothing at all.
+fallback_enabled = true
+enabled = true
+model = "claude-sonnet-5"
+max_attempts = 2
+branch_prefix = "vibey-gh/issue"
+solve_untrusted_authors = false
+required_label = "vibey-gh:solve"
+ignored_labels = ["question", "discussion", "duplicate", "wontfix", "vibey-gh:solve-blocked"]
+open_pull_request = true
+draft_pull_request = true
+retain_schedule_backstop = true
+
+[github_release]
+enabled = true
+tag_prefix = "v"
+generate_notes = true
+
+[repository_profile]
+enabled = true
+description = "Event-driven GitHub automation for reviews, repairs, releases, provenance, and beautiful dual-channel documentation."
+topics = ["automation", "continuous-delivery", "documentation", "github-actions", "release-automation"]
+has_issues = true
+has_projects = true
+has_wiki = false
+has_discussions = true
+allow_squash_merge = true
+allow_merge_commit = false
+allow_rebase_merge = true
+allow_auto_merge = true
+delete_branch_on_merge = false
+web_commit_signoff_required = true
+vulnerability_alerts = true
+automated_security_fixes = true
+
+[documentation]
+# The doctrine's end results, published on the docs site itself: /book.epub (and the
+# KDP print HTML) from the built site's nav, /paper.pdf compiled from docs/paper.md.
+generate_book = true
+generate_paper = true
+
+enabled = true
+ai_maintenance = true
+model = "claude-sonnet-5"
+production_label = "Production"
+preview_label = "Preview"
+production_indexing = true
+preview_indexing = false
+generate_robots = true
+generate_sitemap_index = true
+generate_llms_txt = true
+generate_llms_full_txt = true
+generate_json_ld = true
+author_name = "Adam Matthew Steinberger"
+author_url = "https://vibewithadam.matthewsteinberger.com"
+# This repository's documentation IS about vibey-gh, so it declares that contract for
+# itself. An adopter inherits none of it: they document their own product.
+require_provenance = true
+readme_sections = [
+  "## Why vibey-gh", "## Requirements", "## Quick start", "## Architecture",
+  "## Security model", "## Commands", "## Configuration", "## Workflows",
+  "## Troubleshooting", "## Contributing", "## Licence",
+]
+automation_doc_sections = [
+  "## Delivery model", "## Workflow inventory", "## Exact-head PR automation",
+  "## AI trust boundary", "## Credentials and settings", "## Permanent-branch safety",
+  "## Failure recovery", "## Changing workflows",
+]
+automation_doc_min_words = 500
+mermaid_terms = [
+  "flowchart", "CLI", "SDK", "API", "MCP", "Webhook", "PR Automation", "develop",
+  "main", "TestPyPI", "PyPI", "GitHub Pages", "Provenance", "Realign", "Security Boundary",
+]
+mermaid_min_edges = 20
+# GA4 measurement id for the published docs site. Rendered into release-surfaces.yml as
+# GA_ID. The id is public by nature -- it ships in the page source of every site using it.
+google_analytics_id = "G-DV1RM8BD78"
+# SEO / LEO. The favicon is one emoji rendered as a zero-asset SVG; og_image left empty
+# deliberately, which selects GitHub's generated OpenGraph card for the repository.
+favicon = "⚙️"
+author = "Adam Matthew Steinberger"
+keywords = ["github automation", "release automation", "provenance", "merge train", "pull request gate", "ci"]
+
+# Reconciled branch rulesets. Two things here are load-bearing and were learned the hard
+# way, so they are spelled out rather than left to the defaults.
+#
+# `required_checks` names *check runs*, not workflows. `[pr_automation].scan_workflows`
+# above names workflows, and the defaults reuse that list here — which locked every merge
+# out of the integration branch. A context like "CI", "Docs", or "API drift (Cloud Agents
+# OpenAPI)" can never report, because the checks those workflows produce are named for
+# their jobs: "Lint", "Build", "Documentation contract". The ruleset sat there requiring
+# three checks that structurally could not arrive, and nothing could merge.
+#
+# `bypass_actors` has to be declared here rather than added in the UI. Reconciliation
+# writes the whole ruleset every run, so a bypass actor added by hand is erased the next
+# time it fires — which is not hypothetical, it happened between one merge and the next.
+# "RepositoryRole:5" is the repository admin role, and it is what makes
+# `gh pr merge --admin` a real escape hatch when a required check cannot report.
+[rulesets]
+enabled = true
+
+[rulesets.integration]
+required_checks = [
+  "Lint",
+  "Build",
+  "Test (3.11)",
+  "Test (3.12)",
+  "Test (3.13)",
+  "Provenance",
+  "CodeQL",
+  "Documentation contract",
+  "MCP, API, CLI, SDK, and webhook parity",
+  "PR automation / gate",
+]
+bypass_actors = ["RepositoryRole:5"]
+
+[rulesets.release]
+required_checks = [
+  "Lint",
+  "Build",
+  "Test (3.11)",
+  "Test (3.12)",
+  "Test (3.13)",
+  "Provenance",
+  "CodeQL",
+  "Documentation contract",
+]
+bypass_actors = ["RepositoryRole:5"]
+
+
+[yank]
+# Report which releases the just-published one supersedes. It cannot yank them: PyPI has no
+# API for that (405 on the upload endpoint, CSRF on /manage, pypa/packaging-problems#633
+# still open), so the list is printed with a link and a human clicks. Off until that report
+# is actually wanted on every release.
+pypi = false
+testpypi = false
+keep = 1

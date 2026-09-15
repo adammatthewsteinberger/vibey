@@ -1,0 +1,14 @@
+# Communication Technologies Plugin
+
+How people actually communicate over networks, organised around the federated-versus-proprietary divide that explains most of the landscape. Email from SMTP through SPF, DKIM, DMARC and deliverability; telephony from circuit switching through SS7, VoIP and VoLTE, with caller ID spoofing and STIR/SHAKEN; SMS, MMS and RCS; the Signal protocol and the messaging app landscape; WebRTC, video conferencing architecture and team platforms; then what end-to-end encryption does and does not protect, metadata, interoperability regulation, the encryption policy fight, and emergency calling.
+
+One reference, split into 6 skills along its section groups so a task loads only the part it needs. Section numbers (§N) are shared across the set and cross-references into a sibling skill are written as §N → `skill`. Reference, not tutorial: sections are independent, every claim is tagged by how durable it is (stable fundamentals vs. versioned specifics vs. genuinely contested questions), and a currency snapshot (checked August 2026) flags what goes stale first.
+
+## Skills
+
+- **comms-email-smtp-authentication-and-deliverability** — The Federated / Proprietary Divide, SMTP and Email Architecture, Retrieval Protocols, Message Format, SPF, DKIM and DMARC, Deliverability, and Email Encryption (§0–§7): Routing; The Federated / Proprietary Divide; SMTP and Email Architecture; Retrieval Protocols; Message Format; ⚠️ SPF, DKIM, DMARC; ⚠️ Deliverability; Email Encryption.
+- **comms-telephony-pstn-ss7-voip-and-caller-id** — The PSTN, SS7 and Its Security Problem, VoIP and SIP, VoLTE and VoNR, and Caller ID, Spoofing and Robocalls (§8–§12): The PSTN; ⚠️ SS7 and Its Security Problem; VoIP and SIP; VoLTE and VoNR; ⚠️ Caller ID, Spoofing and Robocalls.
+- **comms-sms-rcs-signal-protocol-and-messaging-apps** — SMS, MMS, RCS, the Signal Protocol, the Messaging Landscape, and iMessage and FaceTime (§13–§18): ⚠️ SMS; MMS; ⚠️ RCS; ⚠️ The Signal Protocol; The Messaging Landscape; iMessage and FaceTime.
+- **comms-webrtc-video-conferencing-team-platforms-and-push** — WebRTC, Video Conferencing Architecture, Team Platforms, and Push and Notifications (§19–§22): ⚠️ WebRTC; Video Conferencing Architecture; Team Platforms; Push and Notifications.
+- **comms-encryption-metadata-interoperability-and-policy** — What End-to-End Encryption Actually Protects, Metadata, Interoperability and Regulation, the Encryption Policy Debate, and Emergency Calling (§23–§27): ⚠️ What End-to-End Encryption Actually Protects; ⚠️ Metadata; Interoperability and Regulation; ⚠️ The Encryption Policy Debate; Emergency Calling and Reliability.
+- **comms-reference** — What's Live, Misconceptions, Numbers and Dates, and Sources (§28–§33): What's Live; Misconceptions; Numbers and Dates; Sources; Quick Reference; Method.

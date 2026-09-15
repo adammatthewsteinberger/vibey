@@ -1,0 +1,9 @@
+{
+  "name": "ui-ux-design-principles",
+  "version": "0.1.0",
+  "description": "UI/UX Design Principles: the perceptual and cognitive science underneath interface decisions, usability heuristics and mental models, information architecture and navigation, input and interaction per form factor, layout and responsive/adaptive design, visual design (typography, color, space, motion, iconography), design systems and tokens, platform conventions (Apple HIG, Material 3, GNOME/KDE HIG, Fluent), accessibility law and practice (WCAG 2.2/3.0, EAA, ADA Title II, APCA), UX writing, forms/onboarding/conversion, research and evaluation, ethics and dark-pattern regulation, and AI-era interface patterns.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

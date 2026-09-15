@@ -1,0 +1,9 @@
+{
+  "name": "vibey-bootstrap",
+  "version": "0.3.0",
+  "description": "vibey-bootstrap (formerly azure-bootstrap): usage reference for the vibey-bootstrap Python library (v4.0.0) — the 4-phase logging↔config bootstrap, v2 stdlib primitives, ten logging transports, opt-in Tier 2/Tier 3 subpackages, v3 DB/outbox/email/HTTP/AKS/governance/scaffold modules, end-to-end recipes, and TypeScript/Next.js HTTP integration plus pattern ports.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

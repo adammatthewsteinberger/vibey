@@ -1,0 +1,94 @@
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+name: Merge train
+
+# A successful PR-automation gate is the primary trigger. Weekly and manual runs remain
+# recovery backstops and evaluate every currently ready PR.
+on:
+  workflow_run:
+    workflows: ["PR automation"]
+    types: [completed]
+  schedule:
+    - cron: "17 7 * * 1"
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: "Evaluate only this PR number"
+        required: false
+        type: string
+      dry_run:
+        description: "Report without merging"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  actions: read
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: merge-train-${{ inputs.pr || github.event.workflow_run.head_sha || 'recovery' }}
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    name: merge
+    # Deliberately NOT gated on the triggering run's conclusion. "PR automation" concludes
+    # `failure` whenever its exact-head review job fails -- which is exactly the case the
+    # local review fallback exists to cover: the fallback job then succeeds, publishes a
+    # green `PR automation / gate`, and the run as a whole still ends `failure` because one
+    # job in it did. Filtering on that conclusion skipped the merge train on every such PR
+    # and silently defeated the fallback at the last step.
+    #
+    # Nothing is relaxed by dropping it. The conclusion was never the authority: the
+    # decision is made below by `vibey-gh merge-train`, which re-reads each PR and requires
+    # a completed, successful `PR automation / gate` on the head before merging anything.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+      - name: Install the tooling
+        run: |
+          set -euo pipefail
+          # Where this repository keeps its own copy of the tooling, from
+          # `[install] self_source` in .vibey-gh.toml -- a DECLARED path, never a search.
+          # Searching the tree for a pyproject declaring `name = "vibey-gh"` would read a
+          # pull request's own files: a branch that adds one anywhere gets it installed
+          # here, with this job's permissions, and hands the provenance gate a tool of the
+          # contributor's choosing. The path is verified below before anything runs.
+          self="."
+          # Verified, not assumed: a misconfigured path must fall back to the published
+          # release rather than install whatever happens to sit there.
+          grep -qE '^name = "vibey-gh"' "$self/pyproject.toml" 2>/dev/null || self=""
+          if [ -n "$self" ]; then
+            python -m pip install --quiet -e "$self"
+          else
+            python -m pip install --quiet vibey-gh
+          fi
+      - name: Resolve the gated PR
+        id: resolve
+        env:
+          GH_TOKEN: ${{ secrets.AUTOMERGE_TOKEN || github.token }}
+          REPO: ${{ github.repository }}
+          INPUT_PR: ${{ inputs.pr }}
+          EVENT_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          number="${INPUT_PR:-}"
+          if [ -z "$number" ] && [ -n "${EVENT_SHA:-}" ]; then
+            number=$(gh api "repos/${REPO}/commits/${EVENT_SHA}/pulls" --jq '.[0].number // empty')
+          fi
+          echo "pr=$number" >> "$GITHUB_OUTPUT"
+      - name: Merge what is ready
+        env:
+          GH_TOKEN: ${{ secrets.AUTOMERGE_TOKEN || github.token }}
+          PR: ${{ steps.resolve.outputs.pr }}
+        run: |
+          set -euo pipefail
+          args=()
+          if [ -n "${PR:-}" ]; then args+=(--pr "$PR"); fi
+          if [ "${{ inputs.dry_run || false }}" = true ]; then args+=(--dry-run); fi
+          vibey-gh merge-train "${args[@]}"

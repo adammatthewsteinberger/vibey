@@ -1,0 +1,9 @@
+{
+  "name": "dns-domains-and-naming-systems",
+  "version": "0.2.0",
+  "description": "DNS, Domain Names and Naming Systems: what DNS is for, the namespace, resolution, record types, zones, delegation and glue, caching and TTL, attacks on DNS, DNSSEC, encrypted DNS, modern extensions, operations, DNS as infrastructure, ICANN and the root, TLD types, the registry/registrar/registrant model, registration mechanics, WHOIS and RDAP, disputes, domain security, the aftermarket, why alternatives exist, ENS and other blockchain naming systems, an honest assessment of them, and non-DNS namespaces.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

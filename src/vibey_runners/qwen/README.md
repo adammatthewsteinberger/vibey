@@ -1,7 +1,7 @@
 # qwenloop
 
-[![CI](https://github.com/adammatthewsteinberger/qwenloop/actions/workflows/ci.yml/badge.svg)](https://github.com/adammatthewsteinberger/qwenloop/actions/workflows/ci.yml)
-[![Provenance](https://github.com/adammatthewsteinberger/qwenloop/actions/workflows/provenance.yml/badge.svg)](https://github.com/adammatthewsteinberger/qwenloop/actions/workflows/provenance.yml)
+[![CI](https://github.com/the-vibey-project/qwenloop/actions/workflows/ci.yml/badge.svg)](https://github.com/the-vibey-project/qwenloop/actions/workflows/ci.yml)
+[![Provenance](https://github.com/the-vibey-project/qwenloop/actions/workflows/provenance.yml/badge.svg)](https://github.com/the-vibey-project/qwenloop/actions/workflows/provenance.yml)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Model: Apache--2.0](https://img.shields.io/badge/model-Apache--2.0-orange.svg)](https://huggingface.co/Qwen/Qwen2.5-Coder-14B-Instruct)
@@ -20,7 +20,7 @@ an explicit commit:
 
 ```bash
 uv tool install \
-  'qwenloop @ git+https://github.com/adammatthewsteinberger/qwenloop.git@feature/qwenloop-local-engine'
+  'qwenloop @ git+https://github.com/the-vibey-project/qwenloop.git@feature/qwenloop-local-engine'
 ```
 
 The Python package never bundles model weights.

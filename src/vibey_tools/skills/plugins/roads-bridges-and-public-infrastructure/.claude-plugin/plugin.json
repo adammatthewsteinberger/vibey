@@ -1,0 +1,9 @@
+{
+  "name": "roads-bridges-and-public-infrastructure",
+  "version": "0.1.0",
+  "description": "Roads, Bridges and Public Infrastructure: infrastructure as a system, geometric design, pavement, earthworks, geotechnics and drainage, traffic engineering and capacity, intersections and interchanges, road safety and the Safe System approach, construction and maintenance, bridge types and structural logic, loads and load rating, materials and details, bridge failure modes, inspection and condition rating, water supply, wastewater and stormwater, transit, ports, rail and airports, utility coordination, procurement and delivery, cost estimation and optimism bias, asset management, funding and finance, environmental review, resilience and climate adaptation, induced demand, and the distributional legacy of highway building.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

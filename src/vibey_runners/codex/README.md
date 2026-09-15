@@ -3,9 +3,9 @@
 [![PyPI](https://img.shields.io/pypi/v/codexloop)](https://pypi.org/project/codexloop/)
 [![PyPI downloads](https://img.shields.io/pypi/dm/codexloop)](https://pypi.org/project/codexloop/)
 [![Python versions](https://img.shields.io/pypi/pyversions/codexloop)](https://pypi.org/project/codexloop/)
-[![CI](https://github.com/adammatthewsteinberger/codexloop/actions/workflows/ci.yml/badge.svg)](https://github.com/adammatthewsteinberger/codexloop/actions/workflows/ci.yml)
-[![Docs](https://github.com/adammatthewsteinberger/codexloop/actions/workflows/docs.yml/badge.svg)](https://adammatthewsteinberger.github.io/codexloop/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/adammatthewsteinberger/codexloop/blob/develop/LICENSE)
+[![CI](https://github.com/the-vibey-project/codexloop/actions/workflows/ci.yml/badge.svg)](https://github.com/the-vibey-project/codexloop/actions/workflows/ci.yml)
+[![Docs](https://github.com/the-vibey-project/codexloop/actions/workflows/docs.yml/badge.svg)](https://the-vibey-project.github.io/codexloop/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/the-vibey-project/codexloop/blob/develop/LICENSE)
 
 **Onion-architected, autonomous OpenAI Codex / GPT session runner and
 generated OpenAI SDK CLI** — never blocks on a human, never treats
@@ -27,11 +27,11 @@ automatically, so you can hand it a plan and walk away — including noticing
 a top-up or a plan-window reset on the next probe rather than at some fixed
 deadline.
 
-It is a deliberate transplant of the [claudeloop](https://github.com/adammatthewsteinberger/claudeloop)
+It is a deliberate transplant of the [claudeloop](https://github.com/the-vibey-project/claudeloop)
 design — same state machine, same ports, same run-directory layout —
 retargeted at the OpenAI stack. The primary transport is `codex exec --json`
 as a subprocess, which is exactly what the official TypeScript Codex SDK does
-under the hood ([ADR 0002](https://adammatthewsteinberger.github.io/codexloop/architecture/adr/0002-subprocess-codex-exec/)).
+under the hood ([ADR 0002](https://the-vibey-project.github.io/codexloop/architecture/adr/0002-subprocess-codex-exec/)).
 There is **no Anthropic dependency**.
 
 ## Install
@@ -46,7 +46,7 @@ pipx install codexloop
 codexloop doctor      # reports which auth mode is active; it never guesses
 ```
 
-See the [getting-started guide](https://adammatthewsteinberger.github.io/codexloop/getting-started/)
+See the [getting-started guide](https://the-vibey-project.github.io/codexloop/getting-started/)
 for a from-source setup.
 
 ## Quickstart
@@ -77,7 +77,7 @@ codexloop unwind 1                                   # git save-point restore (r
 
 `--transport app-server` opts into the experimental Codex app-server protocol
 and falls back to `exec` when it is unavailable
-([ADR 0009](https://adammatthewsteinberger.github.io/codexloop/architecture/adr/0009-optional-app-server/)).
+([ADR 0009](https://the-vibey-project.github.io/codexloop/architecture/adr/0009-optional-app-server/)).
 
 Network access remains off by default in the `workspace-write` sandbox. Enable
 it per invocation with `--network-access`, per process with
@@ -100,25 +100,25 @@ is enabled.
 | Approval prompts | Hangs, or you reach for `--full-auto` (deprecated, then removed) | `-c approval_policy=never` **plus** `-c sandbox_mode=workspace-write` — non-blocking *and* confined; `danger-full-access` only behind a loud opt-in |
 | Bare `codex` TUI | Waits on a TTY | Never invoked; the argv builder forbids it and the child is spawned with stdin closed |
 
-See the [architecture overview](https://adammatthewsteinberger.github.io/codexloop/architecture/)
-and [ADR 0003 — credits exhausted](https://adammatthewsteinberger.github.io/codexloop/architecture/adr/0003-credits-exhausted/)
+See the [architecture overview](https://the-vibey-project.github.io/codexloop/architecture/)
+and [ADR 0003 — credits exhausted](https://the-vibey-project.github.io/codexloop/architecture/adr/0003-credits-exhausted/)
 for the full reasoning.
 
 ## Documentation
 
 Full docs (built with MkDocs Material) live at
-**https://adammatthewsteinberger.github.io/codexloop/**. The same content
-is in the [`docs/`](https://github.com/adammatthewsteinberger/codexloop/tree/develop/docs) directory on GitHub.
+**https://the-vibey-project.github.io/codexloop/**. The same content
+is in the [`docs/`](https://github.com/the-vibey-project/codexloop/tree/develop/docs) directory on GitHub.
 
 | | |
 |---|---|
-| [Getting started](https://adammatthewsteinberger.github.io/codexloop/getting-started/) | Install, preflight, first run, transports |
-| [Generated REST surface](https://adammatthewsteinberger.github.io/codexloop/guides/rest-api-surface/) | `codexloop api …` — 1:1 over the `openai` SDK resource tree, `--provider openai\|azure\|custom`, drift gate |
-| [Architecture](https://adammatthewsteinberger.github.io/codexloop/architecture/) | The onion layers and the twelve [decision records](https://adammatthewsteinberger.github.io/codexloop/architecture/adr/) |
-| [CLI reference](https://adammatthewsteinberger.github.io/codexloop/reference/cli/) | Command index |
-| [Contributing](https://adammatthewsteinberger.github.io/codexloop/contributing/) / [Publishing](https://adammatthewsteinberger.github.io/codexloop/publishing/) | Setup, tests, coverage floors, TestPyPI → PyPI Trusted Publishing |
-| [Plans](https://github.com/adammatthewsteinberger/codexloop/tree/develop/docs/plans) | Design record, vendor research notes, and the shared transplant outline (GitHub tree; not in the site nav) |
-| [Changelog](https://github.com/adammatthewsteinberger/codexloop/blob/develop/CHANGELOG.md) | Release notes, maintained by release-please |
+| [Getting started](https://the-vibey-project.github.io/codexloop/getting-started/) | Install, preflight, first run, transports |
+| [Generated REST surface](https://the-vibey-project.github.io/codexloop/guides/rest-api-surface/) | `codexloop api …` — 1:1 over the `openai` SDK resource tree, `--provider openai\|azure\|custom`, drift gate |
+| [Architecture](https://the-vibey-project.github.io/codexloop/architecture/) | The onion layers and the twelve [decision records](https://the-vibey-project.github.io/codexloop/architecture/adr/) |
+| [CLI reference](https://the-vibey-project.github.io/codexloop/reference/cli/) | Command index |
+| [Contributing](https://the-vibey-project.github.io/codexloop/contributing/) / [Publishing](https://the-vibey-project.github.io/codexloop/publishing/) | Setup, tests, coverage floors, TestPyPI → PyPI Trusted Publishing |
+| [Plans](https://github.com/the-vibey-project/codexloop/tree/develop/docs/plans) | Design record, vendor research notes, and the shared transplant outline (GitHub tree; not in the site nav) |
+| [Changelog](https://github.com/the-vibey-project/codexloop/blob/develop/CHANGELOG.md) | Release notes, maintained by release-please |
 
 ## Project status
 
@@ -141,32 +141,32 @@ package. `pytest -m system` runs a scripted agent with no OpenAI account;
 
 ## Contributing
 
-Contributions are welcome — see [CONTRIBUTING.md](https://github.com/adammatthewsteinberger/codexloop/blob/develop/CONTRIBUTING.md) for the
+Contributions are welcome — see [CONTRIBUTING.md](https://github.com/the-vibey-project/codexloop/blob/develop/CONTRIBUTING.md) for the
 gitflow branch model, Conventional Commits requirement, and how to run every
 quality gate locally.
 
 The GitHub default branch is **`develop`**. Open feature PRs into `develop`,
 not `main`. By contributing you agree that your work is licensed under the
 same MIT License as the rest of this repository, and that you will follow
-the [Code of Conduct](https://github.com/adammatthewsteinberger/codexloop/blob/develop/CODE_OF_CONDUCT.md).
+the [Code of Conduct](https://github.com/the-vibey-project/codexloop/blob/develop/CODE_OF_CONDUCT.md).
 
 Agent guidance is mirrored across:
 
-- [CLAUDE.md](https://github.com/adammatthewsteinberger/codexloop/blob/develop/CLAUDE.md) + [`.claude/skills/`](https://github.com/adammatthewsteinberger/codexloop/tree/develop/.claude/skills/) (Claude Code)
-- [`.cursor/rules/`](https://github.com/adammatthewsteinberger/codexloop/tree/develop/.cursor/rules/) (Cursor)
-- [AGENTS.md](https://github.com/adammatthewsteinberger/codexloop/blob/develop/AGENTS.md) + [`.agents/skills/`](https://github.com/adammatthewsteinberger/codexloop/tree/develop/.agents/skills/) (Codex)
-- [GEMINI.md](https://github.com/adammatthewsteinberger/codexloop/blob/develop/GEMINI.md) + [`.agent/rules/`](https://github.com/adammatthewsteinberger/codexloop/tree/develop/.agent/rules/) (Antigravity)
+- [CLAUDE.md](https://github.com/the-vibey-project/codexloop/blob/develop/CLAUDE.md) + [`.claude/skills/`](https://github.com/the-vibey-project/codexloop/tree/develop/.claude/skills/) (Claude Code)
+- [`.cursor/rules/`](https://github.com/the-vibey-project/codexloop/tree/develop/.cursor/rules/) (Cursor)
+- [AGENTS.md](https://github.com/the-vibey-project/codexloop/blob/develop/AGENTS.md) + [`.agents/skills/`](https://github.com/the-vibey-project/codexloop/tree/develop/.agents/skills/) (Codex)
+- [GEMINI.md](https://github.com/the-vibey-project/codexloop/blob/develop/GEMINI.md) + [`.agent/rules/`](https://github.com/the-vibey-project/codexloop/tree/develop/.agent/rules/) (Antigravity)
 
 ## Getting help
 
 | I want to... | Go here |
 |---|---|
-| Read the docs | https://adammatthewsteinberger.github.io/codexloop/ |
-| Ask a question | [Discussions](https://github.com/adammatthewsteinberger/codexloop/discussions) |
-| Report a bug or request a feature | [Issues](https://github.com/adammatthewsteinberger/codexloop/issues) (use the templates) |
-| Report a vulnerability | [SECURITY.md](https://github.com/adammatthewsteinberger/codexloop/blob/develop/SECURITY.md) (private) |
+| Read the docs | https://the-vibey-project.github.io/codexloop/ |
+| Ask a question | [Discussions](https://github.com/the-vibey-project/codexloop/discussions) |
+| Report a bug or request a feature | [Issues](https://github.com/the-vibey-project/codexloop/issues) (use the templates) |
+| Report a vulnerability | [SECURITY.md](https://github.com/the-vibey-project/codexloop/blob/develop/SECURITY.md) (private) |
 
-See [SUPPORT.md](https://github.com/adammatthewsteinberger/codexloop/blob/develop/SUPPORT.md)
+See [SUPPORT.md](https://github.com/the-vibey-project/codexloop/blob/develop/SUPPORT.md)
 for the same map.
 
 ## Security
@@ -174,7 +174,7 @@ for the same map.
 This tool runs Codex with `approval_policy=never` by design (that's what
 makes autonomous operation possible), confines it to `sandbox_mode=workspace-write`
 by default, and handles OpenAI credentials. See
-[SECURITY.md](https://github.com/adammatthewsteinberger/codexloop/blob/develop/SECURITY.md)
+[SECURITY.md](https://github.com/the-vibey-project/codexloop/blob/develop/SECURITY.md)
 for the threat model and how to report a vulnerability.
 
 ## Related projects
@@ -185,21 +185,21 @@ layout — pick the one that matches the agent you pay for:
 
 | Runner | Drives | Install |
 |---|---|---|
-| [claudeloop](https://github.com/adammatthewsteinberger/claudeloop) | Claude Code (Anthropic) | `pipx install claudeloop` |
+| [claudeloop](https://github.com/the-vibey-project/claudeloop) | Claude Code (Anthropic) | `pipx install claudeloop` |
 | **codexloop** (this repo) | OpenAI Codex / GPT | `pipx install codexloop` |
-| [cursorloop](https://github.com/adammatthewsteinberger/cursorloop) | Cursor Agent (Composer-first; Grok as a model profile) | `pipx install cursorloop` |
-| [agyloop](https://github.com/adammatthewsteinberger/agyloop) | Google Antigravity / Gemini | `pipx install agyloop` |
+| [cursorloop](https://github.com/the-vibey-project/cursorloop) | Cursor Agent (Composer-first; Grok as a model profile) | `pipx install cursorloop` |
+| [agyloop](https://github.com/the-vibey-project/agyloop) | Google Antigravity / Gemini | `pipx install agyloop` |
 
 Around them:
 
-- [vibey](https://github.com/adammatthewsteinberger/vibey) — queue-based, six-phase conductor (spec interview → design → build → review → deploy) that drives the four runners as interchangeable engines. PostgreSQL-backed.
-- [vibey-bootstrap](https://github.com/adammatthewsteinberger/vibey-bootstrap) — Azure Functions cross-cutting layer: App Config + Key Vault + App Insights bootstrap, Service Bus plumbing, scaffold CLI.
-- [vibey-skills](https://github.com/adammatthewsteinberger/vibey-skills) — versioned Agent Skills marketplace and deterministic context-packet engine.
+- [vibey](https://github.com/the-vibey-project/vibey) — queue-based, six-phase conductor (spec interview → design → build → review → deploy) that drives the four runners as interchangeable engines. PostgreSQL-backed.
+- [vibey-bootstrap](https://github.com/the-vibey-project/vibey-bootstrap) — Azure Functions cross-cutting layer: App Config + Key Vault + App Insights bootstrap, Service Bus plumbing, scaffold CLI.
+- [vibey-skills](https://github.com/the-vibey-project/vibey-skills) — versioned Agent Skills marketplace and deterministic context-packet engine.
 - [homebrew-tap](https://github.com/adammatthewsteinberger/homebrew-tap) — `brew tap adammatthewsteinberger/tap`.
 
 ## License
 
-MIT — see [LICENSE](https://github.com/adammatthewsteinberger/codexloop/blob/develop/LICENSE).
+MIT — see [LICENSE](https://github.com/the-vibey-project/codexloop/blob/develop/LICENSE).
 
 ---
 

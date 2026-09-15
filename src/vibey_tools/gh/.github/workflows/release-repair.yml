@@ -1,0 +1,249 @@
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+name: Release repair
+
+# PR failures are repaired by PR automation. This workflow covers the other half of the
+# delivery chain: trusted workflows that fail only after a change reaches a permanent
+# branch. It never pushes directly to or deletes either permanent branch. Every code fix
+# returns through an ordinary PR and the same scans, reviews, and merge train as any other
+# change.
+on:
+  workflow_run:
+    workflows: ["CI", "Provenance", "Release", "Release surfaces", "GitHub Release"]
+    types: [completed]
+    branches: [develop, main]
+
+permissions:
+  contents: read
+
+jobs:
+  repair:
+    name: Diagnose and repair failed release scan
+    if: github.event.workflow_run.conclusion == 'failure'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      checks: read
+      contents: write
+      id-token: write
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Check out trusted automation
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          path: automation
+      - name: Validate the permanent-branch failure is current
+        id: context
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          FAILED_SHA: ${{ github.event.workflow_run.head_sha }}
+          FAILED_RUN_ID: ${{ github.event.workflow_run.id }}
+          INTEGRATION_BRANCH: develop
+          RELEASE_BRANCH: main
+        run: |
+          set -euo pipefail
+          case "$BRANCH" in
+            "$INTEGRATION_BRANCH"|"$RELEASE_BRANCH") ;;
+            *) echo "::error::refusing non-permanent branch ${BRANCH}"; exit 1 ;;
+          esac
+          current=$(gh api "repos/${REPO}/git/ref/heads/${BRANCH}" --jq .object.sha)
+          if [ "$current" != "$FAILED_SHA" ]; then
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Ignoring stale failure ${FAILED_SHA}; ${BRANCH} is now ${current}"
+            exit 0
+          fi
+          repair_branch="vibey-gh/repair/release-${BRANCH}-${FAILED_RUN_ID}"
+          if gh api "repos/${REPO}/git/ref/heads/${repair_branch}" >/dev/null 2>&1; then
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Repair branch ${repair_branch} already exists"
+            exit 0
+          fi
+          {
+            echo "stale=false"
+            echo "repair_branch=${repair_branch}"
+          } >> "$GITHUB_OUTPUT"
+      - name: Check out the exact failed revision
+        if: steps.context.outputs.stale == 'false'
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          path: target
+          fetch-depth: 0
+          persist-credentials: false
+          token: ${{ secrets.AUTOMERGE_TOKEN || github.token }}
+      - name: Create credential-free Claude git context
+        if: steps.context.outputs.stale == 'false'
+        run: |
+          set -euo pipefail
+          test ! -e .git
+          git init --quiet .claude-git-context
+          echo "gitdir: $GITHUB_WORKSPACE/.claude-git-context/.git" > .git
+          git remote add origin "https://github.com/${{ github.repository }}.git"
+      - name: Diagnose and repair without executing repository code
+        if: steps.context.outputs.stale == 'false'
+        id: claude
+        uses: anthropics/claude-code-action@a874e9ecd7bb36efdad65429c6b35815f5a08f10 # v1.0.210
+        # ai: the default Anthropic endpoint
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          allowed_non_write_users: "__vibey_gh_no_nonwrite_users__"
+          additional_permissions: |
+            actions: read
+            checks: read
+          plugin_marketplaces: |
+            https://github.com/the-vibey-project/vibey-skills.git
+          plugins: |
+            quality-engineering@vibey-skills
+            security-principles@vibey-skills
+            engineering-process@vibey-skills
+          claude_args: |
+            --model claude-sonnet-5
+            --max-turns 120
+            --allowedTools Read,Glob,Grep,Edit,Write,mcp__github_ci__get_ci_status,mcp__github_ci__get_workflow_run_details,mcp__github_ci__download_job_log
+            --json-schema '{"type":"object","properties":{"fixable":{"type":"boolean"},"root_cause":{"type":"string"},"files_changed":{"type":"array","items":{"type":"string"}},"tests_expected":{"type":"array","items":{"type":"string"}},"operator_action":{"type":"string"},"remaining_risks":{"type":"array","items":{"type":"string"}},"summary":{"type":"string"}},"required":["fixable","root_cause","files_changed","tests_expected","operator_action","remaining_risks","summary"]}'
+          prompt: |
+            A trusted permanent-branch workflow failed after merge.
+
+            Repository: ${{ github.repository }}
+            Branch: ${{ github.event.workflow_run.head_branch }}
+            Exact SHA: ${{ github.event.workflow_run.head_sha }}
+            Workflow: ${{ github.event.workflow_run.name }}
+            Run: ${{ github.event.workflow_run.html_url }}
+
+            The exact failed revision is checked out under target/. Inspect the failed
+            run through the GitHub CI tools. Never execute package managers, tests,
+            builds, scripts, binaries, or hooks in this privileged job. Ordinary PR CI
+            validates any repair after it is pushed.
+
+            Make the smallest correct code or workflow edit. Never lower coverage,
+            weaken assertions, remove checks, mark failures allowed, or bypass security.
+            If the failure requires credentials, billing, external availability,
+            repository settings, registry permissions, or unsupported infrastructure,
+            make no edits and return fixable=false with the exact operator_action.
+
+            For a fixable failure, edit files only. Do not commit, push, merge, create,
+            rename, or delete any branch. A separate trusted step publishes one commit
+            to a new repository-owned repair branch and opens a normal pull request.
+      - name: Remove credential-free Claude git context
+        if: always() && steps.context.outputs.stale == 'false'
+        run: |
+          rm -f .git
+          rm -rf .claude-git-context
+      - name: Publish one guarded repair PR
+        if: >-
+          steps.context.outputs.stale == 'false' &&
+          fromJSON(steps.claude.outputs.structured_output).fixable == true
+        env:
+          GH_TOKEN: ${{ secrets.AUTOMERGE_TOKEN || github.token }}
+          REPO: ${{ github.repository }}
+          BASE_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          FAILED_SHA: ${{ github.event.workflow_run.head_sha }}
+          FAILED_NAME: ${{ github.event.workflow_run.name }}
+          FAILED_URL: ${{ github.event.workflow_run.html_url }}
+          REPAIR_BRANCH: ${{ steps.context.outputs.repair_branch }}
+          SUMMARY: ${{ fromJSON(steps.claude.outputs.structured_output).summary }}
+        run: |
+          set -euo pipefail
+          case "$REPAIR_BRANCH" in
+            vibey-gh/repair/release-*) ;;
+            *) echo "::error::unsafe repair branch ${REPAIR_BRANCH}"; exit 1 ;;
+          esac
+          current=$(gh api "repos/${REPO}/git/ref/heads/${BASE_BRANCH}" --jq .object.sha)
+          if [ "$current" != "$FAILED_SHA" ]; then
+            echo "::notice::Branch advanced during diagnosis; refusing a stale repair"
+            exit 0
+          fi
+          if git -C target diff --quiet && git -C target diff --cached --quiet; then
+            echo "::error::Agent reported fixable but produced no changes"
+            exit 1
+          fi
+          git -C target config user.name "vibey[bot]"
+          git -C target config user.email "adam@matthewsteinberger.com"
+          git -C target add -A
+          git -C target commit -m "Repair failed ${FAILED_NAME} release scan" \
+            -m "Made-With: Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/))."
+          gh auth setup-git
+          git -C target remote set-url origin "https://github.com/${REPO}.git"
+          # A non-empty source refspec can update only the new repair branch. Never push
+          # directly to develop/main and never use a deletion option or empty source.
+          git -C target push origin "HEAD:refs/heads/${REPAIR_BRANCH}"
+          body=$(printf 'Repairs failed trusted-branch run: %s\n\n%s' "$FAILED_URL" "$SUMMARY")
+          gh pr create --repo "$REPO" --base "$BASE_BRANCH" --head "$REPAIR_BRANCH" \
+            --title "Repair failed ${FAILED_NAME} release scan" --body "$body"
+      - name: Report non-fixable operator action
+        if: >-
+          steps.context.outputs.stale == 'false' &&
+          fromJSON(steps.claude.outputs.structured_output).fixable == false
+        env:
+          OPERATOR_ACTION: ${{ fromJSON(steps.claude.outputs.structured_output).operator_action }}
+          ROOT_CAUSE: ${{ fromJSON(steps.claude.outputs.structured_output).root_cause }}
+        run: |
+          {
+            echo '## Release repair blocked'
+            echo
+            echo "${ROOT_CAUSE}"
+            echo
+            echo "Required operator action: ${OPERATOR_ACTION}"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "::error::${ROOT_CAUSE}. Required operator action: ${OPERATOR_ACTION}"
+          exit 1
+      - name: Say why the model call failed
+        # The action reports only "did not return structured_output", which names the
+        # symptom and not the cause, and the gate then tells an operator to read a log
+        # that does not contain it. The execution record does: an immediate `is_error`
+        # with zero cost and an empty `modelUsage` is the API refusing the call — credit,
+        # credentials, availability — rather than a model that answered badly. Without
+        # this the difference is only inferable, and every diagnosis starts from scratch.
+        #
+        # `-s` normalises the three shapes this file has been seen to take (a JSON array,
+        # a bare object, or JSONL) into one list before the last result is picked out.
+        if: failure() && steps.claude.outputs.execution_file != ''
+        env:
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+        run: |
+          set -euo pipefail
+          if [ ! -f "$EXECUTION_FILE" ]; then
+            echo "no execution record was written: the action failed before running" \
+              | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          normalise='[.[] | if type=="array" then .[] else . end]
+            | map(select(.type=="result")) | last'
+          facts=$(jq -rs "$normalise"' as $r
+            | "is_error=\($r.is_error // "unknown") subtype=\($r.subtype // "unknown")
+               turns=\($r.num_turns // 0) cost_usd=\($r.total_cost_usd // 0)
+               model_calls=\(($r.modelUsage // {}) | length)"' "$EXECUTION_FILE" 2>/dev/null \
+            | tr -s '[:space:]' ' ') || facts="execution record unreadable"
+          # Bounded, and fenced rather than interpolated: this text is model output and
+          # may quote the pull request, so it is reported as data and never as markup.
+          reason=$(jq -rs "$normalise"' | (.result // .error // "") | tostring' \
+            "$EXECUTION_FILE" 2>/dev/null | head -c 2000) || reason=""
+          {
+            echo "### The model call did not complete"
+            echo
+            echo "\`$facts\`"
+            echo
+            if [ -n "$reason" ]; then
+              echo "What the run reported:"
+              echo '```'
+              echo "$reason"
+              echo '```'
+            fi
+            if [ "${facts#*model_calls=0}" != "$facts" ] \
+              && [ "${facts#*cost_usd=0 }" != "$facts" ]; then
+              echo
+              echo "Zero model calls at zero cost: the request was refused before any"
+              echo "model ran. Check API credit balance, credentials, and model"
+              echo "availability — this is not a defect in the pull request."
+            fi
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Archive repair record
+        if: always() && steps.claude.outputs.execution_file != ''
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-repair-${{ github.event.workflow_run.id }}-${{ github.run_attempt }}
+          path: ${{ steps.claude.outputs.execution_file }}
+          retention-days: 90

@@ -1,0 +1,9 @@
+{
+  "name": "trading-mechanics",
+  "version": "0.1.0",
+  "description": "Trading Mechanics: what the outcome evidence actually shows about retail trading, market microstructure, orders and execution, the asset classes, derivatives, technical analysis assessed honestly, quantitative and factor approaches, swing and day trading, real versus apparent arbitrage, forex, DeFi mechanics, risk and position sizing, costs and frictions, backtesting pitfalls, psychology and harm, and regulation and tax. A mechanics reference, not investment advice or a strategy.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

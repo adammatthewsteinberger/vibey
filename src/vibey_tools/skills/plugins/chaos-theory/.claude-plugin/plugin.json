@@ -1,0 +1,9 @@
+{
+  "name": "chaos-theory",
+  "version": "0.2.0",
+  "description": "Chaos Theory: what chaos actually is and is not, the stretch-and-fold mechanism, dynamical systems, stability and linearization, bifurcations, the logistic map and Feigenbaum universality, Lyapunov exponents, strange attractors, the routes to chaos, fractals and dimension, Poincare sections and symbolic dynamics, Hamiltonian chaos and KAM, detecting chaos in real data, control and synchronization, where chaos actually appears, and computing chaotic systems numerically.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

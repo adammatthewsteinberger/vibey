@@ -1,0 +1,9 @@
+{
+  "name": "genetics-neuroscience-technical",
+  "version": "0.1.0",
+  "description": "Genetics and Neuroscience: molecular genetics and the central dogma stated accurately, gene regulation and epigenetics, mutation, variation and inheritance, population and quantitative genetics including heritability and polygenic scores, genome engineering and the CRISPR toolbox, delivery, screens and synthetic biology, neuron biophysics and synapses, plasticity, neural coding, circuit architectures, neuromodulation, development and glia, neural engineering methods, and stimulation and intervention.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

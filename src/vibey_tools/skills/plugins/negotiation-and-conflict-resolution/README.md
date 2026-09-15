@@ -1,0 +1,14 @@
+# Negotiation and Conflict Resolution Plugin
+
+Negotiation from first principles, then conflict resolution proper. Distributive versus integrative bargaining, BATNA, reservation value and the zone of possible agreement, interests versus positions, preparation, anchoring, concessions, value creation and the negotiator's dilemma; the psychology layer of bias, emotion, fairness, trust and reputation; hard tactics and how to handle them, plus the multiparty, agency, cultural, power-asymmetric and remote complications; and then conflict analysis and escalation, mediation, the ADR spectrum, facilitation, workplace conflict, reconciliation and the ethics of all of it.
+
+One reference, split into 6 skills along its section groups so a task loads only the part it needs. Section numbers (§N) are shared across the set and cross-references into a sibling skill are written as §N → `skill`. Reference, not tutorial: sections are independent, every claim is tagged by how durable it is (stable fundamentals vs. versioned specifics vs. genuinely contested questions), and a currency snapshot (checked August 2026) flags what goes stale first.
+
+## Skills
+
+- **negot-framings-batna-zopa-interests-and-preparation** — Two Framings, Distributive and Integrative, BATNA, Reservation Value and ZOPA, Interests, Positions and Issues, and Preparation (§0–§5): Routing; Two Framings; Distributive and Integrative; ⚠️ BATNA, Reservation Value and ZOPA; ⚠️ Interests, Positions and Issues; Preparation.
+- **negot-anchoring-concessions-value-creation-and-closing** — First Offers and Anchoring, Concessions, Creating Value, the Negotiator's Dilemma, and Closing and Commitment (§6–§10): ⚠️ First Offers and Anchoring; Concessions; Creating Value; ⚠️ The Negotiator's Dilemma; Closing and Commitment.
+- **negot-biases-emotion-fairness-and-trust** — Biases, Emotion, Fairness and Standards, and Trust and Reputation (§11–§14): ⚠️ Biases; Emotion; ⚠️ Fairness and Standards; Trust and Reputation.
+- **negot-hard-tactics-multiparty-culture-power-and-remote** — Hard Tactics and Responses, Multiparty Negotiation, Agents, Teams and Mandate, Culture, Power Asymmetry, and Written and Remote (§15–§20): ⚠️ Hard Tactics and Responses; Multiparty Negotiation; Agents, Teams and Mandate; Culture; ⚠️ Power Asymmetry; Written and Remote.
+- **negot-conflict-analysis-mediation-adr-workplace-and-ethics** — Conflict Analysis and Escalation, Mediation, the Dispute Resolution Spectrum, Facilitation and Dialogue, Workplace and Interpersonal Conflict, Reconciliation, and Ethics (§21–§27): ⚠️ Conflict Analysis and Escalation; Mediation; ⚠️ The Dispute Resolution Spectrum; Facilitation and Dialogue; ⚠️ Workplace and Interpersonal Conflict; Reconciliation; ⚠️ Ethics.
+- **negot-reference** — What's Live, Misconceptions, Concepts, and Sources (§28–§33): What's Live; Misconceptions; Concepts; Sources; Quick Reference; Method.

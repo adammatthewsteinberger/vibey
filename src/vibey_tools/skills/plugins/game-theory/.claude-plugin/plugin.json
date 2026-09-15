@@ -1,0 +1,9 @@
+{
+  "name": "game-theory",
+  "version": "0.1.0",
+  "description": "Game Theory: the framework and what rationality actually assumes, normal and extensive form representations, dominance, Nash equilibrium and what it is not, the classic games, zero-sum and minimax, sequential games and subgame perfection, repeated games and the folk theorem, incomplete information and Bayesian games, bargaining, cooperative game theory, mechanism design and auctions, matching markets, evolutionary game theory, where the theory fails empirically, and computational game theory.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

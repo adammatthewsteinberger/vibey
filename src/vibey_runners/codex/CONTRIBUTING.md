@@ -8,7 +8,7 @@ issue or a PR fixing it.
 ## Environment setup
 
 ```bash
-git clone https://github.com/adammatthewsteinberger/codexloop.git
+git clone https://github.com/the-vibey-project/codexloop.git
 cd codexloop
 python3 -m venv .venv
 source .venv/bin/activate
@@ -147,10 +147,10 @@ Enforced by `import-linter` in CI and pre-commit — not by convention. See
 
 | I want to... | Go here |
 |---|---|
-| User/operator docs | [https://adammatthewsteinberger.github.io/codexloop/](https://adammatthewsteinberger.github.io/codexloop/) |
-| Ask a question or discuss design | [GitHub Discussions](https://github.com/adammatthewsteinberger/codexloop/discussions) |
-| Report a bug | [Bug report form](https://github.com/adammatthewsteinberger/codexloop/issues/new?template=bug_report.yml) |
-| Propose a feature | [Feature request form](https://github.com/adammatthewsteinberger/codexloop/issues/new?template=feature_request.yml) |
+| User/operator docs | [https://the-vibey-project.github.io/codexloop/](https://the-vibey-project.github.io/codexloop/) |
+| Ask a question or discuss design | [GitHub Discussions](https://github.com/the-vibey-project/codexloop/discussions) |
+| Report a bug | [Bug report form](https://github.com/the-vibey-project/codexloop/issues/new?template=bug_report.yml) |
+| Propose a feature | [Feature request form](https://github.com/the-vibey-project/codexloop/issues/new?template=feature_request.yml) |
 | Report a vulnerability | [SECURITY.md](SECURITY.md) — privately |
 | Same map, shorter | [SUPPORT.md](SUPPORT.md) |
 

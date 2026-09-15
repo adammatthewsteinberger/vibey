@@ -1,0 +1,9 @@
+{
+  "name": "editors-ide-extension-development",
+  "version": "0.1.0",
+  "description": "Editors, IDEs and Extension Development: choosing an editor honestly, nano, vim and Neovim's modal model, Emacs, VS Code's multi-process architecture, configuration and workspaces, remote development, the protocol layer of LSP, DAP and Tree-sitter, VS Code extension anatomy, contribution points and activation, API surfaces, webviews, writing a language server, testing and publishing, text buffer data structures, rendering, indexing and code intelligence, the JetBrains platform, terminal UI programming, and editor performance.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

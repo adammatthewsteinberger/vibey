@@ -1,0 +1,142 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "vibey-skills"
+dynamic = ["version"]
+description = "Agent Skills for vibe engineering — 644 evidence-grounded practitioner references as a Claude Code plugin marketplace"
+readme = "README.md"
+requires-python = ">=3.10"
+
+# PEP 639: an SPDX expression plus license-files. The classifier
+# "License :: OSI Approved :: MIT License" is deliberately omitted — pairing a legacy
+# license classifier with an SPDX expression is a hard error in current build tooling.
+license = "MIT"
+license-files = ["LICENSE", "NOTICE.md"]
+
+# 1.0.0 and 1.0.1 published under a collective identity with no `authors` block and no email;
+# 1.0.2 added named attribution. As of 2.0.0 the project is published under the maintainer's
+# own account (formerly `vibe-engineering-skills`, developed at The Vizius Group and
+# republished with their permission — see NOTICE.md). LICENSE carries both copyright lines.
+authors = [{ name = "Adam Matthew Steinberger", email = "adam@matthewsteinberger.com" }]
+maintainers = [{ name = "Adam Matthew Steinberger", email = "adam@matthewsteinberger.com" }]
+
+# Pure data plus a stdlib-only CLI. Keeping this empty is a feature: `uvx` can run it
+# with no resolution step, and installing docs should never pull in a dependency tree.
+dependencies = []
+
+keywords = [
+  "claude",
+  "claude-code",
+  "agent-skills",
+  "skills",
+  "ai-agents",
+  "llm",
+  "plugin-marketplace",
+  "devsecops",
+  "security",
+  "azure",
+  "prompt-engineering",
+  "developer-tools",
+]
+
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Intended Audience :: System Administrators",
+  "Natural Language :: English",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Documentation",
+  "Topic :: Software Development :: Documentation",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: Utilities",
+]
+
+# A package page that does not link to its own source is a dead end, so these point at the
+# canonical repo. `tools/check_links.py` keeps them consistent with the SLUG it enforces.
+[project.urls]
+Homepage = "https://the-vibey-project.github.io/vibey-skills/"
+Documentation = "https://the-vibey-project.github.io/vibey-skills/"
+Repository = "https://github.com/the-vibey-project/vibey-skills"
+Issues = "https://github.com/the-vibey-project/vibey-skills/issues"
+Changelog = "https://github.com/the-vibey-project/vibey-skills/releases"
+
+# Docs-only dependencies. Runtime `dependencies` stays empty on purpose — building the
+# documentation site must never add anything to what `uvx vibey-skills` has to resolve.
+[project.optional-dependencies]
+docs = [
+  "mkdocs-material>=9.5",
+  "mkdocs-gen-files>=0.5",
+  "mkdocs-literate-nav>=0.6",
+]
+
+# Pinned exactly, matching every workflow's install step (see .vibey-gh.toml) — a floating
+# specifier is what let CI silently jump 1.2.0 -> 1.16.0 and break on the new defaults.
+# vibey-gh requires Python >=3.11 (tomllib); this project supports >=3.10, hence the marker.
+dev = [
+  # Was `==1.58.0`; widened for the same reason as vibey-bootstrap -- see the comment
+  # there. The workflows keep their own exact pins, which is where the "a floating
+  # specifier let CI jump 1.2.0 -> 1.16.0" lesson actually lives.
+  "vibey-gh>=1.58,<2; python_version>='3.11'",
+]
+
+# `vibey-skills` is the CLI. `vibe-skills` (the short alias from the vibe-engineering-skills
+# era) is kept as a deprecated entry point that prints one warning line and delegates; the
+# long-form `vibe-engineering-skills` script was dropped in 2.0.0.
+[project.scripts]
+vibey-skills = "vibey_skills.cli:main"
+vibe-skills = "vibey_skills.cli:deprecated_alias_main"
+
+# This package has never been linted. It gets a table of its own not for tidiness but
+# because of where it is going: inside the vibey monorepo, a file with no nearer
+# configuration resolves against the ROOT pyproject, whose `target-version = "py312"` would
+# have `UP` rewrite this package into syntax its own `requires-python = ">=3.10"` forbids.
+#
+# `include` is the other half, and it is not decoration. Without it ruff discovers Markdown
+# and format-checks the Python fences inside all 644 SKILL.md -- files that are the product,
+# verified byte-for-byte against the documents they were split from.
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+include = ["src/**/*.py", "tools/*.py", "tests/*.py", "docs/*.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+# E501 only, and only because of the provenance header: one exact line compared
+# byte-for-byte, unwrappable without failing the check that mandates it.
+ignore = ["E501"]
+
+[tool.hatch.version]
+path = "src/vibey_skills/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/vibey_skills"]
+
+# The plugins tree must stay at the repo root — Claude Code requires
+# .claude-plugin/marketplace.json there with `source: ./plugins/<name>`. Rather than
+# duplicating 644 skill files into src/, the wheel maps the root tree in at build time,
+# so there is exactly one source of truth on disk.
+[tool.hatch.build.targets.wheel.force-include]
+"plugins" = "vibey_skills/plugins"
+".claude-plugin/marketplace.json" = "vibey_skills/marketplace.json"
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "src/",
+  "plugins/",
+  ".claude-plugin/",
+  "tools/",
+  "docs/",
+  "mkdocs.yml",
+  "README.md",
+  "LICENSE",
+  "NOTICE.md",
+]

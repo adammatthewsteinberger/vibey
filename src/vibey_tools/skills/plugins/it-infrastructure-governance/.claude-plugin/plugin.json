@@ -1,0 +1,9 @@
+{
+  "name": "it-infrastructure-governance",
+  "version": "0.1.0",
+  "description": "IT Infrastructure and Governance: the infrastructure layers, compute and virtualization, storage, networking, directory services and hybrid identity, authentication, authorization and RBAC, privileged access, the identity lifecycle (joiner-mover-leaver), access review and certification, segregation of duties, endpoint management and patching, backup, DR and continuity, monitoring and logging, ITSM and change management, asset and configuration management, governance frameworks, capacity and lifecycle, and vendor and third-party risk.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

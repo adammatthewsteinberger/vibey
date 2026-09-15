@@ -1,0 +1,14 @@
+# Public Speaking, Influence and Community Plugin
+
+Speaking, influence and community organising treated as a craft with an evidence base — and with the famous claims that turned out not to replicate flagged as such. What the field actually knows, speech anxiety, audience and purpose, structure, openings and closings, language written for the ear, delivery, visual aids, Q&A and hostility, formats and deliberate practice; listening, rapport and trust, difficult conversations, negotiation, feedback and conflict; what actually persuades and the ethics of using it; then how groups really work, building a community, facilitation, organizing and mobilizing, volunteers and burnout, community conflict, and communication difference.
+
+One reference, split into 6 skills along its section groups so a task loads only the part it needs. Section numbers (§N) are shared across the set and cross-references into a sibling skill are written as §N → `skill`. Reference, not tutorial: sections are independent, every claim is tagged by how durable it is (stable fundamentals vs. versioned specifics vs. genuinely contested questions), and a currency snapshot (checked August 2026) flags what goes stale first.
+
+## Skills
+
+- **speaking-what-the-field-knows-anxiety-audience-and-structure** — What This Field Actually Knows, Speech Anxiety, Audience and Purpose, Structure, and Openings and Closings (§0–§5): Routing; What This Field Actually Knows; ⚠️ Speech Anxiety; Audience and Purpose; ⚠️ Structure; Openings and Closings.
+- **speaking-language-delivery-visual-aids-and-practice** — Language for the Ear, Delivery, Visual Aids, Q&A and Hostility, Formats, and Practice (§6–§11): Language for the Ear; Delivery; ⚠️ Visual Aids; Q&A and Hostility; Formats; Practice and Getting Better.
+- **speaking-listening-rapport-difficult-conversations-and-negotiation** — Listening, Rapport and Trust, Difficult Conversations, Negotiation, Feedback, and Conflict (§12–§17): ⚠️ Listening; Rapport and Trust; ⚠️ Difficult Conversations; Negotiation; Feedback; Conflict.
+- **speaking-persuasion-and-the-ethics-of-influence** — What Actually Persuades, and the Ethics of Influence (§18–§19): ⚠️ What Actually Persuades; ⚠️ The Ethics of Influence.
+- **speaking-groups-community-facilitation-organizing-and-conflict** — How Groups Actually Work, Building a Community, Facilitation, Organizing and Mobilizing, Volunteers and Burnout, Community Conflict, and Communication Difference (§20–§26): How Groups Actually Work; Building a Community; ⚠️ Facilitation; Organizing and Mobilizing; ⚠️ Volunteers and Burnout; Community Conflict; ⚠️ Communication Difference.
+- **speaking-reference** — What's Live, Misconceptions, Numbers, and Sources (§27–§32): What's Live; Misconceptions; Numbers and Claims; Sources; Quick Reference; Method.

@@ -83,7 +83,7 @@ project is pre-1.0; there is no long-term-support branch.
 
 Report privately via one of:
 
-1. [GitHub Security Advisories](https://github.com/adammatthewsteinberger/agyloop/security/advisories/new)
+1. [GitHub Security Advisories](https://github.com/the-vibey-project/agyloop/security/advisories/new)
    for this repository (preferred — supports coordinated disclosure).
 2. Email **adam@matthewsteinberger.com** with a clear description, steps to
    reproduce, and the version affected.

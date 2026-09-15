@@ -46,11 +46,11 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/adammatthewsteinberger/codexloop"
-Repository = "https://github.com/adammatthewsteinberger/codexloop"
-Documentation = "https://adammatthewsteinberger.github.io/codexloop/"
-Issues = "https://github.com/adammatthewsteinberger/codexloop/issues"
-Changelog = "https://github.com/adammatthewsteinberger/codexloop/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/the-vibey-project/codexloop"
+Repository = "https://github.com/the-vibey-project/codexloop"
+Documentation = "https://the-vibey-project.github.io/codexloop/"
+Issues = "https://github.com/the-vibey-project/codexloop/issues"
+Changelog = "https://github.com/the-vibey-project/codexloop/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [

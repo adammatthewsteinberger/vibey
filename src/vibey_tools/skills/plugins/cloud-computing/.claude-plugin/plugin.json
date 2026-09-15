@@ -1,0 +1,9 @@
+{
+  "name": "cloud-computing",
+  "version": "0.1.0",
+  "description": "Cloud Computing: the service and deployment models and what they actually cost you, the provider landscape and how to choose, core primitives (compute, storage, networking, identity), architecture and the Well-Architected trade-offs, resilience and the hard lessons of the 2025 outages, cost engineering and FinOps, security and the shared responsibility model, data residency and sovereignty under the EU Data Act, operations and observability, migration strategy, multi-cloud and lock-in, sustainability, and the AI-workload economics now reshaping all of it.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

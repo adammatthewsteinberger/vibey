@@ -1,0 +1,9 @@
+{
+  "name": "rocket-science",
+  "version": "0.1.0",
+  "description": "Rocket Science: the physics and engineering mathematics of rocketry — derivation of the rocket equation and staging optimization, nozzle thermodynamics and isentropic flow, combustion chamber physics and characteristic velocity, turbomachinery and cycle thermodynamics, regenerative cooling and heat transfer, propellant chemistry, orbital mechanics from the two-body problem through patched conics and perturbations, ascent trajectory optimization, aerodynamic loads, structural mechanics of thin-walled tanks, guidance and control mathematics, reentry heating physics, and combustion instabilities and failure physics.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

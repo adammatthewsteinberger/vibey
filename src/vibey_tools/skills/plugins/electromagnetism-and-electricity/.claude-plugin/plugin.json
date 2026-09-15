@@ -1,0 +1,9 @@
+{
+  "name": "electromagnetism-and-electricity",
+  "version": "0.1.0",
+  "description": "Electromagnetism and the Physics of Electricity: the abstraction ladder, charge and Coulomb's law, fields and Gauss's law, potential and capacitance, dielectrics, what current actually is, resistance and Ohm's law, where the energy actually flows, circuit theory and its validity limits, AC and impedance, power, RMS and power factor, magnetic fields, induction, inductance and transformers, magnetic materials, Maxwell's equations, electromagnetic waves, transmission lines, magnetism as relativistic electrostatics, conduction and band theory, semiconductors, superconductivity, plasma, grounding, shielding and EMC, and the physics of electrical safety.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

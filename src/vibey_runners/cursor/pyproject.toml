@@ -77,11 +77,11 @@ docs = [
 cursorloop = "cursorloop.cli.app:main"
 
 [project.urls]
-Homepage = "https://github.com/adammatthewsteinberger/cursorloop"
-Repository = "https://github.com/adammatthewsteinberger/cursorloop"
-Issues = "https://github.com/adammatthewsteinberger/cursorloop/issues"
-Changelog = "https://github.com/adammatthewsteinberger/cursorloop/blob/main/CHANGELOG.md"
-Documentation = "https://adammatthewsteinberger.github.io/cursorloop/"
+Homepage = "https://github.com/the-vibey-project/cursorloop"
+Repository = "https://github.com/the-vibey-project/cursorloop"
+Issues = "https://github.com/the-vibey-project/cursorloop/issues"
+Changelog = "https://github.com/the-vibey-project/cursorloop/blob/main/CHANGELOG.md"
+Documentation = "https://the-vibey-project.github.io/cursorloop/"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/cursorloop"]

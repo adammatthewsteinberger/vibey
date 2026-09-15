@@ -1,0 +1,14 @@
+# Wellbeing, Purpose and Drive Plugin
+
+Wellbeing, motivation and meaning with the evidence held to an honest standard — a field where some findings are robust, many failed replication, and the popular literature oversells nearly all of them. The hedonic and eudaimonic traditions, measurement problems, adaptation and the money question; the replication problem and what survives it; self-determination theory, intrinsic motivation, goals, habits, willpower, flow and procrastination; meaning, purpose, vocation, adversity and finitude; then interventions, burnout and self-compassion — and the limits, where structural conditions and clinical thresholds make individual technique the wrong tool. Research orientation, not clinical guidance.
+
+One reference, split into 6 skills along its section groups so a task loads only the part it needs. Section numbers (§N) are shared across the set and cross-references into a sibling skill are written as §N → `skill`. Reference, not tutorial: sections are independent, every claim is tagged by how durable it is (stable fundamentals vs. versioned specifics vs. genuinely contested questions), and a currency snapshot (checked August 2026) flags what goes stale first.
+
+## Skills
+
+- **wb-traditions-measurement-adaptation-money-and-replication** — Two Traditions, Measurement, Adaptation and the Set Point, Money, and the Replication Problem (§0–§6): Routing; Two Traditions; ⚠️ Measurement; ⚠️ Adaptation and the Set Point; ⚠️ Money; ⚠️ The Replication Problem.
+- **wb-what-holds-up-relationships-sleep-and-attention** — What Actually Holds Up, Relationships, Sleep, Movement and the Physical Substrate, and Time and Attention (§7–§10): ⚠️ What Actually Holds Up; ⚠️ Relationships; Sleep, Movement and the Physical Substrate; Time and Attention.
+- **wb-self-determination-motivation-goals-habits-and-willpower** — Self-Determination Theory, Intrinsic Motivation and Rewards, Goals, Habits and Behaviour Change, and Willpower (§11–§15): ⚠️ Self-Determination Theory; ⚠️ Intrinsic Motivation and Rewards; ⚠️ Goals; ⚠️ Habits and Behaviour Change; ⚠️ Willpower.
+- **wb-flow-procrastination-meaning-purpose-and-adversity** — Flow, Procrastination, How Meaning and Happiness Come Apart, Sources of Meaning, Work, Vocation and Calling, Adversity and Growth, and Finitude (§16–§22): Flow; ⚠️ Procrastination; ⚠️ Meaning and Happiness Come Apart; Sources of Meaning; Work, Vocation and Calling; ⚠️ Adversity and Growth; Finitude.
+- **wb-interventions-burnout-limits-and-the-industry-critique** — Interventions, Burnout, Self-Criticism and Self-Compassion, the Limits, and the Industry Critique (§23–§27): ⚠️ Interventions; ⚠️ Burnout; Self-Criticism and Self-Compassion; ⚠️ The Limits; ⚠️ The Industry Critique.
+- **wb-reference** — What's Live, Misconceptions, Numbers, and Sources (§28–§33): What's Live; Misconceptions; Numbers; Sources; Quick Reference; Method.

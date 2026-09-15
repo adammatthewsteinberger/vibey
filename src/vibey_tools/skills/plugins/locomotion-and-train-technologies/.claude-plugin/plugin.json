@@ -1,0 +1,9 @@
+{
+  "name": "locomotion-and-train-technologies",
+  "version": "0.1.0",
+  "description": "Locomotion and Train Technologies: adhesion and rolling resistance, traction and braking physics, the wheel-rail interface, gradients, curves and cant, steam, diesel, electric and alternative traction, power electronics and regeneration, track structure, continuous welded rail and thermal stress, switches and crossings, electrification infrastructure, block signalling, interlocking, train protection with ATP, ETCS, PTC and CBTC, safety and failure modes, rolling stock and bogies, braking, capacity and headway, freight, maintenance, high-speed rail, urban rail, and maglev.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

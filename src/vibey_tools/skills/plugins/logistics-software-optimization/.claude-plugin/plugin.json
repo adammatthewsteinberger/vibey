@@ -1,0 +1,9 @@
+{
+  "name": "logistics-software-optimization",
+  "version": "0.1.0",
+  "description": "Logistics and Optimization Software: why optimization projects fail, complexity assessed honestly, linear programming, MIP and branch-and-bound, modeling well, constraint programming, metaheuristics, local search and large neighbourhood search, bounds and solution quality, shortest path and network flow, the TSP, vehicle routing as the core problem, packing and loading, assignment and matching, scheduling, facility location and network design, inventory, forecasting, warehouse operations, last mile, the data layer, dynamic and stochastic problems, and solvers and tooling.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

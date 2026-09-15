@@ -11,4 +11,4 @@
 - [ ] Protected tests untouched (or maintainer sign-off noted here)
 - [ ] Agent-surface trees (`.claude/skills/`, `.cursor/rules/`, `.agents/skills/`, `.agent/rules/`) updated if a procedure changed
 - [ ] Docs updated if behavior changed
-- [ ] I agree to the [Code of Conduct](https://github.com/adammatthewsteinberger/vibey/blob/develop/CODE_OF_CONDUCT.md) and to license this contribution under the MIT License
+- [ ] I agree to the [Code of Conduct](https://github.com/the-vibey-project/vibey/blob/develop/CODE_OF_CONDUCT.md) and to license this contribution under the MIT License

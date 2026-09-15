@@ -1,10 +1,10 @@
 # Documentation
 
 Published site:
-[https://adammatthewsteinberger.github.io/cursorloop/](https://adammatthewsteinberger.github.io/cursorloop/)
+[https://the-vibey-project.github.io/cursorloop/](https://the-vibey-project.github.io/cursorloop/)
 
 Built with MkDocs Material and deployed from `main` by
-[`.github/workflows/docs.yml`](https://github.com/adammatthewsteinberger/cursorloop/blob/main/.github/workflows/docs.yml)
+[`.github/workflows/docs.yml`](https://github.com/the-vibey-project/cursorloop/blob/main/.github/workflows/docs.yml)
 to GitHub Pages.
 
 ```bash

@@ -1,0 +1,9 @@
+{
+  "name": "aerospace-engineering",
+  "version": "0.1.0",
+  "description": "Aerospace Engineering: aerodynamics fundamentals and how lift actually works, airfoils and wings, the drag breakdown, compressible and supersonic flow, aircraft performance, stability and control, air-breathing propulsion, structures and materials, aeroelasticity, flight controls and avionics, drones and UAS including multirotor dynamics and the regulatory picture, launch vehicles, flight test and certification, and the design process.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

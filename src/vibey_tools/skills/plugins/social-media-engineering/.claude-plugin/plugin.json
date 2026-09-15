@@ -1,0 +1,9 @@
+{
+  "name": "social-media-engineering",
+  "version": "0.1.0",
+  "description": "Social Media Engineering: building social systems (feed and timeline architecture, social graphs, ranking, notifications, media handling, moderation at scale), integrating with platform APIs and surviving their pricing and policy changes, the open protocols (ActivityPub and AT Protocol) and what federation actually costs, the regulatory layer (DSA, Online Safety Act, age assurance) that now determines what you may ship, spam and abuse engineering, and the practical question of a developer's own presence.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

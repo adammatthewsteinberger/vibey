@@ -1,0 +1,9 @@
+{
+  "name": "ai-and-data",
+  "version": "0.2.0",
+  "description": "AI and Data Engineering: data pipelines and warehousing, AI/ML landscape and production patterns, RAG and AI agent development, and LLM token and cost optimization on Azure (including provider-agnostic prompt/context compression).",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

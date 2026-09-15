@@ -1,0 +1,9 @@
+{
+  "name": "compliance-frameworks",
+  "version": "0.1.0",
+  "description": "Compliance Frameworks: NIST 800-171, PCI-DSS v4, SOC 2, CMMC/CUI, and OWASP SAMM security compliance guidance.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

@@ -1,0 +1,14 @@
+# Thermodynamics and Fluid Mechanics Plugin
+
+Thermodynamics and fluid mechanics as one subject rather than two — both are continuum theories built on the same conservation laws applied to a control volume, and heat transfer is the third face of the same object. The laws, entropy and exergy, property relations and equations of state, phase behaviour, power and refrigeration cycles, combustion and psychrometrics; then fluid statics, control-volume conservation, Bernoulli and the lift myth, Navier-Stokes, boundary layers, dimensional analysis, internal and external flow, turbulence, compressible flow and turbomachinery; and conduction, convection, radiation, heat exchangers and boiling.
+
+One reference, split into 6 skills along its section groups so a task loads only the part it needs. Section numbers (§N) are shared across the set and cross-references into a sibling skill are written as §N → `skill`. Reference, not tutorial: sections are independent, every claim is tagged by how durable it is (stable fundamentals vs. versioned specifics vs. genuinely contested questions), and a currency snapshot (verified August 2026) flags what goes stale first.
+
+## Skills
+
+- **thermo-laws-entropy-property-relations-and-phase-behaviour** — Systems and Properties, the Zeroth and First Laws, the Second Law and Entropy, Property Relations, Equations of State, and Phase Behaviour (§0–§7): Routing; Systems and Properties; The Zeroth Law and Temperature; The First Law; ⚠️ The Second Law and Entropy; Property Relations; Equations of State; Phase Behaviour.
+- **thermo-cycles-exergy-combustion-and-psychrometrics** — Power Cycles, Refrigeration and Heat Pumps, Exergy, Combustion, and Psychrometrics (§8–§12): Power Cycles; Refrigeration and Heat Pumps; ⚠️ Exergy; Combustion; Psychrometrics.
+- **thermo-fluid-statics-control-volume-bernoulli-and-navier-stokes** — Fluid Properties, Statics, the Control Volume, Bernoulli and the Lift Myth, Navier-Stokes, and Boundary Layers (§13–§18): Fluid Properties; Statics; ⚠️ The Control Volume; ⚠️ Bernoulli; Navier-Stokes; Boundary Layers.
+- **thermo-dimensional-analysis-flows-turbulence-and-turbomachinery** — Dimensional Analysis, Internal Flow, External Flow and Drag, Turbulence, Compressible Flow, and Turbomachinery (§19–§24): ⚠️ Dimensional Analysis; Internal Flow; External Flow and Drag; ⚠️ Turbulence; Compressible Flow; Turbomachinery.
+- **thermo-heat-transfer-conduction-convection-radiation-and-exchangers** — Conduction, Convection, Radiation, and Heat Exchangers and Phase Change (§25–§28): Conduction; Convection; Radiation; Heat Exchangers and Phase Change.
+- **thermo-reference** — What's Live, Anti-Patterns, Misconceptions, Numbers, and Books (§29–§35): What's Live; Anti-Patterns; Misconceptions; Numbers; Books; Quick Reference; Method.

@@ -1,0 +1,12 @@
+---
+description: "Project AI instructions - alias to CLAUDE.md. Follow all guidance in the canonical project documentation."
+alwaysApply: true
+---
+
+# CLAUDE.md Alias
+
+This rule ensures the project's canonical AI instructions are always in context.
+
+**Follow all guidance in:**
+
+@CLAUDE.md

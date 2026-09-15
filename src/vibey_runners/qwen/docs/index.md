@@ -14,7 +14,7 @@ an explicit commit:
 
 ```bash
 uv tool install \
-  'qwenloop @ git+https://github.com/adammatthewsteinberger/qwenloop.git@feature/qwenloop-local-engine'
+  'qwenloop @ git+https://github.com/the-vibey-project/qwenloop.git@feature/qwenloop-local-engine'
 ```
 
 The Python package never bundles model weights.

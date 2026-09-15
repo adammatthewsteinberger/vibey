@@ -1,0 +1,9 @@
+{
+  "name": "maritime-engineering-and-building-ships",
+  "version": "0.1.0",
+  "description": "Maritime Engineering and Building Ships: the design spiral, buoyancy and hydrostatics, stability, hull form, resistance and powering, propulsion, seakeeping, manoeuvring, structure and longitudinal strength, materials and corrosion, machinery, ship systems, ship types, the shipyard, planning and the build, welding and fabrication, launch, outfitting and trials, naval and specialist vessels, class, flag and IMO, safety regulation, small craft and boatbuilding, operation, drydock and end of life, and why ships are lost.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

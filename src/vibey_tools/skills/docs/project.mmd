@@ -1,0 +1,76 @@
+%% Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by
+%% [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/)
+%% ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+%%
+%% How this repository's own release automation moves a change from a contributor's first
+%% push through to a published package, and the surfaces (CLI, SDK, API, MCP, Webhook)
+%% vibey-gh exposes that automation through. Not a diagram of the vibey-skills product
+%% itself — see the root README for that.
+flowchart TD
+    Dev[Contributor] -->|push| Topic[Topic branch]
+    Topic -->|pull_request_target| BranchIntake[Branch intake]
+    BranchIntake -->|opens draft PR| PR[Pull request]
+    PR -->|push| develop[develop]
+
+    Topic --> CLI[vibey-gh CLI]
+    CLI --> Check[check]
+    CLI --> Install[install]
+    CLI --> Version[version]
+    CLI --> MergeTrainCmd[merge-train]
+    CLI --> Promote[promote]
+    CLI --> Realign[Realign]
+
+    Check --> Provenance[Provenance]
+    Check --> CodeQL[CodeQL: Analyze Python]
+    Provenance -->|required check| Gate{"PR Automation gate"}
+    CodeQL -->|required check| Gate
+    CIWorkflow[CI: Validate manifests and build] -->|required check| Gate
+    Docs[Docs: Build docs strict] -->|required check| Gate
+    PRAutomation[PR automation] -->|publishes| Gate
+
+    Gate -->|green + approved| MergeTrain[Merge train]
+    MergeTrain -->|squash merge| develop
+
+    develop -->|push| ReleaseWorkflow[Release]
+    ReleaseWorkflow -->|vibey-gh version --dev| TestPyPI[TestPyPI]
+    TestPyPI -->|verify install| VerifyGate{Verify}
+
+    VerifyGate --> PromoteWorkflow[Promote]
+    PromoteWorkflow -->|content diff develop vs main| PromotePR[Promotion PR]
+    PromotePR -->|rebase merge| main[main]
+
+    main -->|push| ReleaseWorkflow
+    ReleaseWorkflow -->|vibey-gh version| PyPI[PyPI]
+    PyPI --> GitHubPages[GitHub Pages]
+    ReleaseWorkflow -->|on a v* tag: tag, release, attach dist/*| GitHubRelease[GitHub Release]
+    ReleaseWorkflow -->|workflow_run| GitHubReleaseWorkflow[github-release.yml]
+    GitHubReleaseWorkflow -->|tag + release, no bump: expected failure| GitHubRelease
+    GitHubReleaseWorkflow -->|workflow_run| ReleaseArtifacts[Release artifacts]
+    ReleaseArtifacts -->|attaches dist/*| GitHubRelease
+
+    main -->|realign| Realign
+    Realign -->|fast-forward, only if trees match| develop
+
+    subgraph Surfaces[vibey-gh capability surfaces]
+        CLI
+        SDK[SDK]
+        API[API]
+        MCP[MCP]
+        Webhook[Webhook]
+    end
+
+    Registry[Capability registry] --> CLI
+    Registry --> SDK
+    Registry --> API
+    Registry --> MCP
+    Registry --> Webhook
+
+    subgraph SecurityBoundary[Security Boundary]
+        Fork[Fork PR] -.->|never trusted with write access| Gate
+        AutomergeToken[AUTOMERGE_TOKEN] -->|admin role, required review bypass| MergeTrain
+        AnthropicKey[ANTHROPIC_API_KEY] -->|scoped: no merge, no settings| CurrencyResearch[Currency research agent]
+        CurrencyResearch -->|opens PR only| PR
+        LocalFallback[Local review fallback: vibey-local runner + Ollama] -->|reviews only when the paid path returned no verdict| Gate
+        LocalFallback -.->|trusted_only: fork PRs never reach the self-hosted runner| Fork
+        LocalFallback -->|verdict labelled: gate - local fallback| MergeTrain
+    end

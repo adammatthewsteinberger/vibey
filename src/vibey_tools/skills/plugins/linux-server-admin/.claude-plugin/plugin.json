@@ -1,0 +1,9 @@
+{
+  "name": "linux-server-admin",
+  "version": "0.1.0",
+  "description": "Linux Server Administration: the filesystem and file semantics that surprise people, users, permissions and capabilities, processes and resource control, systemd (units, ordering, hardening directives, journald, timers), storage and LVM and filesystems, networking and its diagnosis order, packages and distributions, boot, security hardening including SELinux and AppArmor and SSH, observability and performance with eBPF, a troubleshooting methodology, containers and namespaces, configuration management, and backup and recovery.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

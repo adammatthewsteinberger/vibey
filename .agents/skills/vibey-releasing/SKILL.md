@@ -8,7 +8,9 @@ allowed-tools: Read Bash
 
 Vibey publishes directly from `.github/workflows/release.yml` on every push
 to `develop` or `main` — there is no release-please step and no release PR.
-Versioning and the changelog are both maintained by hand.
+The version is *derived*, not chosen: `vibey-gh version` reads what changed
+against `[version] content_paths` and `code_paths` in `.vibey-gh.toml` and
+answers minor, patch, or nothing. The changelog entry is written by hand.
 
 ## Conventional Commits (enforced)
 
@@ -49,9 +51,13 @@ the changelog entry are manual steps you do as part of the release commit.
    `develop` builds and publishes a dev-versioned build to TestPyPI as
    `vibey-dev` (the `vibey` name is squatted there by an unrelated project),
    via OIDC trusted publishing — no token stored anywhere.
-2. **Bump the version by hand** — before merging to `main`, edit
-   `version = "x.y.z"` in `pyproject.toml` and add a matching entry at the
-   top of `CHANGELOG.md`. Nothing does this automatically.
+2. **Derive the bump** — before merging to `main`, run
+   `uv run vibey-gh version --since origin/main --explain` to see the answer and
+   why, then `--apply` to write it into `pyproject.toml` and
+   `src/vibey/__init__.py`. It lands as a `chore(release): x.y.z` commit. Add the
+   matching `CHANGELOG.md` entry yourself — that part is not derived. Re-run
+   `uv lock` in the same commit: the lock carries vibey's own version, and
+   `uv lock --check` is the CI job every other job depends on.
 3. **`develop` → `main`** — when ready to release, merge `develop` into
    `main` via a merge commit (never squash).
 4. **`release.yml` runs on push to `main`** — it builds the wheel/sdist and

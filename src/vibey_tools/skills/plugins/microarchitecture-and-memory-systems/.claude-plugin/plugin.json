@@ -1,0 +1,9 @@
+{
+  "name": "microarchitecture-and-memory-systems",
+  "version": "0.1.0",
+  "description": "CPU, GPU, NPU and Memory Microarchitecture: architecture versus microarchitecture, pipelining, out-of-order execution, branch prediction, execution units and SIMD, cache organization, cache coherence, memory consistency models, virtual memory and translation, prefetching, GPU microarchitecture and memory systems, NPUs and dataflow architectures, numeric formats, DRAM internals, memory controllers, emerging memory interfaces, power and clocking, microarchitectural security, ISA design, simulation and modelling, measurement, roofline and fundamental limits, and specialization.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

@@ -1,0 +1,86 @@
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+name: Promote
+
+# The other half of the flow. The merge train fills the integration branch; this moves it
+# to the release branch, which is what publishes.
+#
+# It follows the merge train's SUCCESS rather than a clock, so a week's work is promoted
+# as soon as it is all in. The cron is a backstop for the weeks the train has nothing to
+# merge and so never completes, and for anything that arrives by another route.
+#
+# The decisions live in `vibey-gh promote`, where they are unit-tested: compare the
+# branches by CONTENT rather than commit count, derive the version, and open or reuse the
+# promotion PR. Its scans, PR-automation gate, and rebase merge then run asynchronously.
+#
+# PERMISSIONS. A ruleset requiring an approving review cannot be satisfied by the default
+# GITHUB_TOKEN. Supply `AUTOMERGE_TOKEN` (a token belonging to someone with the required
+# ruleset role) for the version push and later event-driven merge.
+
+on:
+  workflow_run:
+    workflows: ["Merge train"]
+    types: [completed]
+  schedule:
+    - cron: "17 8 * * 1"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Report what would be promoted without opening or merging anything"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: promote
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    name: Promote
+    # A merge train that failed leaves the integration branch in an unknown state.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          # checkout's extraheader beats a remote URL, so the push of the version bump
+          # needs the token HERE or it authenticates as the default bot and is refused.
+          token: ${{ secrets.AUTOMERGE_TOKEN || github.token }}
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the tooling
+        run: |
+          set -euo pipefail
+          # Where this repository keeps its own copy of the tooling, from
+          # `[install] self_source` in .vibey-gh.toml -- a DECLARED path, never a search.
+          # Searching the tree for a pyproject declaring `name = "vibey-gh"` would read a
+          # pull request's own files: a branch that adds one anywhere gets it installed
+          # here, with this job's permissions, and hands the provenance gate a tool of the
+          # contributor's choosing. The path is verified below before anything runs.
+          self="."
+          # Verified, not assumed: a misconfigured path must fall back to the published
+          # release rather than install whatever happens to sit there.
+          grep -qE '^name = "vibey-gh"' "$self/pyproject.toml" 2>/dev/null || self=""
+          if [ -n "$self" ]; then
+            python -m pip install --quiet -e "$self"
+          else
+            python -m pip install --quiet vibey-gh
+          fi
+
+      - name: Promote
+        env:
+          GH_TOKEN: ${{ secrets.AUTOMERGE_TOKEN || github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name "vibey[bot]"
+          git config user.email "adam@matthewsteinberger.com"
+          vibey-gh promote ${{ inputs.dry_run && '--dry-run' || '' }}

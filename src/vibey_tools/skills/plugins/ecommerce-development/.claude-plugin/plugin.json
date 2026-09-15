@@ -1,0 +1,9 @@
+{
+  "name": "ecommerce-development",
+  "version": "0.2.0",
+  "description": "eCommerce Development: commerce and payments systems — architecture, the payment lifecycle (authorization, capture, settlement, refunds), integration engineering (idempotency, webhooks, reconciliation, state machines), PSPs and gateways (Stripe, PayPal, Adyen, Braintree), payment methods and rails (cards, wallets, ACH/SEPA, SWIFT/ISO 20022, BNPL, instant payments), SCA and 3-D Secure, authorization rates and decline handling, fraud and chargebacks, PCI DSS scope and the SAQ A trap, subscriptions and billing, marketplaces and payouts, tax and cross-border, the platform layer (Shopify, headless, custom), catalog/cart/checkout and conversion, and agentic commerce protocols.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

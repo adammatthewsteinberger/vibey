@@ -1,0 +1,9 @@
+{
+  "name": "thermodynamics-fluid-mechanics",
+  "version": "0.1.0",
+  "description": "Thermodynamics and Fluid Mechanics — A Deep Dive: systems and properties, the zeroth, first and second laws, entropy, property relations, equations of state, phase behaviour, power cycles, refrigeration and heat pumps, exergy, combustion, psychrometrics, fluid properties and statics, the control volume, Bernoulli and the lift myth, Navier-Stokes, boundary layers, dimensional analysis, internal and external flow, drag, turbulence, compressible flow, turbomachinery, conduction, convection, radiation, heat exchangers and phase change, plus CFD practice.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

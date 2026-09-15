@@ -1,0 +1,9 @@
+{
+  "name": "medicine-design-software-development",
+  "version": "0.1.0",
+  "description": "Medicine Design Software Development: the drug discovery pipeline and where computation actually helps, targets and modalities, what makes a molecule a drug, molecular representation, cheminformatics toolkits, data sources and their quality problems, splitting and leakage, protein structure and structure prediction, docking, molecular dynamics, free energy methods, QSAR and property prediction, ADMET prediction, generative models, active learning and the DMTA loop, benchmarks, validation that means something, pipeline engineering, compute, reproducibility, GxP and computer system validation, and software as a medical device.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

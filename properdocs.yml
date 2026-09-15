@@ -2,9 +2,9 @@ site_name: vibey
 site_description: >-
   A queue-based, six-phase conductor for autonomous software delivery on top of the *loop
   runners — spec interview, design, build, review, deploy. PostgreSQL-backed.
-site_url: https://adammatthewsteinberger.github.io/vibey/
-repo_url: https://github.com/adammatthewsteinberger/vibey
-repo_name: adammatthewsteinberger/vibey
+site_url: https://the-vibey-project.github.io/vibey/
+repo_url: https://github.com/the-vibey-project/vibey
+repo_name: the-vibey-project/vibey
 edit_uri: edit/main/docs/
 
 # ProperDocs, matching the rest of the family. `theme: mkdocs` because ProperDocs ships
@@ -60,3 +60,6 @@ nav:
           - "0013 — Deployment is a three phase stage set": architecture/decisions/0013-deployment-is-a-three-phase-stage-set.md
           - "0014 — Optional visual design and deployment opt in": architecture/decisions/0014-optional-visual-design-and-deployment-opt-in.md
           - "0015 — Qwenloop standby": architecture/decisions/0015-qwenloop-standby.md
+          - "0016 — Classes behind interfaces": architecture/decisions/0016-classes-behind-interfaces.md
+          - "0017 — Dogfood the family first": architecture/decisions/0017-dogfood-the-family-first.md
+          - "0018 — Everything as code": architecture/decisions/0018-everything-as-code.md

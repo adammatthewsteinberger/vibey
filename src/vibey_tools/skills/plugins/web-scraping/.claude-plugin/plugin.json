@@ -1,0 +1,9 @@
+{
+  "name": "web-scraping",
+  "version": "0.1.0",
+  "description": "Web Scraping: the legal and regulatory landscape (CFAA and the hiQ/Bright Data line, contract and ToS exposure, the DMCA §1201 shift, copyright and TDM, GDPR and the EDPB's 2026 scraping guidelines, the EU AI Act), when not to scrape and what to do instead, robots.txt and the emerging crawl-permission layer, how the modern web actually serves data, the tool ladder (requests, curl_cffi, Scrapy, Playwright, managed services), parsing and extraction, bot detection, scale and reliability engineering, data quality, storage and pipelines, operational ethics, scraping for AI and RAG, and building a site that handles crawlers well.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

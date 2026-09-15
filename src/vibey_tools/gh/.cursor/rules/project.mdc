@@ -1,0 +1,7 @@
+---
+description: Safe development rules for vibey-gh
+alwaysApply: true
+---
+
+Follow AGENTS.md. Preserve dependency-free runtime behavior, 100% coverage, immutable
+Action pins, provenance, and permanent-branch safety. Update all affected documentation.

@@ -1412,6 +1412,6 @@ fast, and so each divergence is a decision rather than a drift.
 | [c-models] | Models & pricing — the Cursor Models pool, Token Rate exemption. <https://cursor.com/docs/models-and-pricing> | 2026-08-13 |
 | [c-composer] | Composer 2.5 — identity, agentic tuning, `fast` parameter. <https://cursor.com/docs/models/cursor-composer-2-5> | 2026-08-13 |
 | [c-grok46] | Cursor Grok 4.6 — effort levels, fast variant, joint training. <https://cursor.com/docs/models/grok-4-6> | 2026-08-13 |
-| [c-claudeloop] | claudeloop 0.5.4 — the blueprint. `docs/plans/architecture-and-roadmap.md`, `src/claudeloop/domain/`, ADRs 0001–0007. <https://github.com/adammatthewsteinberger/claudeloop> | local |
+| [c-claudeloop] | claudeloop 0.5.4 — the blueprint. `docs/plans/architecture-and-roadmap.md`, `src/claudeloop/domain/`, ADRs 0001–0007. <https://github.com/the-vibey-project/claudeloop> | local |
 | [c-outline] | Shared transplant outline across the `*loop` forks. [`_shared-transplant-outline.md`](_shared-transplant-outline.md) | local |
 | [c-roadmap] | cursorloop architecture and roadmap — the design this document justifies. [`architecture-and-roadmap.md`](architecture-and-roadmap.md) | local |

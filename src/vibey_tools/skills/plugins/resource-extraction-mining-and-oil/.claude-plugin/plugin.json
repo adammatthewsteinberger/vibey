@@ -1,0 +1,9 @@
+{
+  "name": "resource-extraction-mining-and-oil",
+  "version": "0.1.0",
+  "description": "Resource Extraction — Mining, Oil and Gas: grade, tonnage and the nature of ore, how deposits form, exploration, resources versus reserves, surface and underground mining, drilling and blasting, comminution, mineral processing, extractive metallurgy, gold, tailings, water and drainage, petroleum geology, seismic exploration, drilling, well control, completion and hydraulic fracturing, production and decline, offshore, refining and processing, coal, economics, safety, closure and legacy, and social licence and artisanal mining.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

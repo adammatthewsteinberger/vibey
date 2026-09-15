@@ -12,6 +12,6 @@ human. Distinguishes rate-limit windows from exhausted credits.
 | CLI | [Reference](reference/cli.md) |
 
 Source and issues live on
-[GitHub](https://github.com/adammatthewsteinberger/cursorloop).
+[GitHub](https://github.com/the-vibey-project/cursorloop).
 Package metadata and downloads:
 [PyPI](https://pypi.org/project/cursorloop/).

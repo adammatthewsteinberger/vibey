@@ -18,8 +18,34 @@ lives in `docs/architecture/decisions/`.
   must never acquire one. This is enforced at three independent layers: the
   type definition, a property test, and a database CHECK constraint.
 - **A capacity rejection always outranks a completion claim.**
-- **`domain/` stays pure.** Stdlib only, no I/O, no async, no third-party
-  imports — enforced by `import-linter` in CI, not convention.
+- **`domain/` stays pure.** No I/O, no async, no clock, no network — enforced by
+  `tests/domain/test_domain_purity.py`, which walks the AST. On imports: stdlib,
+  itself, and **any family package that is itself dependency-free** (`vibey-gh`,
+  `vibey-skills`, `vibey-runners-common` all declare `dependencies = []`, so they
+  add nothing stdlib-only did not already allow). `vibey_bootstrap` is forbidden
+  here by name, not by category — it carries the Azure SDK and OpenTelemetry, so
+  it would pull a third-party graph in transitively. Use it from
+  `infrastructure/`. Enforced by `import-linter` in CI, not convention. ADR-0017.
+- **Dogfood the family, always.** If a capability exists inside this family, use
+  it — do not reimplement it and do not reach for a third-party equivalent. The
+  bar is not "is ours better", it is "does ours do this at all". Between using
+  `vibey_bootstrap`'s retry or dead-letter routing and hand-rolling one, use
+  ours. A new implementation of something the family already ships needs a
+  written reason at the call site, and the reason must be a capability gap — in
+  which case the fix is to add it to ours. ADR-0017.
+- **Everything-as-code, and never less of it.** If a thing can be declared in the
+  repository and reconciled from it, that is how it is done — branch protection,
+  repository profile, pipelines, policy, infrastructure. No settings page, no
+  one-off `gh api`, no runbook step that says "then set X". And **everything that
+  can be generic and configurable must be**: a hard-coded value that could have
+  been a key is a decision taken away from the next adopter, silently. Never
+  change anything to a state that is less generic or less configurable. ADR-0018.
+- **Code lives in classes, and every class has an interface beside it.** A
+  module-level function is the method of last resort, and its reason is written
+  at the definition. `src/<pkg>/services/github_service.py` implies
+  `src/<pkg>/services/interfaces/github_service_interface.py`. Interfaces
+  declare; they never consume. New and changed code from 2026-09-15; the
+  existing tree converges module by module. ADR-0016.
 - **The handoff no-loss gate is not negotiable.** A handoff that fails the
   gate is a retry, an escalation to full-transcript mode, or a human gate —
   never a silent partial.
@@ -111,7 +137,7 @@ uv run pip-audit
 | Rotation & engines | `docs/plans/rotation-and-engines.md` |
 | Phase protocols | `docs/plans/phase-protocols.md` |
 | Implementation plan | `docs/plans/implementation-plan.md` |
-| System design and why each hard call was made | `docs/architecture/decisions/` (15 ADRs) |
+| System design and why each hard call was made | `docs/architecture/decisions/` (18 ADRs) |
 | User-facing docs | `README.md` Quickstart, `docs/guides/` |
 | Expansion workstreams (JIRA, clouds, k8s, clients, …) | `docs/runbooks/expansion/` (21 runbooks, `00-master-plan.md` first) |
 
