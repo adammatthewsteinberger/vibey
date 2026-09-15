@@ -2,6 +2,8 @@
 
 **Status:** accepted · **Date:** 2026-09-15 · **Extends:** ADR-0017
 
+**Canon:** sub-doctrine 12.c — *the declared state*, filed under doctrine 12 — Humans first (ADR-0020). It is law from the operator's ratifying merge of the change that carries it.
+
 ## Context
 
 ADR-0017 says: if the family already does it, use the family. This is the other

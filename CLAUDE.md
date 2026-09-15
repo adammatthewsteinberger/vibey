@@ -44,7 +44,7 @@ lives in `docs/architecture/decisions/`.
   that can be spelled out explicitly as a sub-doctrine in the governance corpus
   must be — filed under one of the sealed Twelve in
   `src/vibey_tools/gh/docs/doctrines.md`, and ratified by the operator's merge per
-  Article IV.4, under the authority Article I.1 places above every other. No
+  Article II.3, under the authority Article I.1 places above every other. No
   exceptions. The test: it binds future decisions, it survives a rewrite, and it
   is about conduct rather than mechanism. An ADR records the decision; the canon
   records the law. Both get written. ADR-0020.

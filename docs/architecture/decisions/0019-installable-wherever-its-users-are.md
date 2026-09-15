@@ -2,6 +2,8 @@
 
 **Status:** accepted · **Date:** 2026-09-15 · **Extends:** ADR-0017, ADR-0018
 
+**Canon:** sub-doctrine 2.b — *installable wherever its users already are*, filed under doctrine 2 — Audience channels (ADR-0020). It is law from the operator's ratifying merge of the change that carries it.
+
 ## Context
 
 Ten distributions come out of this tree and every one of them reaches exactly one

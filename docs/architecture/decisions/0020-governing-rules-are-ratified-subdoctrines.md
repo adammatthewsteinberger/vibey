@@ -10,12 +10,13 @@ of Rights, and standing subdoctrine SD-01 — and `vibey_gh/corpus.py` builds a
 content-addressed index over it so that drift between published law and its index
 is one hash comparison.
 
-The Twelve are **sealed**. Doctrines.md says so in its second line: there is no
+The Twelve are **sealed**. Doctrines.md says so in its opening paragraph: there is no
 thirteenth and there never will be, and anything new files as a **sub-doctrine**
 under one of the twelve. Sub-doctrines carry a ratification stamp —
 *(ratified 2026-08-30)*, *(ratified by the merge that carried this page)* — and
-Article IV.4 says how they get one: proposed as a pull request, reviewed under the
-full doctrine set, ratified by human merge. Article IV.2 ratchets them: a
+Article II.3 says how they get one: "the doctrines' sub-entries … are ratified by
+humans through reviewed pull requests — a machine may draft, a human ratifies"; Article
+IV.4 gives the same procedure for the Constitution itself. Article IV.2 ratchets them: a
 refinement may clarify, strengthen or extend, never degrade or remove.
 
 And yet standing rules keep being written somewhere else. ADR-0016 (code lives in
@@ -33,7 +34,7 @@ index — so nothing can cite it as law and nothing can detect its drift.
 corpus must be spelled out explicitly as a sub-doctrine in the governance corpus,
 and ratified. No exceptions.**
 
-Ratification is the operator's, by the merge that carries it, as Article IV.4
+Ratification is the operator's, by the merge that carries it, as Article II.3
 provides — under the authority Article I.1 places above every other, whose claim
 precedes the operator's own and admits no exception. A rule that has not been
 ratified is a proposal, however well argued and however long it has been followed.
@@ -67,7 +68,8 @@ other, and a rule with only the argument is the gap this closes.
 ### Mechanics
 
 - A sub-doctrine is a pull request against `doctrines.md`, filed under one of the
-  twelve, in the established form: `**N.x — name** *(ratified <date>)*: text`.
+  twelve, in the established form: `**N.x — name** *(ratified by the merge that carried this
+  entry)*: text`, or `*(ratified <date>)*` when the date is recorded the same day.
 - Reviewed under the full doctrine set; ratified by the operator's merge.
 - The ratchet applies: it may only strengthen.
 - `vibey-gh corpus-index` is rebuilt in the same change, because the index is
