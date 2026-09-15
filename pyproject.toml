@@ -102,6 +102,18 @@ combine-as-imports = true
 # helper is built from keyword arguments, and test readability wins over the rule.
 "test/*.py" = ["C408"]
 
+[tool.bandit]
+# This package's whole job is driving `git` and `gh`: it shells out to them by name, on
+# PATH, with argv lists it built itself. B404 ("you imported subprocess"), B603 ("you
+# called it") and B607 ("you used a partial path") fire 106 times and say only that. A
+# hundred findings that are all the same non-finding is how the three that mean something
+# get missed -- and there ARE three, so they are justified inline instead: two `# nosec
+# B602` in failover.py (shell=True on operator-authored seat commands) and one `# nosec
+# B310` in yank.py (a literal https template). B310 stays ON: local_review.py's endpoint
+# is a command-line argument, and it is checked at the call rather than skipped.
+skips = ["B404", "B603", "B607"]
+exclude_dirs = ["test", ".venv", "build", "dist", "site"]
+
 [tool.mypy]
 python_version = "3.11"
 warn_return_any = true

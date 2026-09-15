@@ -49,6 +49,33 @@ def _model_returns(monkeypatch: pytest.MonkeyPatch, verdict: dict) -> list[dict]
     return sent
 
 
+@pytest.mark.parametrize("base_url", ["file:///etc/passwd", "ftp://host/x"])
+def test_a_model_endpoint_that_is_not_http_is_refused(monkeypatch, base_url):
+    """`urlopen` also speaks file:, ftp: and data:.
+
+    The endpoint arrives through `--base-url`, so a typo or a copied-in path would
+    otherwise have this step read a local file and report a verdict about its contents.
+    """
+    called = []
+    monkeypatch.setattr(local_review.urllib.request, "urlopen", lambda *a, **k: called.append(a))
+    with pytest.raises(ValueError, match="refusing a non-HTTP model endpoint"):
+        local_review.call_ollama(base_url, "m", "diff", 100, 5)
+    assert called == [], "the request was sent before the scheme was checked"
+
+
+def test_a_model_endpoint_with_no_scheme_at_all_is_refused_too():
+    """Rejected one step earlier, by `Request` itself — recorded so the guard above is not
+    later "simplified" to cover this case and quietly change which error surfaces."""
+    with pytest.raises(ValueError, match="unknown url type"):
+        local_review.call_ollama("/no/scheme", "m", "diff", 100, 5)
+
+
+def test_an_http_endpoint_is_allowed(monkeypatch):
+    """The guard rejects a scheme, not a host: plain http is how a local Ollama is reached."""
+    _model_returns(monkeypatch, _verdict())
+    assert local_review.call_ollama("http://127.0.0.1:11434", "m", "diff", 100, 5)["pass"]
+
+
 def test_the_schema_is_sent_so_decoding_is_constrained(monkeypatch, tmp_path):
     """The whole reason this is trustworthy behind a gate: Ollama compiles the schema to a
     grammar, so malformed JSON is not a reachable state. Losing the `format` key would

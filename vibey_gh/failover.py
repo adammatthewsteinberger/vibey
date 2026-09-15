@@ -114,7 +114,11 @@ def probe(command: str, timeout: int = 120) -> bool:
     if not command:
         return False
     try:
-        run_ = subprocess.run(
+        # `command` is [failover] paid_probe / seats[].health from this repository's own
+        # .vibey-gh.toml. A seat's probe IS a shell command line by design, written by the
+        # operator; anyone who can edit that file can already edit the workflows that run
+        # it, so this is a configuration boundary, not an input one.
+        run_ = subprocess.run(  # nosec B602
             command, shell=True, capture_output=True, timeout=timeout, check=False
         )
     except subprocess.TimeoutExpired:
@@ -160,7 +164,8 @@ def _engage(cfg: FailoverConfig, state_path: Path, report) -> None:
         if seat.health and not probe(seat.health):
             report(f"vibey-gh failover: seat {seat.name} failed its health check; next")
             continue
-        child = subprocess.Popen(seat.launch, shell=True, start_new_session=True)
+        # Same boundary: `launch` is the operator's own seat command line.
+        child = subprocess.Popen(seat.launch, shell=True, start_new_session=True)  # nosec B602
         _write_state(
             state_path,
             {"seat": seat.name, "pid": child.pid, "since": int(time.time())},

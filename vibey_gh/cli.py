@@ -110,7 +110,7 @@ def _conventional_check(args) -> int:
 
 
 def _version(args) -> int:
-    cfg = load_config()
+    cfg = load_config(config=args.config)
     if args.dev is not None:
         dev = versioning.dev_version(cfg, args.dev)
         if args.apply:
@@ -828,6 +828,13 @@ def main(argv: list[str] | None = None) -> int:
     i.set_defaults(func=_install)
 
     v = sub.add_parser("version", help="derive the version to release")
+    v.add_argument(
+        "--config",
+        type=Path,
+        metavar="PATH",
+        help="derive against an alternate configuration — a second distribution this "
+        "repository publishes. Repository-root-relative, and it does not move the root.",
+    )
     v.add_argument("--since", default="origin/main")
     v.add_argument("--dev", metavar="BUILD", help="print <release>.dev<BUILD> instead")
     v.add_argument("--apply", action="store_true")

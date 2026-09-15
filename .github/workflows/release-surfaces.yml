@@ -873,7 +873,7 @@ jobs:
               </section>
               <footer>
                 <span>Provenance · <strong>__REPOSITORY__@__SHORT_SHA__</strong> · branch / __RELEASE_BRANCH__ · channel / __RELEASE_CHANNEL__</span>
-                <span>Made with ❤️ by <a href="https://adammatthewsteinberger.github.io/vibey/">Vibey</a>, Developed by <a href="https://vibewithadam.matthewsteinberger.com/">Adam Matthew Steinberger</a> (<a href="https://github.com/adammatthewsteinberger/">@adammatthewsteinberger</a>).</span>
+                <span>Made with ❤️ by <a href="https://the-vibey-project.github.io/vibey/">Vibey</a>, Developed by <a href="https://vibewithadam.matthewsteinberger.com/">Adam Matthew Steinberger</a> (<a href="https://github.com/adammatthewsteinberger/">@adammatthewsteinberger</a>).</span>
               </footer>
             </main>
           </body>

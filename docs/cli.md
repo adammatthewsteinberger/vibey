@@ -7,7 +7,7 @@ transport failure. Run `vibey-gh COMMAND --help` for argparse's generated refere
 |---|---|---|
 | `check` | `--apply`, `--commits RANGE`, `--quiet`, `--ci` | Verify assets, fingerprints, documentation, provenance, that every `scan_workflows` entry present in `.github/workflows/` can fire for a pull request, and optionally a commit range. `--apply` adds missing headers and collapses a header duplicated within a file; `--ci` skips the local hooks-path check. |
 | `install` | none | Render configured workflows, install/chains hooks, and install release-site assets. |
-| `version` | `--since REF` (default `origin/main`), `--dev BUILD`, `--apply`, `--explain` | Derive, explain, or write the semantic version. |
+| `version` | `--since REF` (default `origin/main`), `--dev BUILD`, `--apply`, `--explain`, `--config PATH` | Derive, explain, or write the semantic version. `--config` derives against an alternate configuration — a second distribution the same repository publishes — without moving the root: a monorepo holds several version lines, and one `.vibey-gh.toml` holds one. The paths inside an alternate config stay repository-root-relative, because the deriver reads them with `git show <rev>:<path>`, which resolves only from the top of the tree. |
 | `trailer` / `trailer-key` | none | Print the configured provenance trailer or only its key. |
 | `conventional-message` | `--file COMMIT_EDITMSG` or stdin | Normalize the first line without changing the remaining bytes. This git-hook helper is intentionally CLI-only because it edits a local file or stdin. |
 | `conventional-check` | required `--commits BASE..HEAD` | Audit every subject in an explicit revision range. This local/CI git helper is intentionally CLI-only, not a remote automation capability. |

@@ -529,6 +529,38 @@ def test_cli_check_reports_failure_then_success(repo, monkeypatch, capsys):
     assert cli_main(["check", "--ci", "--apply"]) == 0
 
 
+def test_one_repository_can_derive_a_second_distributions_version(repo, monkeypatch, capsys):
+    """A monorepo publishes several distributions; one .vibey-gh.toml holds one version
+    line. `--config` supplies a second, without moving the root.
+
+    The paths stay repository-root-relative on purpose: the deriver asks git for them with
+    `git show <rev>:<path>`, which resolves only from the top of the tree. A config whose
+    paths were relative to the subtree would silently read the wrong pyproject.
+    """
+    (repo / ".vibey-gh.toml").write_text(
+        '[version]\nfiles = ["src/__init__.py"]\ncontent_paths = ["content/"]\n'
+    )
+    (repo / "tool").mkdir()
+    (repo / "tool" / "__init__.py").write_text('__version__ = "9.9.9"\n')
+    (repo / ".vibey-gh.d").mkdir()
+    (repo / ".vibey-gh.d" / "tool.toml").write_text(
+        '[version]\nfiles = ["tool/__init__.py"]\ncontent_paths = ["tool/"]\n'
+    )
+    monkeypatch.chdir(repo)
+
+    primary = load_config()
+    alternate = load_config(config=Path(".vibey-gh.d/tool.toml"))
+    assert primary.version_files == ("src/__init__.py",)
+    assert alternate.version_files == ("tool/__init__.py",)
+    # The root did NOT move. That is the whole distinction.
+    assert alternate.root == primary.root == repo
+
+    assert cli_main(["version", "--config", ".vibey-gh.d/tool.toml", "--since", "HEAD"]) == 0
+
+    with pytest.raises(FileNotFoundError, match="no such configuration"):
+        load_config(config=Path(".vibey-gh.d/absent.toml"))
+
+
 def test_cli_prints_the_trailer(repo, monkeypatch, capsys):
     monkeypatch.chdir(repo)
     cli_main(["trailer-key"])

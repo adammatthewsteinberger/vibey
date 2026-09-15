@@ -24,6 +24,7 @@ import json
 import pathlib
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 
 # What the model is actually asked to decide. Kept small on purpose: every field here is
@@ -128,6 +129,20 @@ def build_prompt(diff: str, max_chars: int) -> str:
     return f"Review this pull request diff.\n\n<diff>\n{diff}\n</diff>{note}"
 
 
+def _post(request: urllib.request.Request, timeout: int):
+    """`urlopen`, but only over HTTP(S).
+
+    `urlopen` also speaks file:, ftp: and data:. The base URL here is operator
+    configuration rather than contributor input, but it arrives through `--base-url` on a
+    command line, and the failure mode of a typo is a review step that reads a local file
+    and reports a verdict about it. One check is cheaper than that conversation.
+    """
+    scheme = urllib.parse.urlsplit(request.full_url).scheme
+    if scheme not in ("http", "https"):
+        raise ValueError(f"refusing a non-HTTP model endpoint: {request.full_url!r}")
+    return urllib.request.urlopen(request, timeout=timeout)  # nosec B310
+
+
 def call_ollama(base_url: str, model: str, diff: str, max_chars: int, timeout: int) -> dict:
     payload_prompt = build_prompt(diff, max_chars)
     payload = {
@@ -150,7 +165,7 @@ def call_ollama(base_url: str, model: str, diff: str, max_chars: int, timeout: i
         data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json"},
     )
-    with urllib.request.urlopen(request, timeout=timeout) as response:
+    with _post(request, timeout) as response:
         body = json.loads(response.read())
     verdict = json.loads(body["message"]["content"])
     # Constrained decoding guarantees the schema, but this is the boundary with an external
@@ -278,7 +293,7 @@ def call_ollama_triage(
         data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json"},
     )
-    with urllib.request.urlopen(request, timeout=timeout) as response:
+    with _post(request, timeout) as response:
         body = json.loads(response.read())
     verdict = json.loads(body["message"]["content"])
     if not isinstance(verdict, dict):

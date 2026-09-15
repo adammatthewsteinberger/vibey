@@ -87,7 +87,9 @@ def released_versions(index: str, project: str, timeout: int = 30) -> list[str]:
     """
     url = _INDEX_JSON[index].format(project=project)
     try:
-        with urllib.request.urlopen(url, timeout=timeout) as response:
+        # `url` is _INDEX_JSON[index], a literal https:// template chosen by a two-value
+        # key. There is no scheme here a caller could influence.
+        with urllib.request.urlopen(url, timeout=timeout) as response:  # nosec B310
             payload = json.loads(response.read())
     except urllib.error.HTTPError as error:
         if error.code == 404:

@@ -1073,12 +1073,28 @@ def _workflow_names(raw: dict) -> WorkflowNamesConfig:
     )
 
 
-def load_config(root: Path | None = None) -> GhConfig:
+def load_config(root: Path | None = None, config: Path | None = None) -> GhConfig:
+    """This repository's configuration, or an alternate one describing a second
+    distribution that the same repository publishes.
+
+    `config` changes the CONFIGURATION, never the root. A monorepo publishes several
+    distributions from one tree, and one `.vibey-gh.toml` cannot express several version
+    lines — but every path a config names (`[version] files`, `content_paths`,
+    `code_paths`) is resolved against the repository root, and the version deriver asks
+    git about them with `git show <rev>:<path>`, which only ever resolves from the top of
+    the tree. So the alternate file lives beside the primary one and keeps writing
+    repository-root-relative paths; pointing the root at a subdirectory instead would
+    silently read the wrong pyproject.
+    """
     root = find_root(root)
-    path = root / CONFIG_NAME
+    path = config if config is not None else root / CONFIG_NAME
+    if not path.is_absolute():
+        path = root / path
     data: dict = {}
     if path.is_file():
         data = tomllib.loads(path.read_text(encoding="utf-8"))
+    elif config is not None:
+        raise FileNotFoundError(f"no such configuration: {path}")
 
     fp = data.get("fingerprint", {})
     ver = data.get("version", {})

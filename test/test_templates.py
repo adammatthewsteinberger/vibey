@@ -113,7 +113,7 @@ def test_release_surfaces_preserve_both_docs_channels_and_publish_oci_packages()
     assert "vibey-gh:repository" in text
     assert "managed release theme is missing" in text
     assert "Made with ❤️ by" in text
-    assert "https://adammatthewsteinberger.github.io/vibey/" in text
+    assert "https://the-vibey-project.github.io/vibey/" in text
     assert "https://vibewithadam.matthewsteinberger.com" in text
     assert "pages/robots.txt" in text
     assert "pages/sitemap.xml" in text
@@ -945,7 +945,7 @@ def test_properdocs_theme_is_channel_aware_and_accessible():
     assert "__RELEASE_BRANCH__" in script
     assert "__RELEASE_CHANNEL__" in script
     assert "Made with ❤️ by" in script
-    assert "https://adammatthewsteinberger.github.io/vibey/" in script
+    assert "https://the-vibey-project.github.io/vibey/" in script
     assert "https://vibewithadam.matthewsteinberger.com" in script
     assert "https://github.com/adammatthewsteinberger/" in script
     assert "__PAGES_ROOT__" in script
