@@ -912,6 +912,17 @@ def test_math_loads_from_the_config_file(tmp_path):
     assert load_config(tmp_path).documentation.math is True
 
 
+def test_promotion_installs_uv_before_it_bumps_and_relocks(tmp_path):
+    """`vibey-gh promote` bumps pyproject.toml and re-locks uv.lock in the same commit,
+    which runs `uv lock`; without uv on the runner the promotion fails outright."""
+    from vibey_gh.config import GhConfig
+    from vibey_gh.install import render_workflow
+
+    rendered = render_workflow(WORKFLOWS / "promote-to-main.yml", GhConfig(root=tmp_path))
+    assert "astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41 # v7.1.2" in rendered
+    assert rendered.index("astral-sh/setup-uv@") < rendered.index("          vibey-gh promote ${{")
+
+
 def test_funding_signage_is_opt_in_validated_and_verbatim(tmp_path):
     """#198: an opt-in contribution line beside the footer provenance. Off by default —
     no default address ever ships, because a payment default is one typo away from
