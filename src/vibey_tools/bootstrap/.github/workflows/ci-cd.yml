@@ -1,0 +1,425 @@
+# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+# GitHub Actions Workflow for vibey-bootstrap
+# This workflow builds, tests, and publishes the library to PyPI / TestPyPI
+#
+# Publishing Strategy:
+# - main branch → Stable releases to PyPI (e.g., 3.0.0)
+# - develop branch → Development releases to TestPyPI
+#                    (e.g., 3.0.0.dev20250121123456) — kept off PyPI so the
+#                    public release history contains only real releases
+# - Tags (v*) → Tagged stable releases to PyPI
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    tags:
+      - "v*"
+  pull_request:
+    branches:
+      - main
+      - develop
+
+env:
+  PYTHON_VERSION: "3.11"
+  PACKAGE_NAME: "vibey-bootstrap"
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    outputs:
+      package-version: ${{ steps.set-version.outputs.version }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install build twine
+
+      - name: Install package with test + all extras
+        run: |
+          pip install -e ".[test,all]"
+
+      - name: Run tests with coverage
+        run: |
+          pytest test/ --verbose --cov=vibey_bootstrap --cov-report=xml --cov-report=html --cov-report=term --junitxml=test-results.xml -m "not integration"
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: test-results.xml
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: |
+            coverage.xml
+            htmlcov/
+
+      - name: Set package version
+        id: set-version
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_REF" == "refs/heads/develop" ]; then
+            # Get base version from pyproject.toml
+            BASE_VERSION=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+            # Create dev version with timestamp
+            DEV_VERSION="${BASE_VERSION}.dev$(date +%Y%m%d%H%M%S)"
+            echo "Building development version: ${DEV_VERSION}"
+            echo "version=${DEV_VERSION}" >> $GITHUB_OUTPUT
+
+            # Update version in pyproject.toml for build.
+            # Anchored: an unanchored s/version = ".*"/ also rewrites any other
+            # `version = "..."` line (a future target-version, a pin), silently
+            # corrupting the build.
+            sed -i -E "s/^version = \".*\"\$/version = \"${DEV_VERSION}\"/" pyproject.toml
+
+            # Update version in __init__.py for build
+            sed -i -E "s/^__version__ = \".*\"\$/__version__ = \"${DEV_VERSION}\"/" vibey_bootstrap/__init__.py
+
+            grep -qx "version = \"${DEV_VERSION}\"" pyproject.toml \
+              || { echo "::error::pyproject.toml version rewrite failed"; exit 1; }
+            grep -qx "__version__ = \"${DEV_VERSION}\"" vibey_bootstrap/__init__.py \
+              || { echo "::error::__init__.py version rewrite failed"; exit 1; }
+
+            echo "Updated version to ${DEV_VERSION} for development build"
+          else
+            BASE_VERSION=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+            echo "Building stable version: ${BASE_VERSION}"
+            echo "version=${BASE_VERSION}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build wheel and sdist
+        run: |
+          python -m build
+
+      - name: Validate distribution packages
+        run: |
+          python -m twine check dist/*
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-package
+          path: dist/
+
+  test-integration:
+    name: Integration Tests (SQLite / mongomock / Azurite)
+    runs-on: ubuntu-latest
+
+    services:
+      azurite:
+        image: mcr.microsoft.com/azure-storage/azurite
+        ports:
+          - 10000:10000
+
+    env:
+      AZURITE_BLOB_CONNECTION_STRING: >-
+        DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install package with test + all extras
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[test,all]"
+
+      - name: Run integration tests
+        run: |
+          pytest test/integration/ -m integration --verbose --no-cov
+
+  tag-release:
+    name: Tag Release
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    # Only tag on push to main (not PRs, develop, or existing tags)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write  # Required to push tags
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-tags: true
+
+      - name: Create version tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          VERSION=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+          TAG="v${VERSION}"
+
+          # Ask the REMOTE, not the local clone. `git rev-parse` only sees tags
+          # that were actually fetched, and `fetch-tags: true` on a shallow
+          # (fetch-depth: 1) checkout does not reliably bring them down — so the
+          # guard silently fell through and the push below failed with
+          # "already exists" on any push to main that didn't bump the version.
+          # That is the normal case for a docs-only change, which now redeploys
+          # the site from main.
+          if git ls-remote --exit-code --tags origin "refs/tags/${TAG}" >/dev/null 2>&1; then
+            echo "Tag ${TAG} already exists — skipping (version was not bumped)."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "${TAG}" -m "Release ${TAG}"
+          git push origin "${TAG}"
+          echo "Created and pushed tag ${TAG}."
+
+  publish:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    # Only publish on push to main or tags (not on PRs or develop)
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+    environment: pypi
+    permissions:
+      id-token: write  # Required for Trusted Publishers
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: python-package
+          path: dist/
+
+      - name: Publish to PyPI (Trusted Publisher)
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b  # v1.14.0
+        # No credentials needed — uses OIDC Trusted Publisher
+        with:
+          # A release pushes main + a tag together; both trigger this job. The
+          # first upload wins, so make the loser a no-op instead of a 400 failure.
+          skip-existing: true
+
+  realign:
+    name: Realign develop with main
+    runs-on: ubuntu-latest
+    needs: publish
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # This job pushes, so it needs write. Most jobs here only read.
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # checkout's extraheader beats a remote URL, so the force-with-lease push needs
+          # the token HERE or it authenticates as the default bot and is refused.
+          token: ${{ secrets.AUTOMERGE_TOKEN || github.token }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: python -m pip install --quiet "vibey-gh>=1.2.0"
+
+      # main is REBASE-merged, so its commits are rewritten copies with new SHAs. Without
+      # this, develop and main hold identical content under two different histories — and
+      # the NEXT promotion pull request comes out CONFLICTING, because git sees each
+      # change twice. That is not hypothetical; it is what happened to vibey-gh.
+      #
+      # The guard is tree equality, not ancestry: realign runs only when a diff between
+      # the branches is empty, so it converges identical contents onto one history and
+      # cannot discard work.
+      #
+      # Needs a token with the admin role: develop's ruleset blocks non-fast-forward
+      # pushes and GitHub Actions is not a bypass actor. Skipped, loudly, without one —
+      # failing every release for a missing optional secret teaches people to ignore a
+      # red release.
+      - name: Realign
+        env:
+          HAS_TOKEN: ${{ secrets.AUTOMERGE_TOKEN != '' }}
+        run: |
+          set -euo pipefail
+          if [ "${HAS_TOKEN}" != "true" ]; then
+            echo "::warning::AUTOMERGE_TOKEN is not set, so develop was NOT realigned. \
+          The next promotion will conflict until it is. By hand: \
+          git push --force-with-lease origin main:develop"
+            exit 0
+          fi
+          git config user.name "vibey[bot]"
+          git config user.email "adam@matthewsteinberger.com"
+          vibey-gh realign
+
+  publish-dev:
+    name: Publish Dev to TestPyPI
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    # Only publish dev builds on push to develop
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop'
+    # Dev builds go to TestPyPI so the public PyPI release history stays clean.
+    environment: testpypi
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: python-package
+          path: dist/
+
+      - name: Publish to TestPyPI (Trusted Publisher)
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b  # v1.14.0
+        # No credentials — OIDC Trusted Publisher registered at test.pypi.org
+        # for adammatthewsteinberger/vibey-bootstrap, workflow ci-cd.yml, env testpypi.
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          # A workflow re-run re-uploads an identical timestamped dev version;
+          # make the loser a no-op instead of a 400.
+          skip-existing: true
+
+  validate-dev-installation:
+    name: Validate Dev Installation (TestPyPI)
+    runs-on: ubuntu-latest
+    # Both are required: publish-dev for ordering, build-and-test for the
+    # package-version output. Listing only publish-dev makes
+    # needs.build-and-test.outputs.* silently evaluate to empty.
+    needs: [build-and-test, publish-dev]
+    if: success()
+
+    steps:
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install exact dev version from TestPyPI
+        env:
+          VERSION: ${{ needs.build-and-test.outputs.package-version }}
+        run: |
+          set -euo pipefail
+          test -n "${VERSION}"
+          # TestPyPI does not mirror PyPI, so none of this package's runtime
+          # dependencies resolve from it; --extra-index-url falls back to real
+          # PyPI for those. The flip side: with both indexes active pip picks
+          # the HIGHEST version across them, and PyPI has 3.0.0 while TestPyPI
+          # has 3.0.0.devN (a pre-release, which sorts LOWER). Pinning the exact
+          # dev version is therefore mandatory, not cosmetic — and it is also
+          # what lets pip accept a pre-release without --pre.
+          #
+          # SECURITY: --extra-index-url is the dependency-confusion primitive.
+          # It is safe here only because our own package is pinned exactly. Do
+          # not copy this flag pair into a job installing unpinned first-party
+          # packages.
+          #
+          # RETRY, and --no-cache-dir. TestPyPI serves the project PAGE from a different
+          # path than the SIMPLE INDEX that pip reads, and the index trails the page by
+          # up to a few minutes. A fixed sleep guesses at that lag and a single attempt
+          # turns the guess into a failed release — which is what happened to
+          # 4.2.0.dev20260821234555: the page showed it while pip still could not see it.
+          #
+          # --no-cache-dir matters just as much: pip caches the simple index, so once it
+          # has fetched a listing that lacks the new version, every retry in the same job
+          # replays that same stale listing and the loop can never succeed.
+          for attempt in $(seq 1 20); do
+            if pip install --no-cache-dir \
+                 --index-url https://test.pypi.org/simple/ \
+                 --extra-index-url https://pypi.org/simple/ \
+                 "${PACKAGE_NAME}==${VERSION}"; then
+              echo "installed ${VERSION} on attempt ${attempt}"
+              exit 0
+            fi
+            echo "not in the simple index yet (attempt ${attempt}/20); waiting 30s"
+            sleep 30
+          done
+          echo "::error::${PACKAGE_NAME}==${VERSION} never appeared in the TestPyPI simple index"
+          exit 1
+
+      - name: Verify package imports and version
+        env:
+          VERSION: ${{ needs.build-and-test.outputs.package-version }}
+        run: |
+          python - <<'PY'
+          import os
+          import vibey_bootstrap
+          from vibey_bootstrap import get_bootstrap_logger, initialize_application
+
+          expected = os.environ["VERSION"]
+          actual = vibey_bootstrap.__version__
+          assert actual == expected, f"expected {expected!r}, got {actual!r}"
+          print(f"Import successful — vibey-bootstrap {actual} (TestPyPI)")
+          PY
+
+  validate-installation:
+    name: Validate Installation
+    runs-on: ubuntu-latest
+    needs: [build-and-test, publish]
+    if: success()
+
+    steps:
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install package from PyPI
+        env:
+          VERSION: ${{ needs.build-and-test.outputs.package-version }}
+        run: |
+          set -euo pipefail
+          test -n "${VERSION}"
+          # Pinned, because `pip install vibey-bootstrap` would happily install the
+          # PREVIOUS release while this one is still indexing, and the job would pass
+          # having validated the wrong artifact. Retried with --no-cache-dir for the same
+          # reason as the TestPyPI job above: the simple index trails the project page,
+          # and pip caches the listing it already fetched.
+          for attempt in $(seq 1 20); do
+            if pip install --no-cache-dir "${PACKAGE_NAME}==${VERSION}"; then
+              echo "installed ${VERSION} on attempt ${attempt}"
+              exit 0
+            fi
+            echo "not in the simple index yet (attempt ${attempt}/20); waiting 30s"
+            sleep 30
+          done
+          echo "::error::${PACKAGE_NAME}==${VERSION} never appeared in the PyPI simple index"
+          exit 1
+
+      - name: Verify package imports
+        run: |
+          python -c "from vibey_bootstrap import initialize_application, get_bootstrap_logger; print('Import successful!')"
+
+      - name: Check package version
+        run: |
+          python -c "import vibey_bootstrap; print(f'Version: {vibey_bootstrap.__version__}')"
+
+      - name: Installation instructions
+        run: |
+          echo "=========================================="
+          echo "Package validation complete!"
+          echo "=========================================="
+          echo ""
+          echo "Install with:"
+          echo "  pip install ${{ env.PACKAGE_NAME }}"
+          echo ""
+          echo "Or add to requirements.txt:"
+          echo "  ${{ env.PACKAGE_NAME }}"
+          echo ""

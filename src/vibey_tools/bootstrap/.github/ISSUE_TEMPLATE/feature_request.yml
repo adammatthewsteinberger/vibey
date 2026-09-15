@@ -1,0 +1,38 @@
+name: Feature request
+description: Suggest an improvement or a new capability.
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please search [existing issues](https://github.com/adammatthewsteinberger/vibey-bootstrap/issues)
+        and skim the [docs](https://adammatthewsteinberger.github.io/vibey-bootstrap/)
+        before proposing something that may already exist. Design discussion
+        that is not yet a concrete request belongs in
+        [Discussions](https://github.com/adammatthewsteinberger/vibey-bootstrap/discussions).
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the situation where the current behavior falls short.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What would you like to see happen? A rough API shape or the extra it should live under is welcome.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Anything else?

@@ -1,0 +1,36 @@
+# Include documentation
+include README.md
+include LICENSE
+include NOTICE.md
+
+# Include package data
+include vibey_bootstrap/py.typed
+
+# Exclude development files
+exclude .gitignore
+exclude .pypirc.template
+exclude pip.ini
+
+# Exclude build artifacts
+global-exclude __pycache__
+global-exclude *.py[co]
+global-exclude *.so
+global-exclude .DS_Store
+
+# Exclude test files
+prune test
+prune .venv
+prune .pytest_cache
+prune htmlcov
+
+# Exclude CI/CD files
+exclude azure-pipelines.yml
+exclude .coveragerc
+
+# Exclude archived documentation and examples
+prune docs
+prune examples
+
+# Exclude VS Code and Claude settings
+prune .vscode
+prune .claude

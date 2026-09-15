@@ -1,0 +1,403 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vibey-bootstrap"
+version = "4.2.3"
+description = "Production-ready Azure bootstrap library for App Configuration, Key Vault, and App Insights integration"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Adam Matthew Steinberger", email = "adam@matthewsteinberger.com"}
+]
+maintainers = [
+    {name = "Adam Matthew Steinberger", email = "adam@matthewsteinberger.com"}
+]
+keywords = [
+    "azure",
+    "bootstrap",
+    "configuration",
+    "app-config",
+    "key-vault",
+    "app-insights",
+    "telemetry",
+    "azure-functions",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Systems Administration",
+]
+requires-python = ">=3.11"
+
+dependencies = [
+    # The GitHub automation that used to live in vibey_bootstrap.gh. Split out because
+    # it has no dependencies of its own and release tooling should not drag the Azure
+    # SDK into every repository that adopts it.
+    "vibey-gh==1.70.0",
+    "azure-appconfiguration-provider>=1.0.0",
+    # Imported directly by vibey_bootstrap.health for a cheap readiness probe.
+    # It also arrives transitively via the provider, but we import it, so we
+    # declare it.
+    "azure-appconfiguration>=1.9.0",
+    "azure-keyvault-secrets>=4.7.0",
+    "azure-identity>=1.15.0",
+    "azure-monitor-opentelemetry>=1.2.0",
+    "opentelemetry-api>=1.22.0",
+    # Security: pin minimum versions for transitive dependencies with known CVEs
+    "azure-core>=1.38.0",  # CVE-2026-21226: code execution via deserialization
+    "filelock>=3.20.3",  # CVE-2025-68146, CVE-2026-22701: symlink TOCTOU attacks
+    "urllib3>=2.7.0",  # CVE-2026-21441 + CVE-2026-44431/44432
+    "cryptography>=50.0.0,<51",  # PYSEC-2026-3552/3553/3554 (via azure-identity/msal); msal caps <51
+    "pyjwt>=2.13.0",  # PYSEC-2026-175..179 (via msal); msal caps <3
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.11.1",
+    "black>=23.7.0",
+    "ruff>=0.0.285",
+    "mypy>=1.5.0",
+    "isort>=5.12.0",
+    "bandit>=1.7.5",
+    "pip-audit>=2.6.0",
+    "build>=1.0.0",
+    "hypothesis>=6.0",            # test/transports/test_buffered_shipper_hypothesis.py imports it
+    "pytest-asyncio>=0.23",       # test/v3/test_v3_hardening.py has async tests
+]
+
+test = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.11.1",
+    "pytest-asyncio>=0.23",
+    "hypothesis>=6.98",
+    "mongomock>=4.1",
+    "fastapi>=0.110",
+    "httpx>=0.27",
+    "sqlalchemy>=2.0",
+    "alembic>=1.13",
+    "pymongo>=4.6",
+    "azure-eventhub>=5.11",
+    "azure-communication-email>=1.0",
+    "azure-storage-blob>=12.19",
+    "apscheduler>=3.10",
+    "tenacity>=8.0",
+    "pypdf>=6.13.3",  # CVE remediation: see pdf-safety extra
+    "starlette>=1.3.1",  # CVE remediation: see fastapi extra
+]
+
+# Documentation site toolchain. Deliberately NOT part of `all` — `all` is the
+# runtime aggregate that CI installs alongside `test`. Build the site with
+# `pip install -e ".[docs,all]"`: `all` is what lets griffe statically resolve
+# the guarded optional third-party imports in transports/, scheduler/, etc.
+docs = [
+    "mkdocs>=1.6.1",              # exclude_docs / nested validation: / watch:
+    "mkdocs-material>=9.5.40",
+    "mkdocstrings[python]>=0.29.1",  # floor where `inventories:` replaces `import:`
+    "griffe>=1.5.0",
+    "mkdocs-gen-files>=0.5.0",
+    "mkdocs-literate-nav>=0.6.1",
+    "mkdocs-section-index>=0.3.9",
+    "pymdown-extensions>=10.9",
+]
+
+# v2 — opt-in extras. Apps install only what they use.
+alerts = []
+health = []
+fastapi = ["fastapi>=0.110", "starlette>=1.3.1"]  # starlette pin: PYSEC-2026-248/249, CVE-2026-48817/48818
+heartbeat = []
+config-refresh = []
+servicebus = ["azure-servicebus>=7.11"]
+openai = []
+tokens = []
+scheduler = ["apscheduler>=3.10"]
+metrics = []
+# v2 Parts 2+3 — error handling, defensive coding, security
+retry = ["tenacity>=8.0"]
+ingress = []                            # stdlib-only
+pdf-safety = ["pypdf>=6.13.3"]  # CVE-2026-48155/48156/48735/49460/49461/54530/54531, GHSA-jm82-fx9c-mx94
+ratelimit = []                          # stdlib-only
+notify = []                             # stdlib-only
+subscription = []                       # stdlib-only
+identity = []                           # azure-identity already in core deps
+auth = []                               # piggybacks on the `fastapi` extra
+sb-lock = []                            # piggybacks on the `servicebus` extra
+audit = []                              # stdlib-only
+failclose = []                          # stdlib-only
+# v2.1 — logging transport layer
+transports = []                         # stdlib-only (registry + console/app-insights factories)
+sumologic = ["requests>=2.32.0"]        # buffered POST via requests + urllib3 Retry
+panther = ["requests>=2.32.0"]
+bloblog = ["azure-storage-blob>=12.19"]
+sqllog = ["sqlalchemy>=2.0"]
+nosqllog = ["pymongo>=4.6"]
+nosqllog-cosmos = ["azure-cosmos>=4.5"]
+adxlog = ["azure-kusto-ingest>=4.0", "azure-kusto-data>=4.0"]
+eventhubslog = ["azure-eventhub>=5.11"]
+logging-all = [
+    "requests>=2.32.0",
+    "azure-storage-blob>=12.19",
+    "sqlalchemy>=2.0",
+    "pymongo>=4.6",
+    "azure-kusto-ingest>=4.0",
+    "azure-kusto-data>=4.0",
+    "azure-eventhub>=5.11",
+]
+db = ["sqlalchemy>=2.0", "alembic>=1.13"]
+documentdb = ["pymongo>=4.6"]
+email = ["azure-communication-email>=1.0"]
+http = ["requests>=2.32.0"]
+http-async = ["httpx>=0.27"]
+governance = []
+aks = []
+all = [
+    "fastapi>=0.110",
+    "starlette>=1.3.1",  # CVE remediation: see fastapi extra
+    "azure-servicebus>=7.11",
+    "apscheduler>=3.10",
+    "requests>=2.32.0",
+    "azure-storage-blob>=12.19",
+    "sqlalchemy>=2.0",
+    "alembic>=1.13",
+    "pymongo>=4.6",
+    "azure-communication-email>=1.0",
+    "azure-kusto-ingest>=4.0",
+    "azure-kusto-data>=4.0",
+    "azure-eventhub>=5.11",
+    "httpx>=0.27",
+]
+
+[project.scripts]
+vibey-bootstrap = "vibey_bootstrap.contrib.scaffold:main"
+# `vibey-gh` is no longer declared here: it is provided by the vibey-gh package, and two
+# distributions declaring the same console script is a coin flip on install order.
+# Deprecated alias (pre-4.0 name). Prints a one-line warning, then delegates.
+azbootstrap = "vibey_bootstrap.contrib.scaffold:main_azbootstrap"
+
+[project.urls]
+Homepage = "https://github.com/adammatthewsteinberger/vibey-bootstrap"
+Repository = "https://github.com/adammatthewsteinberger/vibey-bootstrap"
+Documentation = "https://adammatthewsteinberger.github.io/vibey-bootstrap/"
+Issues = "https://github.com/adammatthewsteinberger/vibey-bootstrap/issues"
+
+[tool.setuptools]
+packages = [
+    "vibey_bootstrap",
+    "vibey_bootstrap.alerts",
+    "vibey_bootstrap.bootstrap",
+    "vibey_bootstrap.config_refresh",
+    "vibey_bootstrap.counters",
+    "vibey_bootstrap.exceptions",
+    "vibey_bootstrap.fastapi_middleware",
+    "vibey_bootstrap.health",
+    "vibey_bootstrap.heartbeat",
+    "vibey_bootstrap.ingress",
+    "vibey_bootstrap.logging",
+    "vibey_bootstrap.metrics",
+    "vibey_bootstrap.models",
+    "vibey_bootstrap.notify",
+    "vibey_bootstrap.openai",
+    "vibey_bootstrap.path_safety",
+    "vibey_bootstrap.phases",
+    "vibey_bootstrap.ratelimit",
+    "vibey_bootstrap.repositories",
+    "vibey_bootstrap.repositories.interfaces",
+    "vibey_bootstrap.retry",
+    "vibey_bootstrap.scheduler",
+    "vibey_bootstrap.security",
+    "vibey_bootstrap.services",
+    "vibey_bootstrap.softfail",
+    "vibey_bootstrap.subscription",
+    "vibey_bootstrap.validation",
+    "vibey_bootstrap.audit",
+    "vibey_bootstrap.auth",
+    "vibey_bootstrap.failclose",
+    "vibey_bootstrap.identity",
+    "vibey_bootstrap.pdf_safety",
+    "vibey_bootstrap.sb_lock",
+    "vibey_bootstrap.services.interfaces",
+    "vibey_bootstrap.servicebus",
+    "vibey_bootstrap.tokens",
+    "vibey_bootstrap.tracing",
+    "vibey_bootstrap.transports",
+    "vibey_bootstrap.db",
+    "vibey_bootstrap.db.migrations",
+    "vibey_bootstrap.email",
+    "vibey_bootstrap.http",
+    "vibey_bootstrap.documentdb",
+    "vibey_bootstrap.aks",
+    "vibey_bootstrap.governance",
+    "vibey_bootstrap.contrib",
+    # Omitted since 4.2.0, and the omission was invisible: the tests run against the
+    # source tree, so `from vibey_bootstrap.gh.config import GhConfig` passed here while
+    # raising ModuleNotFoundError for anyone who installed the wheel -- against a
+    # docstring that promises "every import that worked before still works".
+    # test/test_packaging.py now compares this list to what is on disk.
+    "vibey_bootstrap.gh",
+]
+
+[tool.setuptools.package-data]
+vibey_bootstrap = ["py.typed"]
+"vibey_bootstrap.contrib" = ["templates/**/*"]
+
+[tool.pytest.ini_options]
+# test/v3/test_v3_hardening.py defines async tests with no marker; without this
+# pytest-asyncio skips them as "async def functions are not natively supported".
+asyncio_mode = "auto"
+testpaths = ["test"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    "unit: Unit tests",
+    "integration: Local I/O integration tests (SQLite, mongomock, Azurite)",
+]
+addopts = [
+    "--verbose",
+    "--cov=vibey_bootstrap",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml",
+]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.venv
+  | build
+  | dist
+  | __pycache__
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+skip_glob = [".venv/*", "build/*", "dist/*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+# Without `include`, ruff discovers Markdown and formats the Python fences inside it --
+# measured: CLAUDE.md, README.md, CONTRIBUTING.md, docs/USAGE.md and examples/README.md
+# all change. That matters now in a way it did not before: this package is becoming a uv
+# workspace member of the vibey monorepo, whose root runs `ruff format --check .` across
+# the whole tree, and a file resolves its settings from the nearest ancestor config --
+# this one. Narrow it to the Python this project actually owns.
+include = ["vibey_bootstrap/**/*.py", "test/**/*.py", "examples/*.py", "docs/*.py"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (handled by black)
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex (we'll manage complexity ourselves)
+    "UP042", # prefer enum.StrEnum — we intentionally use (str, Enum) for back-compat
+    "B007",  # loop control variable — sometimes named for readability even when unused
+    "B904",  # raise ... from None — pedantic for fail-soft scripts (e.g. SystemExit in examples)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]  # Allow unused imports in __init__.py
+# Examples set env vars (e.g. USE_MOCK_BOOTSTRAP) before importing the
+# library so module-level imports come AFTER the setenv calls. Treat
+# them as documentation — relax pure-stylistic rules:
+"examples/*.py" = [
+    "E402",   # module-level import not at top of file (setenv first by design)
+    "B007",   # loop control vars (`_` rename), readability fine in demos
+    "F841",   # unused local (`credential = build_credential()` etc — illustrative)
+    "F401",   # unused import (importorskip pattern probe)
+    "I001",   # ruff and isort disagree on aliased imports here and each undoes the
+              # other; isort owns import order, as for test_transport_contracts.py
+]
+# Tests use the pytest.importorskip pattern + setenv before importing
+# the module under test. Same kind of ordering constraint as examples.
+"test/*.py" = [
+    "E402",   # importorskip / setenv before module-under-test import
+    "C408",   # dict() vs literal — minor; test readability stays
+]
+"test/v3/test_transport_contracts.py" = [
+    "I001",   # isort places test.v3 before stdlib; ruff disagrees — both valid
+]
+"test/integration/*.py" = [
+    "E402",
+    "I001",
+]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+# Disabled at v2.0.0: many lazy-import sites use `# type: ignore[import-not-found]`
+# to protect against optional extras (fastapi, apscheduler, etc.) NOT being
+# installed in a downstream env. In the dev env those extras ARE installed so
+# mypy flags the ignore as "unused" — but it IS needed downstream.
+warn_unused_ignores = false
+warn_no_return = true
+follow_imports = "normal"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "azure.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "opentelemetry.*"
+ignore_missing_imports = true
+
+[tool.coverage.run]
+source = ["vibey_bootstrap"]
+omit = [
+    "test/*",
+    "*/__pycache__/*",
+    "*/.venv/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+fail_under = 100
+
+[tool.bandit]
+exclude_dirs = [".venv", "test", "build", "dist"]
+skips = ["B101"]  # Skip assert_used (common in tests)

@@ -1,0 +1,84 @@
+name: Bug report
+description: Something isn't working the way it should.
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a report. The fields below are
+        required because a bootstrap/config bug without them is usually
+        unreproducible.
+
+        Please search existing issues first. Usage questions belong in
+        [Discussions](https://github.com/adammatthewsteinberger/vibey-bootstrap/discussions),
+        not here. Security vulnerabilities go through
+        [private reporting](https://github.com/adammatthewsteinberger/vibey-bootstrap/security/advisories/new).
+
+  - type: input
+    id: version
+    attributes:
+      label: vibey-bootstrap version
+      description: Output of `python -c "import vibey_bootstrap; print(vibey_bootstrap.__version__)"`
+      placeholder: "3.0.1"
+    validations:
+      required: true
+
+  - type: input
+    id: extras
+    attributes:
+      label: Installed extras
+      description: Which pip extras are installed (e.g. `[alerts,fastapi,servicebus]`)?
+      placeholder: "[alerts,fastapi]"
+    validations:
+      required: true
+
+  - type: input
+    id: python-version
+    attributes:
+      label: Python version
+      description: Output of `python3 --version`
+      placeholder: "Python 3.12.4"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: host
+    attributes:
+      label: Runtime
+      options:
+        - Azure Functions
+        - FastAPI / container app
+        - AKS worker
+        - Local (USE_MOCK_BOOTSTRAP=true)
+        - Other (specify below)
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include the exact error message or unexpected output.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: >-
+        Paste relevant log lines. Redact connection strings, Key Vault URLs,
+        API keys, and anything else sensitive first.
+      render: shell
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Anything else?

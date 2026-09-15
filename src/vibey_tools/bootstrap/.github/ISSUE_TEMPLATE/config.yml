@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://adammatthewsteinberger.github.io/vibey-bootstrap/
+    about: Usage guide, extras matrix, migration guides, and the generated API reference.
+  - name: Question / discussion
+    url: https://github.com/adammatthewsteinberger/vibey-bootstrap/discussions
+    about: For general questions or design discussion rather than a specific bug or feature request.
+  - name: Security vulnerability
+    url: https://github.com/adammatthewsteinberger/vibey-bootstrap/security/advisories/new
+    about: Please report security vulnerabilities privately — see SECURITY.md. Do not open a public issue.
