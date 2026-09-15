@@ -116,6 +116,8 @@ discussions, stashes, work in progress, imperfect words are the warmth of the
 project. Losslessness governs cleanup: automation deletes only what is provably
 redundant, and everything else is reported to the human, never removed by a machine.
 
+**9.b — the declared seam** *(ratified by the merge that carried this entry)*: code lives in classes, and every class has its contract declared beside it — an interface in a mirrored `interfaces/` package, which declares and never consumes. A bare module-level function is the method of last resort, permitted only where a language or library contract requires one, and its reason is written at the definition. Substitution happens at the declared seam, never by patching an import: a test that must reach around a contract to do its work is bound to the import graph, and green code bound to its import graph is momentum borrowed, not earned. An interface with one implementation is still correct — the test double is the second, and it exists from the first day. No layer is exempt: a pure function becomes a method on a class that carries no state, and purity survives, because purity was never the absence of a class. The existing tree, and every absorbed package, converges module by module as it is touched; a sweeping rewrite that leaves every test green is the shape of change that hides a regression, and it is not taken.
+
 ## 10 — No guarantees
 
 Internet, power, the developer's laptop, and every third-party dependency: never
