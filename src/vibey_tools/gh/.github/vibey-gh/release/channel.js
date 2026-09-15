@@ -60,4 +60,64 @@
     ].join('<span aria-hidden="true">·</span>');
     footer.append(provenance);
   }
+
+  // The documentation's own downloadable forms — the research paper and the book — are
+  // published beside the pages they mirror: release-surfaces copies paper.pdf, paper/,
+  // book.epub, book.pdf and book-print.html into the channel site. Which of them exist on
+  // THIS deploy is substituted below from file presence in the built site, never from
+  // configuration, so a link is never rendered to something that was not produced. An
+  // unsubstituted placeholder (an older workflow) degrades to "nothing to show".
+  const surfacesRaw = '__DOC_SURFACES__';
+  const surfaces = surfacesRaw.startsWith("{") ? JSON.parse(surfacesRaw) : {};
+  const channelRoot = `__PAGES_ROOT__${channel}/`;
+  const surfaceLinks = (items) =>
+    items
+      .filter(([present]) => present)
+      .map(([, label, file]) => `<a href="${channelRoot}${file}">${label}</a>`)
+      .join(' <span aria-hidden="true">·</span> ');
+  const paperLinks = surfaceLinks([
+    [surfaces.paper_pdf, "PDF", "paper.pdf"],
+    [surfaces.paper_html, "HTML", "paper/"],
+  ]);
+  const bookLinks = surfaceLinks([
+    [surfaces.book_pdf, "PDF", "book.pdf"],
+    [surfaces.book_epub, "EPUB", "book.epub"],
+    [surfaces.book_print, "print HTML", "book-print.html"],
+  ]);
+
+  // One click from every page: a Paper and a Book entry in the primary navigation.
+  if (primaryNav) {
+    const bookTarget = surfaces.book_pdf
+      ? "book.pdf"
+      : surfaces.book_epub
+        ? "book.epub"
+        : "book-print.html";
+    for (const [label, present, file] of [
+      ["Paper", Boolean(paperLinks), surfaces.paper_html ? "paper/" : "paper.pdf"],
+      ["Book", Boolean(bookLinks), bookTarget],
+    ]) {
+      if (!present) continue;
+      const item = document.createElement("li");
+      item.className = "nav-item";
+      const link = document.createElement("a");
+      link.className = "nav-link surface-link";
+      link.href = `${channelRoot}${file}`;
+      link.textContent = label;
+      item.append(link);
+      primaryNav.append(item);
+    }
+  }
+
+  // And on every page's footer, beside the provenance line, every format that exists.
+  if (footer && (paperLinks || bookLinks)) {
+    const reading = document.createElement("p");
+    reading.className = "release-surfaces";
+    reading.innerHTML = [
+      paperLinks ? `<strong>Research paper</strong> ${paperLinks}` : "",
+      bookLinks ? `<strong>The book</strong> ${bookLinks}` : "",
+    ]
+      .filter(Boolean)
+      .join('<span aria-hidden="true">·</span>');
+    footer.append(reading);
+  }
 })();
