@@ -35,8 +35,22 @@ jobs:
           # the DECLARED `[install] self_source`, read at runtime rather than searched
           # for, exactly as the managed workflows and the git hooks resolve it; an
           # ordinary adopter, whose config declares no such path, installs the release.
-          self=$(sed -n 's/^[[:space:]]*self_source[[:space:]]*=[[:space:]]*"\(.*\)".*/\1/p' \
-            .vibey-gh.toml | head -n 1)
+          self=$(python - <<'PY'
+          import pathlib
+          import tomllib
+          from pathlib import PurePosixPath
+
+          try:
+              data = tomllib.loads(pathlib.Path(".vibey-gh.toml").read_text(encoding="utf-8"))
+              install = data.get("install", {})
+              value = install.get("self_source", "") if isinstance(install, dict) else ""
+              path = PurePosixPath(value) if isinstance(value, str) else PurePosixPath()
+              if value and not path.is_absolute() and ".." not in path.parts and not value.startswith("~"):
+                  print(path.as_posix())
+          except (OSError, tomllib.TOMLDecodeError):
+              pass
+          PY
+          )
           grep -qE '^name = "vibey-gh"' "${self:-.}/pyproject.toml" 2>/dev/null || self=""
           if [ -n "$self" ]; then
             python -m pip install --quiet -e "$self"
