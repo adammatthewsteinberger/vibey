@@ -200,7 +200,7 @@ def test_adx_falls_back_to_the_managed_identity_credential(monkeypatch):
         with (
             patch("azure.kusto.ingest.KustoStreamingIngestClient") as client_cls,
             patch(
-                "azure.kusto.data.KustoConnectionStringBuilder" ".with_azure_token_credential"
+                "azure.kusto.data.KustoConnectionStringBuilder.with_azure_token_credential"
             ) as kcsb,
         ):
             h._get_client()

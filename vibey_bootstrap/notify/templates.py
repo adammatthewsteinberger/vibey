@@ -34,14 +34,13 @@ _UNPROCESSABLE_TEMPLATES: dict[UnprocessableReason, str] = {
         "password-protected, or in an unexpected format."
     ),
     UnprocessableReason.NO_PDF_FOUND: (
-        "We didn't find a PDF in your message. Please attach the report " "as a PDF and resend."
+        "We didn't find a PDF in your message. Please attach the report as a PDF and resend."
     ),
     UnprocessableReason.TOO_LARGE: (
-        "Your attachment was too large to process. Please try splitting "
-        "the report and resending."
+        "Your attachment was too large to process. Please try splitting the report and resending."
     ),
     UnprocessableReason.TYPE_UNSUPPORTED: (
-        "Your attachment type isn't supported. Please send a PDF or a ZIP " "containing PDFs."
+        "Your attachment type isn't supported. Please send a PDF or a ZIP containing PDFs."
     ),
 }
 

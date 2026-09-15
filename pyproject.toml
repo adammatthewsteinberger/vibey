@@ -238,6 +238,12 @@ packages = [
     "vibey_bootstrap.aks",
     "vibey_bootstrap.governance",
     "vibey_bootstrap.contrib",
+    # Omitted since 4.2.0, and the omission was invisible: the tests run against the
+    # source tree, so `from vibey_bootstrap.gh.config import GhConfig` passed here while
+    # raising ModuleNotFoundError for anyone who installed the wheel -- against a
+    # docstring that promises "every import that worked before still works".
+    # test/test_packaging.py now compares this list to what is on disk.
+    "vibey_bootstrap.gh",
 ]
 
 [tool.setuptools.package-data]
@@ -291,6 +297,13 @@ skip_glob = [".venv/*", "build/*", "dist/*"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+# Without `include`, ruff discovers Markdown and formats the Python fences inside it --
+# measured: CLAUDE.md, README.md, CONTRIBUTING.md, docs/USAGE.md and examples/README.md
+# all change. That matters now in a way it did not before: this package is becoming a uv
+# workspace member of the vibey monorepo, whose root runs `ruff format --check .` across
+# the whole tree, and a file resolves its settings from the nearest ancestor config --
+# this one. Narrow it to the Python this project actually owns.
+include = ["vibey_bootstrap/**/*.py", "test/**/*.py", "examples/*.py", "docs/*.py"]
 
 [tool.ruff.lint]
 select = [

@@ -150,9 +150,8 @@ def test_opens_correlation_scope_around_process(caplog: pytest.LogCaptureFixture
         with caplog.at_level(logging.INFO, logger="t.sbtest"):
             handle_message(receiver, msg, processor)
         matched = [r for r in caplog.records if r.msg == "inside process"]
-        assert (
-            matched
-        ), f"expected 'inside process' log; got msgs: {[r.msg for r in caplog.records]}"
+        seen = [r.msg for r in caplog.records]
+        assert matched, f"expected 'inside process' log; got msgs: {seen}"
         assert getattr(matched[0], "correlation_id", None) == "MY-CID-1234"
     finally:
         test_logger.removeFilter(filt)

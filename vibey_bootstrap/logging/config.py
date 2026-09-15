@@ -75,7 +75,16 @@ class _StrictLogger(logging.Logger):
                         f"extra[{key!r}] collides with a reserved LogRecord attribute"
                     )
         return super().makeRecord(
-            name, level, fn, lno, msg, args, exc_info, func, extra, sinfo  # type: ignore[arg-type]
+            name,
+            level,
+            fn,
+            lno,
+            msg,
+            args,  # type: ignore[arg-type]
+            exc_info,  # type: ignore[arg-type]
+            func,
+            extra,
+            sinfo,
         )
 
 

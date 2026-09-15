@@ -93,12 +93,8 @@ class TestBootstrapLogging:
         handler_count_after_third = len(root_logger.handlers)
 
         # Assert - should not add duplicate handlers
-        assert (
-            handler_count_after_first == handler_count_after_second
-        ), "Should not add handlers on second call"
-        assert (
-            handler_count_after_second == handler_count_after_third
-        ), "Should not add handlers on third call"
+        assert handler_count_after_first == handler_count_after_second, "2nd call added one"
+        assert handler_count_after_second == handler_count_after_third, "3rd call added one"
 
     def test_logging_works_before_telemetry_config(self):
         """Test that logging works before telemetry configuration."""

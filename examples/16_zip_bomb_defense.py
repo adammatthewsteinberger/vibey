@@ -82,7 +82,7 @@ def main() -> None:
     print("verified:")
     print(f"  default MAX_ZIP_ENTRIES             : {MAX_ZIP_ENTRIES}")
     print(
-        f"  default MAX_ZIP_UNCOMPRESSED_BYTES  : {MAX_ZIP_UNCOMPRESSED_BYTES} ({MAX_ZIP_UNCOMPRESSED_BYTES // (1024*1024)} MB)"
+        f"  default MAX_ZIP_UNCOMPRESSED_BYTES  : {MAX_ZIP_UNCOMPRESSED_BYTES} ({MAX_ZIP_UNCOMPRESSED_BYTES // (1024 * 1024)} MB)"
     )
     print(f"  zip.rejected.bomb counter           : {counters.get('zip.rejected.bomb', 0)}")
     print("  metadata inspected pre-read         : True (no allocation on rejection)")

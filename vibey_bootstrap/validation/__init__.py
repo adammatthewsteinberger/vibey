@@ -52,8 +52,7 @@ def _check_field(rule: FieldRule, payload: dict[str, Any]) -> str | None:
 
     if not isinstance(value, rule.type):
         return (
-            f"field {rule.name!r} has wrong type "
-            f"(expected {rule.type}, got {type(value).__name__})"
+            f"field {rule.name!r} has wrong type (expected {rule.type}, got {type(value).__name__})"
         )
 
     if isinstance(value, str):

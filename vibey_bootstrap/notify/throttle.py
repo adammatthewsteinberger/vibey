@@ -54,7 +54,7 @@ def reset_sender_notification_throttle() -> None:
     """Test-only. Refuses unless AZURE_BOOTSTRAP_ALLOW_RESET=1."""
     if os.environ.get("AZURE_BOOTSTRAP_ALLOW_RESET") != "1":
         raise RuntimeError(
-            "reset_sender_notification_throttle is test-only — " "set AZURE_BOOTSTRAP_ALLOW_RESET=1"
+            "reset_sender_notification_throttle is test-only — set AZURE_BOOTSTRAP_ALLOW_RESET=1"
         )
     with _throttle_lock:
         _throttle_state.clear()

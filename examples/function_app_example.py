@@ -290,7 +290,9 @@ def health_check(req: func.HttpRequest) -> func.HttpResponse:
 
 
 @app.timer_trigger(
-    arg_name="timer", schedule="0 */5 * * * *", run_on_startup=False  # Every 5 minutes
+    arg_name="timer",
+    schedule="0 */5 * * * *",
+    run_on_startup=False,  # Every 5 minutes
 )
 def scheduled_task(timer: func.TimerRequest) -> None:
     """

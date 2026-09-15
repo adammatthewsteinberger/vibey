@@ -21,7 +21,7 @@ def enforce_size_cap(
         if counter_name:
             bump_counter(counter_name)
         raise OversizedAttachmentError(
-            f"attachment {filename!r} is {size_bytes} bytes; " f"exceeds cap of {cap_bytes} bytes"
+            f"attachment {filename!r} is {size_bytes} bytes; exceeds cap of {cap_bytes} bytes"
         )
 
 

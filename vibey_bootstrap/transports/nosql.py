@@ -182,7 +182,7 @@ def make_nosql_handler() -> logging.Handler | None:
     database = fail_open_env("NOSQL_LOG_DATABASE")
     if not database:
         logging.getLogger(__name__).debug(
-            "NOSQL_LOG_URI is set but NOSQL_LOG_DATABASE is unset — " "NoSQL transport disabled.",
+            "NOSQL_LOG_URI is set but NOSQL_LOG_DATABASE is unset — NoSQL transport disabled.",
         )
         return None
 

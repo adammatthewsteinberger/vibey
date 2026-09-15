@@ -181,7 +181,7 @@ def handle_message(
 
                         alert_dev_team(
                             AlertSeverity.ERROR,
-                            subject=(f"SB dead-lettered ({source}): " f"{type(exc).__name__}"),
+                            subject=(f"SB dead-lettered ({source}): {type(exc).__name__}"),
                             context={
                                 "exception_type": type(exc).__name__,
                                 "error": str(exc)[:300],

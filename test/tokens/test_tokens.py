@@ -68,6 +68,4 @@ def test_uses_constant_time_compare() -> None:
     from vibey_bootstrap.tokens import __file__ as tokens_path
 
     source = Path(tokens_path).read_text()
-    assert (
-        "hmac.compare_digest" in source
-    ), "verify_action_token must use hmac.compare_digest, not =="
+    assert "hmac.compare_digest" in source, "verify_action_token must not compare with =="

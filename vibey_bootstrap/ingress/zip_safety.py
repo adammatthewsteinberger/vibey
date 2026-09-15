@@ -30,7 +30,7 @@ def enforce_zip_safety_limits(
         if counter_name:
             bump_counter(counter_name)
         raise ZipBombError(
-            f"archive {filename!r} has {len(infos)} entries; " f"exceeds max_entries={max_entries}"
+            f"archive {filename!r} has {len(infos)} entries; exceeds max_entries={max_entries}"
         )
     total = sum(info.file_size for info in infos)
     if total > max_uncompressed_bytes:

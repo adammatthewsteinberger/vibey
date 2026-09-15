@@ -69,7 +69,7 @@ def check_dlq_growth_rate(
             alert_dev_team(
                 AlertSeverity.CRITICAL,
                 subject=(
-                    f"DLQ growth rate exceeded threshold " f"(+{delta} in {sample_window_minutes}m)"
+                    f"DLQ growth rate exceeded threshold (+{delta} in {sample_window_minutes}m)"
                 ),
                 context={
                     "current_depth": current,

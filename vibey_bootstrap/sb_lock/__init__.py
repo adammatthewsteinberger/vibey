@@ -25,7 +25,7 @@ def _new_auto_lock_renewer() -> Any:
         from azure.servicebus import AutoLockRenewer  # type: ignore[import-not-found]
     except ImportError as exc:  # pragma: no cover
         raise ImportError(
-            "sb_lock requires the `servicebus` extra: " "pip install vibey-bootstrap[servicebus]"
+            "sb_lock requires the `servicebus` extra: pip install vibey-bootstrap[servicebus]"
         ) from exc
     return AutoLockRenewer()
 
