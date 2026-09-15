@@ -11,6 +11,24 @@ The version is *derived*, not chosen: `vibey-gh version` reads what changed
 against `[version] content_paths` and `code_paths` in `.vibey-gh.toml` and
 answers minor, patch, or nothing. The changelog entry is written by hand.
 
+## Where a release goes
+
+PyPI is not the finish line. These are command-line applications, and someone
+installing a CLI reaches for `brew install` or `winget install` -- that it is
+written in Python is an implementation detail they should not have to care about.
+
+Publish to every registry that can carry it, and treat the channel as part of
+shipping rather than a follow-up. Every packaging definition -- formula, PKGBUILD,
+snapcraft.yaml, nuspec, winget manifest -- lives in this repository and is
+published by automation, never hand-edited in a tap (ADR-0018). A stale formula is
+worse than no formula: it installs an old version silently.
+
+Note what publishing does and does not mean per target. `dpkg`, `rpm` and
+`apk-tools` are formats, not registries. `podman` wants an OCI image, which this
+repository already builds. npm, Maven, Cargo and the rest cannot carry a Python
+library at all -- only a wrapper that fetches the CLI, which is a different
+promise and has to say so. See ADR-0019 for the grouping and the order.
+
 ## Conventional Commits (enforced)
 
 Every commit message must follow Conventional Commits format. A pre-commit
