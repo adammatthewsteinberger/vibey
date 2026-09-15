@@ -641,10 +641,11 @@ Matching is by stable `item_id`, not by string similarity — every closable thi
 gets an id when it is first recorded, so the check is exact rather than fuzzy.
 
 **On failure:** regenerate the brief (up to 3 attempts, each time feeding back the
-specific rule that failed) → then escalate to `full_transcript` mode (the entire
-ledger range is inlined, accepting the token cost) → then raise a human gate.
-It never proceeds on a failed gate. In `full_transcript` mode only R6, R8 and R10
-are evaluated; the closure rules are satisfied by construction.
+specific rule that failed) → then escalate to `full_transcript` mode → then raise a human gate. It never proceeds on
+a failed gate. In `full_transcript` mode only R6, R8 and R10 are evaluated. The design
+inlines the whole ledger range so the closure rules hold by construction; as built,
+the range is delivered as `.vibey/handoff/ledger.jsonl` in the receiving worktree and
+named in the seed, not inlined, so the waiver rests on the successor reading it.
 
 ### 8.5 Handoff sequence
 

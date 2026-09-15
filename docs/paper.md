@@ -77,15 +77,19 @@ mutation (R10).
 \end{invariant}
 ```
 
-The gate has modes. In *strict* mode all ten rules apply. A brief that fails
-escalates to *full-transcript* mode, in which the entire range $\rho$ is inlined into
-the successor's seed: R1--R5, R7 and R9 then hold by construction, while R6, R8 and
-R10 still run, because they check facts about the range and the brief's containment
-rather than its completeness. Further failure parks the item on a *human* gate; a
+The gate has modes. In *strict* mode all ten rules apply, and a failing brief is
+regenerated up to three times. It then escalates to *full-transcript* mode, which
+makes the brief advisory: the successor is to work from the whole range $\rho$, so the
+gate stops checking R1--R5, R7 and R9, while R6, R8 and R10 still run, because they
+check facts about the range and the brief's containment rather than its completeness.
+In the current implementation the range reaches the successor as a file rather than
+inline: the full ledger is written into the receiving worktree and the seed prompt
+names it, so in this mode completeness rests on the successor reading that file, not
+on the gate. Inlining the range into the seed, or keeping the closure rules enabled
+until it is inlined, is open work. Further failure parks the item on a *human* gate; a
 fourth, *forced* mode is reserved for an explicit operator override. A handoff that
 fails the gate is therefore a retry, an escalation, or a human decision — never a
-silent partial. The full ledger is also written into the receiving worktree, so the
-successor can consult the range directly.
+silent partial.
 
 ## Queue semantics
 
