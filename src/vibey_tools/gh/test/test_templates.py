@@ -656,6 +656,9 @@ def test_the_book_and_the_paper_are_findable_on_every_published_surface(tmp_path
     # The LLM-facing index, only where the files exist.
     assert "[ -f pages/main/paper.pdf ] && SURFACE_LINES=" in on
     assert "${SURFACE_LINES}- Provenance:" in on
+    # Every book format that can be produced is listed, not a subset.
+    for produced in ("book.pdf", "book.epub", "book-print.html", "paper/index.html"):
+        assert f"[ -f pages/main/{produced} ] && SURFACE_LINES=" in on, produced
     # Immutable copies: an attach job, and the only job allowed to write contents.
     parsed = yaml.safe_load(on)
     attach = parsed["jobs"]["attach"]
@@ -685,6 +688,38 @@ def test_the_book_and_the_paper_are_findable_on_every_published_surface(tmp_path
     off_attach = yaml.safe_load(off)["jobs"]["attach"]
     assert off_attach["if"].startswith("false &&")
     assert "TAG: release-${{ needs.package.outputs.version }}" in off
+
+
+def test_a_manual_release_must_prove_its_commit_and_never_runs_its_code(tmp_path):
+    """A dispatcher chooses the target SHA. Nothing with write access may run until that
+    SHA is proven to be on the release branch with a successful release run for exactly
+    that commit, and even then the code executed is the protected release branch's
+    tooling -- the target is only ever read as data."""
+    from vibey_gh.config import GhConfig
+    from vibey_gh.install import render_workflow
+
+    rendered = render_workflow(WORKFLOWS / "github-release.yml", GhConfig(root=tmp_path))
+    parsed = yaml.safe_load(rendered)
+    assert parsed["permissions"] == {"contents": "read"}
+    verify, publish = parsed["jobs"]["verify"], parsed["jobs"]["publish"]
+    assert verify["permissions"] == {"actions": "read", "contents": "read"}
+    assert publish["permissions"] == {"contents": "write"}
+    assert publish["needs"] == "verify"
+    assert "if" not in publish, "publish must not be reachable except through verify"
+    prove = verify["steps"][0]["run"]
+    assert "grep -qE '^[0-9a-f]{40}$'" in prove
+    assert "compare/${target}...${RELEASE_BRANCH}" in prove
+    assert "identical|ahead) ;;" in prove
+    assert '--commit "$target" --status success' in prove
+    assert verify["steps"][0]["env"]["RELEASE_WORKFLOW"] == "Release"
+    tooling, target = publish["steps"][0]["with"], publish["steps"][1]["with"]
+    assert tooling["ref"] == "main" and tooling["path"] == "tooling"
+    assert target["ref"] == "${{ needs.verify.outputs.target }}" and target["path"] == "target"
+    assert tooling["persist-credentials"] is False and target["persist-credentials"] is False
+    install, release = publish["steps"][3], publish["steps"][4]
+    assert install["working-directory"] == "tooling"
+    assert release["working-directory"] == "target"
+    assert release["env"]["TARGET"] == "${{ needs.verify.outputs.target }}"
 
 
 def test_funding_signage_is_opt_in_validated_and_verbatim(tmp_path):
