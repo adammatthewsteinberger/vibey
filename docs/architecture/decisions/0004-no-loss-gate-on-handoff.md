@@ -2,6 +2,8 @@
 
 **Status:** accepted · **Date:** 2026-08-14
 
+**Owes:** a sub-doctrine (not yet proposed) — a handoff that fails the gate is a retry, an escalation to the full transcript, or a human gate, never a silent partial (nearest parent: doctrine 7, the never-lost reader).
+
 ## Context
 
 The requirement is that passing a conversation between AIs must not lose data. The
@@ -19,7 +21,11 @@ matching on ids rather than on text.
 
 On failure: regenerate the brief with the specific violations fed back (≤3
 attempts) → escalate to `FULL_TRANSCRIPT` mode, inlining the entire range → raise
-a human gate. It never proceeds on a failed gate.
+a human gate. It never proceeds on a failed gate. The ladder is
+`application/handoff_orchestration.py` (`MAX_STRICT_ATTEMPTS = 3`); the wind-down
+path (`application/wind_down.py`) runs it over a brief from the deterministic floor
+producer described below and parks on a `handoff_gate_failed` gate when it ends in
+`HUMAN`.
 
 ## Rationale
 
@@ -57,8 +63,11 @@ brief can waste a turn; it cannot redirect the work.
 ## Consequences
 
 **Good.** "Lossless" is a check that can fail, with a named item, not an
-aspiration. Gate outcomes are stored per attempt, so quality is measurable:
-"which rule fires most, for which engine pair, in which phase" is a query.
+aspiration. The final gate outcome of every handoff — the mode it reached
+(`gate_mode`), the attempt count (`gate_attempts`), and the violations
+(`gate_violations`) — is stored on its `handoff` row with the engine pair and
+phase, so quality is measurable: "which rule fires most, for which engine pair, in
+which phase" is a query. Intermediate attempts are not stored individually.
 
 **Bad.** Handoffs cost more — up to three brief generations, and occasionally a
 full-transcript inline that is expensive in tokens. Vibey pays it rather than

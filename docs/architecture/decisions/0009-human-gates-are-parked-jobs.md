@@ -1,6 +1,8 @@
 # 0009 — Human gates park jobs; they never block workers
 
-**Status:** accepted · **Date:** 2026-08-14
+**Status:** accepted · **Date:** 2026-08-14 · **Extended by:** ADR-0024
+
+**Owes:** a sub-doctrine (not yet proposed) — human input is a parked job plus a `human_gate` row, never a worker waiting on a person (nearest parent: doctrine 12, humans first).
 
 ## Context
 
@@ -19,12 +21,18 @@ not "never involve a human." Vibey inverts control:
 - **Vibey owns the conversation**, not the engine. Engines are used for the
   autonomous parts of Phases 1 and 3 (research, synthesis, demo generation,
   triage). The interactive turn-taking is vibey's.
-- **A handler that needs a human returns `Park(gate)`.** The worker writes a
-  `human_gate` row, sets the job to `awaiting_human`, and **releases its lease and
-  picks up the next job.** No thread waits on stdin.
-- The developer answers via `vibey answer <gate_id>`, the TUI, or a notification
-  action. That writes the answer, flips the job to `ready`, and `NOTIFY` wakes a
-  worker.
+- **A handler that needs a human returns `Park(HumanGateRequest)`.** The worker
+  writes a `human_gate` row *before* releasing the lease (so the job never looks
+  claimable without the row that explains it), sets the job to `awaiting_human`,
+  and **picks up the next job.** No thread waits on stdin. Raising a gate sends
+  `NOTIFY vibey_gate_raised`.
+- The developer answers with `vibey answer <gate_id>` (question/answer pairs,
+  `--defaults`, `--choice`, `--verdict`, or `--raw` JSON), or, on Kubernetes,
+  through the `VibeyProject` resource's `spec.answers`, which the operator applies
+  through the same code path ([ADR-0025](0025-kubernetes-operator-crd-keda.md)).
+  Answering writes the answer, flips the job to `ready`, and
+  `NOTIFY vibey_job_ready` wakes a worker. A TUI answer path and actionable
+  notifications are planned, not built.
 
 ## Rationale
 
@@ -41,23 +49,34 @@ developer.
 
 ```python
 @dataclass(frozen=True, slots=True)
-class HumanGate:
-    gate_id: UUID
-    job_id: UUID
-    kind: GateKind      # question | approval | escalation | budget | handoff_failure
+class HumanGateRequest:                 # application/dto.py
+    kind: str                           # free string; see below
     prompt: str
-    options: tuple[GateOption, ...]   # structured choices wherever possible
-    default: str | None
-    timeout_at: datetime | None
+    options: tuple[str, ...] = ()       # structured choices wherever possible
+    default_answer: str | None = None
+    timeout_at: datetime | None = None
 ```
+
+The persisted row (`HumanGateRecord`, table `human_gate`) adds `gate_id`,
+`project_id`, `job_id`, `answer` (JSON), `raised_at`, `answered_at`, and
+`answered_by`. Kinds are strings, not an enum. Those raised today are `question`,
+`approval`, `choice`, `budget_exhausted`, `escalation_exhausted`,
+`verify_repair_exhausted`, `integrate_repair_exhausted`, `too_many_wind_downs`,
+`handoff_gate_failed`, `deploy_interview`, `deploy_acceptance`,
+`deploy_demo_review`, and `deploy_failure_triage`. The `*_exhausted` gates end a
+bounded ladder, and their answer can grant more of what ran out
+([ADR-0024](0024-every-bounded-ladder-parks-with-a-grant.md)).
 
 **Structured options wherever possible.** A gate that offers three labeled choices
 is answerable from a phone notification; one that demands prose is not.
 
-**Timeout defaults.** A gate with a `default` and a `timeout_at` auto-resolves,
-which is what makes overnight runs viable for low-stakes decisions. Every
-auto-resolution is recorded as an `AssumptionStated` event, so the decision is
-visible, travels through every handoff, and is checked by gate rule R4. An
+**Timeout defaults (designed, not implemented).** A gate with a `default_answer`
+and a `timeout_at` is meant to auto-resolve, which is what would make overnight
+runs viable for low-stakes decisions. Every auto-resolution would be recorded as an
+`AssumptionStated` event, so the decision is visible, travels through every
+handoff, and is checked by gate rule R4. Today the columns exist but no worker
+expires a gate; `default_answer` is used only when a handler reads an answered gate
+that lacks a choice, and an overnight run still waits for a human to answer. An
 assumption taken at 3 a.m. because nobody answered is exactly the kind of thing
 that must not vanish.
 
@@ -69,5 +88,18 @@ one.
 
 **Bad.** More states in the job machine (`awaiting_human`, `awaiting_capacity`) and
 a UX surface to build for answering. A gate raised with no notification configured
-can sit unnoticed; `vibey status` surfaces open gates prominently and the TUI
-shows a count.
+can sit unnoticed. `vibey status` and the `vibey watch` dashboard show the
+`awaiting_human` job count in the queue depth, and the operator projection sets a
+`Parked` condition naming the first open gate; none of them yet lists open gates
+with their prompts.
+
+## Alternatives rejected
+
+- **A worker that waits on stdin.** One absent developer deadlocks the pool, which
+  breaks the rule this record starts from.
+- **Let the engine ask the question.** The `*loop` runners deny question tools by
+  design; vibey would be re-enabling exactly what they forbid, inside a session
+  that cannot survive the wait.
+- **A separate pool of interactive workers.** Two kinds of worker double the lease
+  and reaper surface and still hold a process per open question; parking holds
+  nothing.
