@@ -79,6 +79,26 @@
     [surfaces.paper_pdf, "PDF", "paper.pdf"],
     [surfaces.paper_html, "HTML", "paper/"],
   ]);
+  // The governance corpus (sub-doctrine 7.b), in the order of authority, linked only for the
+  // pages this deploy actually published.
+  const governanceNames = {
+    constitution: "Constitution",
+    doctrines: "Doctrines",
+    commandments: "Commandments",
+    "bill-of-rights": "Bill of Rights",
+  };
+  const governanceOrder = ["constitution", "doctrines", "commandments", "bill-of-rights"];
+  const publishedGovernance = Array.isArray(surfaces.governance) ? surfaces.governance : [];
+  const governancePages = [
+    ...governanceOrder.filter((slug) => publishedGovernance.includes(slug)),
+    ...publishedGovernance.filter((slug) => !governanceOrder.includes(slug)).sort(),
+  ];
+  const governanceLinks = governancePages
+    .map(
+      (slug) =>
+        `<a href="${channelRoot}governance/${slug}/">${governanceNames[slug] || slug.replace(/^(sd-\d+).*$/i, "$1").toUpperCase()}</a>`,
+    )
+    .join(' <span aria-hidden="true">·</span> ');
   const bookLinks = surfaceLinks([
     [surfaces.book_pdf, "PDF", "book.pdf"],
     [surfaces.book_epub, "EPUB", "book.epub"],
@@ -93,6 +113,7 @@
         ? "book.epub"
         : "book-print.html";
     for (const [label, present, file] of [
+      ["Governance", governancePages.length > 0, `governance/${governancePages[0]}/`],
       ["Paper", Boolean(paperLinks), surfaces.paper_html ? "paper/" : "paper.pdf"],
       ["Book", Boolean(bookLinks), bookTarget],
     ]) {
@@ -109,10 +130,11 @@
   }
 
   // And on every page's footer, beside the provenance line, every format that exists.
-  if (footer && (paperLinks || bookLinks)) {
+  if (footer && (paperLinks || bookLinks || governanceLinks)) {
     const reading = document.createElement("p");
     reading.className = "release-surfaces";
     reading.innerHTML = [
+      governanceLinks ? `<strong>Governance</strong> ${governanceLinks}` : "",
       paperLinks ? `<strong>Research paper</strong> ${paperLinks}` : "",
       bookLinks ? `<strong>The book</strong> ${bookLinks}` : "",
     ]

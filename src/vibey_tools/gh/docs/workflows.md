@@ -337,6 +337,13 @@ for the same commit, and uploads `paper.pdf`, `book.epub`, `book.pdf` and
 from the Releases page after the site has been rebuilt or moved. A Release that never
 appears is a warning, not a failed documentation deploy.
 
+With `documentation.governance_source` set, the `docs` job also publishes the governance
+corpus — the Constitution, the doctrines, the commandments, the bill of rights and every
+standing subdoctrine — as a **Governance** section of the channel site, copied from its
+single source at build time, so it is in the book too; the theme links the published
+pages from every page's navigation and footer, and the chooser and `llms.txt` link them.
+The corpus index is copied from `documentation.corpus_index` into the built site.
+
 ## Repository profile
 
 `Repository profile` runs on completion of `Release surfaces` or manual dispatch, with

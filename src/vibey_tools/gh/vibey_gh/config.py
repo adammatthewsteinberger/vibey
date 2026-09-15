@@ -888,6 +888,16 @@ class DocumentationConfig:
     # needs follow from its own configuration, which is the adopter's.
     site_requirements: tuple[str, ...] = ()
     site_requirements_file: str = "docs/requirements.txt"
+    # The directory holding the governance corpus -- the Constitution, the doctrines, the
+    # commandments, the bill of rights and every standing subdoctrine -- relative to the
+    # repository root. When set, every channel site publishes it as a Governance section,
+    # which makes it chapters of the book, and every page, the channel chooser and llms.txt
+    # link it (sub-doctrine 7.b, governance in plain sight). Copied from this single source
+    # at build time, never committed twice. Empty publishes nothing.
+    governance_source: str = ""
+    # Where `vibey-gh corpus-index` writes the index, relative to the repository root; it is
+    # shipped beside the site so the published law is integrity-checkable offline.
+    corpus_index: str = "corpus-index.json"
     properdocs_version: str = "1.6.7"
     # Funding signage (#198): opt-in per currency, empty defaults — no default address
     # ever ships, because a payment default is one typo away from someone else's wallet.
@@ -897,6 +907,19 @@ class DocumentationConfig:
     funding_label: str = "Support this work"
 
     def __post_init__(self) -> None:
+        for key in ("governance_source", "corpus_index"):
+            value = getattr(self, key)
+            if value and (
+                value.startswith(("/", "~"))
+                or ".." in PurePosixPath(value).parts
+                or any(char.isspace() or char in "'\"$`\\" for char in value)
+            ):
+                raise ValueError(
+                    f"documentation.{key} must be a repository-relative path without '..',"
+                    f" whitespace or shell metacharacters: {value!r}"
+                )
+        if not self.corpus_index:
+            raise ValueError("documentation.corpus_index must not be empty")
         _unique_nonempty("documentation.required_files", self.required_files)
         for name, values in (
             ("readme_sections", self.readme_sections),
@@ -1395,6 +1418,8 @@ def load_config(root: Path | None = None, config: Path | None = None) -> GhConfi
             locale=documentation.get("locale", "en_US"),
             google_site_verification=documentation.get("google_site_verification", ""),
             site_requirements=tuple(documentation.get("site_requirements", ())),
+            governance_source=documentation.get("governance_source", ""),
+            corpus_index=documentation.get("corpus_index", "corpus-index.json"),
             site_requirements_file=documentation.get(
                 "site_requirements_file", DocumentationConfig.site_requirements_file
             ),

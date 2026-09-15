@@ -271,6 +271,10 @@ def render_workflow(source: Path, cfg: GhConfig) -> str:
         "__VIBEY_GH_DOC_REQUIREMENTS_FILE__", cfg.documentation.site_requirements_file
     )
     wanted = wanted.replace("__VIBEY_GH_PROPERDOCS_VERSION__", cfg.documentation.properdocs_version)
+    wanted = wanted.replace(
+        "__VIBEY_GH_DOC_GOVERNANCE_SOURCE__", cfg.documentation.governance_source
+    )
+    wanted = wanted.replace("__VIBEY_GH_DOC_CORPUS_INDEX__", cfg.documentation.corpus_index)
     docs = cfg.documentation
     wanted = wanted.replace("__VIBEY_GH_DOC_FAVICON__", docs.favicon)
     wanted = wanted.replace("__VIBEY_GH_DOC_FAVICON_LINKS__", _favicon_links(docs.favicon))

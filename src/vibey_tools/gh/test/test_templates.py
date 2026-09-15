@@ -446,8 +446,10 @@ def test_release_surfaces_ships_the_corpus_index():
     deployment carries its law searchable and integrity-checkable offline."""
     text = (WORKFLOWS / "release-surfaces.yml").read_text(encoding="utf-8")
     flat = " ".join(text.split())
-    assert "Ship the governance corpus index (#249)" in flat
-    assert "cp corpus-index.json channel-site/corpus-index.json" in flat
+    assert 'cp "__VIBEY_GH_DOC_CORPUS_INDEX__" channel-site/corpus-index.json' in flat
+    # After the build, which cleans the site directory: copied before it, the index was
+    # deleted again (or the copy failed outright, the directory not yet existing).
+    assert flat.index("channel-site/corpus-index.json") > flat.index("properdocs build --strict")
 
 
 def test_only_the_tooling_repository_self_hosts_the_install():
@@ -802,6 +804,80 @@ def test_review_plugins_load_from_the_config_file(tmp_path):
     cfg = load_config(tmp_path)
     assert cfg.pr_automation.plugin_marketplaces == ("src/skills",)
     assert cfg.pr_automation.plugins == ("quality-engineering@vibey-skills",)
+
+
+def test_governance_is_published_on_every_surface_when_configured(tmp_path):
+    """Sub-doctrine 7.b: the governance corpus is as easy to find as possible. When a
+    source is configured, every channel site publishes it as a Governance section --
+    and so as chapters of the book -- copied from its single source at build time; the
+    theme links only the pages that were published; the chooser and llms.txt link it;
+    and the corpus index ships after the build, from its configured path."""
+    from vibey_gh.config import DocumentationConfig, GhConfig
+    from vibey_gh.install import SOURCE_RELEASE_ASSETS, render_workflow
+
+    source = WORKFLOWS / "release-surfaces.yml"
+    off = render_workflow(source, GhConfig(root=tmp_path))
+    assert 'governance_source = ""' in off
+    assert 'if [ -f "corpus-index.json" ]; then' in off
+    on = render_workflow(
+        source,
+        GhConfig(
+            root=tmp_path,
+            documentation=DocumentationConfig(
+                governance_source="src/tools/gh/docs", corpus_index="src/tools/gh/corpus-index.json"
+            ),
+        ),
+    )
+    assert 'governance_source = "src/tools/gh/docs"' in on
+    assert (
+        'names = ["constitution.md", "doctrines.md", "commandments.md", "bill-of-rights.md"]' in on
+    )
+    assert 'names += sorted(p.name for p in source.glob("sd-*.md"))' in on
+    assert "shutil.copyfile(origin, published / page)" in on
+    assert 'data["nav"] = [*data.get("nav", []), {"Governance": entries}]' in on
+    assert 'heading.replace(":", " —")' in on
+    assert "allow_unicode=True, width=1_000_000" in on
+    # The index ships AFTER the build, which cleans the site directory first.
+    ship = on.index('cp "src/tools/gh/corpus-index.json" channel-site/corpus-index.json')
+    assert ship > on.index("properdocs build --strict")
+    assert "Ship the governance corpus index" not in on
+    assert (
+        '"governance": sorted(p.parent.name for p in (site / "governance").glob("*/index.html"))'
+        in on
+    )
+    assert "<strong>Governance</strong>" in on
+    assert "[ -f pages/main/governance/constitution/index.html ] && SURFACE_LINES=" in on
+    script = (SOURCE_RELEASE_ASSETS / "javascripts" / "channel.js").read_text(encoding="utf-8")
+    assert (
+        '["Governance", governancePages.length > 0, `governance/${governancePages[0]}/`]' in script
+    )
+    assert 'governanceLinks ? `<strong>Governance</strong> ${governanceLinks}` : ""' in script
+
+
+@pytest.mark.parametrize("key", ["governance_source", "corpus_index"])
+@pytest.mark.parametrize("value", ["/abs", "~/home", "../escape", "has space", "quo'te", "do$llar"])
+def test_governance_paths_are_validated(key, value):
+    from vibey_gh.config import DocumentationConfig
+
+    with pytest.raises(ValueError, match=key):
+        DocumentationConfig(**{key: value})
+
+
+def test_corpus_index_path_must_not_be_empty():
+    from vibey_gh.config import DocumentationConfig
+
+    with pytest.raises(ValueError, match="corpus_index must not be empty"):
+        DocumentationConfig(corpus_index="")
+
+
+def test_governance_settings_load_from_the_config_file(tmp_path):
+    (tmp_path / ".vibey-gh.toml").write_text(
+        '[documentation]\ngovernance_source = "src/gh/docs"\ncorpus_index = "src/gh/corpus-index.json"\n',
+        encoding="utf-8",
+    )
+    cfg = load_config(tmp_path)
+    assert cfg.documentation.governance_source == "src/gh/docs"
+    assert cfg.documentation.corpus_index == "src/gh/corpus-index.json"
 
 
 def test_funding_signage_is_opt_in_validated_and_verbatim(tmp_path):

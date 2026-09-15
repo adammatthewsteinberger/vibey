@@ -180,18 +180,6 @@ jobs:
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
-      - name: Ship the governance corpus index (#249)
-        run: |
-          set -euo pipefail
-          # The index rides the site so a fully-local deployment carries its law
-          # searchable and integrity-checkable offline. Absent index, nothing ships —
-          # the check that ENFORCES its presence lives with the repository, not here.
-          if [ -f corpus-index.json ]; then
-            cp corpus-index.json channel-site/corpus-index.json
-            echo "corpus index shipped with the channel site"
-          else
-            echo "no corpus index in this repository — nothing to ship"
-          fi
       - name: Inject social signals (sub-doctrine 4.a)
         if: __VIBEY_GH_SOCIAL_SIGNALS__
         run: |
@@ -283,6 +271,33 @@ jobs:
           data.setdefault("repo_url", replacements["__REPOSITORY_URL__"])
           data["edit_uri"] = f"edit/{os.environ['RELEASE_BRANCH']}/docs/"
           data["docs_dir"] = str(docs_dir)
+          # Governance in plain sight (sub-doctrine 7.b): the governance corpus is published
+          # as its own section of every channel site -- and so as chapters of the book --
+          # copied at build time from its single source, never committed twice. Constitution
+          # first, as the order of authority; then the doctrines, the commandments, the bill
+          # of rights, and every standing subdoctrine. A title keeps no colon, because the
+          # book's nav reader ends a title at the first one.
+          governance_source = "__VIBEY_GH_DOC_GOVERNANCE_SOURCE__"
+          if governance_source:
+              source = pathlib.Path(governance_source)
+              names = ["constitution.md", "doctrines.md", "commandments.md", "bill-of-rights.md"]
+              names += sorted(p.name for p in source.glob("sd-*.md"))
+              published = docs_dir / "governance"
+              entries = []
+              for page in names:
+                  origin = source / page
+                  if not origin.is_file():
+                      continue
+                  published.mkdir(exist_ok=True)
+                  shutil.copyfile(origin, published / page)
+                  heading = next(
+                      (line[2:].strip() for line in origin.read_text().splitlines() if line.startswith("# ")),
+                      page.removesuffix(".md"),
+                  )
+                  entries.append({heading.replace(":", " —"): f"governance/{page}"})
+              if entries:
+                  data["nav"] = [*data.get("nav", []), {"Governance": entries}]
+              print(f"governance: published {len(entries)} document(s) from {governance_source}")
           data.setdefault("theme", "mkdocs")
           for key, asset in (
               ("extra_css", "stylesheets/vibey.css"),
@@ -292,7 +307,11 @@ jobs:
               if asset not in values:
                   values.append(asset)
               data[key] = values
-          pathlib.Path(".properdocs-channel.yml").write_text(yaml.safe_dump(data, sort_keys=False))
+          # Unicode kept and lines never folded: the book reads chapter titles from this file line
+          # by line, and an escaped "\u2014" or a folded title would become the chapter's name.
+          pathlib.Path(".properdocs-channel.yml").write_text(
+              yaml.safe_dump(data, sort_keys=False, allow_unicode=True, width=1_000_000)
+          )
           PY
           properdocs build --strict --config-file .properdocs-channel.yml --site-dir channel-site
           # Search must demonstrably work at build time. A site can build --strict with a
@@ -313,6 +332,16 @@ jobs:
               sys.exit("search smoke: the index contains zero documents")
           print(f"search smoke: {len(docs)} documents indexed, all assets present")
           SMOKE
+          # The index rides the site so the published law is searchable and
+          # integrity-checkable offline. Shipped after the build, which cleans the site
+          # directory first. Absent index, nothing ships; the check that enforces its
+          # presence lives with the repository, not here.
+          if [ -f "__VIBEY_GH_DOC_CORPUS_INDEX__" ]; then
+            cp "__VIBEY_GH_DOC_CORPUS_INDEX__" channel-site/corpus-index.json
+            echo "corpus index shipped with the channel site"
+          else
+            echo "no corpus index at __VIBEY_GH_DOC_CORPUS_INDEX__ — nothing to ship"
+          fi
           # The documentation as artifacts on the site itself: the doctrine's end
           # results are a KDP-shaped book and a journal-shaped paper, and a reader
           # should download them from the docs they mirror — not hunt a release page.
@@ -567,6 +596,7 @@ jobs:
               "book_epub": (site / "book.epub").is_file(),
               "book_pdf": (site / "book.pdf").is_file(),
               "book_print": (site / "book-print.html").is_file(),
+              "governance": sorted(p.parent.name for p in (site / "governance").glob("*/index.html")),
           }
           script = site / "javascripts" / "channel.js"
           if script.is_file():
@@ -949,7 +979,8 @@ jobs:
                   )
                   if (base / file).is_file()
               ]
-              if not paper and not book:
+              governance = (base / "governance" / "constitution" / "index.html").is_file()
+              if not paper and not book and not governance:
                   return ""
               links = lambda items: " · ".join(f'<a href="{href}">{name}</a>' for name, href in items)
               parts = []
@@ -957,6 +988,8 @@ jobs:
                   parts.append("<strong>Research paper</strong> " + links(paper))
               if book:
                   parts.append("<strong>The book</strong> " + links(book))
+              if governance:
+                  parts.append(f'<strong>Governance</strong> <a href="{channel}/governance/constitution/">the Constitution, the doctrines and the rights</a>')
               return f"<p>{label}: " + " — ".join(parts) + "</p>"
 
           surface_lines = [
@@ -1024,6 +1057,8 @@ jobs:
           [ -f pages/main/book.pdf ] && SURFACE_LINES="${SURFACE_LINES}- [The book (PDF)](${PAGES_ROOT}main/book.pdf)"$'\n'
           [ -f pages/main/book.epub ] && SURFACE_LINES="${SURFACE_LINES}- [The book (EPUB)](${PAGES_ROOT}main/book.epub)"$'\n'
           [ -f pages/main/book-print.html ] && SURFACE_LINES="${SURFACE_LINES}- [The book (print HTML)](${PAGES_ROOT}main/book-print.html)"$'\n'
+          [ -f pages/main/governance/constitution/index.html ] && SURFACE_LINES="${SURFACE_LINES}- [Governance: the Constitution, the doctrines, the commandments, the bill of rights](${PAGES_ROOT}main/governance/constitution/)"$'\n'
+          [ -f pages/main/corpus-index.json ] && SURFACE_LINES="${SURFACE_LINES}- [Governance corpus index](${PAGES_ROOT}main/corpus-index.json)"$'\n'
           if __VIBEY_GH_DOC_LLMS__; then
             cat > pages/llms.txt <<EOF
           # ${NAME}
