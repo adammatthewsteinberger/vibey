@@ -19,8 +19,9 @@ history, so nobody can say when it changed or why; it has no review, so nobody
 agreed to it; and it cannot be recreated, so a repository that loses it is
 restored from somebody's memory.
 
-This is not hypothetical here. Measured on this branch, `vibey`'s own
-`.vibey-gh.toml` declares neither `[rulesets]` nor `[repository_profile]` — while
+This is not hypothetical here. Measured before this change, `vibey`'s own
+`.vibey-gh.toml` declared neither `[rulesets]` nor `[repository_profile]` (both
+were added in the same commit as this record) — while
 `vibey-gh`, which this repository now contains, ships `rulesets.py` to reconcile
 branch protection from exactly that key, and a `[repository_profile]` block that
 `vibey-skills` already uses for its description and topics. The capability was
@@ -127,8 +128,8 @@ difference between a gap somebody can close and a gap nobody can see.
 
 | Gap | Today | Declare in |
 |---|---|---|
-| Branch protection and required checks | clicked | `[rulesets]` in `.vibey-gh.toml`, reconciled by `vibey-gh rulesets` |
-| Repository description and topics | clicked | `[repository_profile]`, reconciled by `repository-profile.yml` |
+| Branch protection and required checks | declared in this change; **not yet reconciled** — `repository-profile.yml`, which runs `vibey-gh rulesets`, is not in `[install] workflows` | `[rulesets]` in `.vibey-gh.toml`, reconciled by `vibey-gh rulesets` |
+| Repository description and topics | declared in this change; **not yet reconciled** for the same reason | `[repository_profile]`, reconciled by `repository-profile.yml` |
 | Which checks a pull request must wait for | partly clicked, partly `[pr_automation] scan_workflows` | one place, the config |
 
 **And a backlog of things it does not, recorded so they are visible:** PyPI

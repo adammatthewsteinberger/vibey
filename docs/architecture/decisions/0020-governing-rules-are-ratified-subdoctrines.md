@@ -109,6 +109,10 @@ where the constitutional cluster sits after the monorepo absorption, and
 `corpus-index.json` with it. The law governs the whole project while physically
 residing in one package's documentation. That works, and it is not obviously
 right; it is recorded here as an open question rather than settled by silence.
+One concrete cost is already visible: `release-surfaces.yml` ships `corpus-index.json`
+only from the repository root, where no index exists, so the published site carries
+no index; and no CI job runs `vibey-gh corpus-index --check`, so a canon change that
+forgets to regenerate the index would drift unnoticed.
 
 **The cost is deliberate friction.** A standing rule now takes a pull request
 against the canon and a human merge, where before it took a paragraph in an ADR.

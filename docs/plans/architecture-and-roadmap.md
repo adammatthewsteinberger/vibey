@@ -1160,3 +1160,20 @@ Detail, with test-first task breakdowns, in
 | [0012](../architecture/decisions/0012-deploy-is-a-separate-cli.md) | Superseded: deployment as a separate CLI |
 | [0013](../architecture/decisions/0013-deployment-is-a-three-phase-stage-set.md) | Deployment execution and safety contract (entry rule superseded) |
 | [0014](../architecture/decisions/0014-optional-visual-design-and-deployment-opt-in.md) | Optional visual-design interstitial and explicit deployment opt-in |
+| [0015](../architecture/decisions/0015-qwenloop-standby.md) | qwenloop is an opt-in local engine: a standby tier for BUILD, the sovereign provider for DESIGN |
+| [0016](../architecture/decisions/0016-classes-behind-interfaces.md) | Code lives in classes, and every class has an interface beside it |
+| [0017](../architecture/decisions/0017-dogfood-the-family-first.md) | If the family already does it, the family does it here |
+| [0018](../architecture/decisions/0018-everything-as-code.md) | If it can be declared in the repository, it is declared in the repository |
+| [0019](../architecture/decisions/0019-installable-wherever-its-users-are.md) | Vibey is installable wherever its users already are |
+| [0020](../architecture/decisions/0020-governing-rules-are-ratified-subdoctrines.md) | A governing rule belongs in the canon, ratified, or it is not a rule |
+| [0021](../architecture/decisions/0021-one-tree-history-preserved.md) | One tree, history preserved: the family is absorbed as subtrees in a uv workspace |
+| [0022](../architecture/decisions/0022-absorbed-packages-keep-their-own-gates.md) | An absorbed package keeps every gate it was already held to |
+| [0023](../architecture/decisions/0023-four-layers-four-floors.md) | Four layers, four floors: 100% branch coverage per layer, each its own gate |
+| [0024](../architecture/decisions/0024-every-bounded-ladder-parks-with-a-grant.md) | Every bounded ladder ends in a park that can grant more |
+| [0025](../architecture/decisions/0025-kubernetes-operator-crd-keda.md) | Kubernetes: a chart, KEDA on claimable work, and an operator that never grows its own logic |
+| [0026](../architecture/decisions/0026-tini-pid1-and-the-sigterm-latch.md) | tini is PID 1, and the SIGTERM latch is armed before the first import |
+| [0027](../architecture/decisions/0027-sovereign-design-provider.md) | A sovereign DESIGN provider: phase one runs without paid credit |
+| [0028](../architecture/decisions/0028-vibey-gh-owns-release-and-provenance.md) | vibey-gh owns provenance and release; release-please is retired |
+| [0029](../architecture/decisions/0029-integrate-serialized-by-advisory-lock.md) | Integrates are serialized by a Postgres advisory lock, and contention is a Defer |
+| [0030](../architecture/decisions/0030-two-mode-live-harness.md) | The live harness has two modes: faked by default, paid by explicit choice |
+| [0031](../architecture/decisions/0031-skills-context-packets-over-a-process-boundary.md) | Skills context is a packet compiled over a process boundary, shadow before inject |
