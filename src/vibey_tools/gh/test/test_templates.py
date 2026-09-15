@@ -621,6 +621,88 @@ def test_the_site_publishes_its_own_book_and_paper_when_enabled(tmp_path):
     assert on.index("sha256sum -c") < on.index("tar -xzf /tmp/tectonic.tar.gz")
 
 
+def test_review_plugins_are_configured_never_hard_coded(tmp_path):
+    """The plugin marketplace these templates once named is gone, and a marketplace that
+    cannot be cloned fails the review outright. So nothing is loaded by default; what a
+    repository names is rendered into all three plugin-loading jobs, and a local
+    marketplace resolves inside the trusted default-branch checkout, never the pull
+    request's own tree."""
+    from vibey_gh.config import GhConfig, PrAutomationConfig
+    from vibey_gh.install import render_workflow
+
+    source = WORKFLOWS / "pr-automation.yml"
+    default = render_workflow(source, GhConfig(root=tmp_path))
+    assert "vibey-skills.git" not in default
+    assert "__VIBEY_GH_PLUGIN" not in default
+    jobs = yaml.safe_load(default)["jobs"]
+    loading = [
+        step["with"]
+        for job in jobs.values()
+        for step in job.get("steps", [])
+        if "plugin_marketplaces" in step.get("with", {})
+    ]
+    assert len(loading) == 3
+    assert all(not w["plugin_marketplaces"].strip() and not w["plugins"].strip() for w in loading)
+
+    configured = render_workflow(
+        source,
+        GhConfig(
+            root=tmp_path,
+            pr_automation=PrAutomationConfig(
+                plugin_marketplaces=("src/tools/skills", "https://example.com/m.git"),
+                plugins=("a@skills", "b@skills"),
+            ),
+        ),
+    )
+    for w in [
+        step["with"]
+        for job in yaml.safe_load(configured)["jobs"].values()
+        for step in job.get("steps", [])
+        if "plugin_marketplaces" in step.get("with", {})
+    ]:
+        assert w["plugin_marketplaces"].splitlines() == [
+            "${{ github.workspace }}/automation/src/tools/skills",
+            "https://example.com/m.git",
+        ]
+        assert w["plugins"].splitlines() == ["a@skills", "b@skills"]
+
+
+@pytest.mark.parametrize(
+    ("marketplaces", "plugins", "message"),
+    [
+        (("",), (), "entries must be non-empty"),
+        (("a", "a"), (), "entries must be unique"),
+        (("/abs/path",), (), "repository-relative path"),
+        (("~/home",), (), "repository-relative path"),
+        (("../escape",), (), "repository-relative path"),
+        (("git://host/r.git",), (), "repository-relative path"),
+        (("has space",), (), "repository-relative path"),
+        (("https://host/r .git",), (), "URL contains whitespace"),
+        (("skills",), ("no-marketplace",), "'<plugin>@<marketplace>'"),
+        (("skills",), ("@skills",), "'<plugin>@<marketplace>'"),
+        (("skills",), ("a@ skills",), "'<plugin>@<marketplace>'"),
+        ((), ("a@skills",), "needs at least one plugin_marketplaces entry"),
+    ],
+)
+def test_review_plugin_configuration_is_validated(marketplaces, plugins, message):
+    from vibey_gh.config import PrAutomationConfig
+
+    with pytest.raises(ValueError, match=re.escape(message)):
+        PrAutomationConfig(plugin_marketplaces=marketplaces, plugins=plugins)
+
+
+def test_review_plugins_load_from_the_config_file(tmp_path):
+    (tmp_path / ".vibey-gh.toml").write_text(
+        "[pr_automation]\n"
+        'plugin_marketplaces = ["src/skills"]\n'
+        'plugins = ["quality-engineering@vibey-skills"]\n',
+        encoding="utf-8",
+    )
+    cfg = load_config(tmp_path)
+    assert cfg.pr_automation.plugin_marketplaces == ("src/skills",)
+    assert cfg.pr_automation.plugins == ("quality-engineering@vibey-skills",)
+
+
 def test_funding_signage_is_opt_in_validated_and_verbatim(tmp_path):
     """#198: an opt-in contribution line beside the footer provenance. Off by default —
     no default address ever ships, because a payment default is one typo away from

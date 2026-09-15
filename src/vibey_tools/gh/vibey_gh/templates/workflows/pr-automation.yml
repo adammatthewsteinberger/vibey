@@ -292,12 +292,9 @@ jobs:
             actions: read
             checks: read
           plugin_marketplaces: |
-            https://github.com/the-vibey-project/vibey-skills.git
+            __VIBEY_GH_PLUGIN_MARKETPLACES__
           plugins: |
-            quality-engineering@vibey-skills
-            security-principles@vibey-skills
-            engineering-process@vibey-skills
-            software-architecture@vibey-skills
+            __VIBEY_GH_PLUGINS__
           claude_args: |
             --model __VIBEY_GH_MODEL__
             --max-turns 100
@@ -701,11 +698,9 @@ jobs:
             actions: read
             checks: read
           plugin_marketplaces: |
-            https://github.com/the-vibey-project/vibey-skills.git
+            __VIBEY_GH_PLUGIN_MARKETPLACES__
           plugins: |
-            quality-engineering@vibey-skills
-            security-principles@vibey-skills
-            engineering-process@vibey-skills
+            __VIBEY_GH_PLUGINS__
           claude_args: |
             --model __VIBEY_GH_MODEL__
             --max-turns 120
@@ -990,11 +985,9 @@ jobs:
           track_progress: ${{ __VIBEY_GH_SANITIZED_PROGRESS__ && (github.event_name == 'pull_request' || github.event_name == 'issues' || github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment' || github.event_name == 'pull_request_review') }}
           show_full_output: ${{ inputs.full_claude_output && github.event_name == 'workflow_dispatch' && github.event.repository.visibility == 'private' && __VIBEY_GH_ALLOW_PRIVATE_FULL_OUTPUT__ }}
           plugin_marketplaces: |
-            https://github.com/the-vibey-project/vibey-skills.git
+            __VIBEY_GH_PLUGIN_MARKETPLACES__
           plugins: |
-            software-architecture@vibey-skills
-            security-principles@vibey-skills
-            engineering-process@vibey-skills
+            __VIBEY_GH_PLUGINS__
           claude_args: |
             --model __VIBEY_GH_MODEL__
             --max-turns 80
