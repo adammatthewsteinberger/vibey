@@ -1,0 +1,9 @@
+{
+  "name": "graphics-and-vision",
+  "version": "0.1.0",
+  "description": "Graphics and Vision: transforms and projective geometry, rasterization, shading and physically based rendering, ray tracing and the rendering equation, GPU architecture and APIs, real-time techniques, colour and tone mapping, image formation and camera calibration, classical computer vision, multiple view geometry, deep learning for vision, neural rendering where the two fields meet, and performance.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

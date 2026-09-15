@@ -1,0 +1,13 @@
+# Civil and Industrial Engineering for Software Devs Plugin
+
+Civil and industrial engineering translated for people who build software and keep hearing they should be more like “real engineers” — loads and load paths, factors of safety, materials, foundations and soil, codes and licensure, failure analysis, construction sequencing and infrastructure; then queueing theory and Little's Law, the Theory of Constraints, lean and the Toyota Production System, Six Sigma and statistical process control, work measurement, human factors, reliability and safety engineering. Plus a direct account of what actually transfers to software and what doesn't.
+
+One reference, split into 5 skills along its section groups so a task loads only the part it needs. Section numbers (§N) are shared across the set and cross-references into a sibling skill are written as §N → `skill`. Reference, not tutorial: sections are independent, every claim is tagged by how durable it is (stable fundamentals vs. versioned specifics vs. genuinely contested questions), and a currency snapshot (verified August 2026) flags what goes stale first.
+
+## Skills
+
+- **civil-loads-safety-factors-materials-and-foundations** — Why the Comparison Keeps Coming Up, Loads, Factors of Safety, Materials, and Foundations (§0–§5): Routing; ⚠️ Why This Comparison Keeps Coming Up; Loads and Structure; ⚠️ Factor of Safety; Materials; Foundations and Soil.
+- **civil-codes-licensure-failure-analysis-and-construction** — Codes and Standards, Licensure and Liability, Failure Analysis, Construction Sequencing, and Infrastructure (§6–§10): ⚠️ Codes and Standards; ⚠️ Licensure and Liability; ⚠️ Failure Analysis; Construction Sequencing; Infrastructure Systems.
+- **civil-industrial-engineering-queueing-toc-and-lean** — What Industrial Engineering Is, Queueing Theory, Theory of Constraints, Lean, and Six Sigma (§11–§16): What Industrial Engineering Actually Is; ⚠️ Queueing Theory and Little's Law; Theory of Constraints; ⚠️ Lean and the Toyota Production System; Six Sigma and Statistical Process Control; Work Measurement and Standard Work.
+- **civil-reliability-safety-and-what-transfers-to-software** — Scheduling and Inventory, Human Factors, Reliability, Safety Engineering, and What Transfers to Software (§17–§22): Scheduling, Inventory and Supply Chain; Human Factors and Ergonomics; Reliability Engineering; ⚠️ Safety Engineering; ⚠️ What Transfers Well; ⚠️ What Doesn't Transfer.
+- **civil-reference** — What's Live, Misconceptions, Numbers, and Books (§23–§28): What's Live; Misconceptions; Numbers; Books; Quick Reference; Method.

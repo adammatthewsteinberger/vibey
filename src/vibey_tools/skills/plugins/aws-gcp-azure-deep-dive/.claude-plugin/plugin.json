@@ -1,0 +1,9 @@
+{
+  "name": "aws-gcp-azure-deep-dive",
+  "version": "0.3.0",
+  "description": "AWS, GCP and Azure Deep Dive: an honest framing of what actually differs between the three, shared responsibility, identity and access where the providers genuinely diverge, resource hierarchy and organization, networking, compute, containers and Kubernetes, serverless, storage, databases, analytics, AI/ML services, observability, cost mechanics, reliability, regions and SLAs, infrastructure as code, lock-in and multi-cloud assessed honestly, migration, and a service equivalence mapping.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

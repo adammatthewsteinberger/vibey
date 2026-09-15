@@ -1,0 +1,14 @@
+# Electromagnetism and the Physics of Electricity Plugin
+
+Electromagnetism from charge to Maxwell, told as an abstraction ladder — each layer valid until its assumptions break. Electrostatics, fields and Gauss's law, potential, capacitance and dielectrics; what current actually is and where the energy actually flows; circuit analysis and the conditions under which it stops being true; AC and impedance, magnetism and induction, Maxwell's equations and electromagnetic waves, transmission lines and the relativistic origin of magnetism; conduction and band theory, semiconductors, superconductivity and plasma; plus grounding, EMC and the physics of electrical safety.
+
+One reference, split into 6 skills along its section groups so a task loads only the part it needs. Section numbers (§N) are shared across the set and cross-references into a sibling skill are written as §N → `skill`. Reference, not tutorial: sections are independent, every claim is tagged by how durable it is (stable fundamentals vs. versioned specifics vs. genuinely contested questions), and a currency snapshot (verified August 2026) flags what goes stale first.
+
+## Skills
+
+- **em-electrostatics-fields-potential-and-dielectrics** — The Abstraction Ladder, Charge and Coulomb's Law, Fields and Gauss's Law, Potential and Capacitance, and Dielectrics (§0–§5): Routing; The Abstraction Ladder; Charge and Coulomb's Law; Fields and Gauss's Law; Potential and Capacitance; Dielectrics.
+- **em-current-energy-flow-circuits-and-ac** — What Current Actually Is, Resistance and Ohm's Law, Where the Energy Actually Flows, Circuit Theory and Its Validity, AC and Impedance, and Power Factor (§6–§11): ⚠️ What Current Actually Is; Resistance and Ohm's Law; ⚠️ Where the Energy Actually Flows; ⚠️ Circuit Theory and Its Validity; AC and Impedance; Power, RMS and Power Factor.
+- **em-magnetism-induction-and-transformers** — Magnetic Fields, Induction, Inductance and Transformers, and Magnetic Materials (§12–§15): Magnetic Fields; Induction; Inductance and Transformers; Magnetic Materials.
+- **em-maxwell-waves-transmission-lines-and-relativity** — Maxwell's Equations, Electromagnetic Waves, Transmission Lines, and Magnetism as Relativistic Electrostatics (§16–§19): ⚠️ Maxwell's Equations; Electromagnetic Waves; Transmission Lines; ⚠️ Magnetism as Relativistic Electrostatics.
+- **em-conduction-semiconductors-grounding-and-electrical-safety** — Conduction and Band Theory, Semiconductors, Superconductivity, Plasma, Grounding, Shielding and EMC, and the Physics of Electrical Safety (§20–§25): Conduction and Band Theory; Semiconductors; Superconductivity; Plasma; Grounding, Shielding and EMC; ⚠️ The Physics of Electrical Safety.
+- **em-reference** — What's Live, Misconceptions, Numbers, and Books (§26–§31): What's Live; Misconceptions; Numbers; Books; Quick Reference; Method.

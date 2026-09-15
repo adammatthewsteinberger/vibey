@@ -1,0 +1,111 @@
+# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate manifests and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      # Stdlib only, so these run before anything is installed.
+      - name: Validate marketplace manifests and skill frontmatter
+        run: python3 tools/validate_manifests.py
+
+      # PyPI renders README.md against its own project URL, so a relative link that looks
+      # correct on GitHub 404s there — that shipped in 1.0.0. Hermetic (no HTTP), because a
+      # link checker that needs the network gets disabled the first time CI flakes.
+      - name: Check documentation links
+        run: python3 tools/check_links.py
+
+      # The fingerprint check now runs in its own required workflow — see
+      # .github/workflows/provenance.yml (job name "Provenance") — rather than here, so
+      # `vibey-gh install` can keep that step current without touching this file.
+
+      - name: Build sdist and wheel
+        run: uv build
+
+      - name: Check package metadata
+        run: uvx twine check dist/*
+
+      - name: Verify the wheel carries every skill
+        run: |
+          set -euo pipefail
+          expected=$(find plugins -name SKILL.md | wc -l | tr -d ' ')
+          packaged=$(python3 -m zipfile -l dist/*.whl | grep -c 'plugins/.*SKILL.md')
+          echo "skills in tree: $expected / packaged in wheel: $packaged"
+          test "$expected" = "$packaged"
+
+      - name: Smoke-test the built wheel
+        run: |
+          set -euo pipefail
+          PYTHONPATH=src python3 -m unittest discover -s tests
+          python3 -m venv /tmp/smoke
+          /tmp/smoke/bin/pip install --quiet dist/*.whl
+          /tmp/smoke/bin/vibey-skills --version
+          /tmp/smoke/bin/vibey-skills list
+          /tmp/smoke/bin/vibey-skills install --all --dest /tmp/smoke-skills
+          # The deprecated alias must still work (one warning line on stderr, then delegate).
+          # Captured rather than piped: `grep -q` exits on the first match and would close the
+          # pipe before Python flushes stdout, turning a passing check into exit 120.
+          alias_out=$(/tmp/smoke/bin/vibe-skills --version 2>&1)
+          echo "$alias_out"
+          echo "$alias_out" | grep -q 'deprecated'
+          echo "$alias_out" | grep -q 'vibey-skills 2'
+          test "$(find /tmp/smoke-skills -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')" = "$(find plugins -name SKILL.md | wc -l | tr -d ' ')"
+
+      - name: Upload distributions
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  docs:
+    name: Build docs (strict)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install docs dependencies
+        run: pip install -e ".[docs]"
+
+      # --strict turns warnings into errors. That is what makes the 644 generated skill
+      # pages trustworthy: nobody is going to eyeball 644 pages for a dead link.
+      - name: Build the documentation site
+        run: mkdocs build --strict
+
+      - name: Verify every plugin and skill produced a page
+        run: |
+          set -euo pipefail
+          plugins=$(python3 -c "import json;print(len(json.load(open('.claude-plugin/marketplace.json'))['plugins']))")
+          skills=$(find plugins -name SKILL.md | wc -l | tr -d ' ')
+          built_plugins=$(find site/reference -mindepth 2 -maxdepth 2 -name index.html | wc -l | tr -d ' ')
+          built_skills=$(find site/reference -mindepth 3 -maxdepth 3 -name index.html | wc -l | tr -d ' ')
+          echo "plugins $plugins -> $built_plugins ; skills $skills -> $built_skills"
+          test "$plugins" = "$built_plugins"
+          test "$skills" = "$built_skills"

@@ -1,0 +1,9 @@
+{
+  "name": "video-game-development",
+  "version": "0.1.0",
+  "description": "Video Game Development: engine selection and licensing, the game loop and time step, code architecture (ECS vs OOP), rendering pipelines and graphics APIs, physics and collision, animation, audio, gameplay AI and pathfinding, networking and multiplayer (rollback, prediction, lag compensation), tools and content pipelines, performance and frame budgets, game feel, build/test/QA and certification, production and scope management, and the business context (live ops, monetization, platforms, legal).",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

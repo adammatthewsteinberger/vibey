@@ -1,0 +1,9 @@
+{
+  "name": "math-science-programming",
+  "version": "0.1.0",
+  "description": "Math and Science Programming: numerical and scientific computing for software engineers — floating-point arithmetic and the errors it causes, conditioning and stability, the BLAS/LAPACK substrate everything stands on, the tool landscape (MATLAB, Python's scientific stack, Julia, R, Fortran, Mathematica) and how to choose, symbolic versus numeric computation, linear systems, ODEs and PDEs, optimization, statistics and uncertainty, high-performance and GPU computing, and the verification, validation and reproducibility practices that separate trustworthy scientific software from plausible-looking output.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

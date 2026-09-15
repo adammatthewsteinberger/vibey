@@ -1,0 +1,9 @@
+{
+  "name": "computer-peripherals-design-and-standards",
+  "version": "0.1.0",
+  "description": "Computer Peripherals — Design, Building, Standards and Programming: the peripheral stack, USB architecture, USB-C and Power Delivery, Thunderbolt and alternate modes, wireless peripherals, embedded buses, PCIe peripherals, HID, keyboards, mice and pointing devices, displays, audio interfaces, printers and scanners, storage and capture, controllers and haptics, designing a custom peripheral, firmware, PCB and mechanical design, enumeration and debugging, drivers and OS integration, measuring latency, compliance and certification, accessibility, and peripheral security.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "cryptocurrency-development",
+  "version": "0.1.0",
+  "description": "Cryptocurrency Development: blockchain engineering at both layers — protocol (consensus and finality, execution/consensus clients, the EIP process, EVM internals, L2s and rollups, cross-chain) and application (Solidity/Vyper, contract architecture and upgradeability, ERC standards and account abstraction, DeFi primitives and MEV, Foundry/Hardhat testing, fuzzing and formal verification, the vulnerability canon, deployment and key management).",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "penetration-testing",
+  "version": "0.1.0",
+  "description": "Penetration Testing and Offensive Security: authorized offensive work as a profession — the authorization and legal foundation (CFAA, Computer Misuse Act, bug bounty and VDP scope, rules of engagement) that separates it from a crime, engagement types and scoping, the standard methodologies (PTES, OWASP WSTG, NIST SP 800-115, MITRE ATT&CK), reconnaissance and attack surface, testing per domain (web, network, Active Directory and identity, cloud, API/mobile/wireless/OT/hardware), social engineering and physical, red/purple teaming and post-exploitation, testing AI systems, and reporting, remediation, coordinated disclosure, and career and certification. A methodology, process, and professional-practice reference — not an exploit cookbook.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

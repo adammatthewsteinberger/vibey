@@ -1,0 +1,9 @@
+{
+  "name": "newtonian-mechanics",
+  "version": "0.1.0",
+  "description": "Newtonian Mechanics: kinematics, Newton's laws stated precisely and the misconceptions they generate, free-body diagrams, the forces (gravity, normal, friction, drag, spring and tension), work, energy and power and why conservation laws run deeper than Newton's laws, momentum and collisions, rotation, rigid bodies and gyroscopes, oscillations and resonance, central forces and orbits, non-inertial frames, Lagrangian and Hamiltonian mechanics, fluids, chaos and the limits of prediction, and numerical integration including why symplectic integrators matter.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

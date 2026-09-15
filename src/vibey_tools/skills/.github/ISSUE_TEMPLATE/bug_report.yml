@@ -1,0 +1,62 @@
+name: Bug report
+description: A skill gives wrong guidance, a manifest is invalid, or the CLI misbehaves.
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Please search existing issues first. Suspected
+        security problems (including a skill that recommends something unsafe)
+        go through [private reporting](https://github.com/adammatthewsteinberger/vibey-skills/security/advisories/new),
+        not a public issue.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of problem?
+      options:
+        - Skill content is wrong, outdated, or mis-cited
+        - Skill does not trigger when it should (or triggers when it shouldn't)
+        - Manifest / marketplace install problem
+        - vibey-skills CLI problem
+        - Documentation site problem
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: plugin
+    attributes:
+      label: Plugin / skill
+      description: e.g. `security-principles / threat-modeling-playbook`, or `n/a` for the CLI
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `vibey-skills --version`, or the marketplace commit you installed from
+      placeholder: "1.0.2"
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: For content bugs, quote the passage and cite the source that contradicts it.
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Anything else?

@@ -1,0 +1,9 @@
+{
+  "name": "exercise-science-physiology",
+  "version": "0.1.0",
+  "description": "Exercise Science and Physiology: how to read claims in a noisy field, muscle structure, energy systems, cardiovascular and respiratory response, endocrine and neural adaptation, thermoregulation and hydration, training principles, strength and hypertrophy, endurance, power, flexibility, recovery and sleep, periodization, resistance programming variables, concurrent training, aging and sarcopenia, fuelling, supplement evidence tiers, under-fuelling and overtraining, injury and load management, and testing. A technical reference, not medical, dietary or personal training advice.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

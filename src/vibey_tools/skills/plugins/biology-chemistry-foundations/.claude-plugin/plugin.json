@@ -1,0 +1,9 @@
+{
+  "name": "biology-chemistry-foundations",
+  "version": "0.1.0",
+  "description": "Biology and Chemistry Foundations: atoms and periodicity, bonding and molecular geometry, intermolecular forces, phases and solutions, thermodynamics, kinetics, equilibrium and acid-base chemistry, redox and electrochemistry, organic chemistry and reaction mechanism, analytical methods and spectroscopy, biomolecules, enzymes, bioenergetics and metabolism, membranes and transport, cell architecture, the cell cycle and signalling, and evolution — the chemistry and biology a technical reader actually needs, with the reasoning that transfers.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "desktop-apps-macos-linux",
+  "version": "0.1.0",
+  "description": "Desktop Apps (macOS & Linux): platform architecture (Darwin/launchd/bundles vs kernel/compositor/D-Bus/systemd), SwiftUI/AppKit and GTK4/libadwaita/Qt6, cross-platform frameworks (Electron, Tauri, Flutter, Avalonia, Compose Multiplatform, Rust GUIs), Wayland vs X11, native desktop idioms, packaging and distribution (notarization, Mac App Store, Flatpak, Snap, AppImage, distro packages), auto-update, sandboxing and privacy (TCC, entitlements, XDG portals), and testing/CI.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

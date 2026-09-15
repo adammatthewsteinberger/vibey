@@ -1,0 +1,13 @@
+# How Cars Work — and How Mechanics Do Their Jobs Plugin
+
+Two references in one, deliberately: the machine, and the job. The machine — the four-stroke cycle, air, fuel and spark, engine management and closed-loop control, cooling and lubrication, emissions aftertreatment, transmissions and driveline, suspension, steering, brakes and tyres, the 12V system, CAN networks and ADAS, EV and hybrid architecture and high-voltage safety. Then the job most explanations skip, and where the actual expertise lives — diagnostic method, OBD-II and scan data, the tool ladder, the common misdiagnoses, maintenance intervals and the economics of a shop.
+
+One reference, split into 5 skills along its section groups so a task loads only the part it needs. Section numbers (§N) are shared across the set and cross-references into a sibling skill are written as §N → `skill`. Reference, not tutorial: sections are independent, every claim is tagged by how durable it is (stable fundamentals vs. versioned specifics vs. genuinely contested questions), and a currency snapshot (verified August 2026) flags what goes stale first.
+
+## Skills
+
+- **car-engine-cycle-fuel-ignition-management-and-emissions** — The Four-Stroke Cycle, Engine Anatomy, Air, Fuel, Ignition and Knock, Engine Management, Cooling, Emissions, and Diesel (§0–§9): Routing; The Four-Stroke Cycle; Engine Anatomy; The Air Path; Fuel and Injection; ⚠️ Ignition and Knock; ⚠️ Engine Management and Closed-Loop Control; Cooling and Lubrication; ⚠️ Emissions Aftertreatment; Diesel Specifics.
+- **car-transmissions-driveline-suspension-steering-brakes-and-tyres** — Transmissions, Driveline and Differentials, Suspension, Steering and Alignment, Brakes, and Tyres (§10–§15): Transmissions; Driveline and Differentials; Suspension; Steering and Alignment; Brakes; ⚠️ Tyres.
+- **car-electrical-networks-adas-ev-and-high-voltage-safety** — The 12V System, Vehicle Networks, ADAS, Air Conditioning, EV Architecture, Batteries, High-Voltage Safety, Hybrids, and Corrosion (§16–§24): The 12V System; ⚠️ Vehicle Networks; ⚠️ ADAS; Air Conditioning; EV Architecture; Batteries and Degradation; ⚠️ High-Voltage Safety; Hybrids; Body and Corrosion.
+- **car-diagnostic-method-obd-tools-and-shop-economics** — Diagnostic Method, OBD-II and Scan Data, Tools, Common Misdiagnoses, and Maintenance and Shop Economics (§25–§29): ⚠️ Diagnostic Method; ⚠️ OBD-II and Scan Data; Tools; ⚠️ Common Misdiagnoses; Maintenance and Shop Economics.
+- **car-reference** — What's Live, Misconceptions, Numbers, and Books (§30–§35): What's Live; Misconceptions; Numbers; Books and Resources; Quick Reference; Method.

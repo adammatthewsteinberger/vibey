@@ -1,0 +1,33 @@
+name: Skill or plugin request
+description: Propose a new skill, a new plugin, or an improvement to an existing one.
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please search [existing issues](https://github.com/adammatthewsteinberger/vibey-skills/issues)
+        and skim the [Skills reference](https://adammatthewsteinberger.github.io/vibey-skills/reference/)
+        before proposing something that may already exist. Read
+        [CONTRIBUTING.md](https://github.com/adammatthewsteinberger/vibey-skills/blob/main/CONTRIBUTING.md)
+        if you intend to write it yourself.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What does an agent currently get wrong without this?
+      description: The concrete situation where existing skills fall short.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed skill or change
+      description: Which plugin it belongs in, the trigger description, and the primary sources it would cite.
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Anything else?

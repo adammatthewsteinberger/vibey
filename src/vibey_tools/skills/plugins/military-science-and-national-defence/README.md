@@ -1,0 +1,14 @@
+# Military Science and National Defence Plugin
+
+Military science at the strategic and institutional level — the theory, the institutions and the constraints, not tactics or targeting. Clausewitz, Sun Tzu and the theoretical canon, sea and air power, the levels of war and why they get confused, and the principles alongside their limits; deterrence, nuclear strategy, escalation, alliances and grand strategy; force structure, logistics, doctrine, intelligence, command and control and defence procurement; modern conflict including unmanned systems, cyber, space and information operations; irregular warfare, total defence and societal resilience; and civil-military relations and the law of armed conflict.
+
+One reference, split into 6 skills along its section groups so a task loads only the part it needs. Section numbers (§N) are shared across the set and cross-references into a sibling skill are written as §N → `skill`. Reference, not tutorial: sections are independent, every claim is tagged by how durable it is (stable fundamentals vs. versioned specifics vs. genuinely contested questions), and a currency snapshot (checked August 2026) flags what goes stale first.
+
+## Skills
+
+- **mil-theory-clausewitz-sun-tzu-and-sea-and-air-power** — What Military Science Is, Clausewitz, Sun Tzu and Other Traditions, and Sea and Air Power (§0–§4): Routing; What Military Science Is; ⚠️ Clausewitz; Sun Tzu and Other Traditions; Sea and Air Power.
+- **mil-levels-of-war-principles-and-decision-cycles** — The Levels of War, Principles and Their Limits, and Manoeuvre, Attrition and Decision Cycles (§5–§7): ⚠️ The Levels of War; Principles and Their Limits; Manoeuvre, Attrition and Decision Cycles.
+- **mil-deterrence-nuclear-strategy-alliances-and-grand-strategy** — Deterrence, Nuclear Strategy, Escalation, Alliances, and Grand Strategy (§8–§12): ⚠️ Deterrence; ⚠️ Nuclear Strategy; Escalation; Alliances; Grand Strategy.
+- **mil-force-structure-logistics-doctrine-intelligence-and-procurement** — Force Structure, Logistics, Doctrine and Institutional Learning, Intelligence, Command and Control, and Defence Procurement (§13–§18): Force Structure; ⚠️ Logistics; ⚠️ Doctrine and Institutional Learning; Intelligence; Command and Control; ⚠️ Defence Procurement.
+- **mil-modern-conflict-irregular-warfare-resilience-and-the-law** — Unmanned Systems, Cyber and Space, Information Operations, Irregular Warfare, Total Defence and Societal Resilience, Civil-Military Relations, and the Law of Armed Conflict (§19–§25): Unmanned Systems; Cyber and Space; ⚠️ Information Operations; Irregular Warfare; ⚠️ Total Defence and Societal Resilience; ⚠️ Civil-Military Relations; ⚠️ The Law of Armed Conflict.
+- **mil-reference** — What's Live, Misconceptions, Concepts and Figures, and Sources (§26–§31): What's Live; Misconceptions; Concepts and Figures; Sources; Quick Reference; Method.

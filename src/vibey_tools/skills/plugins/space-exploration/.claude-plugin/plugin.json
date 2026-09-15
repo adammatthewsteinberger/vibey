@@ -1,0 +1,9 @@
+{
+  "name": "space-exploration",
+  "version": "0.2.0",
+  "description": "Space Exploration: mission architecture and the design cascade where everything is mass, trajectory and mission design, power, thermal control, communications and the link budget, navigation and autonomy, attitude control and in-space propulsion, entry, descent and landing and surface operations, human physiology and its hard limits, life support and ISRU, radiation environments and shielding, instrumentation, planetary protection, and reliability and margins.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

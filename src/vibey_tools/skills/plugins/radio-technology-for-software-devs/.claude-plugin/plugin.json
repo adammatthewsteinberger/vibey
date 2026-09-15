@@ -1,0 +1,9 @@
+{
+  "name": "radio-technology-for-software-devs",
+  "version": "0.1.0",
+  "description": "Radio Technology for Software Developers: why wireless breaks software intuitions, spectrum and bands, the link budget, the range/rate/power triangle, antennas, propagation and fading, noise and interference, modulation, Shannon's limit, spread spectrum, OFDM, coding and retransmission, multiple access, SDR and IQ sampling, sampling and DSP essentials, the SDR toolchain, the protocol stack, Wi-Fi, Bluetooth and BLE, LPWAN and cellular IoT, 802.15.4, Zigbee, Thread and Matter, GNSS, the regulatory layer, wireless security, and debugging RF problems from software.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

@@ -1,0 +1,63 @@
+site_name: vibey-skills
+site_description: >-
+  Agent Skills for vibe engineering — 644 evidence-grounded practitioner
+  references packaged as a Claude Code plugin marketplace.
+site_url: https://adammatthewsteinberger.github.io/vibey-skills/
+repo_url: https://github.com/adammatthewsteinberger/vibey-skills
+repo_name: adammatthewsteinberger/vibey-skills
+edit_uri: edit/main/docs/
+
+# Fail the build on a bad internal link rather than shipping one. `mkdocs build --strict`
+# in CI turns every warning into an error, which is what makes the generated skill pages
+# below trustworthy — 644 pages is too many to eyeball.
+strict: true
+
+theme: mkdocs
+
+plugins:
+  - search
+  # Synthesises a page per plugin and per skill straight from plugins/**, so the
+  # marketplace tree stays the single source of truth. Mirrors how the wheel maps that
+  # same tree in via hatchling force-include instead of copying it.
+  - gen-files:
+      scripts:
+        - docs/gen_reference.py
+  # Reads the nav for the generated subtree from the SUMMARY.md that gen_reference.py
+  # writes, so adding a skill needs no mkdocs.yml edit.
+  - literate-nav:
+      nav_file: .nav.md
+
+hooks:
+  - docs/hooks.py
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - md_in_html
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Usage: usage.md
+  - Retrieval context engine: rag-context-engine.md
+  - Skills reference: reference/
+  - Contributing: contributing.md
+  - Security: security.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/adammatthewsteinberger/vibey-skills
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/vibey-skills/

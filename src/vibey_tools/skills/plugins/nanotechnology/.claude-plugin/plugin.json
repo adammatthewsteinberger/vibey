@@ -1,0 +1,9 @@
+{
+  "name": "nanotechnology",
+  "version": "0.1.0",
+  "description": "Nanotechnology: the scaling laws and which forces matter at the nanoscale, quantum confinement and tunnelling, top-down fabrication and lithography, bottom-up synthesis and self-assembly, the semiconductor process and what a node name actually means, characterization methods, nanomaterials (carbon, 2D materials, nanoparticles and their optics), DNA nanotechnology, nanomedicine, computational nanoscience from DFT through machine-learned interatomic potentials, and nanoparticle safety and environmental behaviour.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

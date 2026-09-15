@@ -1,0 +1,9 @@
+{
+  "name": "currency-research",
+  "version": "0.1.0",
+  "description": "Currency Research: auditing an evidence-grounded reference for staleness — the durability tiers, deciding whether a finding warrants an edit at all, web search and source-quality practice, dating a claim, the fabrication failure mode, editing a SKILL.md without disturbing its structure or cross-references, and opening the weekly pull request.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

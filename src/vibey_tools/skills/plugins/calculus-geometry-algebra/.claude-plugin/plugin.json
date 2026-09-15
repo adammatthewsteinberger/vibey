@@ -1,0 +1,9 @@
+{
+  "name": "calculus-geometry-algebra",
+  "version": "0.1.0",
+  "description": "Calculus, Geometry and Algebra: vector spaces and linear maps, matrices and the four fundamental subspaces, determinants, eigenvalues and diagonalization, inner products and orthogonality, the spectral theorem and SVD, matrix factorizations, conditioning and numerical reality, the derivative and integration, series and Taylor approximation, multivariable and vector calculus, differential forms, constrained optimization, differential equations, geometry, manifolds, tensors done properly, Riemannian geometry, and Lie groups and algebras.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

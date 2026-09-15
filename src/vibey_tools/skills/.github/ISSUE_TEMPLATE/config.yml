@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://adammatthewsteinberger.github.io/vibey-skills/
+    about: Installation, CLI usage, and the full text of every skill.
+  - name: Security vulnerability
+    url: https://github.com/adammatthewsteinberger/vibey-skills/security/advisories/new
+    about: Please report security problems privately — see SECURITY.md. Do not open a public issue.

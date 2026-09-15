@@ -1,0 +1,9 @@
+{
+  "name": "geoscience",
+  "version": "0.1.0",
+  "description": "Geoscience: Earth structure and plate tectonics, minerals and rocks, deep time and stratigraphy, deformation and structure, earthquakes and seismology including the magnitude-versus-intensity distinction and prediction versus forecasting, volcanism, surface processes, soils, surface hydrology, groundwater, oceanography, the cryosphere, biogeochemical cycles, resources, natural hazards, and observation and geophysics.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

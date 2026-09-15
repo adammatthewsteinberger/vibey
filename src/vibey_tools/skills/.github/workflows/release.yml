@@ -1,0 +1,315 @@
+# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+name: Release
+
+# Every push to `develop` publishes to TestPyPI; every push to `main` publishes to PyPI.
+#
+# An index version is immutable, so "every push publishes" cannot mean re-uploading the
+# same version:
+#
+#   develop — builds `<release>.dev<run_number>` (`vibey-gh version --dev`). Distinct per
+#             push, PEP 440 valid, and sorts before the release it anticipates.
+#   main    — publishes the exact version in src/vibey_skills/__init__.py. Most pushes to
+#             main carry no version bump, so the publish steps skip an existing version
+#             instead of failing the run.
+#
+# A `v*` tag still works and additionally attaches the artifacts to a GitHub Release.
+on:
+  push:
+    branches: [develop, main]
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  # Per-COMMIT on develop, per-ref on main and tags.
+  #
+  # `cancel-in-progress: false` does not mean "never cancel". When several runs pile up in
+  # one group, GitHub keeps the newest pending run and cancels the earlier pending ones —
+  # so a burst of pushes to develop published only the first and last. Three merges in one
+  # minute produced 2.15.0.dev8 and 2.15.0.dev10; dev9 was cancelled before it ever built,
+  # and that commit has no artifact on TestPyPI. Every push to develop is supposed to
+  # publish, and each already builds a distinct `.devN`, so there is nothing to serialise:
+  # giving each commit its own group lets them run in parallel and all reach the index.
+  #
+  # main and tags keep a shared group. There the version is NOT unique per run — reruns
+  # and retags publish the same version — so two of them racing could upload the same
+  # immutable artifact concurrently, which is exactly what serialising prevents.
+  group: release-${{ github.ref }}-${{ github.ref == 'refs/heads/develop' && github.sha || 'shared' }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build distributions
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      publish_pypi: ${{ steps.version.outputs.publish_pypi }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      # Runs on the clean tree, before any version patching below.
+      - name: Validate marketplace manifests and skill frontmatter
+        run: python3 tools/validate_manifests.py
+
+      - name: Resolve the version to publish
+        id: version
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet "vibey-gh==1.56.0"
+          if [ "${GITHUB_REF}" = "refs/heads/develop" ]; then
+            version=$(vibey-gh version --dev "${GITHUB_RUN_NUMBER}" --apply)
+            publish_pypi=false
+            echo "develop build — TestPyPI only, as ${version}"
+          else
+            version=$(python3 -c "import re,pathlib; print(re.search(r'__version__ = \"([^\"]+)\"', pathlib.Path('src/vibey_skills/__init__.py').read_text()).group(1))")
+            publish_pypi=true
+            echo "release build — PyPI only, as ${version}"
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "publish_pypi=${publish_pypi}" >> "$GITHUB_OUTPUT"
+
+      # `vibey-gh version --apply` patches both version sites, so the tree still validates.
+      - name: Re-validate after version patching
+        run: python3 tools/validate_manifests.py
+
+      - name: Build sdist and wheel
+        run: uv build
+
+      - name: Check package metadata
+        run: uvx twine check dist/*
+
+      - name: Verify the tag matches the package version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME#v}"
+          pkg=$(python3 -c "import re,pathlib; print(re.search(r'__version__ = \"([^\"]+)\"', pathlib.Path('src/vibey_skills/__init__.py').read_text()).group(1))")
+          echo "tag=$tag package=$pkg"
+          test "$tag" = "$pkg"
+
+      - name: Upload distributions
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  # Develop is the TestPyPI lane. Main and tags publish directly to PyPI from the same
+  # build artifact, without making the production release depend on a second registry.
+  testpypi:
+    name: Publish to TestPyPI
+    needs: build
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/vibey-skills
+    permissions:
+      id-token: write
+    steps:
+      - name: Download distributions
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          skip-existing: true
+
+  # Proves the uploaded artifact actually installs and runs — FROM TESTPYPI — before the
+  # irreversible upload.
+  #
+  # TestPyPI is the only index configured here. An earlier version also passed
+  # `--extra-index-url https://pypi.org/simple/`, which was a real hole: this package has zero
+  # runtime dependencies, so the extra index bought nothing, but it meant pip could satisfy
+  # this check from the production index instead — so a re-run, or any tag whose version
+  # already existed on PyPI, would "verify" an artifact TestPyPI never received and the gate
+  # would pass without testing anything. With a single index that is structurally impossible,
+  # and the report check below asserts the provenance rather than assuming it.
+  #
+  # If a runtime dependency is ever added and is not mirrored on TestPyPI, this job will fail
+  # to resolve. That is the intended outcome: decide consciously then, rather than reaching
+  # back to PyPI by default and quietly losing the guarantee.
+  verify-testpypi:
+    name: Verify the TestPyPI artifact
+    needs: [build, testpypi]
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install from TestPyPI and smoke-test
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          set -euo pipefail
+          version="${VERSION}"
+          index="https://test.pypi.org/simple/"
+          spec="vibey-skills==${version}"
+
+          # TestPyPI's index has lagged its own upload by several minutes; allow ~10.
+          installed=0
+          # --no-cache-dir is load-bearing, not hygiene. pip caches the simple-index
+          # response, so without it the first attempt pins an index that predates the
+          # upload and all fifteen retries re-read that same cached page — the loop can
+          # never observe the new version however long it waits. That is exactly how
+          # 2.14.0.dev7 failed after TestPyPI had returned 200 OK for it.
+          for attempt in $(seq 1 20); do
+            if pip install --quiet --no-cache-dir --index-url "$index" "$spec"; then
+              installed=1
+              break
+            fi
+            echo "not indexed yet; retrying in 30s (attempt ${attempt}/20)"
+            sleep 30
+          done
+          if [ "$installed" -ne 1 ]; then
+            echo "::error::could not install ${spec} from TestPyPI after 20 attempts (~10 min)"
+            exit 1
+          fi
+
+          # Assert provenance instead of assuming it. Checking for the ABSENCE of the
+          # production hosts is more durable than matching TestPyPI's CDN hostname, which is
+          # free to change; production's is the thing that must never appear.
+          pip install --dry-run --quiet --ignore-installed \
+            --report /tmp/resolve.json --index-url "$index" "$spec"
+          urls=$(jq -r '.install[].download_info.url' /tmp/resolve.json)
+          echo "resolved from:"; printf '%s\n' "$urls" | sed 's/^/  /'
+          # Fail closed. An empty list would otherwise sail through the grep below and report
+          # success while having verified nothing — the same shape of bug as the check this
+          # step replaced, so it gets an explicit assertion rather than trust in `set -e`.
+          if [ -z "$urls" ]; then
+            echo "::error::resolution report listed no downloads; cannot verify provenance"
+            exit 1
+          fi
+          if printf '%s\n' "$urls" | grep -qE '//(files\.pythonhosted\.org|pypi\.org)/'; then
+            echo "::error::resolved from the production index, not TestPyPI"
+            exit 1
+          fi
+
+          vibey-skills --version
+          vibey-skills list > /dev/null
+          vibey-skills install --all --dest /tmp/verify-skills
+          expected=$(find plugins -name SKILL.md | wc -l | tr -d ' ')
+          actual=$(find /tmp/verify-skills -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')
+          echo "skills expected ${expected} / installed ${actual}"
+          test "$expected" = "$actual"
+
+  # Only main and tags reach production. `skip-existing` because most pushes to main
+  # carry no version bump — a workflow or docs change re-runs this job with a version
+  # PyPI already holds, and that must be a no-op rather than a red build.
+  pypi:
+    name: Publish to PyPI
+    needs: build
+    if: needs.build.outputs.publish_pypi == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/vibey-skills
+    permissions:
+      # Trusted Publishing (OIDC): the workflow mints a short-lived token from PyPI.
+      # No API token is stored in this repository or in any secret.
+      id-token: write
+    steps:
+      - name: Download distributions
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
+
+  github-release:
+    name: Attach artifacts to the GitHub Release
+    needs: pypi
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download distributions
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Create or update the release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.tar.gz
+            dist/*.whl
+          generate_release_notes: true
+
+  # Keeps develop aligned with main.
+  #
+  # develop -> main is rebase-merged, which replays develop's commits onto main as new
+  # commits with new SHAs. develop's tip is therefore never an ancestor of main's, so a
+  # fast-forward is impossible — but the two trees are identical the moment the rebase
+  # lands, and both rulesets set strict_required_status_checks_policy, so a develop that
+  # reads as "behind" blocks the next pull request. develop has to be realigned.
+  #
+  # The guard is TREE EQUALITY, not ancestry: this runs only when `git diff` between the
+  # branches is empty, so it realigns two identical contents onto one history and cannot
+  # discard work. If develop has anything main does not, it is left alone and said so.
+  #
+  # Runs after the PyPI publish, so a failed release never moves develop.
+  sync-develop:
+    name: Realign develop with main
+    needs: pypi
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # The token has to be given to checkout, not applied afterwards. checkout writes
+          # an `http.https://github.com/.extraheader` auth header into the local git
+          # config, and that header WINS over credentials in the remote URL — so setting
+          # the remote to a PAT later has no effect and the push still authenticates as
+          # the Actions bot, which develop's ruleset refuses.
+          token: ${{ secrets.AUTOMERGE_TOKEN || github.token }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: python3 -m pip install --quiet "vibey-gh==1.56.0"
+
+      # This was ~35 lines of inline shell doing exactly what `vibey-gh realign` does:
+      # refuse unless the two branches' TREES are identical, then --force-with-lease
+      # pinned to the SHA just read, and treat a rejected push as a failure rather than a
+      # warning. The rule has not changed; it is just tested now.
+      #
+      # Why it matters, restated because it is easy to mistake for tidiness: main is
+      # rebase-merged, so its commits are rewritten copies. Leave develop divergent and
+      # the next promotion pull request opens CONFLICTING, because git sees every change
+      # twice.
+      - name: Realign
+        run: |
+          set -euo pipefail
+          git config user.name "vibey[bot]"
+          git config user.email "adam@matthewsteinberger.com"
+          vibey-gh realign

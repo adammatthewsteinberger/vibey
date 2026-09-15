@@ -1,0 +1,9 @@
+{
+  "name": "banking-swift-and-payment-networks",
+  "version": "0.1.0",
+  "description": "Banking, SWIFT and Payment Networks: what a payment actually is, what a bank is and how deposits are created, central banks and reserves, the payment system taxonomy, clearing, netting and settlement risk, correspondent banking, what SWIFT actually is, message formats from MT to ISO 20022, gpi and tracking, governance, sanctions and geopolitics, alternatives and parallel systems, Ripple versus XRP versus the XRP Ledger, XRP Ledger mechanics, Ripple's products, legal status, instant payment systems, stablecoins, CBDCs, tokenized deposits, compliance, security, and the costs and economics of remittances.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

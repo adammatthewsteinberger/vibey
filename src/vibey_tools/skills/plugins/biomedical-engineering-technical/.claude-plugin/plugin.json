@@ -1,0 +1,9 @@
+{
+  "name": "biomedical-engineering-technical",
+  "version": "0.1.0",
+  "description": "Biomedical Engineering: physiological signal processing, medical imaging modality physics and DICOM internals, clinical data structures, the technicals of clinical machine learning (prevalence, calibration, shortcut learning, the validation ladder), bioinformatics, structural and systems biology, PK/PD, physiological modelling, biomechanics, biomaterials, tissue engineering, neural interfaces and prosthetics, lab automation and instrumentation, and the biostatistics that determine whether any of it holds up.",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

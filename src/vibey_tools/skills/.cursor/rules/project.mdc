@@ -1,0 +1,16 @@
+---
+description: How this repository is organized and how to change it
+globs:
+alwaysApply: true
+---
+
+This file exists to satisfy `vibey-gh`'s documentation contract, which expects a Cursor
+rules file named `project.mdc` alongside the repository's other agent-facing entry points.
+The actual conventions live in one place, not here:
+
+[CLAUDE.md](https://github.com/adammatthewsteinberger/vibey-skills/blob/main/CLAUDE.md) —
+what this repository is, how plugins and skills are structured, and the branching,
+versioning, and release rules that govern a change.
+
+See also [.cursor/rules/claude.mdc](https://github.com/adammatthewsteinberger/vibey-skills/blob/main/.cursor/rules/claude.mdc),
+which points at the same file.

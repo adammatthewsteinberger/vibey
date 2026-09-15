@@ -1,0 +1,9 @@
+{
+  "name": "cooking-cleaning-waste-sciences",
+  "version": "0.1.0",
+  "description": "Cooking, Cleaning and Waste Sciences: the food science (heat transfer, proteins and meat, browning, starch, gluten and gels, fats and emulsions, salt and brining, acid and pH, flavour, fermentation, baking and leavening), food safety (pathogens and temperature, HACCP, cross-contamination and allergens), food service (kitchen organization, restaurant economics, menu engineering, regulation and inspection), cleaning chemistry (surfactants and soil types, water hardness, the cleaning-sanitizing-disinfecting distinction and the mixing dangers, laundry), and waste (wastewater treatment, the waste hierarchy, landfills, recycling assessed honestly, composting).",
+  "author": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  }
+}

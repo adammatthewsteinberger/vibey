@@ -1,0 +1,13 @@
+# Refrigeration, AC, Climate Control and Food/Water Storage Plugin
+
+Everything here is one idea in different clothes: moving heat from where you don't want it to where you don't care, and doing it reliably enough that the thing being cooled stays safe. The vapour-compression cycle in practice, components and diagnosis by superheat and subcooling, refrigerant properties and safety classes, and the alternative cooling cycles; HVAC load calculation, air distribution, humidity control, ventilation and heat pumps; the cold chain from spoilage mechanisms through transport, monitoring and validation to the pharmaceutical chain; preservation without refrigeration; and water storage, treatment and distribution.
+
+One reference, split into 5 skills along its section groups so a task loads only the part it needs. Section numbers (§N) are shared across the set and cross-references into a sibling skill are written as §N → `skill`. Reference, not tutorial: sections are independent, every claim is tagged by how durable it is (stable fundamentals vs. versioned specifics vs. genuinely contested questions), and a currency snapshot (verified August 2026) flags what goes stale first.
+
+## Skills
+
+- **hvacr-cycle-components-refrigerants-and-diagnosis** — The Cycle in Practice, Components, Refrigerants, Charge and Leaks, Superheat and Subcooling Diagnosis, and Other Cooling Approaches (§0–§6): Routing; The Cycle in Practice; Components; ⚠️ Refrigerants; Charge, Evacuation and Leaks; ⚠️ Diagnosis: Superheat and Subcooling; Other Cooling Approaches.
+- **hvacr-load-calculation-air-humidity-and-heat-pumps** — Load Calculation, Air Distribution, Humidity Control, Ventilation, Heat Pumps, Controls, and the Building Envelope (§7–§13): Load Calculation; Air Distribution; ⚠️ Humidity Control; Ventilation and Indoor Air Quality; Heat Pumps; Controls; Building Envelope.
+- **hvacr-cold-chain-temperature-limits-and-validation** — Why Food Spoils, the Chain as a System, Temperature Limits, Chilling and Freezing, Controlled Atmosphere, Transport, Monitoring, and Pharmaceutical Cold Chain (§14–§21): Why Food Spoils; The Chain as a System; ⚠️ Temperature Limits; Chilling and Freezing; Controlled and Modified Atmosphere; Transport Refrigeration; Monitoring and Validation; Pharmaceutical Cold Chain.
+- **hvacr-preservation-water-storage-and-treatment** — Preservation Without Refrigeration, Water Storage, and Water Treatment (§22–§24): ⚠️ Preservation Without Refrigeration; Water Storage; Water Treatment.
+- **hvacr-reference** — What's Live, Misconceptions, Numbers, and Books (§25–§30): What's Live; Misconceptions; Numbers; Books and Standards; Quick Reference; Method.

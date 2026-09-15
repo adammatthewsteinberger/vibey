@@ -1,0 +1,64 @@
+# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+name: Release artifacts
+
+# vibey-gh's github-release.yml creates the immutable tag and GitHub Release for a real
+# version bump on main, but vibey_gh.github_release.publish() only ever creates the tag
+# and the release itself — it has no way to attach files. This workflow attaches the
+# sdist and wheel this repository's own Release run already built, once that release
+# exists.
+#
+# github-release.yml has no way to skip a push to main that carries no version bump —
+# most of this repository's promotions are exactly that (docs- or tooling-only, see
+# .vibey-gh.toml's [version]) — so it is expected to fail on most pushes (see the comment
+# on github-release.yml in .vibey-gh.toml's [install]). This workflow is written not to
+# compound that: it makes a few bounded attempts to find the release github-release.yml
+# would have created, and exits cleanly — not with a failure — when none appears.
+on:
+  workflow_run:
+    workflows: ["Release"]
+    types: [completed]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-artifacts-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+
+jobs:
+  attach:
+    name: Attach build artifacts to the GitHub Release
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Download the dist artifact from the Release run
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Wait for the GitHub Release, then attach artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version=$(python3 -c "import re,pathlib; print(re.search(r'__version__ = \"([^\"]+)\"', pathlib.Path('src/vibey_skills/__init__.py').read_text()).group(1))")
+          tag="v${version}"
+          for attempt in $(seq 1 6); do
+            if gh release view "$tag" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+              gh release upload "$tag" dist/*.whl dist/*.tar.gz --repo "${{ github.repository }}" --clobber
+              echo "attached build artifacts to ${tag}"
+              exit 0
+            fi
+            echo "release ${tag} not found yet (attempt ${attempt}/6) — this push may not have bumped the version, which is normal"
+            sleep 20
+          done
+          echo "no release ${tag} appeared — this push likely carried no version bump; nothing to attach"

@@ -1,0 +1,264 @@
+# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+name: Currency research
+
+# Weekly audit of the marketplace's dated claims.
+#
+# The references here tag every claim by how durable it is. Physical law and settled
+# mechanism never move; versioned specifics, regulatory thresholds and market figures do,
+# and each generated skill carries a `> **Currency:**` line naming the section that holds
+# them. This job walks a rotating slice of the marketplace each week, researches those
+# claims against the live web, and opens a pull request when — and only when — something
+# has actually changed.
+#
+# The methodology is not written into this file. It lives in the `currency-research`
+# plugin in this very marketplace, which the action installs below: the repository's own
+# deliverable is the thing that tells the agent how to do the job. That keeps the method
+# reviewable as content rather than buried in YAML, and means improving the method is an
+# ordinary skill edit.
+#
+# Requirements before this can run
+# --------------------------------
+#   1. Repository secret `ANTHROPIC_API_KEY`. The job exits early with a notice if it is
+#      absent, rather than failing every week with an opaque error.
+#   2. Settings → Actions → General → "Allow GitHub Actions to create and approve pull
+#      requests" must be enabled, or the default GITHUB_TOKEN cannot open the PR.
+#
+# The only `github.event.*` values interpolated below are `workflow_dispatch` inputs, which
+# require write access to set. They are passed through `env:` and quoted rather than
+# expanded straight into a shell line; keep it that way if this file grows.
+
+on:
+  schedule:
+    # Mondays, 06:17 UTC. Off the hour on purpose — the top of the hour is the busiest
+    # slot on shared runners and scheduled jobs are dropped under load.
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      plugins:
+        description: "Comma-separated plugin names to audit (default: this week's rotation slice)"
+        required: false
+        type: string
+      per_run:
+        description: "How many plugins to audit when using the rotation"
+        required: false
+        default: "4"
+        type: string
+      model:
+        description: "Model to run the audit with"
+        required: false
+        default: "claude-sonnet-5"
+        type: choice
+        options:
+          - claude-sonnet-5
+          - claude-opus-5
+
+permissions:
+  contents: write
+  pull-requests: write
+  # The action exchanges a GitHub OIDC token for a short-lived GitHub App token rather
+  # than acting as the default GITHUB_TOKEN. Without this it fails before it starts, with
+  # "Could not fetch an OIDC token".
+  id-token: write
+
+# Never run two audits at once: they would race on the same branch name and could open
+# duplicate pull requests. Never cancel one midway either — a half-finished audit that has
+# already edited files is worse than a late one.
+concurrency:
+  group: currency-research
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: Audit a rotation slice
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The audit branches from and targets `develop`, the integration branch.
+          ref: develop
+          fetch-depth: 0
+
+      - name: Check the API key is configured
+        id: preflight
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -z "${ANTHROPIC_API_KEY}" ]; then
+            echo "::notice::ANTHROPIC_API_KEY is not set; skipping the currency audit."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Python
+        if: steps.preflight.outputs.ready == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Which plugins, and what each one's own currency note says is likely to have moved.
+      # Deterministic on the ISO week, so a run can be reproduced locally with
+      # `python3 tools/select_currency_batch.py --week N`.
+      - name: Select this run's plugins
+        if: steps.preflight.outputs.ready == 'true'
+        id: select
+        env:
+          PLUGINS: ${{ inputs.plugins }}
+          PER_RUN: ${{ inputs.per_run }}
+        run: |
+          set -euo pipefail
+          args=()
+          if [ -n "${PLUGINS:-}" ]; then
+            args+=(--plugins "${PLUGINS}")
+          elif [ -n "${PER_RUN:-}" ]; then
+            args+=(--per-run "${PER_RUN}")
+          fi
+          python3 tools/select_currency_batch.py "${args[@]}" > /tmp/briefing.md
+          cat /tmp/briefing.md
+          {
+            echo 'briefing<<CURRENCY_BRIEFING_EOF'
+            cat /tmp/briefing.md
+            echo 'CURRENCY_BRIEFING_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Research and propose updates
+        id: audit
+        if: steps.preflight.outputs.ready == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          base_branch: develop
+          branch_prefix: claude/currency-
+
+          # The method lives in the marketplace, not here.
+          plugin_marketplaces: |
+            https://github.com/adammatthewsteinberger/vibey-skills.git
+          plugins: |
+            currency-research@vibey-skills
+
+          # Puts Claude's report in the job summary, which is where a no-change run
+          # leaves its audit record — it has no shell access to write there itself.
+          display_report: true
+
+          # Full turn-by-turn JSON in the step log. Verbose, and worth it: without it the
+          # log carries only the final result counters, so there is no way to see which
+          # searches ran or which sources were consulted — and the job summary above is
+          # rendered client-side, so it cannot be read back through the API either. This
+          # is the input to reach for when a run needs debugging.
+          show_full_output: true
+
+          # claude_args is split on whitespace, so a tool spec must contain NO spaces.
+          # `Bash(python3 tools/check_links.py)` silently becomes two junk entries
+          # `Bash(python3` and `tools/check_links.py)`, the agent gets no Bash permission
+          # at all, and the run burns its turns on denials while still reporting success.
+          # The colon form avoids spaces entirely.
+          claude_args: |
+            --model ${{ inputs.model || 'claude-sonnet-5' }}
+            --allowedTools WebSearch,WebFetch,Read,Glob,Grep,Edit,Write,Bash(python3:*),Bash(git:*),Bash(gh:*)
+            --max-turns 150
+
+          prompt: |
+            You are running this repository's weekly currency audit, unattended.
+
+            Follow the `currency-research` plugin's skills, which are installed for this
+            run. Load them before doing anything else and follow them exactly:
+
+              - research-currency-audit-method      — what to look for, and when a finding
+                                                      justifies an edit at all
+              - research-search-and-source-quality  — how to search and judge a source
+              - research-editing-a-reference-skill  — how to edit a SKILL.md safely, and
+                                                      which manifests mirror the edit
+              - research-weekly-pull-request        — how to report the result
+
+            Two rules override everything else:
+
+              1. The default answer is NO CHANGE. Only edit a claim when a credible source
+                 that post-dates it contradicts, supersedes or materially extends it.
+              2. Never present recalled knowledge as a search result. If a search returns
+                 nothing useful, say so. A fabricated citation is the worst possible
+                 outcome of this job — worse than finding nothing.
+
+            If nothing needs changing, do NOT open a pull request. Make your FINAL
+            MESSAGE the audit record instead — which plugins you audited, which claims
+            you checked, what sources you consulted, and what you concluded. That
+            message is published to the job summary, so it is the run's only durable
+            output when no pull request is opened.
+
+            If something does need changing, make the smallest correct edits, run both
+            `python3 tools/validate_manifests.py` and `python3 tools/check_links.py` (both
+            must exit 0), commit to a branch, and open the pull request YOURSELF with
+            `gh pr create --base develop`, using the body format in
+            research-weekly-pull-request. Attaching your own report is the point — a
+            fallback step will open a bare pull request if you do not, and that one
+            cannot carry your sources. Keep it to a handful of edits; raise anything
+            uncertain under "Unresolved" rather than guessing.
+
+            Every commit you make must carry the repository's fingerprint trailer, on
+            its own line at the end of the message. CI rejects commits without it:
+
+              Made-With: Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+
+            `gh` is available for that. Use it to create and describe the pull request
+            and nothing else: never `gh pr merge`, never merge or close anything, never
+            change repository settings, and never push to `develop` or `main` directly.
+
+            This run's briefing follows.
+
+            ${{ steps.select.outputs.briefing }}
+
+      # Redundancy. The agent is told to open its own pull request, because only it can
+      # attach the sources it found. It does not always manage to: the first run that
+      # proposed edits pushed its branch and stopped, leaving the work orphaned. This
+      # step notices a branch with commits and no pull request, and opens a bare one
+      # pointing at the audit-record artifact. Belt and braces — never a replacement for
+      # the agent's own description.
+      #
+      # Uses the action's app token rather than the default GITHUB_TOKEN: a pull request
+      # opened with GITHUB_TOKEN does not trigger `pull_request` workflows, so it would
+      # arrive with no status checks and be unmergeable under develop's ruleset.
+      - name: Open the pull request if the audit did not
+        if: steps.audit.outputs.branch_name != ''
+        env:
+          GH_TOKEN: ${{ steps.audit.outputs.github_token || github.token }}
+          BRANCH: ${{ steps.audit.outputs.branch_name }}
+          RUN_ID: ${{ github.run_id }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          git fetch --quiet origin "+refs/heads/develop:refs/remotes/origin/develop" \
+            "+refs/heads/${BRANCH}:refs/remotes/origin/${BRANCH}" 2>/dev/null || {
+              echo "::notice::branch ${BRANCH} was not pushed; nothing to open."; exit 0; }
+
+          if [ -z "$(git log --oneline "origin/develop..origin/${BRANCH}")" ]; then
+            echo "::notice::${BRANCH} has no commits beyond develop; nothing to open."
+            exit 0
+          fi
+          if [ -n "$(gh pr list --head "${BRANCH}" --state open --json number -q '.[0].number')" ]; then
+            echo "::notice::a pull request for ${BRANCH} already exists — the agent opened it."
+            exit 0
+          fi
+
+          echo "::warning::the audit pushed ${BRANCH} but opened no pull request; opening a bare one."
+          gh pr create --base develop --head "${BRANCH}" \
+            --title "Currency audit: proposed updates from run ${RUN_ID}" \
+            --body "$(printf '%s\n' \
+              "The weekly currency audit pushed this branch but did not open a pull request, so this one was opened automatically and **does not carry the agent's report or its sources**." \
+              "" \
+              "Read the audit record before reviewing: the \`audit-record-${RUN_ID}\` artifact on [run ${RUN_ID}](https://github.com/${REPO}/actions/runs/${RUN_ID}), which holds the searches, sources and reasoning behind every edit here." \
+              "" \
+              "Treat the diff as unexplained until you have." )"
+
+      # Without this a run leaves no auditable trace. The step log carries only the final
+      # result counters, and the job summary is rendered client-side so it cannot be
+      # retrieved through the API — which makes an honest "nothing changed" run
+      # indistinguishable from one that searched nothing and said so. The execution file
+      # holds the actual turns, searches and sources, so archive it every time, including
+      # on failure.
+      - name: Archive the audit record
+        if: always() && steps.audit.outputs.execution_file != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-record-${{ github.run_id }}
+          path: ${{ steps.audit.outputs.execution_file }}
+          if-no-files-found: warn
+          retention-days: 90
