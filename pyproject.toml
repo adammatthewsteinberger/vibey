@@ -98,10 +98,18 @@ include = ["src/**/*.py", "tests/**/*.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
-# E501 only, and only because of the provenance header: an exact 230-character line
+# E501 only, and only because of the provenance header: an exact 234-character line
 # compared byte-for-byte, unwrappable without failing the check that mandates it. Width on
 # real code is still enforced by the formatter.
 ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# E402 (import not at top of file) for exactly one file, for exactly one statement.
+# `vibey/cli/main.py` arms the SIGTERM latch BEFORE importing typer and the rest of the
+# tree, because Linux discards a signal sent to PID 1 while its disposition is still
+# SIG_DFL -- every import below that line is time in which a Kubernetes scale-in would be
+# thrown away. The placement IS the fix; moving those imports up would undo it.
+"src/vibey/cli/main.py" = ["E402"]
 
 [tool.mypy]
 python_version = "3.12"

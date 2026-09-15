@@ -333,7 +333,12 @@ jobs:
           pod=$(kubectl get pods -n vibey -l app.kubernetes.io/component=worker \
             -o custom-columns=NAME:.metadata.name,DEL:.metadata.deletionTimestamp --no-headers \
             | awk '$2 == "<none>" {print $1}' | head -n 1)
-          echo "deleting $pod"
+          # How old is it? A pod deleted moments after its container started is testing
+          # the startup race (SIGTERM discarded while PID 1 still had SIG_DFL), not the
+          # steady-state drain. Both must pass; only one of them is obvious from a log.
+          started=$(kubectl get pod "$pod" -n vibey \
+            -o jsonpath='{.status.containerStatuses[0].state.running.startedAt}' || true)
+          echo "deleting $pod (container started at ${started:-unknown})"
           # By the time a failing test reaches the diagnostics step below,
           # the Deployment has already replaced this pod -- `kubectl logs
           # deployment/...` would then show the REPLACEMENT's fresh startup
@@ -353,7 +358,10 @@ jobs:
           kubectl describe pods -n vibey || true
           if [ -n "${SIGTERM_TEST_POD:-}" ]; then
             echo "--- logs: the specific pod the SIGTERM test deleted ($SIGTERM_TEST_POD) ---"
-            kubectl logs -n vibey "pod/$SIGTERM_TEST_POD" --tail=200 || true
+            # --timestamps, because the question this log has to answer is *when* the
+            # drain flag was observed relative to the delete -- and without them every
+            # line carries the collection time instead.
+            kubectl logs -n vibey "pod/$SIGTERM_TEST_POD" --timestamps --tail=300 || true
             echo "--- describe: same pod, for phase/conditions/events ---"
             kubectl describe "pod/$SIGTERM_TEST_POD" -n vibey || true
           fi
