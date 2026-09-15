@@ -869,7 +869,11 @@ domain: `/develop/` is the test documentation released with TestPyPI, while `/ma
 the production documentation released with PyPI. A small root page links both channels.
 Because GitHub Pages has one deployment per repository, each run restores the latest
 successful artifact for the other channel before deploying; one branch never erases the
-other branch's site.
+other branch's site. When `[documentation] generate_book` and `generate_paper` are on, the
+book and the research paper are published at the root of each channel site and linked
+from every page's navigation and footer, from the channel picker, and from `llms.txt` —
+always from what the deploy actually produced — and, on the release channel, attached to
+that version's GitHub Release as permanent assets.
 
 GitHub Packages does not provide a PyPI registry. The workflow therefore publishes the
 exact wheel and source distribution from the successful `Release` run as an OCI artifact

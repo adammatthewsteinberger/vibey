@@ -66,29 +66,29 @@
   {
    "anchor": "9 — The vibe",
    "document": "docs/doctrines.md",
-   "sha256": "a3d32c056e0008353b11a8dcb3120d7ebf792503ec7919ec457b4d82132dc43b",
+   "sha256": "71bd94d7661fabc2792e325309a4cef3323fc6fa0e39008acbcf80330ab56455",
    "start_line": 105,
-   "text_lines": 14
+   "text_lines": 16
   },
   {
    "anchor": "10 — No guarantees",
    "document": "docs/doctrines.md",
    "sha256": "09c13bc4800bef8ee1e28856ce6675c85ea6e410e6479a88794d5f99e1459e26",
-   "start_line": 119,
+   "start_line": 121,
    "text_lines": 51
   },
   {
    "anchor": "11 — The living roadmap",
    "document": "docs/doctrines.md",
    "sha256": "2b7af17bfc318721c526df138ff45715828a18d9f4892ca8a80d194c4328548d",
-   "start_line": 170,
+   "start_line": 172,
    "text_lines": 7
   },
   {
    "anchor": "12 — Humans first",
    "document": "docs/doctrines.md",
    "sha256": "2799d16df54b88d6f793574a7dc70b137e72a038ede864662362975f36251892",
-   "start_line": 177,
+   "start_line": 179,
    "text_lines": 35
   },
   {
@@ -225,7 +225,7 @@
    "text_lines": 4
   }
  ],
- "corpus_sha256": "fecc2f9fdbf1249fac526c18f523b8f864e1d53a3462b56aacc1f2e03e572c8d",
+ "corpus_sha256": "07705d1cd946bc6744b5f4d23eca2927de970c4926a9b1367bdf5747a55f0d01",
  "documents": [
   "docs/doctrines.md",
   "docs/constitution.md",
