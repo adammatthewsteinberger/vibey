@@ -83,6 +83,8 @@ expression is refused at load time.
 | `repair_untrusted_authors` | boolean / `true` | Permit constrained outside-author repairs. |
 | `replace_fork_prs` | boolean / `true` | Repair forks through linked repository-owned PRs. |
 | `retain_schedule_backstop` | boolean / `true` | Retain scheduled recovery beside event triggers. |
+| `plugin_marketplaces` | string list / empty | Claude Code plugin marketplaces loaded by the review, repair, and conflict-resolution jobs. Each entry is an `https://` Git URL, or a repository-relative path resolved inside the trusted checkout of the default branch (never the pull request's own tree). Empty by default: a marketplace that cannot be cloned fails the review outright. |
+| `plugins` | string list / empty | Plugins those jobs install, each `<plugin>@<marketplace>`. Requires at least one `plugin_marketplaces` entry. |
 
 ### `[pr_automation.observability]`
 
