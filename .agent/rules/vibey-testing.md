@@ -1,8 +1,5 @@
 # vibey-testing (Antigravity mirror of `.claude/skills/vibey-testing/SKILL.md`)
 
-description: The 100% per-layer coverage gates, Postgres integration tests (never mocked), property testing for rotation and no-loss gate, and the chaos test.
-alwaysApply: false
-
 # vibey testing
 
 ## Coverage floors — not targets
@@ -18,7 +15,58 @@ uv run coverage report --include='src/vibey/infrastructure/*' --fail-under=100
 uv run coverage report --include='src/vibey/cli/*' --fail-under=100
 ```
 
-The build **fails** if any layer drops below 100%. This is not aspirational.
+The build **fails** if any layer drops below 100%. This is not aspirational
+(ADR-0023). `tui/` has tests under `tests/tui/` but no floor of its own.
+
+## Running locally
+
+The default `addopts` are `-m 'not paid' -n auto --maxprocesses=8`: paid tests are
+excluded and everything runs under pytest-xdist.
+
+**Every session needs Postgres**, including a run of pure domain tests:
+`tests/conftest.py` connects at `pytest_configure`, migrates a
+`vibey_test_template` database once, clones it into a database per xdist worker,
+and repoints `VIBEY_TEST_DATABASE_URL` at the clone. The role in the DSN must be
+able to connect to the `postgres` database and run `CREATE DATABASE`.
+
+```bash
+export VIBEY_TEST_DATABASE_URL="postgresql://$(whoami)@localhost:5432/vibey_test"
+uv run pytest tests/domain -p no:cacheprovider            # one area, xdist on
+uv run pytest tests/domain -o addopts="" -m "not paid"    # serial, for a debugger
+```
+
+Overriding `addopts` also drops the paid-test exclusion; keep `-m "not paid"`.
+CI uses `postgresql://vibey:vibey@localhost:5432/vibey_test` on a `postgres:17`
+service container.
+
+## Test tree
+
+| Path | What lives there |
+|---|---|
+| `tests/domain/` | Pure unit and Hypothesis property tests, plus `test_domain_purity.py` |
+| `tests/application/` | Use cases and handlers against fakes |
+| `tests/infrastructure/` | Adapters; `db/` runs against real Postgres, `engines/` holds argv golden files and classifier tests (the fixtures live in `infrastructure/engines/classify.py`) |
+| `tests/cli/`, `tests/tui/` | Typer commands; the Textual dashboard |
+| `tests/fakes/` | Shared fakes and `test_port_parity.py`, which fails when a fake misses a Protocol method |
+| `tests/contracts/` | The same contract run against a fake and the Postgres implementation |
+| `tests/live/` | The two-mode live harness (ADR-0030): faked mode (`live`; `ScriptedEngine` and scripted stand-in binaries, no model calls) and paid mode (`paid`; real binaries against real models) |
+| `tests/system/` | Delivery-stage-set and full-worker end-to-end tests (`system`) |
+| `tests/meta/` | Repository invariants: `test_adr_counts.py`, `test_container_context.py` |
+| `tests/test_bootstrap.py` | The composition root |
+
+`tests/meta/test_adr_counts.py` fails when an ADR is added without updating the
+"(N ADRs" count in `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, `README.md` and
+`docs/index.md`, when ADR numbering has a gap, or when an ADR is missing from the
+`properdocs.yml` nav. `tests/meta/test_container_context.py` fails when
+`.dockerignore` excludes a tracked file the Dockerfile copies.
+
+## Tenant suites
+
+The root `pytest` (`testpaths = ["tests"]`) never runs the workspace tenants'
+tests. Each has its own suite and configuration: `src/vibey_tools/gh/test/`,
+`src/vibey_tools/bootstrap/test/`, `src/vibey_tools/skills/tests/`, and
+`src/vibey_runners/<engine>/tests/`. See the `vibey-quality-gates` skill for the
+exact commands and which of them CI runs.
 
 ## Postgres integration tests — never mocked
 
@@ -32,13 +80,8 @@ LOCKED` semantics are the thing under test. A mock cannot faithfully represent
 concurrent worker contention, lease expiry, or the reaper reclaiming expired
 leases. See ADR-0002.
 
-Set `VIBEY_TEST_DATABASE_URL` before running:
-
-```bash
-export VIBEY_TEST_DATABASE_URL="postgresql://$(whoami)@localhost:5432/vibey_test"
-```
-
-CI uses a Postgres 17 service container.
+Set `VIBEY_TEST_DATABASE_URL` (see "Running locally"); without it the root
+conftest falls back to `postgresql://<current user>@localhost:5432/vibey_test`.
 
 ## Property tests — the safety-critical invariants
 
@@ -95,3 +138,7 @@ Read this test before touching `noloss.py`, `briefing.py`, or
   under `tests/infrastructure/db/` by conftest).
 - `@pytest.mark.slow` — takes more than a couple seconds.
 - `@pytest.mark.system` — delivery-stage-set end-to-end system test.
+- `@pytest.mark.live` — tests against real loop binaries in faked mode (scripted
+  agents, no model calls), in `tests/live/`.
+- `@pytest.mark.paid` — real models, real API keys, real money. **Excluded by
+  default**; opt in with `-m paid`.
