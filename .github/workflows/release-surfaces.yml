@@ -338,7 +338,7 @@ jobs:
             fi
           fi
           if [ "true" = "true" ]; then
-            AUTHOR=''
+            AUTHOR='Adam Matthew Steinberger'
             vibey-gh book --site-dir channel-site --config-file .properdocs-channel.yml \
               --output-dir book-out \
               --title "${GITHUB_REPOSITORY#*/} — The Documentation" \
@@ -367,7 +367,7 @@ jobs:
           fi
           if [ "true" = "true" ] && [ -f docs/paper.md ] \
               && vibey-gh paper --help >/dev/null 2>&1; then
-            AUTHOR=''
+            AUTHOR='Adam Matthew Steinberger'
             vibey-gh paper --author "${AUTHOR:-${GITHUB_REPOSITORY%%/*}}" \
               --output paper-out/paper.tex
             # Tectonic: one pinned, checksummed binary — a full TeX Live would cost
@@ -387,7 +387,7 @@ jobs:
           PREVIEW_INDEX=false \
           SEO_FAVICON='📘' SEO_OG_IMAGE='' \
           SEO_TWITTER_SITE='' SEO_TWITTER_CREATOR='' \
-          SEO_KEYWORDS='' SEO_AUTHOR='' \
+          SEO_KEYWORDS='' SEO_AUTHOR='Adam Matthew Steinberger' \
           FUNDING_BITCOIN='' FUNDING_MONERO='' \
           FUNDING_ETHEREUM='' FUNDING_LABEL='Support this work' \
           SEO_THEME_COLOR='#080b14' SEO_LOCALE='en_US' \

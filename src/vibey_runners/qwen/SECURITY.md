@@ -3,7 +3,7 @@
 ## Reporting a vulnerability
 
 Do not open a public issue for a vulnerability. Use the repository's
-[private security advisory form](https://github.com/the-vibey-project/qwenloop/security/advisories/new).
+[private security advisory form](https://github.com/the-vibey-project/vibey/security/advisories/new).
 
 Include the affected version, backend, operating system, reproduction, impact,
 and suggested mitigation. Remove credentials, private source code, prompts, and

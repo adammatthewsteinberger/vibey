@@ -8,8 +8,8 @@ issue or a PR fixing it.
 ## Environment setup
 
 ```bash
-git clone https://github.com/the-vibey-project/cursorloop.git
-cd cursorloop
+git clone https://github.com/the-vibey-project/vibey.git
+cd vibey/src/vibey_runners/cursor   # cursorloop lives here in the vibey monorepo
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev,docs]"
@@ -144,10 +144,10 @@ Enforced by `import-linter` in CI and pre-commit — not by convention. See
 
 | I want to... | Go here |
 |---|---|
-| User/operator docs | [https://the-vibey-project.github.io/cursorloop/](https://the-vibey-project.github.io/cursorloop/) |
-| Ask a question or discuss design | [GitHub Discussions](https://github.com/the-vibey-project/cursorloop/discussions) |
-| Report a bug | [Bug report form](https://github.com/the-vibey-project/cursorloop/issues/new?template=bug_report.yml) |
-| Propose a feature | [Feature request form](https://github.com/the-vibey-project/cursorloop/issues/new?template=feature_request.yml) |
+| User/operator docs | [`docs/index.md`](https://github.com/the-vibey-project/vibey/blob/develop/src/vibey_runners/cursor/docs/index.md) |
+| Ask a question or discuss design | [GitHub Discussions](https://github.com/the-vibey-project/vibey/discussions) |
+| Report a bug | [Bug report form](https://github.com/the-vibey-project/vibey/issues/new?template=bug_report.yml) |
+| Propose a feature | [Feature request form](https://github.com/the-vibey-project/vibey/issues/new?template=feature_request.yml) |
 | Report a vulnerability | [SECURITY.md](SECURITY.md) — privately |
 | Design context | [`docs/plans/architecture-and-roadmap.md`](docs/plans/architecture-and-roadmap.md) |
 | Same map, shorter | [SUPPORT.md](SUPPORT.md) |

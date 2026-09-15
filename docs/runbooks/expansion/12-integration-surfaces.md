@@ -1,12 +1,24 @@
 # Runbook: integration surfaces — MCP, API, webhooks, skills, SDKs (all repos)
 
+> **Status (2026-09-15):** partial. `vibey-gh` (in-tree at `src/vibey_tools/gh`)
+> ships the five-surface projection — `vibey_gh/surfaces.py` projects one
+> capability contract through `mcp`, `api`, `cli`, `sdk` and `webhook`, with
+> a parity test (`test/test_surfaces.py`) — and is the in-family reference
+> implementation. The conductor has a signed outbound `WebhookPublisher`
+> (`infrastructure/notify/webhook.py`). Not started: `vibey server`
+> (FastAPI), `vibey-mcp`, the inbound webhook router, SDKs, runner MCPs.
+
 ## Goal
 
-Every repo in the family — vibey and each loop runner — exposes the full
+Every package in this repository — vibey, the five loop runners, and
+`vibey-gh` — exposes the full
 modern integration stack: an MCP server, a public HTTP API, webhooks in
 and out, packaged skills/plugins for the major agent products, and typed
 SDKs. One coherent surface, generated from one schema, never five
 hand-drifted ones.
+
+Reuse `vibey-gh`'s capability-contract pattern (`surfaces.py`) for the
+conductor rather than building a second projection (ADR-0017).
 
 ## Design
 
@@ -37,10 +49,11 @@ hand-drifted ones.
 
 ### Webhooks
 
-- **Outbound**: a `webhook` notify-publisher (same seam as Jira/Moltbook):
-  operator registers URLs + event filters; deliveries are HMAC-SHA256
-  signed (`X-Vibey-Signature`), retried with backoff, dead-lettered into
-  the ledger after N failures. Park events, phase transitions, DONE, and
+- **Outbound**: extend the existing `WebhookPublisher`
+  (`infrastructure/notify/webhook.py`, behind `notify/service.py`; already
+  HMAC-SHA256 signed with `X-Vibey-Signature`) with operator-registered
+  URLs + event filters, retries with backoff, and dead-lettering into the
+  ledger after N failures. Park events, phase transitions, DONE, and
   budget trips are the marquee payloads.
 - **Inbound**: `/webhooks/{source}` routes with per-source verification —
   the generic entry point 01 (Jira), GitHub (PR events → review phase
@@ -49,7 +62,8 @@ hand-drifted ones.
 ### Skills/plugins
 
 - Claude Code skill, Cursor rules, Codex/Antigravity trees already exist
-  in-repo for *developing* vibey; this workstream adds **operator-facing**
+  in-repo for *developing* vibey, and `vibey-gh` ships Claude Code plugins
+  (`src/vibey_tools/gh/plugins/`); this workstream adds **operator-facing**
   skills for *using* vibey (conduct/answer/monitor) across: Claude Code
   plugin (marketplace layout), OpenClaw AgentSkill (11), and a ChatGPT/
   Gemini-compatible action manifest derived from the OpenAPI schema.
@@ -61,17 +75,18 @@ hand-drifted ones.
 - `vibey-sdk` (Python, typed httpx client generated from the schema) —
   for scripting conductors (the scratchpad drivers this validation used
   become 5-line SDK scripts).
-- Runner repos: each publishes a small typed client for its local state
+- Runner packages: each publishes a small typed client for its local state
   dir + control plane (read runs, tail events, wind-down).
 
 ## Work items
 
 1. FastAPI server + auth + the resource routes + OpenAPI freeze test.
 2. Log-depth stream endpoint (SSE) + redaction.
-3. Outbound webhook publisher + signing + retries + dead-letter.
+3. Outbound webhook publisher: signing exists; add registration, filters,
+   retries, dead-letter.
 4. Inbound webhook router + per-source verification.
 5. vibey-mcp (stdio + HTTP) + parity tests + `vibey mcp serve`.
-6. Runner MCP template + five instantiations.
+6. Runner MCP template + five runner instantiations as workspace members.
 7. TS + Python SDK generation in the release pipeline (09 publishes).
 8. Operator skills: Claude Code plugin + action manifests.
 9. Live: Claude Code conducts a full scripted greeter **through

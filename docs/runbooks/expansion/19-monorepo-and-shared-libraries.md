@@ -1,33 +1,50 @@
-# Runbook: one tree, two shared libraries — submodules, version sync, and what actually belongs in them
+# Runbook: one tree, two shared libraries — the monorepo, version sync, and what actually belongs in them
+
+> **Status (2026-09-15):** landed as a merged monorepo, not submodules — subtree
+> imports with history (runners 2026-09-10, tools 2026-09-15) plus a uv workspace (ADR-0021). The
+> submodule plan below is superseded. Done: the single tree (item 2),
+> vibey-skills adoption for context packets (item 4, PR #82), the
+> vibey-bootstrap scope decision (item 1, by ADR-0017). Open: the
+> skills-version manifest (item 5), the domain extraction (item 6), shared
+> scaffolding (item 7), the reconciliation backlog (item 8).
 
 ## Goal
 
-Bring the whole `vibey-*` family into one working tree as git submodules,
-put every repo on the current `vibey-skills` and (where it applies)
+Bring the whole `vibey-*` family into one working tree (landed as a
+uv workspace, ADR-0021; the original plan was git submodules), put every
+package on the current `vibey-skills` and (where it applies)
 `vibey-bootstrap`, keep them there, and move genuinely shared logic into
 those libraries instead of maintaining N copies.
 
-## Current state (measured 2026-08-21, not assumed)
+## Current state (originally measured 2026-08-21; updated 2026-09-15)
 
-The family on GitHub is seven repos:
+On 2026-08-21 the family was seven GitHub repositories. It is now one
+repository holding ten packages:
 
-| Repo | Latest | What it is |
-|---|---|---|
-| `vibey` | — | the conductor |
-| `claudeloop` | 0.6.1 | session runner |
-| `codexloop` | 0.3.1 | session runner |
-| `cursorloop` | 0.6.0 | session runner |
-| `agyloop` | 0.4.1 | session runner |
-| `vibey-skills` | **v2.17.0** | Versioned Agent Skills marketplace and deterministic context-packet engine. On PyPI |
-| `vibey-bootstrap` | **v4.0.0** | Azure Functions cross-cutting layer: App Config + Key Vault + App Insights, Service Bus, scaffold CLI. On PyPI |
+| Package | Path | Version | What it is |
+|---|---|---|---|
+| `vibey` | `src/vibey` | 0.6.0 | the conductor |
+| `claudeloop` | `src/vibey_runners/claude` | 0.8.0 | session runner |
+| `codexloop` | `src/vibey_runners/codex` | 0.4.0 | session runner |
+| `cursorloop` | `src/vibey_runners/cursor` | 0.7.0 | session runner |
+| `agyloop` | `src/vibey_runners/agy` | 0.5.0 | session runner |
+| `qwenloop` | `src/vibey_runners/qwen` | 0.2.0 | local-model session runner (ADR-0015) |
+| `vibey-runners-common` | `src/vibey_runners/common` | 0.1.0 | shared runner application interfaces and use cases |
+| `vibey-gh` | `src/vibey_tools/gh` | 1.73.0 | provenance, versioning, merge train, release automation |
+| `vibey-skills` | `src/vibey_tools/skills` | 2.19.10 | Agent Skills marketplace and context-packet engine |
+| `vibey-bootstrap` | `src/vibey_tools/bootstrap` | 4.2.3 | Azure cross-cutting layer: App Config, Key Vault, App Insights |
 
-Two findings change the shape of this work, and both came from looking
+Two findings changed the shape of this work, and both came from looking
 rather than assuming:
 
-**1. No repo depends on either library today.** Not vibey, not any runner.
-They appear only as README "related projects" links. So this is not an
-upgrade — it is adoption, and adoption has design questions an upgrade
-does not.
+**1. On 2026-08-21, no repo depended on either library.** Not vibey, not
+any runner. So this was not an upgrade — it was adoption. *Update
+2026-09-15:* vibey now declares `vibey-skills>=2.18,<3` (the `skills`
+extra, invoked as a process by `infrastructure/skills_context.py`, PR #82)
+and `vibey-gh>=1.2` (dev), both resolved from the workspace. claudeloop
+and codexloop consume `vibey-runners-common`; cursorloop, agyloop and
+qwenloop do not yet. `src/vibey` still imports no `vibey_bootstrap` code
+(ADR-0017 records the gap).
 
 **2. The shared surface is far smaller than it looks.** All four runners
 share ~88 module *names*, which invites the conclusion that there is a
@@ -46,16 +63,24 @@ consolidating it is a *reconciliation* project — deciding which of four
 divergent implementations is correct — not a packaging one. Plan the
 budget for that, not for the packaging.
 
+*Update 2026-09-15:* the first extraction to land was not these modules
+but `vibey-runners-common` (shared application interfaces and
+`usecases/completion.py`), which this runbook never planned.
+`handoff_marker.py`, `verbosity.py` and `forecast.py` are still duplicated
+in all four original runners; item 6 is open and should target
+`vibey-runners-common`.
+
 There is a fourth, larger duplication that the file-hash scan does not
-see: CI workflows, release-please configuration, docs scaffolding, and
-the four agent-surface router files exist in near-identical form in every
-repo. That is real, and it is a better first target than the code,
-because it has no semantic reconciliation cost.
+see: CI workflows, release configuration, docs scaffolding, and the four
+agent-surface router files existed in near-identical form in every repo.
+The monorepo made most of the CI half moot — only root workflows run, and
+release-please is retired (ADR-0028) — but the subtrees still carry their
+inert `.github/` trees and their own docs scaffolding.
 
 ## The vibey-bootstrap scope question — decide this first
 
 `vibey-bootstrap` is, by its own description, **the Azure Functions
-cross-cutting layer**. vibey and the four runners are CLI tools. They do
+cross-cutting layer**. vibey and the five runners are CLI tools. They do
 not use App Configuration, Key Vault, Application Insights, or Service
 Bus.
 
@@ -71,35 +96,45 @@ straightforwardly apply, and there are two honest readings:
   and it is where the 440 shared lines and the shared CI/tooling would
   land.
 
-**(b) is the reading that matches the intent**, but it changes the
-library's identity and its published contract for existing users, so it
-is an explicit decision to record — not something to infer and start
-building. Everything below assumes (b); if (a) is chosen, the extraction
-work needs a new home and the rest of this runbook still stands.
+**Decision recorded 2026-09-15: (b), by ADR-0017.** `vibey_bootstrap` is
+the family's cross-cutting layer (retry, dead-letter routing,
+correlation-scoped logging, secret masking, health probes), used from
+`infrastructure/` behind ports and forbidden in `domain/` because it
+carries the Azure SDK and OpenTelemetry (named in `.importlinter`). Work
+item 1 is closed. Adopting it in `src/vibey` is ADR-0017's work, not yet
+done.
 
 ## Design
 
-### Submodules
+### Monorepo (landed; supersedes the submodule plan)
 
-`vibey` becomes the umbrella tree; each other repo is a submodule under
-`repos/`. Submodules and not a true monorepo, because each package
-already publishes to PyPI on its own release-please cadence and has its
-own CI, gates, and version history — collapsing that into one repo throws
-away working machinery to solve a problem nobody has.
+> **Superseded by ADR-0021.** This section originally planned `vibey` as an
+> umbrella tree with each other repository as a git submodule under
+> `repos/`, on the grounds that each package already had its own CI,
+> release-please cadence and history. That plan was not adopted.
 
-What the umbrella buys is the thing that is genuinely missing: one place
-to run a family-wide check, which is precisely what runbook 18's
-extraction scan and the currency check need.
+What landed is a merged monorepo (runners imported 2026-09-10, tools
+2026-09-15):
 
-- Pinned by commit, as submodules always are. A submodule bump is a
-  reviewable commit in `vibey`, which is a feature: it makes "the family
-  moved" an event with a diff.
-- CI in the umbrella runs the *family-level* checks only. Per-repo gates
-  stay in the repo that owns them; duplicating them in the umbrella would
-  double every CI bill for nothing.
-- Contributors keep working in the individual repos. The umbrella is not
-  a required checkout for ordinary work, and the docs must say so, or
-  every contributor pays a submodule tax for a workflow they never use.
+- The five runners and three tools were imported as subtrees **with
+  history preserved** — `src/vibey_runners/{claude,codex,cursor,agy,qwen}`
+  and `src/vibey_tools/{gh,skills,bootstrap}` — and `vibey-runners-common`
+  was added at `src/vibey_runners/common` (2026-09-10). There is no `.gitmodules`.
+- The root `pyproject.toml` registers them as a uv workspace
+  (`[tool.uv.workspace] members = ["src/vibey_runners/*", "src/vibey_tools/*"]`),
+  and `tool.uv.sources` resolves `vibey-gh` and `vibey-skills` from the tree
+  (`{ workspace = true }`). That is uv metadata, stripped at build time, so
+  the published requirement strings are unchanged.
+- Each package still publishes to PyPI as its own project and keeps its own
+  quality gates (ADR-0022): the root CI `tools` matrix runs `vibey-gh`,
+  `vibey-skills` and `vibey-bootstrap` with their original commands on their
+  published Python floors; the subtrees' own `.github/` trees do not run.
+- Releases are cut by `vibey-gh promote`, not release-please (ADR-0028).
+- The sibling GitHub repositories no longer exist; their PyPI projects do.
+
+What the single tree buys is what the submodule plan wanted — one place to
+run a family-wide check — plus atomic cross-package changes and one lock
+file (`uv lock --check` gates CI).
 
 ### Version sync
 
@@ -109,32 +144,31 @@ a single version number across them would be theatre.
 
 What actually needs to hold:
 
-1. Every repo depends on a **compatible, current** `vibey-skills` — same
-   major, at or above the current minor.
-2. Every submodule pointer in the umbrella references a commit that is on
-   its repo's `develop` or `main` — never a detached WIP commit.
-3. A release of a shared library triggers a bump PR in every consumer,
-   automatically. Manual propagation across seven repos will not happen
-   twice.
+1. Every package depends on a **compatible, current** `vibey-skills` — same
+   major, with a range that includes the in-tree version.
+2. Every workspace member resolves from the tree, and `uv lock --check`
+   passes (the submodule-pointer rule this item used to state no longer
+   applies).
+3. A version change in a shared library that falls outside a consumer's
+   declared range fails CI in the same change, rather than waiting for a
+   bump PR.
 
 Runbook 18's currency dimension is the enforcement arm; this runbook
 builds the plumbing it measures.
 
 ### vibey-skills adoption
 
-There is already a concrete, self-identified gap to close.
-`infrastructure/provision/agent_surface.py` says in its own docstring:
+On 2026-08-21, `infrastructure/provision/agent_surface.py` said in its
+own docstring that no `vibey-skills` marketplace was available, so only
+the four router files were provisioned.
 
-> The marketplace skill directories (`.claude/skills/`, `.agents/skills/`,
-> `.cursor/rules/`, `.agent/`) ... are not materialized here: there is no
-> `vibey-skills` ... marketplace available in this build environment to
-> pull skill content from. Only the four router files -- the part that's
-> genuinely self-contained -- are provisioned. Replace this docstring
-> note, not the emitter's signature, once real marketplace access exists.
-
-That is the adoption task, already scoped by the person who wrote the
-limitation. With the library as a dependency, provisioning materializes
-real skills into a BUILD worktree instead of only the routers.
+That gap closed in PR #82 (ADR-0031). When a project enables
+`skills_context`, `infrastructure/skills_context.py` invokes the
+`vibey-skills` process/JSON contract, and a bounded context packet is
+appended to the engine plan; the generated index and packets live under
+`.vibey/` and are excluded from commits. The full marketplace is
+deliberately not copied into every worktree; routers remain the stable
+cross-engine surface.
 
 The enforcement half: **every AI request a run issues does so with the
 current skills loaded**, and the session records which version was in
@@ -145,39 +179,40 @@ prompts.
 
 ## Work items
 
-1. Record the vibey-bootstrap scope decision, (a) or (b).
-2. Add the six repos as submodules under `repos/`; umbrella CI runs
-   family-level checks only.
-3. Family-level version-sync check + auto-bump PRs on library release.
-4. Adopt `vibey-skills` in vibey; close the `agent_surface.py` gap so
-   skills are materialized, not just routers.
+1. Record the vibey-bootstrap scope decision, (a) or (b). **Done: (b),
+   ADR-0017.**
+2. ~~Add the six repos as submodules under `repos/`~~ — superseded. **Done
+   as** subtree imports + uv workspace (ADR-0021).
+3. Family-level version-sync check. Largely covered by the workspace lock
+   and `uv lock --check`; a pin-range check remains.
+4. Adopt `vibey-skills` in vibey. **Done** (context packets, PR #82,
+   ADR-0031).
 5. Per-session skills-version manifest + the enforcement that no AI
    request goes out without it.
 6. Extract the measured 440 lines (`handoff_marker`, `verbosity`,
-   `forecast`) into the shared library; the runners consume it.
-7. Extract the shared CI/release/docs scaffolding — larger win, no
-   semantic reconciliation cost.
+   `forecast`) into `vibey-runners-common`; the runners consume it.
+7. Remove the subtrees' inert `.github/` trees and share docs
+   scaffolding — the CI/release half is mostly done by the monorepo.
 8. Feed the reconciliation backlog (the ~85 diverged modules) in as
    individual, prioritized items. Do not attempt this as one change.
 
 ## Verification
 
-- `git submodule status` in a fresh clone lists six pinned repos, all on
-  a published branch commit.
-- A `vibey-skills` release opens a bump PR in every consumer without
-  anyone asking it to.
-- A BUILD worktree contains real skill content, and `agent_surface.py`'s
-  docstring caveat is deleted because it is no longer true.
+- `uv lock --check` passes and every runner and tool resolves from the
+  tree. (Replaces the submodule check.) Done.
+- A `vibey-skills` version outside a consumer's range fails CI in the
+  same change.
+- A BUILD worktree receives a bounded skills packet, and `agent_surface.py`'s
+  docstring caveat is deleted because it is no longer true. Done (PR #82).
 - A run's ledger names the skills version it used; a run with none fails
   the currency check.
-- `handoff_marker` and `verbosity` exist once in the family, and all four
-  runners still pass their own gates on the shared implementation.
+- `handoff_marker` and `verbosity` exist once in the repository, and all
+  four runners still pass their own gates on the shared implementation.
 
 ## Needs from operator
 
-- The vibey-bootstrap scope decision.
-- Confirmation that submodules (not a merged monorepo) is the intent.
-- PyPI publish rights for the shared libraries, already in hand.
+- Nothing new. The scope decision is recorded (ADR-0017), the monorepo
+  question is closed (ADR-0021), and PyPI publish rights are in hand.
 
 ## Risks
 
@@ -186,8 +221,9 @@ prompts.
   overrun the moment it meets the ~85 diverged modules.
 - **Breaking vibey-bootstrap's existing users** if its scope broadens.
   A major version and a migration note, or a second package.
-- **Submodule friction** for contributors who never needed the umbrella.
-  Mitigated by keeping per-repo workflows first-class and saying so.
+- **Absorbed packages losing their bar.** Moving into one tree can quietly
+  lower what a package was held to. ADR-0022 is the mitigation: each
+  keeps its own gates, run by the root CI on its published floors.
 - **Skills currency becoming a hard blocker.** If a run cannot start
   because the marketplace is briefly unreachable, the enforcement has
   converted an advisory into an outage. It needs a cached last-known-good

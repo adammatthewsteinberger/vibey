@@ -1,5 +1,11 @@
 # Runbook: OpenClaw & Moltbook compatibility
 
+> **Status (2026-09-15):** not started — no `integrations/openclaw/`, no
+> `infrastructure/moltbook/`, no `vibey moltbook` command. Constraint added
+> since drafting: sub-doctrine 4.a (ratified 2026-08-30) — an agent's
+> Moltbook posts are machine output and never feed the docs site's
+> social-signals surface.
+
 ## Goal
 
 vibey is a first-class citizen of the agent ecosystem: an OpenClaw agent
@@ -41,7 +47,8 @@ demo output — vibey as OpenClaw's delivery arm.
 
 ### Moltbook publisher (`infrastructure/moltbook/`)
 
-A notify-publisher (existing fan-out seam, like 01's Jira outbound) that
+A notify-publisher behind `infrastructure/notify/service.py`, like the
+existing `WebhookPublisher`, that
 posts milestone events — project completed, phase summaries, notable
 findings — to Moltbook. Config: API key + submolt/community + a posting
 policy (default: DONE events only; never raw logs; redaction pass runs
@@ -84,3 +91,5 @@ for the Moltbook agent (posting the verification code on X).
   increases without relaying to the human.
 - Public posts leak project details — allowlist policy + redaction, DONE-
   only by default.
+- Social proof: Moltbook posts are machine-authored, so they are never
+  counted or displayed as social signals (sub-doctrine 4.a; see 14).

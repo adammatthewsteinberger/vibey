@@ -3,23 +3,23 @@
 ## Getting help using vibey-skills
 
 - **Installation and usage** — see the
-  [Installation](https://the-vibey-project.github.io/vibey-skills/installation/) and
-  [Usage](https://the-vibey-project.github.io/vibey-skills/usage/) guides, or the
-  generated [skills reference](https://the-vibey-project.github.io/vibey-skills/reference/).
+  [Installation](https://github.com/the-vibey-project/vibey/blob/develop/src/vibey_tools/skills/docs/installation.md) and
+  [Usage](https://github.com/the-vibey-project/vibey/blob/develop/src/vibey_tools/skills/docs/usage.md) guides, or the
+  [plugin sources](https://github.com/the-vibey-project/vibey/tree/develop/src/vibey_tools/skills/plugins) the generated skills reference is built from.
 - **"Does a skill exist for X?" or "why didn't a skill trigger?"** — search the
-  [skills reference](https://the-vibey-project.github.io/vibey-skills/reference/) for
+  [plugin sources](https://github.com/the-vibey-project/vibey/tree/develop/src/vibey_tools/skills/plugins) for
   matching trigger phrases, or open a
-  [discussion](https://github.com/the-vibey-project/vibey-skills/discussions).
+  [discussion](https://github.com/the-vibey-project/vibey/discussions).
 - **A bug in a skill, or a skill that should exist but doesn't** — open an
-  [issue](https://github.com/the-vibey-project/vibey-skills/issues/new/choose) using
+  [issue](https://github.com/the-vibey-project/vibey/issues/new/choose) using
   the bug report or feature request template.
 - **Contributing a new skill or plugin** — see
-  [CONTRIBUTING.md](https://github.com/the-vibey-project/vibey-skills/blob/main/CONTRIBUTING.md).
+  [CONTRIBUTING.md](https://github.com/the-vibey-project/vibey/blob/develop/src/vibey_tools/skills/CONTRIBUTING.md).
 
 ## Reporting a security issue
 
 Do not open a public issue for a security vulnerability. See
-[SECURITY.md](https://github.com/the-vibey-project/vibey-skills/blob/main/SECURITY.md)
+[SECURITY.md](https://github.com/the-vibey-project/vibey/blob/develop/src/vibey_tools/skills/SECURITY.md)
 for how to report one privately.
 
 ## Scope
