@@ -2,6 +2,8 @@
 
 **Status:** accepted · **Date:** 2026-08-14
 
+**Owes:** nothing — mechanism (ADR-0020)
+
 ## Context
 
 The original specification states that Phase 3 loops back to Phase 1 when changes
@@ -29,9 +31,19 @@ def next_phase_after_review(findings, *, strict_loopback: bool) -> Phase:
     return Phase.BUILD          # fast path
 ```
 
+This is `domain/phase.py::next_phase_after_review()`, called by `review.triage`.
+In practice the empty case never reaches it: with no open findings the handler
+enqueues `review.deployment_choice` instead, which asks the opt-in question from
+[ADR-0014](0014-optional-visual-design-and-deployment-opt-in.md) before anything is
+`DONE`. A `DESIGN` result enqueues `design.interview` at `cycle + 1`; a `BUILD`
+result carries the accepted spec forward to `cycle + 1` and enqueues `build.plan`.
+
 The fast path is taken only when **every** open finding is classified `clear`.
-`strict_loopback = true` in `vibey.toml` disables it entirely, restoring the
-original specification exactly.
+`strict_loopback = true` under `[project]` in `vibey.toml` is meant to disable it
+entirely, restoring the original specification exactly. The key is parsed, but it
+does not reach the router yet: `review.triage` reads `strict_loopback` from its job
+payload, and `review.collect` enqueues the triage job without it, so the fast path
+is always available today.
 
 ## What makes a finding `clear`
 
@@ -44,9 +56,18 @@ skipping design is building the wrong thing again:
 3. No new NFR or constraint is implied.
 4. It does not contradict a recorded `DecisionRecorded`.
 
-Classification happens in `review.triage` at `HIGH` effort, escalating to `MAX`
-for `critical` findings — it is a judgment call, and it is the judgment that
-routes the entire next cycle, so it gets the best model available.
+Classification happens in `review.triage` as a deterministic check over the
+finding text and the recorded decisions (`domain/review.py::check_clear_conditions`,
+called by `triage_finding`) — no model call. It is a heuristic, and a partial one:
+condition 1 fails on findings under three words or containing hedging phrases
+("maybe", "not sure", "rethink", …); condition 3 fails on phrases that imply a new
+NFR ("requests per second", "migrate to", …); condition 4 fails when the text names
+a recorded decision's rejected alternative together with "switch"; condition 2 is
+not checked yet (the accepted spec is passed in but unused).
+
+Severity is classified the same way, by keyword (`classify_finding_severity`), and
+sets the effort of the *next cycle's* first job: `MAX` when any finding is
+`critical`, else `HIGH`, `STANDARD`, or `LOW` (`domain/effort.py::triage_required_effort`).
 
 ## Rationale
 
@@ -67,6 +88,24 @@ design conversation they need. The behavior is configurable for teams who want
 the original strictness.
 
 **Bad.** Triage misclassification sends work down the wrong path. Mitigated by
-the four-condition bar, by `MAX` effort on critical findings, and by the fact that
+the four-condition bar, by running the follow-up work for critical findings at
+`MAX` effort, and by the fact that
 a fast-path build that turns out ambiguous can still transition `② → ①` when an
 item is `blocked_on_ambiguity` — the mistake is recoverable, one phase later.
+That recovery edge is guarded in `domain/phase.py` (`BUILD -> DESIGN` requires an
+item blocked on ambiguity), but no BUILD handler marks an item that way yet, so
+today the recovery happens at the next review.
+
+**Bad.** A keyword heuristic misses ambiguity phrased any other way, so the fast path
+is taken more often than the four conditions intend. Replacing the heuristic with a
+real judgment behind the same function signature is open work.
+
+## Alternatives rejected
+
+- **Always `③ → ①` (the literal specification).** Kept as `strict_loopback`;
+  rejected as the default because it routes a typo through an interview.
+- **Always `③ → ②`.** Builds the wrong thing twice whenever a finding hides a design
+  question.
+- **Let the reviewing engine choose the edge.** Puts cycle routing in a model with
+  no stated bar. The four conjunctive conditions are the bar, and they are testable
+  in the domain.

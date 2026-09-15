@@ -2,6 +2,8 @@
 
 **Status:** accepted · **Date:** 2026-08-14 · **Supersedes:** the entry rule in ADR-0013
 
+**Owes:** a sub-doctrine (not yet proposed) — no cloud authority is exercised and nothing leaves the machine without an explicit, durable, re-asked human opt-in recorded in the ledger (nearest parent: doctrine 12, humans first; ADR-0013's consent guard cites the same rule).
+
 ## Context
 
 The six numbered phases currently describe an interactive design/build/review
@@ -64,11 +66,24 @@ Provider failure, budget exhaustion, or unavailable modality never silently
 becomes a placeholder asset: Vibey asks the user to retry, configure a provider,
 upload an asset, or waive the visual stage.
 
+**Built so far.** The opt-in question is asked at design acceptance and records
+`VisualDesignOptedIn` or `VisualDesignDeclined`. An opted-in run enters
+`VISUAL_DESIGN`, whose `visual.inventory` job fills the screen/state matrix from the
+accepted spec and whose `visual.plan` job publishes it as a reviewable artifact
+(`application/visual_handler.py`, `.vibey/context/visual/`); the user closes the
+stage with `vibey visual accept` or `vibey visual waive`. Steps 2–5 above — the
+design-system contract, the media manifest, generation, and the gallery — are not
+built yet (M5 tasks 5.8–5.13).
+
 ### Provider-agnostic media generation and per-modality round robin
 
-Application code owns a `MediaProvider` port with capability discovery and
+Application code will own a `MediaProvider` port with capability discovery and
 idempotent operations such as `generate`, `poll_or_resume`, `download`,
-`estimate_cost`, and `moderate`. A provider advertises one or more of:
+`estimate_cost`, and `moderate`. Today only the selection half exists, in the
+domain: `domain/media.py` holds `MediaProviderDescriptor`, `eligible()`, and a
+per-modality SWRR `select()`, and no job calls them yet; generation, polling,
+download, cost estimation, moderation, and cursor persistence are the remaining
+M5 task 5.11 work. A provider advertises one or more of:
 `IMAGE`, `AUDIO`, and `VIDEO`, plus region, retention, input-reference,
 asynchronous-job, safety, and output-format capabilities.
 
@@ -80,18 +95,21 @@ eligible AUDIO providers → audio cursor → next healthy provider
 eligible VIDEO providers → video cursor → next healthy provider
 ```
 
-Each cursor is persisted transactionally and advances only after a provider is
-actually selected. Eligibility filters capability, user policy, region/data
+Each cursor is to be persisted transactionally and advance only after a provider
+is actually selected (no media cursor table exists yet). Eligibility filters capability, user policy, region/data
 residency, external-egress consent, budget, circuit state, and prompt/input
 compatibility. A provider cannot be selected merely to make the fairness metric
 look good, and one modality's cursor cannot starve another. Capacity exhaustion
 and rate limits use the existing circuit/queue semantics; the worker parks for a
 human or a provider window instead of sleeping while holding a lease.
 
-Vibey should try a configured local/self-hosted provider first when
-`media.mode = "local_first"`. Hosted providers are a fallback only when
-`media.allow_external = true` and the user has seen the destination, retention,
-cost, and data-handling terms. The initial registry may include OpenAI image/TTS,
+Vibey should try a configured local/self-hosted provider first. In the domain today
+a descriptor marks itself `external = False` (local/self-hosted) or `True` (hosted),
+and `eligible()` drops every hosted provider unless the requirement sets
+`allow_external`. Hosted providers are a fallback only when external use is allowed
+and the user has seen the destination, retention, cost, and data-handling terms. A
+`[media]` table in `vibey.toml` (`mode = "local_first"`, `allow_external = true`)
+is planned; no such key is parsed yet. The initial registry may include OpenAI image/TTS,
 Google Veo, Azure AI Foundry models, ElevenLabs, and future providers, but those
 are examples discovered at runtime—not a fixed dependency or guarantee of
 availability. If no eligible provider can satisfy a modality, the human gate is
@@ -113,8 +131,9 @@ Vibey asks:
 
 - **No** records `DeploymentDeclined`, records `completion_mode = "local"`, and
   transitions to terminal `DONE`. No Azure discovery, preflight, `what-if`, or
-  mutation job is enqueued. A later explicit deployment command may start a new
-  deployment attempt from the accepted artifacts.
+  mutation job is enqueued (`application/review_deployment_choice_handler.py`). A
+  later explicit deployment command may start a new deployment attempt from the
+  accepted artifacts; no such command exists yet.
 - **Yes** records `DeploymentOptedIn` and enters Phase ④ DEPLOY DESIGN. The
   existing ④–⑥ contract, consent guard, autonomous execution, verification, and
   demo rules from ADR-0013 apply unchanged.
@@ -158,6 +177,17 @@ or a local-only completion path without changing the core safety guarantees.
 
 **Bad.** A generated screen is not automatically a good screen. The plan must
   require a human design review and an independent accessibility/evidence pass.
+
+## Alternatives rejected
+
+- **A numbered phase for visual design.** Renumbers the six user-facing phases for a
+  step many teams skip.
+- **Infer deployment from accepting the build.** Turns a review acceptance into cloud
+  authority. Consent has to be its own durable event, asked again when the artifact
+  changes.
+- **Hard-code one media vendor per modality.** The Sora 2 Videos API shutdown notice
+  below is the counter-example; providers are discovered by capability at runtime
+  instead.
 
 ## Research basis
 

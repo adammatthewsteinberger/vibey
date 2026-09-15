@@ -2,6 +2,8 @@
 
 **Status:** accepted · **Date:** 2026-08-14
 
+**Owes:** nothing — mechanism (ADR-0020)
+
 ## Context
 
 Every phase rotates across engines. The set of eligible engines changes
@@ -20,6 +22,13 @@ for each selection:
     winner = argmax(e.current)          # ties broken by a stable `order`
     winner.current -= sum(e.effective_weight for e in eligible)
 ```
+
+The algorithm is `domain/rotation.py::select()`. It runs in production:
+`application/engine_selector.py::EngineSelector` is its caller, and the composition
+root uses it for per-job BUILD engine selection (`application/engine_selection.py`)
+and for picking the next engine after a wind-down
+(`application/rotation_handoff.py`, whose capacity-rejection path has no caller yet). The same algorithm, reimplemented over
+provider ids, selects media providers per modality (`domain/media.py`, ADR-0014).
 
 ## Rationale
 
@@ -45,7 +54,7 @@ effective = base × health × fidelity × cost × affinity
 |---|---|---|
 | health | 0.0–1.0 | 1.0 closed, 0.25 half-open, 0.0 open; decays on recent transient failures |
 | fidelity | 0.5–1.0 | penalizes an engine that saturates below the requested effort |
-| cost | 0.5–1.5 | relative $/Mtok, inverted; off by default |
+| cost | 0.5–1.5 | relative $/Mtok, inverted; implemented (`rotation.cost_factor`) but not wired — the selector uses 1.0 and no `vibey.toml` key enables it |
 | affinity | 1.0 or 2.0 | 2.0 when the engine holds a warm session and rotation is not forced |
 
 `affinity` is what implements stickiness: ordinary retries stay put, and rotation
@@ -53,16 +62,21 @@ happens when something actually changed ([ADR-0007](0007-rotate-at-boundaries.md
 
 ## Consequences
 
-**Good.** Deterministic, so testable. Six properties are enforced by Hypothesis:
-no starvation, weight fidelity, smoothness, determinism, totality, exclusion
-honored. Rotation state is a single integer per engine, updated in the same
-transaction as the job lease, so a crash cannot advance the cursor without doing
-the work.
+**Good.** Deterministic, so testable. In `tests/domain/test_rotation.py`, totality
+is a Hypothesis property; no starvation over a full period, smoothness (no repeat
+while others wait), determinism, and exclusion are example tests. Weight fidelity of
+the produced schedule is not yet tested. Rotation state is a single integer per
+engine (`rotation_cursor.current`); `RotationCursorRepository.update_many()` writes
+every engine's cursor in one transaction after each selection. It does not yet share
+a transaction with the job lease, which the design calls for so that a crash cannot
+advance the cursor without doing the work.
 
 **Bad.** More state than modulo, and the four factors are tuning knobs that can be
-set badly. Mitigated by exporting `vibey_engine_selected_total` so the empirical
+set badly. Mitigated by the per-engine `engine_health.selected_count` column, shown
+by `vibey engines`, `vibey cost`, and `vibey status --json`, so the empirical
 distribution is checkable against the intended weights in production, not just in
-unit tests.
+unit tests. A `vibey_engine_selected_total` OpenTelemetry counter is planned and does
+not exist yet.
 
 ## Alternatives rejected
 

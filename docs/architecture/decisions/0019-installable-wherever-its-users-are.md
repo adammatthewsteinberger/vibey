@@ -14,8 +14,9 @@ shape for what these are. `vibey`, the five `*loop` runners and `vibey-gh` are
 Python is an implementation detail they should never have to care about, and
 `pip install` asks them to care.
 
-The evidence that this is already felt: `the-vibey-project/homebrew-tap` exists,
-with `Formula/` and `Casks/` directories, and both are empty.
+The evidence that this is already felt: a Homebrew tap already exists —
+`adammatthewsteinberger/homebrew-tap`, tapped as `brew tap adammatthewsteinberger/tap`
+— with `Formula/` and `Casks/` directories, and both are empty.
 
 ## Decision
 
@@ -57,8 +58,10 @@ already covered by group 1.
 
 `podman` is a container runtime, not a package manager. What it actually wants is
 an OCI image, and this repository **already builds one** (`deploy/docker/`,
-multi-arch amd64+arm64, gated by four image contracts in CI). Publishing it to
-`ghcr.io` is a small, real task, and it serves Docker, podman, Kubernetes and
+multi-arch amd64+arm64, gated by four image contracts in CI). `release-surfaces.yml`
+already pushes to `ghcr.io` on every release, but what it pushes is the wheel and
+sdist as an OCI *artifact* (`ghcr.io/<repository>/python`), not the runnable container
+image. Publishing the image is a small, real task, and it serves Docker, podman, Kubernetes and
 anything else that speaks OCI at once.
 
 **4. Registries for other languages' libraries.** npm, yarn, Maven, Gradle,

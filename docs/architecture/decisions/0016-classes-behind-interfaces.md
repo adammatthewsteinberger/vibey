@@ -22,9 +22,14 @@ Everywhere else, substitution is ad hoc. Measured on `a81c825`:
 | `cli/` | 0 | 0 | 37 |
 | `tui/` | 8 | 0 | 5 |
 
-Two `interfaces/` directories exist: `application/interfaces` (13 files) and
-`infrastructure/interfaces` (1). So roughly three hundred module-level functions
-and two hundred and eighty classes have no declared seam at all.
+Two `interfaces/` directories existed at that commit: `application/interfaces` (13
+files, twelve of them declaring the 40 Protocols counted above) and
+`infrastructure/interfaces` (1). The "classes" column counts concrete classes, not
+Protocols. So roughly three hundred module-level functions and two hundred and
+eighty classes had no declared seam at all. A third package, `cli/interfaces`,
+arrived with the SIGTERM latch (44c1c21a) and is the first to follow the mirrored
+`_interface` naming below; the existing `application/interfaces` modules are grouped
+by port family and converge like any other module.
 
 A function with no seam is substituted by patching its import — `monkeypatch.setattr`
 against the module that imported it, not the module that defined it. That works,
@@ -72,7 +77,7 @@ silently, in its signature, among its implementation.
 **It generalises the pattern that already works here.** `application/interfaces`
 plus a composition root is why the application layer can be tested without a
 database, and why `bootstrap.py` is the only module that knows what a
-`RunStateStore` really is. The decision is to stop treating that as a special
+`HandoffStore` really is (a `PostgresHandoffRepository`). The decision is to stop treating that as a special
 case for one layer.
 
 ## Consequences
@@ -94,8 +99,8 @@ the absence of a class.
 
 **The workspace tenants inherit it as they are touched, not on arrival.**
 `src/vibey_runners/*` and `src/vibey_tools/*` are absorbed subtrees with their
-own histories; `vibey-gh` in particular is 33 modules of stdlib functions and
-almost no classes. Rewriting them on import would destroy the property the
+own histories; `vibey-gh` in particular is 33 modules of mostly stdlib functions —
+284 module-level functions beside 59 classes, 54 of them configuration dataclasses. Rewriting them on import would destroy the property the
 import exists to create — that each package still builds and passes its own
 suite unchanged. They converge module by module.
 

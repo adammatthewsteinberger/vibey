@@ -2,6 +2,8 @@
 
 **Status:** superseded in part by ADR-0014 · **Date:** 2026-08-14 · **Supersedes:** ADR-0012
 
+**Owes:** nothing — mechanism (ADR-0020)
+
 > Historical safety and execution design retained. ADR-0014 supersedes only
 > this record's automatic `③ → ④` entry rule; deployment now requires an
 > explicit user opt-in after Phase ③. The three deployment phases, consent
@@ -102,6 +104,13 @@ dependencies so core/domain stay Azure-agnostic and stdlib-only. A separately
 installable Azure extra or companion distribution may implement those ports, but
 it no longer owns a separate lifecycle or command-only state machine.
 
+As built, the port is `application/interfaces/azure.py::AzureClientPort`. The composition
+root defaults to `InMemoryAzureClientAdapter`; the real adapter over the `az` CLI
+(`infrastructure/azure/az_cli.py`, which renders the spec to an ARM template and
+re-verifies consent against the spec's scope digest before every mutating call) is
+used only when a worker is started with `vibey worker --azure az`. Real Azure
+mutation is an explicit operator choice, never a default.
+
 ## Consequences
 
 **Good.** The no-loss ledger, retry taxonomy, capacity handling, human gates, and
@@ -117,3 +126,15 @@ a tightly scoped real-Azure development-environment proof.
 **Bad.** An earlier automatic-entry rule could be mistaken for automatic
 authority. The explicit opt-in, `④ → ⑤` consent guard, and immutable target
 scope are mandatory and must be visible in the CLI/TUI.
+
+## Alternatives rejected
+
+- **Keep deployment as a separate CLI ([ADR-0012](0012-deploy-is-a-separate-cli.md)).**
+  Ends the durable interactive/autonomous/interactive protocol exactly where
+  uncertainty and recovery matter most, and leaves a failed deployment outside the
+  ledger.
+- **A single autonomous DEPLOY phase.** No interactive design before cloud mutation
+  and no review after it; consent would shrink to a flag. The legacy `DEPLOY` phase
+  value survives only as a bridge.
+- **Automatic entry from Phase ③.** This record's original rule, superseded by
+  ADR-0014's explicit opt-in: accepting a build is not authority to deploy it.
