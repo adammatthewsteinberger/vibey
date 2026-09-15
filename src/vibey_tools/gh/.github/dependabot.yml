@@ -22,5 +22,6 @@ updates:
       - dependency-name: actions/upload-artifact
       - dependency-name: actions/upload-pages-artifact
       - dependency-name: anthropics/claude-code-action
+      - dependency-name: astral-sh/setup-uv
       - dependency-name: github/codeql-action
       - dependency-name: oras-project/setup-oras

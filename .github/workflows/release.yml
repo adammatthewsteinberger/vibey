@@ -23,6 +23,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      # `vibey-gh version --apply` re-locks uv.lock whenever it rewrites pyproject.toml,
+      # so uv must be on PATH. Without it every develop build failed with
+      # FileNotFoundError: 'uv' once the tree's own vibey-gh started stamping versions.
+      - uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41 # v7.1.2
 
       - name: Stamp a dev version on develop
         if: github.ref == 'refs/heads/develop'

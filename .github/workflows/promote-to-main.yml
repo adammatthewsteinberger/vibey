@@ -57,6 +57,12 @@ jobs:
         with:
           python-version: "3.12"
 
+      # The version bump re-locks uv.lock in the same commit when the project has one
+      # (a promotion that changes pyproject.toml without it desyncs the lock on exactly
+      # the commit that gets released). That runs `uv lock`, so uv must be on PATH.
+      - name: Set up uv
+        uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41 # v7.1.2
+
       - name: Install the tooling
         run: |
           set -euo pipefail
