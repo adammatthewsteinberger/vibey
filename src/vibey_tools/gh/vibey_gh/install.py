@@ -323,6 +323,17 @@ def render_workflow(source: Path, cfg: GhConfig) -> str:
         )
     if source.name != "pr-automation.yml":
         return _strip_trailing_space(wanted)
+    # One marketplace or plugin per line of the action's newline-separated input. A
+    # repository-relative marketplace resolves inside the trusted default-branch checkout
+    # every plugin-loading job makes at `automation/`, as an absolute path, which is the
+    # form the action passes to Claude Code as a local marketplace.
+    indent = "\n            "
+    marketplaces = [
+        entry if entry.startswith("https://") else "${{ github.workspace }}/automation/" + entry
+        for entry in cfg.pr_automation.plugin_marketplaces
+    ]
+    wanted = wanted.replace("__VIBEY_GH_PLUGIN_MARKETPLACES__", indent.join(marketplaces))
+    wanted = wanted.replace("__VIBEY_GH_PLUGINS__", indent.join(cfg.pr_automation.plugins))
     workflows = json.dumps(list(cfg.pr_automation.scan_workflows))
     schedule = (
         '  schedule:\n    - cron: "37 */2 * * *"'

@@ -427,12 +427,47 @@ class PrAutomationConfig:
     repair_untrusted_authors: bool = True
     replace_fork_prs: bool = True
     retain_schedule_backstop: bool = True
+    # Claude Code plugin marketplaces and plugins the review, repair, and conflict jobs
+    # load. Empty by default: the marketplace these templates once hard-coded
+    # (github.com/the-vibey-project/vibey-skills) no longer exists, and a marketplace
+    # that cannot be cloned fails the review outright rather than reviewing without it.
+    # An entry is an https Git URL, or a path relative to the repository root, which is
+    # read from the trusted checkout of the default branch -- never from the pull
+    # request's own tree, so a contributor cannot choose the plugins that review them.
+    plugin_marketplaces: tuple[str, ...] = ()
+    plugins: tuple[str, ...] = ()
     observability: PrAutomationObservabilityConfig = PrAutomationObservabilityConfig()
     fallback: PrAutomationFallbackConfig = PrAutomationFallbackConfig()
 
     def __post_init__(self) -> None:
         _unique_nonempty("pr_automation.scan_workflows", self.scan_workflows)
         _unique_nonempty("pr_automation.ignored_checks", self.ignored_checks)
+        _unique_nonempty("pr_automation.plugin_marketplaces", self.plugin_marketplaces)
+        _unique_nonempty("pr_automation.plugins", self.plugins)
+        for entry in self.plugin_marketplaces:
+            if entry.startswith("https://"):
+                if any(char.isspace() for char in entry):
+                    raise ValueError(
+                        f"pr_automation.plugin_marketplaces URL contains whitespace: {entry!r}"
+                    )
+            elif (
+                entry.startswith(("/", "~"))
+                or "://" in entry
+                or ".." in Path(entry).parts
+                or any(char.isspace() for char in entry)
+            ):
+                raise ValueError(
+                    "pr_automation.plugin_marketplaces entries must be an https Git URL or a"
+                    f" repository-relative path without '..': {entry!r}"
+                )
+        for plugin in self.plugins:
+            name, at, marketplace = plugin.partition("@")
+            if not (name and at and marketplace) or any(char.isspace() for char in plugin):
+                raise ValueError(
+                    f"pr_automation.plugins entries must be '<plugin>@<marketplace>': {plugin!r}"
+                )
+        if self.plugins and not self.plugin_marketplaces:
+            raise ValueError("pr_automation.plugins needs at least one plugin_marketplaces entry")
         if self.enabled and not self.scan_workflows:
             raise ValueError("pr_automation.scan_workflows must not be empty when enabled")
         if not 1 <= self.max_repair_attempts <= 10:
@@ -1181,6 +1216,8 @@ def load_config(root: Path | None = None, config: Path | None = None) -> GhConfi
         repair_untrusted_authors=auto.get("repair_untrusted_authors", True),
         replace_fork_prs=auto.get("replace_fork_prs", True),
         retain_schedule_backstop=auto.get("retain_schedule_backstop", True),
+        plugin_marketplaces=tuple(auto.get("plugin_marketplaces", ())),
+        plugins=tuple(auto.get("plugins", ())),
         observability=PrAutomationObservabilityConfig(
             sanitized_progress=observability.get("sanitized_progress", True),
             archive_execution_file=observability.get("archive_execution_file", True),

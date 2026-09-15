@@ -293,7 +293,7 @@ jobs:
             actions: read
             checks: read
           plugin_marketplaces: |
-            https://github.com/the-vibey-project/vibey-skills.git
+            ${{ github.workspace }}/automation/src/vibey_tools/skills
           plugins: |
             quality-engineering@vibey-skills
             security-principles@vibey-skills
@@ -702,11 +702,12 @@ jobs:
             actions: read
             checks: read
           plugin_marketplaces: |
-            https://github.com/the-vibey-project/vibey-skills.git
+            ${{ github.workspace }}/automation/src/vibey_tools/skills
           plugins: |
             quality-engineering@vibey-skills
             security-principles@vibey-skills
             engineering-process@vibey-skills
+            software-architecture@vibey-skills
           claude_args: |
             --model claude-sonnet-5
             --max-turns 120
@@ -991,11 +992,12 @@ jobs:
           track_progress: ${{ true && (github.event_name == 'pull_request' || github.event_name == 'issues' || github.event_name == 'issue_comment' || github.event_name == 'pull_request_review_comment' || github.event_name == 'pull_request_review') }}
           show_full_output: ${{ inputs.full_claude_output && github.event_name == 'workflow_dispatch' && github.event.repository.visibility == 'private' && false }}
           plugin_marketplaces: |
-            https://github.com/the-vibey-project/vibey-skills.git
+            ${{ github.workspace }}/automation/src/vibey_tools/skills
           plugins: |
-            software-architecture@vibey-skills
+            quality-engineering@vibey-skills
             security-principles@vibey-skills
             engineering-process@vibey-skills
+            software-architecture@vibey-skills
           claude_args: |
             --model claude-sonnet-5
             --max-turns 80

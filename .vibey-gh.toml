@@ -69,6 +69,17 @@ required_approvals = 1
 bypass_actors    = ["OrganizationAdmin", "RepositoryRole:5"]
 
 [pr_automation]
+# The review, repair and conflict jobs load this tree's own vibey-skills marketplace, read
+# from the trusted default-branch checkout. It used to be cloned from
+# github.com/the-vibey-project/vibey-skills, which the monorepo absorption retired; that
+# clone 404'd and failed every review with no verdict (ADR-0017: the family's own copy).
+plugin_marketplaces = ["src/vibey_tools/skills"]
+plugins = [
+  "quality-engineering@vibey-skills",
+  "security-principles@vibey-skills",
+  "engineering-process@vibey-skills",
+  "software-architecture@vibey-skills",
+]
 # This repository's real PR-triggered workflows. The default set names "Docs", which
 # nothing here answers to -- a gate waiting on a scan that can never complete never posts.
 scan_workflows = ["CI", "Provenance"]
