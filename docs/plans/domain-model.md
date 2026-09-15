@@ -1,9 +1,26 @@
 # Domain Model
 
-> Everything in `src/vibey/domain/`. **Stdlib only** — no I/O, no async, no
-> third-party imports, enforced by `import-linter`. Every type here is frozen and
-> slotted; every function is pure. This is the layer that carries a 100% coverage
-> floor, because it is the layer where being wrong is silent.
+> **Status as of 2026-09-15 (v0.6.0):** checked against `src/vibey/domain/`
+> and current. Corrections in this revision: the import rule now follows
+> [ADR-0017](../architecture/decisions/0017-dogfood-the-family-first.md); the security
+> primitives are plain classes; `check_clear_conditions` implements three of its
+> four conditions; rotation's smoothness property, the probe backoff floors, the
+> retry-ladder bound, the command deny-list, and gate rule R7 are stated as the
+> code behaves. Every layer, not only this one, now carries a 100% branch
+> coverage gate ([ADR-0023](../architecture/decisions/0023-four-layers-four-floors.md)).
+
+> Everything in `src/vibey/domain/`. **Stdlib, itself, and any family package
+> that is itself dependency-free** (`vibey-gh`, `vibey-skills` and
+> `vibey-runners-common` all declare `dependencies = []`); `vibey_bootstrap` is
+> forbidden by name because it carries the Azure SDK and OpenTelemetry
+> ([ADR-0017](../architecture/decisions/0017-dogfood-the-family-first.md)). No I/O, no async,
+> no clock, no network — the import rule is enforced by `import-linter`, the rest
+> by `tests/domain/test_domain_purity.py`, which walks the AST. Every value type
+> here is a frozen, slotted dataclass and every function is pure, with one
+> carve-out: the three security primitives in §19 are plain classes, and
+> `PromptShield.frame_untrusted_input` mints a random nonce with
+> `secrets.token_hex` unless the caller passes `nonce=`. This layer carries a 100%
+> branch coverage floor because it is the layer where being wrong is silent.
 
 ---
 
@@ -157,16 +174,29 @@ guard applies — it just looks the edge up.
 - `DONE` and `ABANDONED` have no outgoing edges except `DONE`'s bridge into
   `DEPLOY` / `DEPLOY_DESIGN`.
 - No transition is legal when `cycle > max_cycles` except `→ ABANDONED`.
-- `DESIGN → BUILD` requires an explicit visual-design **decline**; opting in
-  must route through `VISUAL_DESIGN` first.
+- `DESIGN → BUILD` and `DESIGN → VISUAL_DESIGN` share a common guard: at least
+  one acceptance criterion, no open blocking question, no unmapped criterion, and
+  a user verdict of `ACCEPT`.
+- `DESIGN → BUILD` additionally requires an explicit visual-design **decline**;
+  opting in must route through `VISUAL_DESIGN` first. `DESIGN → VISUAL_DESIGN`
+  additionally requires an explicit opt-in.
 - `VISUAL_DESIGN → BUILD` requires the visual plan accepted-or-waived *and* a
   complete screen/state inventory.
 - `BUILD → REVIEW` requires every work item settled, the integration branch
   green, every acceptance criterion covered by a passing test, and a build
   savepoint at the integration head.
+- `BUILD → DESIGN` requires at least one work item blocked on ambiguity.
+- `REVIEW → DONE` requires no open findings and a user verdict of `ACCEPT`.
+- `REVIEW → DEPLOY_DESIGN`, `DONE → DEPLOY` and `DONE → DEPLOY_DESIGN` require
+  an explicit deployment opt-in.
 - `DEPLOY_DESIGN → DEPLOY_EXECUTE` requires both an accepted deployment spec
   and recorded consent.
+- `DEPLOY_EXECUTE → DEPLOY_REVIEW` requires the deployment to be verified or
+  classified as needing user input.
 - `DEPLOY_REVIEW → DONE` requires the deployment demo to be accepted.
+- `DEPLOY_DESIGN` and `DEPLOY_EXECUTE` each have an unguarded self-edge
+  (revise or retry within the phase); every other unlisted edge is unguarded
+  and decided by the handler that requests it.
 - `evaluate_transition` is total: every `(state, request)` pair returns
   without raising.
 
@@ -201,7 +231,8 @@ BUILD_LADDER_EXHAUSTED = len(BUILD_LADDER)   # attempt 7 → human gate
 
 def effort_for_attempt(base: Effort, attempt: int) -> Effort:
     """Phase 2 escalation. Never lowers below base; saturates at HIGH.
-    Raises EscalationExhausted past attempt 6 (1-based)."""
+    Raises EscalationExhausted past attempt 6, and ValueError for
+    attempt <= 0 (attempts are 1-based)."""
 
 
 def forces_rotation(previous: Effort, current: Effort) -> bool:
@@ -273,7 +304,9 @@ class EngineDescriptor:
 
     def invoke(self, effort: Effort) -> EngineInvocation:
         """Falls back to the highest projection at or below `effort` — the
-        descriptor's own saturation point — rather than raising KeyError."""
+        descriptor's own saturation point — instead of raising on a missing
+        exact tier. Still raises KeyError when the descriptor has no
+        projection at or below the requested effort."""
 
     def saturates_at(self, effort: Effort) -> bool:
         return self.invoke(effort).achieved < effort
@@ -356,9 +389,11 @@ def schedule_probe(capacity: CapacityState, *, now: datetime, attempt: int) -> P
     Available -> None (no probe needed). WindowExhausted with a known
     resets_at -> a DeadlineProbe jittered off that time (deterministically,
     seeded from the reset time and attempt so retries stay reproducible).
-    WindowExhausted with no reset time, or CreditsExhausted, -> a backoff
-    schedule capped at 5 or 30 minutes respectively. AuthenticationFailed ->
-    None; waiting cannot fix credentials."""
+    WindowExhausted with no reset time -> a backoff schedule (base 2s,
+    doubling, capped at 5 minutes). CreditsExhausted -> a backoff schedule
+    floored at 5 minutes and capped at 30, so a dead balance is never
+    hammered. The exponent is capped at 2**32 to keep timedelta in range.
+    AuthenticationFailed -> None; waiting cannot fix credentials."""
 ```
 
 ### The one property test that matters most
@@ -452,7 +487,7 @@ def affinity_factor(*, holds_warm_session: bool, rotation_forced: bool) -> float
 |---|---|
 | **No starvation** | Over `sum(effective_weight)` consecutive selections, every candidate with `effective_weight > 0` is selected at least once |
 | **Weight fidelity** | Selection counts converge to weight ratios within ±1 over any full period |
-| **Smoothness** | No candidate is selected twice consecutively while another with `effective_weight > 0` has gone unselected longer |
+| **Smoothness** | Selections are spread across the period rather than bunched: a candidate never monopolizes every slot while another with `effective_weight > 0` waits. SWRR interleaves proportionally but does not forbid repeats — with weights 5:1 the heavy candidate wins three rounds in a row before the light one is chosen |
 | **Determinism** | Identical candidate state produces an identical selection |
 | **Totality** | `select` raises `NoEligibleEngine` iff every `effective_weight` is 0, or if the input is empty |
 | **Unique identity** | `select` raises `ValueError` if two candidates share an `engine_id` |
@@ -674,7 +709,7 @@ def verify(
 | R4 | Every open `AssumptionStated` id appears in `brief.assumptions` |
 | R5 | Every open `FindingRaised` id appears in `brief.open_findings` |
 | R6 | `ref.digest`, `ref.event_count`, and `ref.to_seq` all match the ledger range actually supplied |
-| R7 | Every artifact referenced by an open item appears in `brief.artifacts` |
+| R7 | Every `ArtifactProduced` event whose payload sets `referenced_by_open_item` appears (by `artifact_id`) in `brief.artifacts` — the event's writer, not the gate, decides what counts as referenced |
 | R8 | The ledger's summed `BudgetSpent` dollars/turns match `budget.dollars_spent` / `budget.turns_spent` |
 | R9 | Every hard `spec_constraints` string appears in `brief.constraints` |
 | R10 | No brief text field contains a phrase from the containment denylist (tool grants, permission changes, acceptance-criteria mutation, prompt-injection phrases like "ignore previous instructions", `sudo`) |
@@ -777,17 +812,21 @@ def render_run_it_script(commands: Sequence[str] = ()) -> str: ...   # run-it.sh
 def render_walkthrough_markdown(*, spec=None, summary="", work_items=()) -> str: ...   # walkthrough.md
 
 def classify_finding_severity(text: str, category: str = "") -> Severity:
-    """Keyword-based triage: security/vulnerability/injection/data-loss/
-    corrupt/leak/critical/invariant -> CRITICAL; defect/missing/broken/
+    """Keyword-based substring triage: security/vulnerability/cve/injection/
+    "data loss"/corrupt/leak/critical/invariant -> CRITICAL; defect/missing/broken/
     fails/failure/regression/crash/error/high -> HIGH; cosmetic/nit/typo/
     doc/comment/formatting/low -> LOW; otherwise MEDIUM."""
 
 def check_clear_conditions(text: str, *, spec=None, decisions=()) -> tuple[bool, str]:
-    """Evaluates review.py's 4 conjunctive conditions for Ambiguity.CLEAR:
-    (1) the desired end state is stated unambiguously, (2) it maps to an
-    existing or obviously-testable acceptance criterion, (3) it implies no
-    new NFR or architectural constraint, (4) it does not contradict a
-    recorded decision's chosen alternative."""
+    """Evaluates three of the four conjunctive conditions for
+    Ambiguity.CLEAR: (1) the desired end state is stated unambiguously
+    (>= 3 words, no hedging phrase such as "maybe", "not sure", "rethink"),
+    (3) it implies no new NFR or architectural constraint (no phrase such
+    as "requests per second", "microservices", "migrate to"), (4) it does
+    not contradict a recorded decision (does not name a recorded
+    alternative together with "switch"). Condition (2) — mapping to an
+    existing or obviously-testable acceptance criterion — is NOT
+    implemented: `spec` is accepted but unused."""
 
 def triage_finding(finding_id: str, text: str, *, category="", spec=None, decisions=()) -> FindingRef:
     """Combines classify_finding_severity and check_clear_conditions into
@@ -816,9 +855,14 @@ cap is evaluated on the projection, not the outcome.
 
 The visual-design interstitial's inventory, and the media-provider selection
 that will eventually fill it in. Both are shape-only: generation, providers,
-and moderation are separate, not-yet-implemented milestones (tasks
-5.8–5.11); these modules only cover *what a complete inventory looks like*
-and *which provider, if any, is eligible*.
+and moderation are separate, not-yet-implemented milestones (tasks 5.9–5.11,
+plus the remaining design-system artifacts of 5.8); these modules only cover
+*what a complete inventory looks like* and *which provider, if any, is
+eligible*. The `visual.inventory` / `visual.plan` handlers consume `visual.py` through
+`application/visual_spec.py` and `application/interfaces/visual.py`, and the
+task-5.13 accept/waive gate (`application/visual_acceptance.py`) reads the
+inventory they publish;
+`media.py` has no consumer outside `domain/` yet.
 
 ```python
 # visual.py
@@ -1122,6 +1166,8 @@ class VibeyConfig:
     features: FeaturesConfig = field(default_factory=FeaturesConfig)
     qwenloop: QwenloopConfig = field(default_factory=QwenloopConfig)
 
+def parse_toml_string(text: str) -> dict[str, Any]: ...   # stdlib tomllib.loads
+
 def parse_config(data: dict[str, Any]) -> VibeyConfig:
     """Raises ConfigError on the first violation found. `qwenloop` may only
     be requested (in engines.enabled or any phase's engines list) once
@@ -1130,7 +1176,13 @@ def parse_config(data: dict[str, Any]) -> VibeyConfig:
     engine set automatically."""
 
 def load_config_from_string(text: str) -> VibeyConfig: ...
+    # = parse_config(parse_toml_string(text))
 ```
+
+Config parsing can live in `domain/` because `tomllib` is stdlib. Reading the
+file is `infrastructure/config_loader.py::load_config_from_path`, which also
+applies the `VIBEY_FEATURE_QWENLOOP` override; as of 2026-09-15 it has no
+runtime caller (see `docs/reference/configuration.md`).
 
 ---
 
@@ -1191,11 +1243,17 @@ def validate_item_id(item_id: str) -> None:
     alphanumeric and hyphens, starting with alphanumeric."""
 
 def worktree_subpath(cycle: int, item_id: str) -> str:
+    validate_item_id(item_id)
     return f".vibey/worktrees/{cycle}/{item_id}"
 
 def branch_name(cycle: int, item_id: str) -> str:
+    validate_item_id(item_id)
     return f"vibey/{cycle}/{item_id}"
 ```
+
+Both raise `ValueError` (via `validate_item_id`) before producing a name, so no
+path or branch is ever built from an unvalidated id. The integration branch
+uses the reserved item id `integration` (`vibey/<cycle>/integration`).
 
 Returns a relative path string rather than a `pathlib.Path`: `domain/`
 forbids `pathlib` (checked by `test_domain_purity.py`), so joining this onto
@@ -1244,8 +1302,11 @@ def resolve_log_plan(*, verbose: int = 0, quiet: bool = False, log_level: str | 
 
 ## 19. Security primitives: `command_guard.py`, `scope_guard.py`, `prompt_shield.py`
 
-Three self-contained, pure defensive modules with full unit coverage. **None
-of them are constructed anywhere in `bootstrap.py`** — see
+Three self-contained defensive modules with full unit coverage. They are
+plain classes rather than frozen dataclasses, and `frame_untrusted_input` is
+deterministic only when a `nonce` is passed. **None of them are constructed
+anywhere in `bootstrap.py`**, and nothing in `application/` or
+`infrastructure/` calls them — see
 [SECURITY.md](../../SECURITY.md) for the current disclosure of what this
 means for the guarantees vibey actually provides today; do not rely on any
 of them being enforced until that changes.
@@ -1261,10 +1322,15 @@ class DestructiveCommandBlocked(Exception):
 
 def scan_command(command: Sequence[str] | str) -> BlockedMatch | None:
     """Matches the command string (argv joined with spaces if given a
-    sequence) against a fixed table of regexes: git hard reset, git force
-    push, git branch -D on main/master, rm -rf on / or ~, mkfs, dd of=/dev/*,
-    recursive chmod on /, shutdown/reboot/poweroff, a shell fork bomb
-    pattern, and SQL DROP DATABASE/TABLE. Returns the first match or None."""
+    sequence), case-insensitively, against a fixed table of regexes:
+    git reset --hard; git push with --force, -f or --force-with-lease;
+    git branch -D or -d on main/master; rm with -r/-f flags on /, /*, ~, ~/
+    or a bare *; mkfs[.fs]; dd ... of=/dev/*; chmod -R <mode> /;
+    shutdown/reboot/poweroff/init 0|6; the :(){ :|:& };: fork bomb; SQL
+    DROP DATABASE and DROP TABLE. Rule ids: GIT_HARD_RESET, GIT_FORCE_PUSH,
+    GIT_DELETE_MAIN, FS_ROOT_RM, FS_MKFS, FS_RAW_DD, FS_CHMOD_ROOT,
+    SYS_POWER, SYS_FORK_BOMB, SQL_DROP_DATABASE, SQL_DROP_TABLE. Returns the
+    first match or None."""
 
 class CommandSecurityPolicy:
     def is_allowed(self, command: Sequence[str] | str) -> bool: ...
@@ -1426,8 +1492,10 @@ class DeploymentAttemptRecord:
     last_failure_class: DeploymentFailureClass | None = None
 
 def evaluate_retry_ladder(attempt, spec) -> tuple[DeploymentLadderDecision, str]:
-    """Halts to triage over the dollar cap, past a 1800s elapsed cap, or
-    past max_rollback_attempts + 1 total attempts. Otherwise: a transient
+    """Halts to triage when total spend exceeds the dollar cap, when elapsed
+    time exceeds 1800s, or once attempt_number reaches
+    max_rollback_attempts + 1 (with the default of 2, the third attempt
+    halts). Otherwise: a transient
     failure class retries with backoff; any other failure rolls back if
     recovery_policy.auto_rollback_on_health_failure, else halts to triage."""
 
@@ -1499,12 +1567,24 @@ class UnknownProvider(VibeyError):
 
 ## 22. What must never appear in `domain/`
 
-Checked by `import-linter` and by a test that walks the AST:
+Checked by `import-linter` (`.importlinter`, contract `domain-independence`)
+and by `tests/domain/test_domain_purity.py`, which walks the AST:
 
-- `import asyncio`, `async def`, `await`
-- `open()`, `pathlib`, `subprocess`, `os.environ`
-- `asyncpg`, `psycopg`, `httpx`, `typer`, `structlog`, `pydantic`
-- `datetime.now()` — time is always a parameter, never ambient
+- `import asyncio`, `async def`, `await`, `async with`, `async for`
+- `open()`, `pathlib`, `subprocess`, `socket`, `os.getenv()`
+- `asyncpg`, `psycopg`, `httpx`, `requests`, `typer`, `structlog`,
+  `pydantic`, `textual`
+- `vibey_bootstrap` — forbidden by name (ADR-0017); dependency-free family
+  packages (`vibey_gh`, `vibey_skills`, `vibey_runners.common`) are allowed
+- `vibey.application`, `vibey.infrastructure`, `vibey.cli`, `vibey.tui`
+- `datetime.now()`, `datetime.today()`, `time.time()` — time is always a
+  parameter, never ambient
+
+`os.environ` access is **not** caught today: the AST walker checks only calls
+of the form `module.attr()`, and although the test module defines an
+`("os", "environ")` pair in `FORBIDDEN_CALLS`, that set is never consulted.
+No domain module reads the environment; the rule is held by review, not by the
+test.
 
 That last one is why every function here takes `now: datetime`. It is what makes
 the wait-policy and circuit-breaker tests deterministic instead of flaky.

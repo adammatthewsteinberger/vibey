@@ -1,6 +1,27 @@
 # Vibey — Architecture and Roadmap
 
-> Status: **approved design, not yet implemented**.
+> **Status as of 2026-09-15 (v0.6.0): implemented and live-validated.** This is
+> the planning-era design, kept as the rationale document and corrected where the
+> code went another way. Built: the delivery loop ① DESIGN → optional
+> VISUAL_DESIGN → ② BUILD ⇄ ③ REVIEW, the opt-in deployment stage set ④–⑥, the
+> PostgreSQL queue, the event ledger and no-loss gate (R1–R10), SWRR rotation with
+> circuit breakers, agent-surface provisioning, and a Kubernetes chart and operator
+> ([ADR-0025](../architecture/decisions/0025-kubernetes-operator-crd-keda.md)). `domain/`,
+> `application/`, `infrastructure/` and `cli/` each hold a 100% branch-coverage CI
+> gate ([ADR-0023](../architecture/decisions/0023-four-layers-four-floors.md)).
+> **Not built:** the media-provider port, adapters and generation jobs of §14 (only
+> `visual.inventory` / `visual.plan` and `vibey visual accept|waive` exist); the
+> `container` and `vm` isolation levels and the egress allow-list of §11; the
+> OpenTelemetry exporter and notification wiring of §13; `vibey up` / `vibey serve`
+> and a supervisor process (§4). Live Azure mutation exists but is off unless a
+> worker is started with `--azure az` (§15).
+> **Since this was written:** the runners and the `vibey-gh`, `vibey-skills` and
+> `vibey-bootstrap` tools moved into this repository as a uv workspace
+> ([ADR-0021](../architecture/decisions/0021-one-tree-history-preserved.md)); a fifth engine,
+> `qwenloop`, joined as an opt-in local standby
+> ([ADR-0015](../architecture/decisions/0015-qwenloop-standby.md)) and as the sovereign DESIGN
+> provider ([ADR-0027](../architecture/decisions/0027-sovereign-design-provider.md)).
+> Where this document and the code disagree, the code and `docs/reference/` win.
 > Audience: the engineer (human or agent) who will build this.
 > Companion documents: [domain model](domain-model.md), [data model](data-model.md),
 > [handoff protocol](handoff-protocol.md), [rotation & engines](rotation-and-engines.md),
@@ -10,8 +31,13 @@
 
 ## 1. Problem statement
 
-Four autonomous session runners already exist in this workspace — `claudeloop`,
-`codexloop`, `cursorloop`, `agyloop`. Each drives one vendor's coding agent
+Five autonomous session runners live in this repository under
+`src/vibey_runners/` — `claudeloop`, `codexloop`, `cursorloop`, `agyloop` (the
+paid pool) and `qwenloop` (a local, zero-dollar standby, opt-in via
+`[features] qwenloop = true` or `VIBEY_FEATURE_QWENLOOP`; see
+[ADR-0015](../architecture/decisions/0015-qwenloop-standby.md)). When this document was written
+the first four were separate repositories; they were absorbed with history in
+September 2026 ([ADR-0021](../architecture/decisions/0021-one-tree-history-preserved.md)). Each drives one vendor's coding agent
 through an unattended run: it distinguishes a waitable rate-limit window from
 exhausted credits, never blocks on a human, writes savepoints, and exposes a
 mid-run control plane. They are, individually, excellent at *running one agent
@@ -62,8 +88,12 @@ They are enforced by CI, not by convention.
    acquire a waitable deadline field. Inherited verbatim from the `*loop` family.
 3. **A capacity rejection always outranks a completion claim.** If a turn both
    looks done and hit a limit, it is not done.
-4. **`domain/` stays pure.** Stdlib only. No I/O, no async, no third-party
-   imports. Enforced by `import-linter`.
+4. **`domain/` stays pure.** Stdlib, itself, and only family packages that are
+   themselves dependency-free (`vibey-gh`, `vibey-skills`, `vibey-runners-common`);
+   `vibey_bootstrap` is forbidden by name
+   ([ADR-0017](../architecture/decisions/0017-dogfood-the-family-first.md)). No I/O, no async,
+   no clock. Imports are enforced by `import-linter`; the rest by
+   `tests/domain/test_domain_purity.py`.
 5. **A handoff that fails the no-loss gate is not a handoff.** It is a retry, an
    escalation to full-transcript mode, or a human gate — never a silent partial.
 6. **Every job is idempotent under replay.** Workers can and will die mid-job;
@@ -89,6 +119,7 @@ graph TB
         XL["codexloop<br/>OpenAI"]
         UL["cursorloop<br/>Cursor / Composer"]
         AL["agyloop<br/>Google Antigravity"]
+        QL["qwenloop<br/>local Qwen (opt-in)"]
     end
 
     subgraph Local["Local machine"]
@@ -99,8 +130,8 @@ graph TB
 
     subgraph External["External"]
         Providers["Model providers<br/>Anthropic / OpenAI / Cursor / Google"]
-        Market["vibe-engineering-skills<br/>plugin marketplace"]
-        Media["Media providers<br/>image / audio / video"]
+        Market["vibey-skills CLI<br/>(src/vibey_tools/skills)"]
+        Media["Media providers<br/>image / audio / video<br/>(planned, not built)"]
         Azure["Azure<br/>(Phases ④–⑥)"]
     end
 
@@ -113,14 +144,26 @@ graph TB
     Vibey --> PG
     Vibey --> Git
     Vibey --> FS
-    Vibey -->|"provision skills<br/>into worktrees"| Market
+    Vibey -->|"skills-context packet<br/>per implement job (opt-in)"| Market
     Vibey -->|"plan, deploy,<br/>verify, demo"| Azure
 ```
 
 **Trust boundary note.** Everything inside *Local* is on the developer's machine.
 Vibey never ships source, prompts, reference assets, or ledger content to a media
 provider unless the user opted into the visual stage and accepted external-media
-egress. See §13.
+egress. See §12.
+
+**Repository layout (2026-09).** The diagram shows the runners and `vibey-skills`
+as local CLIs, and that is still how the conductor reaches them: as subprocesses,
+never as imported code. Their source now lives in this repository, a uv
+workspace ([ADR-0021](../architecture/decisions/0021-one-tree-history-preserved.md)):
+`src/vibey/` (the conductor), `src/vibey_runners/` (`claude`, `codex`, `cursor`,
+`agy`, `qwen`, and the shared `common` package), and `src/vibey_tools/` (`gh`,
+`skills`, `bootstrap` — published as `vibey-gh`, `vibey-skills`,
+`vibey-bootstrap`). Each package still publishes to PyPI under its own name and
+keeps its own test, lint and coverage gates in this repository's CI
+([ADR-0022](../architecture/decisions/0022-absorbed-packages-keep-their-own-gates.md)). The
+former sibling GitHub repositories no longer exist.
 
 ---
 
@@ -129,22 +172,22 @@ egress. See §13.
 ```mermaid
 graph TB
     subgraph CLI["vibey CLI / TUI"]
-        Cmd["<code>vibey new|design|build|review|status|watch</code>"]
+        Cmd["<code>vibey new|answer|work|design|visual|watch|status|<br/>recover|engines|cost|ledger|deploy|doctor|worker|operator</code>"]
         Tui["Textual TUI<br/>live phase + engine + cost"]
     end
 
     subgraph Core["vibey core process(es)"]
-        Sup["<b>Supervisor</b><br/>phase machine, gates"]
+        Sup["<b>Phase transitions</b><br/>guards in domain/phase.py,<br/>run inside job handlers"]
         W1["<b>Worker</b> ×N<br/>lease → execute → commit"]
         Rot["<b>Rotator</b><br/>SWRR + circuit breakers"]
         Led["<b>Ledger</b><br/>append + project"]
     end
 
     subgraph Adapters["infrastructure/engines/"]
-        Ad["EngineAdapter × 4<br/>argv build, run-dir tail,<br/>capacity map, effort map"]
+        Ad["EngineAdapter × 5<br/>argv build, run-dir tail,<br/>capacity map, effort map"]
     end
 
-    subgraph MediaAdapters["infrastructure/media/"]
+    subgraph MediaAdapters["infrastructure/media/ (planned, not built)"]
         Md["MediaProvider registry<br/>image / audio / video cursors"]
     end
 
@@ -157,7 +200,7 @@ graph TB
     end
 
     subgraph Work["Filesystem"]
-        WT["git worktrees<br/><code>.vibey/worktrees/&lt;job&gt;</code>"]
+        WT["git worktrees<br/><code>.vibey/worktrees/&lt;cycle&gt;/&lt;item&gt;</code>"]
         Art["artifacts + briefs<br/><code>.vibey/runs/</code>"]
     end
 
@@ -169,7 +212,7 @@ graph TB
     Rot --> HE
     W1 --> Ad
     W1 --> Md
-    Ad -->|"subprocess"| Ext["claudeloop / codexloop /<br/>cursorloop / agyloop"]
+    Ad -->|"subprocess"| Ext["claudeloop / codexloop /<br/>cursorloop / agyloop / qwenloop"]
     Ad --> WT
     W1 --> Led
     Led --> E
@@ -180,18 +223,32 @@ graph TB
 
 ### Process model
 
-Vibey runs as **one supervisor plus N workers**, all ordinary OS processes on the
-developer's machine.
+*Corrected 2026-09-15.* The planned `vibey up` / `vibey serve` commands and the
+separate supervisor process were not built. Vibey runs as **N stateless worker
+processes**, plus an optional Kubernetes operator.
 
-- `vibey up` starts Postgres (Docker Compose, or an existing instance via
-  `--pg-url`, or a local `pg_ctl` cluster under `.vibey/pgdata`).
-- `vibey serve` starts the supervisor and a default worker pool
-  (`VIBEY_WORKERS`, default `min(4, cpu_count)`).
+- `vibey worker` runs the lease → execute → ack loop, woken by
+  `LISTEN vibey_job_ready`. `--parallelism/-j` (1–16, default 1) sets concurrent
+  jobs, bounded to `min(parallelism, engines × 2, cpu_count)`. `vibey work
+  <project-id>` processes one ready DESIGN job in the foreground and exits.
+- Every process reads its DSN from `VIBEY_PG_URL` and refuses to start without it
+  (`DatabaseNotConfigured`); there is no default database. Postgres is brought by
+  the operator: a local instance, a container, or the Helm chart's in-cluster
+  `postgres:17-alpine`.
 - Workers are stateless. Killing one loses nothing; its lease expires and the job
-  is re-leased.
-- The supervisor owns exactly one thing workers do not: **phase transitions**.
-  It is safe to run several supervisors — transitions are guarded by an advisory
-  lock on `project_id` — but there is no reason to.
+  is re-leased. In a container, `tini` is PID 1 and a SIGTERM latch armed before
+  the first import turns a stop into a drain
+  ([ADR-0026](../architecture/decisions/0026-tini-pid1-and-the-sigterm-latch.md)).
+- **Phase transitions** happen inside the handler (or CLI command) that completes
+  a phase: it evaluates the pure guard in `domain/phase.py`, then moves the
+  project with a compare-and-set `UPDATE project … WHERE phase = <expected>`, so
+  two workers cannot both win. `build.integrate` for one `(project_id, cycle)` is
+  serialized by a session-level Postgres advisory lock; contention is a short
+  defer ([ADR-0029](../architecture/decisions/0029-integrate-serialized-by-advisory-lock.md)).
+- In a cluster, the Helm chart runs workers as a Deployment, KEDA scales them on
+  claimable work, and `vibey operator` reconciles `VibeyProject` custom resources
+  ([ADR-0025](../architecture/decisions/0025-kubernetes-operator-crd-keda.md),
+  `docs/guides/kubernetes.md`).
 
 ---
 
@@ -207,59 +264,48 @@ domain/  →  application/  →  infrastructure/  →  cli/ + tui/
                      (the sole composition root)
 ```
 
-Dependencies point inward only, enforced by `import-linter` in CI.
+Dependencies point inward only, enforced by `import-linter` in CI. Each of
+`domain/`, `application/`, `infrastructure/` and `cli/` carries a 100% branch
+coverage floor as its own CI gate
+([ADR-0023](../architecture/decisions/0023-four-layers-four-floors.md)).
 
 | Layer | Contains | May import |
 |---|---|---|
-| `domain/` | Phase machine, rotation algorithm, effort ladder, handoff ADTs, no-loss gate rules, budget, plan | stdlib only |
-| `application/` | Ports (Protocols), use cases, job handlers, DTOs | `domain/` |
+| `domain/` | Phase machine, rotation algorithm, effort ladder, handoff ADTs, no-loss gate rules, budget, plan, config parsing, security primitives | stdlib and dependency-free family packages ([ADR-0017](../architecture/decisions/0017-dogfood-the-family-first.md)) |
+| `application/` | `interfaces/` (one Protocol per collaborator, [ADR-0016](../architecture/decisions/0016-classes-behind-interfaces.md)), use cases, `*_handler.py` job handlers, DTOs, engine selection | `domain/` |
 | `infrastructure/` | Postgres, engine adapters, git, filesystem, notifications, logging | `domain/`, `application/` |
 | `cli/`, `tui/` | Typer commands, Textual app | all inner layers |
 | `bootstrap.py` | Wiring — the only place concrete types meet Protocols | everything |
 
 ### Package tree
 
+*Updated 2026-09-15 to the tree as built (abridged; the planned `supervisor.py`,
+`handlers/` package and `infrastructure/media/` do not exist).*
+
 ```
 src/vibey/
-├── domain/
-│   ├── phase.py              # Phase, PhaseTransition, the machine
-│   ├── effort.py             # normalized 5-level ladder
-│   ├── engine.py             # EngineId, EngineCapabilities, EngineDescriptor
-│   ├── rotation.py           # smooth weighted round robin, eligibility
-│   ├── circuit.py            # CircuitState, breaker transitions
-│   ├── ledger.py             # LedgerEvent ADTs, sequence rules
-│   ├── handoff.py            # HandoffEnvelope, HandoffBrief, HandoffReason
-│   ├── noloss.py             # the no-loss gate predicate
-│   ├── job.py                # JobKind, JobState, lease + retry policy
-│   ├── plan.py               # WorkPlan, PlanItem  (adapted from claudeloop)
-│   ├── spec.py               # DesignSpec, AcceptanceCriterion, NFR
-│   ├── review.py             # ReviewFinding, Severity, ReviewVerdict
-│   ├── budget.py             # BudgetLedger, per-phase caps
-│   ├── capacity.py           # Available|WindowExhausted|CreditsExhausted|AuthFailed
-│   └── errors.py
-├── application/
-│   ├── ports.py              # every Protocol
-│   ├── dto.py
-│   ├── supervisor.py         # phase transitions, gate resolution
-│   ├── worker.py             # the lease→execute→ack loop
-│   └── handlers/
-│       ├── design_*.py       # interview, research, synthesize, spec
-│       ├── build_*.py        # decompose, implement, verify, integrate
-│       ├── review_*.py       # demo, collect, triage
-│       └── handoff.py        # produce + verify + accept
-├── infrastructure/
-│   ├── db/                   # asyncpg pool, migrations, repositories
-│   ├── engines/              # one adapter per *loop + the conformance suite
-│   ├── media/                # capability registry + media-provider adapters
-│   ├── git/                  # worktrees, savepoints, integration merges
-│   ├── ledger/               # append + projections
-│   ├── provision/            # agent-surface materialization (CLAUDE.md etc.)
-│   ├── notify/               # desktop + webhook
-│   ├── logging.py            # structlog, dual console+json
-│   └── otel.py               # OpenTelemetry spans + cost metrics
-├── cli/
-├── tui/
+├── domain/          phase, effort, engine, rotation, circuit, capacity, ledger,
+│                    handoff, noloss, briefing, projections, job, plan, spec,
+│                    review, budget, config, deployment, visual, media, provision,
+│                    worktree, verbosity, command_guard, scope_guard,
+│                    prompt_shield, errors
+├── application/     interfaces/ (one Protocol per port, ADR-0016), ports, dto,
+│                    worker, job_dispatcher, design_*_handler, visual_handler,
+│                    build_*_handler, review_*_handler, deploy_*_handler,
+│                    engine_selector, engine_selection, handoff_orchestration,
+│                    rotation_handoff, wind_down, conformance, seed_prompt
+├── infrastructure/  db/ (asyncpg repositories, migrator, advisory_lock, notifier),
+│                    engines/ (descriptors, loop_process_adapter, tailer, classify,
+│                    scripted*, claudeloop_*, qwenloop_design), git/, ledger/
+│                    (full_ledger_writer, redact), provision/, build/, container/,
+│                    azure/, deploy/, notify/, operator/, interfaces/,
+│                    skills_context, context_writer, review_artifact_writer,
+│                    cluster_preflight, config_loader, logging, otel
+├── cli/             main, early_signals, errors, interfaces/
+├── tui/             dashboard
 └── bootstrap.py
+migrations/          0001_project … 0011_deployment_stage_set_phases
+                     (repository root, forward-only SQL)
 ```
 
 ---
@@ -272,14 +318,18 @@ src/vibey/
 |---|---|---|---|
 | `INTAKE` | — | — | Create project, detect repo, provision agent surfaces |
 | `DESIGN` (①) | **yes** | `HIGH` | Interview the user to a testable spec |
-| `VISUAL_DESIGN` | **yes, optional** | `HIGH` | Inventory screens and generate/confirm visual, audio, and video assets when opted in |
+| `VISUAL_DESIGN` | **yes, optional** | `HIGH` | Inventory screens and plan visual, audio, and video assets when opted in (generation is not built; §14) |
 | `BUILD` (②) | no | `LOW` (auto-escalating) | Decompose, implement, verify, integrate |
 | `REVIEW` (③) | **yes** | `HIGH` | Demo what was built, collect change requests |
 | `DEPLOY_DESIGN` (④) | **yes** | `HIGH` | Establish and accept the Azure deployment contract |
 | `DEPLOY_EXECUTE` (⑤) | no | `LOW` (auto-escalating) | Plan, provision, release, verify, and recover autonomously |
 | `DEPLOY_REVIEW` (⑥) | **yes** | `HIGH` | Demo success or resolve a failure that needs user input |
-| `DONE` | — | — | Terminal success |
+| `DONE` | — | — | Terminal success (local or deployed). A later explicit deployment opt-in may re-enter `DEPLOY_DESIGN` from `DONE`. |
 | `ABANDONED` | — | — | Terminal failure / user cancel |
+
+`Phase.DEPLOY` also remains in the enum as a legacy single-phase bridge from the
+pre-ADR-0013 lifecycle, with edges from `REVIEW` and `DONE`; new projects use the
+④–⑥ stage set.
 
 The lifecycle has six numbered phases plus one optional, unnumbered visual-design
 interstitial. Delivery is `① DESIGN → optional VISUAL_DESIGN → ② BUILD → ③ REVIEW`;
@@ -300,7 +350,6 @@ stateDiagram-v2
 
     VISUAL_DESIGN --> BUILD: all screen specs and media accepted
     VISUAL_DESIGN --> BUILD: explicit visual-stage waiver
-    VISUAL_DESIGN --> DESIGN: visual inventory exposes missing requirements
     VISUAL_DESIGN --> ABANDONED: user cancels
 
     BUILD --> REVIEW: all work items integrated
@@ -314,10 +363,12 @@ stateDiagram-v2
     REVIEW --> ABANDONED: user cancels
 
     DEPLOY_DESIGN --> DEPLOY_EXECUTE: deployment spec accepted<br/>+ mutation consent recorded
+    DEPLOY_DESIGN --> DEPLOY_DESIGN: revise the contract
     DEPLOY_DESIGN --> ABANDONED: user cancels
 
     DEPLOY_EXECUTE --> DEPLOY_EXECUTE: retryable / waitable failure
     DEPLOY_EXECUTE --> DEPLOY_REVIEW: verified success<br/>or user input required
+    DEPLOY_EXECUTE --> ABANDONED: user cancels
 
     DEPLOY_REVIEW --> DONE: successful demo accepted
     DEPLOY_REVIEW --> DEPLOY_DESIGN: deployment details must change
@@ -326,7 +377,13 @@ stateDiagram-v2
     DEPLOY_REVIEW --> BUILD: application fix is unambiguous
     DEPLOY_REVIEW --> REVIEW: acceptance evidence must be reconsidered
     DEPLOY_REVIEW --> ABANDONED: user cancels
+
+    DONE --> DEPLOY_DESIGN: late deployment opt-in
 ```
+
+*Corrected 2026-09-15:* the planned `VISUAL_DESIGN → DESIGN` edge is not in
+`_EDGES`; a visual stage that finds a missing requirement has no automatic route
+back to ①.
 
 **On `REVIEW → BUILD` (the fast path).** The source diagram specifies
 `REVIEW → DESIGN` as the loop-back. That is the correct *default*: a change
@@ -363,24 +420,30 @@ it never turns into an unbounded cloud loop.
 ### 6.4 Transition guards
 
 A transition fires only when its guard holds. Guards are pure functions in
-`domain/phase.py`:
+`domain/phase.py`, registered per edge in `_GUARDS`; an edge not in `_EDGES` is
+always denied, and no edge except `→ ABANDONED` is legal once
+`cycle > max_cycles`. The table lists what the registered guards check today:
 
-| Transition | Guard |
+| Transition | Guard (as implemented) |
 |---|---|
-| `DESIGN → VISUAL_DESIGN` | buildable spec, user explicitly opted into visual design |
-| `DESIGN → BUILD` | buildable spec, user explicitly declined visual design |
-| `VISUAL_DESIGN → BUILD` | every planned screen has an accepted spec and every planned asset is accepted, supplied, or explicitly waived |
-| `VISUAL_DESIGN → DESIGN` | visual inventory exposes a missing requirement or contradiction |
-| `BUILD → REVIEW` | every work item is `integrated` or `waived`, integration branch is green |
-| `BUILD → DESIGN` | ≥1 work item is `blocked_on_ambiguity` and retries exhausted |
-| `REVIEW → *` | user issued a verdict and triage has classified every finding |
-| `REVIEW → DEPLOY_DESIGN` | build accepted, integration evidence remains green, and user explicitly opted into deployment |
-| `REVIEW → DONE` | build accepted, no open product findings, user explicitly declined deployment |
-| `DEPLOY_DESIGN → DEPLOY_EXECUTE` | complete trusted deployment spec, preflight/what-if accepted, explicit mutation consent |
-| `DEPLOY_EXECUTE → DEPLOY_EXECUTE` | failure is retryable or waitable and all attempt/time/cost caps remain |
-| `DEPLOY_EXECUTE → DEPLOY_REVIEW` | runtime verification succeeded, or failure requires human input |
-| `DEPLOY_REVIEW → *` | user verdict recorded and outcome/failure routing is classified |
-| `* → ABANDONED` | explicit user cancel, or budget exhausted with declined top-up |
+| `DESIGN → VISUAL_DESIGN` | ≥1 acceptance criterion, no open blocking question, no unmapped criterion, user verdict `ACCEPT`, explicit visual-design opt-in |
+| `DESIGN → BUILD` | the same four design checks, plus an explicit visual-design decline |
+| `VISUAL_DESIGN → BUILD` | visual plan accepted or explicitly waived, and a complete screen/state inventory |
+| `BUILD → REVIEW` | ≥1 work item; every work item `integrated` or `waived`; integration branch green; every acceptance criterion has a passing test; a build savepoint exists at the integration head |
+| `BUILD → DESIGN` | ≥1 work item is `blocked_on_ambiguity` |
+| `REVIEW → DONE` | no open findings and user verdict `ACCEPT` |
+| `REVIEW → DEPLOY_DESIGN` | explicit deployment opt-in |
+| `DONE → DEPLOY_DESIGN` (and legacy `DONE → DEPLOY`) | explicit deployment opt-in |
+| `DEPLOY_DESIGN → DEPLOY_EXECUTE` | deployment spec accepted and deployment consent recorded |
+| `DEPLOY_EXECUTE → DEPLOY_REVIEW` | deployment verified, or classified as needing user input |
+| `DEPLOY_REVIEW → DONE` | deployment demo accepted |
+
+The remaining edges (`INTAKE → DESIGN`, `REVIEW → DESIGN|BUILD`, the ④/⑤
+self-edges, `DEPLOY_REVIEW → *` other than `→ DONE`, the legacy
+`REVIEW → DEPLOY` and `DEPLOY → *`, and `* → ABANDONED`) carry no domain guard; the handler that
+requests them decides. Review routing uses `next_phase_after_review` (ADR-0010);
+the deployment retry ladder's attempt/time/cost caps live in
+`domain/deployment.py::evaluate_retry_ladder`.
 
 ---
 
@@ -400,10 +463,12 @@ indices for the ledger, and advisory locks for phase transitions. It is also
 already the storage substrate in the sibling `apg-*` projects, so the operational
 knowledge is not new.
 
-Local friction is handled by `vibey up`, which resolves a database in this order:
-1. `--pg-url` / `VIBEY_PG_URL` if set (bring your own).
-2. A Docker/Podman Compose service (`vibey-postgres`, pinned to `postgres:17`).
-3. A local `pg_ctl` cluster initialized under `.vibey/pgdata` on a free port.
+*Corrected 2026-09-15.* The planned `vibey up` with Compose and `pg_ctl`
+fallbacks was not built. The DSN is read from `VIBEY_PG_URL` and nothing else; a
+missing value is a hard error (`DatabaseNotConfigured`), never a guessed
+localhost database — an earlier silent fallback once wrote 78 test projects into a
+production database. Bring your own Postgres (local, a container, or the Helm
+chart's in-cluster `postgres:17-alpine`).
 
 See [ADR-0002](../architecture/decisions/0002-postgres-not-sqlite.md).
 
@@ -421,9 +486,11 @@ stateDiagram-v2
     awaiting_human --> ready: gate answered
     awaiting_capacity --> ready: a circuit half-opens
     leased --> failed: attempts exhausted
+    ready --> cancelled: cancel<br/>(state in schema and JobState,<br/>no code path sets it yet)
     failed --> ready: operator requeue
     succeeded --> [*]
     failed --> [*]
+    cancelled --> [*]
 ```
 
 The claim query is the standard pattern:
@@ -455,6 +522,10 @@ Full DDL, indices, and the reaper query are in [data-model.md](data-model.md).
 
 ### 7.3 Job kinds
 
+*Updated 2026-09-15 to the kinds registered in `bootstrap.py`.* The effort
+column is design intent; the engine actually receives the effort the rotator
+and escalation ladder resolve (§9.3).
+
 | Kind | Phase | Parallel? | Isolation | Typical effort |
 |---|---|---|---|---|
 | `design.interview` | ① | no (one conversation) | none | `HIGH` |
@@ -462,27 +533,30 @@ Full DDL, indices, and the reaper query are in [data-model.md](data-model.md).
 | `design.synthesize` | ① | no | none | `HIGH` |
 | `design.spec` | ① | no | none | `HIGH` |
 | `visual.inventory` / `visual.plan` | optional visual stage | no | none | `HIGH` |
-| `visual.prompt` | optional visual stage | no | none | `STANDARD` |
-| `media.generate.image` / `.audio` / `.video` | optional visual stage | async, dependency-ordered | media work dir | `STANDARD` ↑ |
-| `media.moderate` / `media.preview` / `visual.review` | optional visual stage | no | read-only artifacts | `HIGH` |
-| `build.decompose` | ② | no | none | `STANDARD` |
+| `build.decompose` (alias `build.plan`, enqueued by the review fast path) | ② | no | none | `STANDARD` |
 | `build.implement` | ② | **yes** | worktree | `LOW` ↑ |
 | `build.verify` | ② | yes | worktree | `LOW` |
-| `build.integrate` | ② | no | integration branch | `STANDARD` |
+| `build.integrate` | ② | no (advisory lock per cycle, [ADR-0029](../architecture/decisions/0029-integrate-serialized-by-advisory-lock.md)) | integration branch | `STANDARD` |
 | `review.demo` | ③ | no | read-only worktree | `HIGH` |
 | `review.collect` | ③ | no | none | `HIGH` |
 | `review.triage` | ③ | no | none | `HIGH` |
-| `deploy.interview` / `deploy.spec` | ④ | no | none | `HIGH` |
-| `deploy.discover` / `deploy.plan` / `deploy.validate` | ⑤ | yes where read-only | none | `STANDARD` |
-| `deploy.apply` / `deploy.release` / `deploy.verify` / `deploy.recover` | ⑤ | dependency-ordered | accepted Azure scope | `LOW` ↑ |
-| `deploy.demo` / `deploy.collect` / `deploy.triage` | ⑥ | no | read-only Azure evidence | `HIGH` |
-| `handoff.produce` | any | inherits | inherits | one tier below source |
-| `handoff.verify` | any | inherits | none | `LOW` (deterministic + cheap model) |
+| `review.deployment_choice` | ③ | no | none | — (records the opt-in or decline) |
+| `deploy.interview` / `deploy.design` / `deploy.synthesize` / `deploy.spec` (alias `deploy.accept`) | ④ | no | none | `HIGH` |
+| `deploy.execute` (alias `deploy.graph`) | ⑤ | dependency-ordered | accepted Azure scope | `LOW` ↑ |
+| `deploy.demo` / `deploy.triage` / `deploy.route` | ⑥ | no | read-only Azure evidence | `HIGH` |
+
+The planned `visual.prompt`, `visual.review`, `media.generate.*`,
+`media.moderate`, `media.preview`, the separate `deploy.discover` … `deploy.recover`
+kinds, and `deploy.collect` do not exist. **Handoff is not a job kind:** on a
+capacity rejection or wind-down, the worker runs produce → verify → accept
+in-process (`application/rotation_handoff.py`, `handoff_orchestration.py`) before
+releasing the job (§8.5).
 
 ### 7.4 Leases, retries, idempotency
 
-- **Lease duration** is per-kind (`build.implement` gets hours; `review.triage`
-  gets minutes) and extended by a heartbeat every `lease/3`.
+- **Lease duration** is per-kind (`build.implement` and `build.verify` get 2
+  hours; `build.decompose`, `build.plan` and `build.integrate` get 15 minutes;
+  every other kind gets 2 minutes) and extended by a heartbeat every `lease/3`.
 - **Retry backoff** is exponential with full jitter, capped at 15 minutes.
 - **Idempotency** is enforced by `idempotency_key` — a deterministic hash of
   `(project_id, cycle, kind, subject)`. Re-enqueueing the same logical work is a
@@ -491,6 +565,10 @@ Full DDL, indices, and the reaper query are in [data-model.md](data-model.md).
   before spending a turn.
 - **Poison jobs** move to `failed` after `max_attempts` and raise a human gate
   rather than silently stalling the phase.
+- **Bounded repair ladders park.** A failing verify or integrate enters a bounded
+  repair ladder (3 rounds); its end is a parked human gate that can grant more
+  rounds, never a terminal failure
+  ([ADR-0024](../architecture/decisions/0024-every-bounded-ladder-parks-with-a-grant.md)).
 
 ---
 
@@ -516,12 +594,18 @@ representations differ, whereas passing "fragile context strings" does not.
 `SessionSeeded`, `TurnRequested`, `TurnCompleted`, `ToolInvoked`, `FileEdited`,
 `VerdictRendered`, `CapacityRejected`, `DecisionRecorded`, `QuestionAsked`,
 `AnswerGiven`, `AssumptionStated`, `ArtifactProduced`, `SavePointCreated`,
-`FindingRaised`, `HandoffInitiated`, `HandoffAccepted`, `PhaseTransitioned`.
+`FindingRaised`, `FindingResolved`, `HandoffInitiated`, `HandoffAccepted`,
+`PhaseTransitioned`, `BudgetSpent`, `VisualDesignOptedIn`,
+`VisualDesignDeclined`, `VisualDesignAccepted`, `VisualDesignWaived`,
+`DeploymentOptedIn`, `DeploymentDeclined` (25 kinds, `domain/ledger.py`).
 
-Every event carries `(project_id, cycle, phase, seq, causation_id,
-correlation_id, engine_id, produced_at, payload, digest)`. `seq` is a
-per-project gapless integer from a Postgres sequence, so "the ledger from seq
-1200 to 1478" is an exact, verifiable range.
+Every event carries `(event_id, project_id, cycle, phase, seq, kind, engine_id,
+job_id, causation_id, correlation_id, provenance, produced_at, payload,
+digest)`; `provenance` is `trusted`, `agent` or `untrusted`. `seq` is a
+per-project gapless integer minted by the `append_event()` SQL function from the
+per-project `event_seq` table (not a `CREATE SEQUENCE`), unique on
+`(project_id, seq)`, so "the ledger from seq 1200 to 1478" is an exact,
+verifiable range.
 
 ### 8.3 Two projections, one truth
 
@@ -548,8 +632,10 @@ predicate** over `(ledger_range, brief)`:
 | `R4 assumption closure` | Every `AssumptionStated` appears in `brief.assumptions` |
 | `R5 finding closure` | Every `FindingRaised` with `state != resolved` appears in `brief.open_findings` |
 | `R6 range integrity` | `brief.ledger_ref.digest` equals the recomputed digest of `[from_seq, to_seq]`, and `to_seq` equals the project's current max seq |
-| `R7 artifact closure` | Every `ArtifactProduced` still referenced by an open item appears in `brief.artifacts` |
+| `R7 artifact closure` | Every `ArtifactProduced` whose payload sets `referenced_by_open_item` appears in `brief.artifacts` — the event's writer, not the gate, decides what counts as referenced |
 | `R8 budget carry` | `brief.budget` equals the ledger-derived spend |
+| `R9 constraint closure` | Every hard constraint in the accepted spec appears in `brief.constraints` |
+| `R10 containment` | No free-text field of the brief carries a denylisted phrase (tool grants, permission changes, acceptance-criteria mutation, prompt-injection phrases) — the brief cannot rewrite the contract |
 
 Matching is by stable `item_id`, not by string similarity — every closable thing
 gets an id when it is first recorded, so the check is exact rather than fuzzy.
@@ -557,7 +643,8 @@ gets an id when it is first recorded, so the check is exact rather than fuzzy.
 **On failure:** regenerate the brief (up to 3 attempts, each time feeding back the
 specific rule that failed) → then escalate to `full_transcript` mode (the entire
 ledger range is inlined, accepting the token cost) → then raise a human gate.
-It never proceeds on a failed gate.
+It never proceeds on a failed gate. In `full_transcript` mode only R6, R8 and R10
+are evaluated; the closure rules are satisfied by construction.
 
 ### 8.5 Handoff sequence
 
@@ -591,6 +678,9 @@ sequenceDiagram
     B-->>W: TurnCompleted
 ```
 
+The sequence runs in-process inside the worker that hit the rejection
+(`RotationHandoffService` plus `handoff_orchestration`); it is not a queued job.
+
 **When Engine A is unreachable** (crashed, credits gone, binary missing), the
 brief is synthesized by the *incoming* engine, or by any healthy engine, reading
 the ledger directly. The gate is identical either way — that is the point of
@@ -604,18 +694,23 @@ Full specification in [rotation-and-engines.md](rotation-and-engines.md).
 
 ### 9.1 The capability problem
 
-The four runners are not interchangeable at the CLI level. Actual, verified
-divergence:
+The runners are not interchangeable at the CLI level. Divergence as recorded in
+`infrastructure/engines/descriptors.py` (checked against each binary's
+`run --help` by the conformance suite; updated 2026-09-15):
 
-| | claudeloop | codexloop | cursorloop | agyloop |
-|---|---|---|---|---|
-| Effort vocabulary | 5-level `low…max` | 3-level `low/medium/high` | **none** — a model-id ladder | 5-level `low…max` |
-| `--preset` | yes | no | no (`--model` positions on ladder) | yes |
-| Top-level `savepoints` | yes | yes | yes | **no** |
-| Top-level `effort` cmd | yes | yes | **no** | **no** |
-| `sessions`/`threads` | `sessions` | `threads` | `agents` | `sessions` |
-| Sandbox flag | permission-mode | `sandbox` | hooks policy | `--safe`/`--yolo` |
-| State dir | `.claudeloop/` | `.codexloop/` | `.cursorloop/` | `.agyloop/` |
+| | claudeloop | codexloop | cursorloop | agyloop | qwenloop |
+|---|---|---|---|---|---|
+| Effort at invocation | `--preset` + `--effort` (5 levels) | **none** — `run` has no effort flag; every level projects to `STANDARD` | **none** — a `--model` ladder (`composer-fast` → `composer` → `grok-4.5` → `grok` → `grok-xhigh`) | `--preset` + `--effort` (5 levels) | `--max-turns` 8 / 16 / 40 / 64 / 96 |
+| Top-level `savepoints` | yes | yes | yes | **no** | placeholder stub |
+| Top-level `effort` cmd | yes | yes | **no** | **no** | placeholder stub |
+| `sessions`/`threads` | `sessions` | `threads` | `agents` | `sessions` | `sessions` |
+| Isolation flag passed by vibey | none verified | none verified | none verified | `--safe` (container/vm) | none |
+| Plan argument | positional | positional (no `--cwd`) | `--plan <path>` | positional | positional |
+| State dir | `.claudeloop/` | `.codexloop/` | `.cursorloop/` | `.agyloop/` | `.qwenloop/` |
+
+The originally planned sandbox flags (`--permission-mode`, `--sandbox`,
+`--hooks-policy`) were found not to exist or not to mean container isolation and
+were removed from the descriptors.
 
 Treating these as one interface by hoping is how the orchestrator breaks the first
 time cursorloop is selected for a job needing `--effort`. Instead:
@@ -628,9 +723,10 @@ descriptor provides a **projection** onto native flags, which may *saturate*:
 
 ```
 Effort.MAX  →  claudeloop  --preset high --effort max
-            →  codexloop   --model gpt-5.2-codex --effort high      (saturates)
+            →  codexloop   (no flag)                                 (saturates at STANDARD)
             →  cursorloop  --model grok-xhigh                        (ladder position)
             →  agyloop     --preset high --effort max
+            →  qwenloop    --max-turns 96                            (turn budget)
 ```
 
 A job declares `requires: {effort: HIGH, capabilities: {savepoints}}`. The
@@ -645,7 +741,7 @@ the only one with capacity.
 | Phase | Base | Escalation |
 |---|---|---|
 | ① DESIGN | `HIGH` | → `MAX` if the user rejects a synthesized spec twice |
-| ② BUILD | `LOW` | → `STANDARD` after 2 failed verifies on one item; → `HIGH` after 4; → human gate after 6 |
+| ② BUILD | `LOW` | → `STANDARD` after 2 failed verifies on one item; → `HIGH` after 4; → human gate after 6 (the gate can grant more, [ADR-0024](../architecture/decisions/0024-every-bounded-ladder-parks-with-a-grant.md)) |
 | ③ REVIEW | `HIGH` | → `MAX` for `severity=critical` triage |
 
 Escalation is per work item, not global, and resets when the item succeeds. This
@@ -665,18 +761,39 @@ for each selection:
     winner.current -= sum(e.effective_weight for e in eligible)
 ```
 
-`effective_weight = base_weight × health_factor × fidelity_factor × cost_factor`,
-all pure functions in `domain/rotation.py`, all unit-tested for the properties
-that matter: **no starvation** (every eligible engine is selected within
-`sum(weights)` selections), **determinism** (same state → same choice), and
-**smoothness** (no engine selected twice in a row while another eligible engine
-has waited).
+`effective_weight = round(base_weight × health_factor × fidelity_factor ×
+cost_factor × affinity_factor)`, never rounded below 1 for a positive product.
+Health is 1.0 closed (decayed by an EWMA of failures), 0.25 half-open, 0.0 open;
+fidelity is 1.0 at the requested tier, 0.7 one tier short, 0.5 two or more short;
+cost, when enabled, is the median-to-engine cost ratio clamped to [0.5, 1.5]
+(`EngineSelector` passes 1.0 today, so cost does not yet bias selection); affinity is 2.0
+for the engine holding the warm session unless rotation is forced — the
+stickiness rule of §9.6. All are pure functions in `domain/rotation.py`,
+unit-tested for the properties that matter: **no starvation** (every eligible
+engine is selected within `sum(weights)` selections), **determinism** (same state
+→ same choice), and **smoothness** (selections interleave across the period
+rather than bunching; with weights 5:1 the heavy engine still wins several rounds
+in a row — SWRR does not promise no consecutive repeats).
+
+`domain/rotation.py::select()` is called from the real dispatch path through
+`application/engine_selector.py::EngineSelector`, with per-project cursors
+persisted in `rotation_cursor`.
 
 ### 9.5 Eligibility and circuit breakers
 
 An engine is eligible when: installed, authenticated (`doctor` passed within TTL),
 circuit not `open`, capability requirements met, and per-phase allow-list permits
 it.
+
+**Standby rule** ([ADR-0015](../architecture/decisions/0015-qwenloop-standby.md)). `qwenloop` is
+a local, zero-dollar engine, off unless `[features] qwenloop = true` or
+`VIBEY_FEATURE_QWENLOOP` enables it. Even when enabled it never competes in SWRR
+with paid engines: `EngineSelector` drops it from the candidate set whenever any
+paid engine is eligible, so it is selected only when the paid pool is empty or a
+phase allow-list names only `qwenloop`. Separately, DESIGN can be run on a local
+model by choice — `--provider qwenloop` on `vibey work` and `vibey worker` — which
+talks to the local model directly rather than through rotation
+([ADR-0027](../architecture/decisions/0027-sovereign-design-provider.md)).
 
 ```mermaid
 stateDiagram-v2
@@ -688,8 +805,11 @@ stateDiagram-v2
 ```
 
 The distinction the `*loop` family fought for is preserved exactly:
-`WindowExhausted` half-opens at `resets_at`; `CreditsExhausted` has no deadline
-and half-opens on a bounded backoff probe, because only a human top-up can fix it.
+`WindowExhausted` half-opens at `resets_at` (plus deterministic jitter), or,
+when no reset time is known, on a backoff (2 s doubling, capped at 5 minutes);
+`CreditsExhausted` has no deadline and half-opens on a backoff floored at 5
+minutes and capped at 30, because only a human top-up can fix it.
+`AuthenticationFailed` never schedules a probe.
 
 ### 9.6 When rotation happens
 
@@ -716,24 +836,43 @@ The source diagram calls for an "automated repository for I.D.E.'s." Concretely:
 every engine reads different guidance files, and if they disagree, rotating
 engines silently changes the rules mid-project.
 
-Vibey materializes all of them from one source of truth (`vibey.toml` plus
-selected marketplace plugins) into each worktree at job start:
+*Updated 2026-09-15 to what `infrastructure/provision/agent_surface.py` does.*
+Vibey renders one block from a `ProvisionSpec` (non-negotiables and plugin
+names) and merges it into a router file per engine at the root of each
+`build.implement` worktree. The production wiring passes an empty spec today —
+`[provision] plugins` is not read at runtime (§17) — so the rendered block lists
+`- None` under "Non-negotiables" and `none` under "Skill plugins", and points at
+`.vibey/context/`:
 
-| Engine | Reads |
+| Engine | Router file written |
 |---|---|
-| claudeloop / Claude Code | `CLAUDE.md`, `.claude/skills/`, `.claude/settings.json` |
-| codexloop / Codex | `AGENTS.md`, `.agents/skills/` |
-| cursorloop / Cursor | `CURSOR.md`, `.cursor/rules/` |
-| agyloop / Antigravity | `GEMINI.md`, `.agent/` |
+| claudeloop / Claude Code | `CLAUDE.md` |
+| codexloop / Codex | `AGENTS.md` |
+| cursorloop / Cursor | `CURSOR.md` |
+| agyloop / Antigravity | `GEMINI.md` |
+| qwenloop | `QWEN.md` |
 
-Plus a shared `.vibey/context/` containing the spec, the handoff brief, the
-ledger, and the acceptance criteria — referenced by all four surface files. Skills
-are pulled from the local `vibe-engineering-skills` marketplace by name, so a
-project can declare `plugins = ["software-architecture", "quality-engineering",
-"security-first-dev"]` and every engine gets the same 71-skill vocabulary.
+Only the router files are written. The block sits between
+`<!-- vibey:begin -->` / `<!-- vibey:end -->` markers; hand-written content
+outside the markers is preserved. It names the non-negotiables, the declared
+plugin names, and the shared `.vibey/context/` directory (spec, acceptance
+criteria, NFRs, decisions, open items). The router files, the engines' state
+directories (`.claudeloop/` … `.qwenloop/`), `.vibey/`, and common build
+artifacts are added to `.git/info/exclude` so engine sessions cannot commit
+them. `.claude/skills/`, `.claude/settings.json`, `.cursor/rules/` and similar
+directories are not materialized.
 
-Provisioning is idempotent and content-addressed; a job that finds the correct
-digests already present skips the write.
+Skill guidance comes instead from the independently versioned `vibey-skills`
+package (formerly `vibe-engineering-skills`; 18 plugins, 71 skills). The
+conductor never imports it: `infrastructure/skills_context.py` asks the
+`vibey-skills` CLI, over a subprocess, for one bounded packet per implement job
+and writes it under `.vibey/context/skills/`. It runs in one of three modes —
+`off` (default), `shadow`, `inject` — with a token budget (default 6000), set by
+`vibey new --skills-context-mode/--skills-context-budget`
+([ADR-0031](../architecture/decisions/0031-skills-context-packets-over-a-process-boundary.md)).
+
+Provisioning is idempotent: a sha256 digest comparison (`needs_write`) skips any
+file whose merged content is already present.
 
 ---
 
@@ -743,9 +882,10 @@ digests already present skips the write.
 repo/                          ← never checked out by a build job
 └── .vibey/
     └── worktrees/
-        ├── c3-item-014/       ← git worktree, branch vibey/c3/item-014
-        ├── c3-item-015/
-        └── c3-integration/    ← branch vibey/c3/integration
+        └── 3/                 ← cycle
+            ├── item-014/      ← git worktree, branch vibey/3/item-014
+            ├── item-015/
+            └── integration/   ← branch vibey/3/integration
 ```
 
 Each `build.implement` job gets its own git worktree and branch. Parallel items
@@ -756,32 +896,33 @@ trying to lock it.
 it does not prevent an agent from running `rm -rf ~`. Vibey therefore offers three
 isolation levels, selected per project:
 
-| Level | Mechanism | Protects against |
-|---|---|---|
-| `worktree` (default) | git worktree + per-engine destructive-command denies | concurrent-edit corruption |
-| `container` | Docker/Podman, repo bind-mounted, network egress allow-listed to provider APIs | filesystem escape, exfiltration |
-| `vm` | Firecracker/Lima microVM | kernel-level escape |
+| Level | Mechanism (design) | Protects against | Status (2026-09-15) |
+|---|---|---|---|
+| `worktree` (default) | git worktree + destructive-command denies | concurrent-edit corruption | Implemented: worktree per item and engine state dirs excluded from git. The deny-list exists in `domain/command_guard.py` but nothing calls it yet. |
+| `container` | Docker/Podman, repo bind-mounted, network egress allow-listed to provider APIs | filesystem escape, exfiltration | Accepted by config only. `infrastructure/container/` builds a hardened `docker`/`podman run` (read-only root, `--network=none` by default) but the worker never uses it; `isolation.egress` is parsed and unused. |
+| `vm` | Firecracker/Lima microVM | kernel-level escape | Accepted by config only; no runtime. |
 
-`container` is the recommended default for unattended overnight runs and is what
-`vibey doctor` nudges toward when it sees `isolation = "worktree"` together with
-`autonomous = true`.
+Until container mode is wired, every level behaves as `worktree`. The planned
+`vibey doctor` nudge and an `autonomous` config key were not built. (The vibey
+worker image itself runs non-root under `tini`, ADR-0026; that isolates vibey,
+not the engine sessions it launches.)
 
 ---
 
 ## 12. Security
 
-Threat model, in the vocabulary of the marketplace's `threat-modeling-playbook`
+Threat model, in the vocabulary of the `vibey-skills` `threat-modeling-playbook`
 and `ai-security-practices` skills:
 
 | Threat | Vector | Control |
 |---|---|---|
-| **Indirect prompt injection** | A dependency's README, a fetched web page, or a GitHub issue instructs the agent to exfiltrate secrets | Content fetched during a run enters the ledger as `untrusted` provenance; the seed prompt states that ledger content is data, not instruction; egress allow-list in `container` mode |
-| **Cross-engine injection** | A compromised engine writes a poisoned `HandoffBrief` that redirects the next engine | The brief is *structurally verified* against the ledger; free-text fields are length-capped and never carry tool grants; `brief` cannot alter `spec` or acceptance criteria — those come from the ledger, not the brief |
-| **Secret leakage into the ledger** | Agent pastes `.env` contents into a turn | `infrastructure/redact.py` (ported from the `*loop` family) runs on every event before append; ledger columns are redacted at write, not at read |
+| **Indirect prompt injection** | A dependency's README, a fetched web page, or a GitHub issue instructs the agent to exfiltrate secrets | Content fetched during a run enters the ledger as `untrusted` provenance; the seed prompt states that ledger content is data, not instruction; egress allow-list in `container` mode (not built, §11) |
+| **Cross-engine injection** | A compromised engine writes a poisoned `HandoffBrief` that redirects the next engine | The brief is *structurally verified* against the ledger; gate rule R10 rejects free text carrying tool grants, permission changes, or acceptance-criteria mutation; `brief` cannot alter `spec` or acceptance criteria — those come from the ledger, not the brief |
+| **Secret leakage into the ledger** | Agent pastes `.env` contents into a turn | `infrastructure/ledger/redact.py` (ported from the `*loop` family) runs on every event before append; ledger columns are redacted at write, not at read |
 | **Runaway cost** | An agent loops, burning tokens | Hard per-phase and per-project budget caps in `domain/budget.py`; the "AI cost snowball" is a documented incident class, so caps are mandatory, not optional |
-| **Destructive command** | `rm -rf`, `git push --force`, `DROP DATABASE` | Deny-list enforced at the engine adapter *and* in container mode at the mount level; `git push` requires explicit `allow_push = true` |
+| **Destructive command** | `rm -rf`, `git push --force`, `DROP DATABASE` | Deny-list defined in `domain/command_guard.py` (hard reset, force push, deleting main/master, `rm -rf /`, `mkfs`, `dd of=/dev/*`, `DROP DATABASE/TABLE`, …); **not yet called** by any adapter, and container mode is not wired (§11). `allow_push` defaults to `false` |
 | **Credential handling** | Provider keys | Vibey never reads provider keys. Each engine authenticates itself from its own env/keychain; vibey only observes `doctor` exit codes |
-| **Media egress / provider retention** | Visual stage sends source, prompts, or reference assets to a hosted generator | Visual opt-in shows provider, region, retention, cost, and egress; hosted generation requires `media.allow_external = true`; local-first is the default |
+| **Media egress / provider retention** *(planned with §14 generation)* | Visual stage sends source, prompts, or reference assets to a hosted generator | Visual opt-in shows provider, region, retention, cost, and egress; hosted generation requires `media.allow_external = true`; local-first is the default |
 | **Generated harmful or infringing media** | A model returns unsafe, deceptive, or unlicensed output | Provider/content-safety scan, provenance and rights metadata, human review, and an explicit reject/regenerate/waive decision before BUILD |
 | **AI voice misrepresentation** | Generated narration is presented as a human recording | Store voice/provider metadata and disclose AI-generated audio wherever the selected provider or policy requires it |
 
@@ -797,10 +938,13 @@ mutation until a human accepts each corresponding opt-in.
 
 - **Structured logs** — `structlog`, dual transport (human console + JSON lines),
   matching the `*loop` convention.
-- **Traces** — OpenTelemetry spans: one per job, child spans per engine turn, per
+- **Traces** *(dormant)* — `infrastructure/otel.py` records spans and counters
+  in-process, but no exporter is configured and nothing in `bootstrap.py` or the
+  CLI instantiates it; wiring it is open work. The design: OpenTelemetry spans,
+  one per job, child spans per engine turn, per
   tool invocation, per handoff. `phase`, `cycle`, `engine_id`, `job_kind`, and
   `effort` are span attributes so any of them can slice a latency or cost query.
-- **Metrics** — job queue depth by state, lease expiry rate, handoff gate failure
+- **Metrics** *(dormant, same module)* — job queue depth by state, lease expiry rate, handoff gate failure
   rate by rule, per-engine selection counts (to prove rotation fairness in
   production, not just in unit tests), media-provider selection counts by
   modality, media generation latency/failure/retention, tokens and dollars by
@@ -809,13 +953,28 @@ mutation until a human accepts each corresponding opt-in.
   the ledger. `vibey cost` reports by phase, cycle, engine, and work item.
   The `azure-bootstrap` AI usage tracker's sliding-window/soft-cap model is the
   reference for the caps implementation.
-- **The TUI** (`vibey watch`) shows: current phase, cycle, per-engine circuit
-  state, per-modality media-provider cursor/circuit state, live queue depth,
-  active worktrees, opt-in decisions, and a streaming tail of the ledger.
+- **Notifications** *(dormant)* — `infrastructure/notify/` implements desktop
+  alerts and signed webhooks; nothing wires it yet.
+- **The TUI** (`vibey watch`, `tui/dashboard.py`) shows: current phase and cycle,
+  the visual-design and deployment decisions, per-engine circuit state, queue
+  depth by job state, active worktrees, and a tail of the ledger. There is no
+  media-provider state to show until §14 generation exists.
 
 ---
 
 ## 14. Optional pre-build visual design and media stage
+
+> **Implementation status (2026-09-15).** Built: the `visual.inventory` and
+> `visual.plan` jobs (inventory from the accepted spec, published as a reviewable
+> artifact), the domain types in `domain/visual.py`, a pure per-modality
+> provider selector in `domain/media.py`, `vibey visual accept|waive`, the
+> `VisualDesign*` ledger events, and the `VISUAL_DESIGN → BUILD` guard (plan
+> accepted or waived, inventory complete). Not built: the `MediaProvider` port,
+> `infrastructure/media/`, the prompt/generate/moderate/preview/review jobs,
+> persisted per-modality cursors (`rotation_cursor` has no modality column), the
+> route back to ① of §14.1, and the `[visual]` / `[media.providers]`
+> configuration. `domain/media.py` has no consumer outside `domain/`. The rest of
+> this section is design intent.
 
 This is an optional, unnumbered interstitial between Phase ① DESIGN and Phase ②
 BUILD. The user is asked after the accepted product specification is produced.
@@ -980,28 +1139,44 @@ only as references. A successful deployment demo sets `completion_mode =
 "deployed"`; a later artifact or acceptance change invalidates the previous
 deployment choice and asks again.
 
+**Status (2026-09-15).** The stage set, its guards, the ④–⑥ job kinds, the
+`vibey deploy status|inspect|plan|cancel|rollback` commands, IaC and ARM
+`what-if` evaluation, and an `az`-backed Azure adapter are implemented. The
+worker defaults to an in-memory Azure client (`vibey worker --azure memory`), so
+no cloud resource is touched unless an operator starts a worker with
+`--azure az`, which also requires a logged-in Azure CLI. `[deploy] enabled`
+defaults to `false`.
+
 ---
 
 ## 16. Testing strategy
 
-Following the marketplace's `test-strategy` and `python-quality-testing` skills.
+Following the `vibey-skills` `test-strategy` and `python-quality-testing` skills.
+*Updated 2026-09-15:* every layer's floor is 100% branch coverage, each its own
+CI gate ([ADR-0023](../architecture/decisions/0023-four-layers-four-floors.md)).
 
 | Layer | Approach | Coverage floor |
 |---|---|---|
-| `domain/` | Pure unit tests + **property-based** (Hypothesis) for rotation fairness, no-loss gate soundness, phase-machine reachability | **100%** |
-| `application/` | Use-case tests against fake ports; the worker loop tested with a fake queue | **100%** |
-| `infrastructure/db` | Integration tests against a real ephemeral Postgres (testcontainers) — never mocked, because `SKIP LOCKED` semantics are the thing under test | 90% |
-| `infrastructure/engines` | **Engine conformance suite** (below) + a `ScriptedEngine` for offline determinism | 90% |
-| `cli` | Typer runner smoke tests | 90% |
-| End-to-end | `pytest -m system`: scripted engine, media providers, and Azure adapter drive `①→(optional visual)→②→③→(optional deploy ④→⑤→⑥)`, including decline, accept, regenerate, and loop-back paths, on throwaway local resources with no network | — |
+| `domain/` | Pure unit tests + **property-based** (Hypothesis) for rotation fairness, no-loss gate soundness, phase-machine reachability; an AST-walking purity test | **100% branch** |
+| `application/` | Use-case tests against fake ports (`tests/fakes`, checked for parity with the real ports); the worker loop tested with a fake queue | **100% branch** |
+| `infrastructure/` (incl. `db`, `engines`) | Integration tests against a real Postgres named by `VIBEY_TEST_DATABASE_URL` (one database per xdist worker) — never mocked, because `SKIP LOCKED` semantics are the thing under test; **engine conformance suite** (below) + a `ScriptedEngine` for offline determinism | **100% branch** |
+| `cli` | Typer runner tests | **100% branch** |
+| `tests/live` | Two modes ([ADR-0030](../architecture/decisions/0030-two-mode-live-harness.md)): faked (`-m live`, scripted binaries, every descriptor) by default; paid (`-m paid`, real engines) only when explicitly selected | — |
+| `tests/contracts`, `tests/meta`, `tests/tui` | Cross-layer contracts; repository invariants (ADR numbering and count, container context); TUI rendering | — |
+| End-to-end | `pytest -m system`: scripted engine and in-memory Azure adapter drive `①→(optional visual)→②→③→(optional deploy ④→⑤→⑥)`, including decline, accept, and loop-back paths, on throwaway local resources with no network | — |
+
+Default `pytest` options are `-m 'not paid' -n auto --maxprocesses=8`. The
+absorbed packages under `src/vibey_runners/` and `src/vibey_tools/` keep their
+own suites and floors in CI ([ADR-0022](../architecture/decisions/0022-absorbed-packages-keep-their-own-gates.md)).
 
 ### The engine conformance suite
 
-The four runners are pre-1.0 and will drift. Vibey pins their behavior with an
+The runners are pre-1.0 and will drift. Vibey pins their behavior with an
 executable contract:
 
 ```bash
-vibey doctor --conformance          # run against every installed engine
+vibey doctor --conformance           # run against every installed engine
+vibey doctor --conformance --record  # persist the result to engine_health
 ```
 
 It asserts, per engine: the state directory exists where the descriptor says;
@@ -1027,7 +1202,18 @@ Property tests worth calling out specifically:
 
 ## 17. Configuration
 
-`vibey.toml` at the project root:
+`vibey.toml` at the project root. *Updated 2026-09-15 to the keys
+`domain/config.py` parses; the authoritative schema is
+`docs/reference/configuration.md`.* **The schema is implemented and tested but
+is not yet a runtime input:** `infrastructure/config_loader.py::load_config_from_path`
+has no caller. At runtime only `[features] qwenloop` is read from `vibey.toml` (by `vibey
+doctor`; the worker reads the same flag from the project's `config` record),
+and per-project limits and the skills-context policy come from the project record
+written by `vibey new` or the Kubernetes operator. The planned `[visual]` and
+`[media.providers]` tables and the extra `[deploy]` keys (`opt_in_required`,
+`finish_if_declined`, `environment`, `max_attempts`, `max_dollars`) are not read.
+`isolation.egress` is parsed but not enforced, and `level` values other than
+`worktree` have no runtime yet (§11).
 
 ```toml
 [project]
@@ -1037,9 +1223,9 @@ max_cycles    = 10
 strict_loopback = false          # true forces REVIEW → DESIGN always
 
 [isolation]
-level         = "container"      # worktree | container | vm
+level         = "worktree"       # worktree | container | vm (only worktree has a runtime)
 allow_push    = false
-egress        = ["api.anthropic.com", "api.openai.com", "api.cursor.sh", "generativelanguage.googleapis.com"]
+egress        = ["api.anthropic.com", "api.openai.com", "api.cursor.sh", "generativelanguage.googleapis.com"]  # parsed, not enforced
 
 [budget]
 max_dollars_per_cycle = 40.0
@@ -1047,7 +1233,8 @@ max_dollars_total     = 250.0
 max_turns_per_item    = 60
 
 [engines]
-enabled = ["claudeloop", "codexloop", "cursorloop", "agyloop"]
+enabled = ["claudeloop", "codexloop", "cursorloop", "agyloop"]   # the default;
+                                 # "qwenloop" requires [features] qwenloop = true
 
 [engines.weights]                # base rotation weights
 claudeloop = 3
@@ -1058,19 +1245,6 @@ agyloop    = 1
 [phases.design]
 effort   = "high"
 engines  = ["claudeloop", "codexloop"]     # optional per-phase allow-list
-
-[visual]
-available           = true
-default_opt_in      = false
-media_mode          = "local_first"          # local_first | hosted_only | disabled
-allow_external      = false                  # requires a fresh user opt-in
-max_dollars         = 20.0
-max_assets          = 100
-require_user_review = true
-
-[media.providers]
-# Provider IDs and models are discovered/configured at runtime per modality.
-# Keep credentials in the provider's environment/keychain, never this file.
 
 [phases.build]
 effort      = "low"
@@ -1083,17 +1257,27 @@ effort = "high"
 plugins = ["software-architecture", "quality-engineering", "security-first-dev", "engineering-process"]
 
 [deploy]
-enabled = true
-opt_in_required = true
-finish_if_declined = true
+enabled = false                  # default
 target  = "azure"
 iac     = "bicep"
-environment = "dev"
-max_attempts = 5
-max_dollars = 20.00
 # Tenant, subscription, scope, region, identity, health, rollout, recovery, and
 # secret references are completed and accepted interactively in Phase ④.
+
+[features]
+qwenloop = false                 # VIBEY_FEATURE_QWENLOOP overrides
+
+[qwenloop]
+backend = "auto"                 # auto | llama.cpp | vllm
+portable_profile = "qwen2.5-coder-14b-q5-k-m"
+nvidia_profile   = "qwen2.5-coder-14b-bf16"
+idle_timeout_seconds    = 900
+startup_timeout_seconds = 180
+context_window          = 32768
 ```
+
+The skills-context policy (`mode` off | shadow | inject, `budget`) is not a
+`vibey.toml` table; `vibey new --skills-context-mode/--skills-context-budget`
+stores it in the project's `config` record.
 
 ---
 
@@ -1102,19 +1286,23 @@ max_dollars = 20.00
 Detail, with test-first task breakdowns, in
 [implementation-plan.md](implementation-plan.md).
 
-| Milestone | Deliverable | Done when |
-|---|---|---|
-| **M0** | Repo skeleton, CI, onion contract, `vibey.toml` schema | `lint-imports` green, empty domain 100% covered |
-| **M1** | Pure domain: phase machine, effort ladder, rotation, circuit, no-loss gate | Property tests pass; no I/O anywhere in `domain/` |
-| **M2** | Postgres schema, migrations, queue repo, worker loop | Integration test: 8 workers, 500 jobs, zero double-execution, zero lost jobs under random kills |
-| **M3** | Engine adapters + conformance suite + `ScriptedEngine` | `vibey doctor --conformance` passes against all four installed engines |
-| **M4** | Ledger, projections, handoff produce/verify/accept | Adversarial no-loss property suite passes; a forced mid-item rotation completes with zero dropped items |
-| **M5** | Phase ① DESIGN + optional visual-design interstitial | A real interview can either enter BUILD directly or produce a confirmed screen/media plan before BUILD |
-| **M6** | Phase ② BUILD end to end | Parallel worktrees, integration, escalation ladder, budget caps |
-| **M7** | Phase ③ REVIEW + loop-backs + deployment choice | Full delivery loop plus explicit local-complete versus deployment-opt-in routing |
-| **M8** | TUI, cost reporting, OTel, notifications | `vibey watch` usable for an overnight run |
-| **M9** | Isolation levels (container), security hardening, threat-model review | Container mode passes egress allow-list test |
-| **M10** | Optional Phases ④–⑥: Azure deployment stage set | An explicit opt-in can deploy durably in ⑤ and reach a verified demo or actionable human gate in ⑥; an opt-out finishes locally without cloud work |
+| Milestone | Deliverable | Done when | Status (2026-09-15) |
+|---|---|---|---|
+| **M0** | Repo skeleton, CI, onion contract, `vibey.toml` schema | `lint-imports` green, empty domain 100% covered | done |
+| **M1** | Pure domain: phase machine, effort ladder, rotation, circuit, no-loss gate | Property tests pass; no I/O anywhere in `domain/` | done |
+| **M2** | Postgres schema, migrations, queue repo, worker loop | Integration test: 8 workers, 500 jobs, zero double-execution, zero lost jobs under random kills | done |
+| **M3** | Engine adapters + conformance suite + `ScriptedEngine` | `vibey doctor --conformance` passes against all four installed engines | done; five descriptors, `vibey doctor --conformance --record` |
+| **M4** | Ledger, projections, handoff produce/verify/accept | Adversarial no-loss property suite passes; a forced mid-item rotation completes with zero dropped items | done (R1–R10) |
+| **M5** | Phase ① DESIGN + optional visual-design interstitial | A real interview can either enter BUILD directly or produce a confirmed screen/media plan before BUILD | partial: DESIGN, inventory/plan, accept/waive; media generation not built (§14) |
+| **M6** | Phase ② BUILD end to end | Parallel worktrees, integration, escalation ladder, budget caps | done |
+| **M7** | Phase ③ REVIEW + loop-backs + deployment choice | Full delivery loop plus explicit local-complete versus deployment-opt-in routing | done |
+| **M8** | TUI, cost reporting, OTel, notifications | `vibey watch` usable for an overnight run | partial: `vibey watch` and `vibey cost` done; OTel and notifications written but not wired |
+| **M9** | Isolation levels (container), security hardening, threat-model review | Container mode passes egress allow-list test | partial: container runtime written but not wired; no egress allow-list or `vm` |
+| **M10** | Optional Phases ④–⑥: Azure deployment stage set | An explicit opt-in can deploy durably in ⑤ and reach a verified demo or actionable human gate in ⑥; an opt-out finishes locally without cloud work | done; in-memory Azure client unless `--azure az` |
+
+Work beyond this table — the Kubernetes chart and operator (ADR-0025), the
+monorepo absorption (ADR-0021), and the sovereign DESIGN provider (ADR-0027) —
+is tracked in `docs/runbooks/expansion/` and the ADRs.
 
 ---
 
@@ -1122,20 +1310,22 @@ Detail, with test-first task breakdowns, in
 
 | Risk | Severity | Mitigation |
 |---|---|---|
-| **The four runners drift** — they are pre-1.0 and actively changing | high | Conformance suite (§16) run in CI and at `doctor`; descriptors are versioned and pinned; a failing engine is marked ineligible, not fatal |
+| **The runners drift** — they are pre-1.0 and actively changing | high | Conformance suite (§16) run in CI and at `doctor`; descriptors are versioned and pinned; a failing engine is marked ineligible, not fatal. Since ADR-0021 the runners change in the same repository and CI as their descriptors |
 | **The no-loss gate is only as good as the ids** — if an agent records a decision without an id, the gate can't check it | high | Ids are assigned by *vibey* at append time, not by the agent; the agent's free text is the payload, the id is infrastructure |
 | **Interactive phases fight the runners' "never block" design** | medium | Vibey owns conversations and parks jobs; runners perform bounded research, visual generation, execution, and demo generation without holding a worker lease while awaiting a human |
 | **Round-robin across vendors produces inconsistent code style** | medium | Agent-surface provisioning (§10) gives every engine identical guidance; `build.verify` enforces the project's own lint/format gates regardless of author |
 | **Media providers drift, disappear, or differ by modality** | high | Capability discovery, per-modality cursors, circuit breakers, provider-neutral artifacts, and explicit configure/upload/waive gates; never pin one video model |
 | **Generated visuals look plausible but fail UX/accessibility or rights review** | high | Screen/state inventory, token contract, independent accessibility checks, moderation/provenance evidence, and user confirmation before BUILD |
 | **Media generation cost or retention surprises** | medium | Estimate before opt-in, hard media budgets, local-first mode, per-provider cost/retention records, and asynchronous cancellation/cleanup |
-| **Cost is unpredictable across four providers** | medium | Hard caps per cycle and per project; `cost_factor` in rotation weights biases toward cheaper engines at equal capability |
-| **Postgres is a dependency a "local tool" shouldn't need** | low | `vibey up` makes it a one-command concern with three fallbacks; the alternative (SQLite) is disqualified on `SKIP LOCKED` grounds |
+| **Cost is unpredictable across providers** | medium | Hard caps per cycle and per project; `cost_factor` in rotation weights is designed to bias toward cheaper engines at equal capability (defined in `domain/rotation.py`; `EngineSelector` passes 1.0 today) |
+| **Postgres is a dependency a "local tool" shouldn't need** | low | `VIBEY_PG_URL` is the single explicit dependency (the planned `vibey up` was not built); the Helm chart ships an in-cluster Postgres; the alternative (SQLite) is disqualified on `SKIP LOCKED` grounds |
 | **Effort saturation makes "MAX" meaningless on some engines** | low | `fidelity_penalty` lowers weight rather than hiding the fact; `vibey status` reports the effort actually achieved, not the one requested |
 
 ### Explicitly out of scope for v1
 
-- Multi-machine / distributed workers (the queue would support it; nothing else is designed for it).
+- ~~Multi-machine / distributed workers~~ — shipped after this was written: a
+  Helm chart, KEDA autoscaling on claimable work, and a `VibeyProject` operator
+  (ADR-0025, `docs/guides/kubernetes.md`). Engines are not bundled in the image.
 - Non-Azure deployment targets.
 - A web UI. The TUI plus `vibey status --json` is the surface.
 - Fine-tuning, model hosting, or any direct provider API use outside the engines.
@@ -1160,3 +1350,20 @@ Detail, with test-first task breakdowns, in
 | [0012](../architecture/decisions/0012-deploy-is-a-separate-cli.md) | Superseded: deployment as a separate CLI |
 | [0013](../architecture/decisions/0013-deployment-is-a-three-phase-stage-set.md) | Deployment execution and safety contract (entry rule superseded) |
 | [0014](../architecture/decisions/0014-optional-visual-design-and-deployment-opt-in.md) | Optional visual-design interstitial and explicit deployment opt-in |
+| [0015](../architecture/decisions/0015-qwenloop-standby.md) | qwenloop is an opt-in local engine: a standby tier for BUILD, the sovereign provider for DESIGN |
+| [0016](../architecture/decisions/0016-classes-behind-interfaces.md) | Code lives in classes, and every class has an interface beside it |
+| [0017](../architecture/decisions/0017-dogfood-the-family-first.md) | If the family already does it, the family does it here |
+| [0018](../architecture/decisions/0018-everything-as-code.md) | If it can be declared in the repository, it is declared in the repository |
+| [0019](../architecture/decisions/0019-installable-wherever-its-users-are.md) | Vibey is installable wherever its users already are |
+| [0020](../architecture/decisions/0020-governing-rules-are-ratified-subdoctrines.md) | A governing rule belongs in the canon, ratified, or it is not a rule |
+| [0021](../architecture/decisions/0021-one-tree-history-preserved.md) | The family is absorbed as subtrees in a uv workspace, history preserved |
+| [0022](../architecture/decisions/0022-absorbed-packages-keep-their-own-gates.md) | An absorbed package keeps every gate it was already held to |
+| [0023](../architecture/decisions/0023-four-layers-four-floors.md) | 100% branch coverage per layer, each its own gate |
+| [0024](../architecture/decisions/0024-every-bounded-ladder-parks-with-a-grant.md) | Every bounded ladder ends in a park that can grant more |
+| [0025](../architecture/decisions/0025-kubernetes-operator-crd-keda.md) | Kubernetes: a chart, KEDA on claimable work, and a thin operator |
+| [0026](../architecture/decisions/0026-tini-pid1-and-the-sigterm-latch.md) | tini is PID 1, and the SIGTERM latch is armed before the first import |
+| [0027](../architecture/decisions/0027-sovereign-design-provider.md) | A sovereign DESIGN provider: phase one runs without paid credit |
+| [0028](../architecture/decisions/0028-vibey-gh-owns-release-and-provenance.md) | vibey-gh owns provenance and release; release-please is retired |
+| [0029](../architecture/decisions/0029-integrate-serialized-by-advisory-lock.md) | Integrates are serialized by a Postgres advisory lock; contention is a defer |
+| [0030](../architecture/decisions/0030-two-mode-live-harness.md) | The live harness has two modes: faked by default, paid by explicit choice |
+| [0031](../architecture/decisions/0031-skills-context-packets-over-a-process-boundary.md) | Skills context is a packet compiled over a process boundary, shadow before inject |
