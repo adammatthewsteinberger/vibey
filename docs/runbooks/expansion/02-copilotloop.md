@@ -1,10 +1,16 @@
-# Runbook: copilotloop — the fifth engine
+# Runbook: copilotloop — a sixth engine
+
+> **Status (2026-09-15):** superseded — qwenloop became the fifth engine
+> (ADR-0015: opt-in standby; ADR-0027: sovereign DESIGN provider), in-tree at
+> `src/vibey_runners/qwen`. If copilotloop is still wanted, it is the
+> **sixth** engine and lives at `src/vibey_runners/copilot` as a uv workspace
+> member (ADR-0021). The plan below is kept for that case.
 
 ## Goal
 
 A `copilotloop` autonomous session runner wrapping GitHub Copilot CLI,
-conforming to the same contract the other four runners expose, so vibey
-rotates across five engines with zero vibey-side special-casing.
+conforming to the same contract the other five runners expose, so vibey
+rotates across six engines with zero vibey-side special-casing.
 
 ## Current state (verified)
 
@@ -22,9 +28,11 @@ rotates across five engines with zero vibey-side special-casing.
 
 ## Design
 
-Build `copilotloop` as its own repo (`~/git/copilotloop`), mirroring
-claudeloop's shape — vibey orchestrates runners, it does not absorb them
-(ADR-0001). The runner owns:
+Build `copilotloop` as its own package at `src/vibey_runners/copilot`, a
+uv workspace member alongside the five runners (ADR-0021), mirroring
+claudeloop's shape. It stays a separate distribution with its own CLI —
+vibey orchestrates runners, it does not absorb them (ADR-0001) — and it
+keeps its own quality gates (ADR-0022). The runner owns:
 
 - `copilotloop run <plan.md> --run-id --preset --effort --cwd`: spawns
   `copilot -p` with `--mode autopilot`, translating preset/effort to model
@@ -51,7 +59,8 @@ source).
 
 ## Work items
 
-1. copilotloop repo: runner skeleton, run dir shape, done marker.
+1. `src/vibey_runners/copilot` workspace member: runner skeleton, run dir
+   shape, done marker.
 2. Output→events.jsonl translation + structured verdict.
 3. doctor + capacity classification.
 4. Control plane (send-prompt, wind-down) + stop-summary.

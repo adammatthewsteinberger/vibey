@@ -1,5 +1,9 @@
 # Runbook: App Store & Play Store submissions
 
+> **Status (2026-09-15):** not started; blocked on 08 (no mobile app exists to
+> submit). No `StoreSubmissionPort`, store adapters, or `mobile_store`
+> topology.
+
 ## Goal
 
 vibey can carry a mobile app (its own — workstream 08 — or a conducted

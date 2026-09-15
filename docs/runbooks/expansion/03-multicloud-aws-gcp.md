@@ -1,5 +1,9 @@
 # Runbook: multi-cloud — AWS and GCP beside Azure, all live-verified
 
+> **Status (2026-09-15):** not started — `vibey worker --azure {memory|az}` is
+> still the only cloud flag; there is no `infrastructure/aws` or
+> `infrastructure/gcp`; the Azure path has still not run live.
+
 ## Goal
 
 The deployment stage set (④–⑥) targets AWS and GCP with the same
@@ -9,7 +13,7 @@ Azure path live, which is currently blocked only on `az login`.
 
 ## Current state (verified)
 
-- Azure is real: `AzureClientPort` (`application/interfaces/azure.py:44`),
+- Azure is real: `AzureClientPort` (`application/interfaces/azure.py`),
   ARM renderer (`infrastructure/azure/arm.py`), `AzCliClientAdapter`
   (`infrastructure/azure/az_cli.py`) with digest-bound consent re-verified
   at the mutation boundary; `vibey worker --azure {memory|az}` with an
@@ -41,7 +45,8 @@ Azure path live, which is currently blocked only on `az login`.
 4. **CLI**: `vibey worker --cloud {memory|az|aws|gcp}` (deprecating
    `--azure` with an alias); deploy interview gains a provider question
    whose default stays `azure`.
-5. **Live verification harness**: `tests/live/test_cloud_live.py`, one
+5. **Live verification harness**: `tests/live/test_cloud_live.py`, in the
+   paid mode of the two-mode live harness (ADR-0030), one
    parametrized case per provider, each gated on its own env
    (`VIBEY_AZURE_LIVE`, `VIBEY_AWS_LIVE`, `VIBEY_GCP_LIVE`): deploy the
    hello-world container, poll status to Succeeded/healthy, then
@@ -58,7 +63,9 @@ Azure path live, which is currently blocked only on `az login`.
 5. CLI `--cloud` + preflights + bootstrap wiring.
 6. Deploy interview provider question + spec provider fields.
 7. Live tests ×3 + teardown proof.
-8. Docs: `docs/guides/deploying.md` gains AWS/GCP sections.
+8. Docs: create `docs/guides/deploying.md` (no deployment guide exists
+   today; the README is the only prose) with Azure, AWS and GCP sections,
+   and add it to the docs site navigation.
 
 ## Verification
 

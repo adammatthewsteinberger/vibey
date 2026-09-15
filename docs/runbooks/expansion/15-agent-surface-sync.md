@@ -1,5 +1,10 @@
 # Runbook: agent-surface sync — one customization set, every IDE and bot
 
+> **Status (2026-09-15):** not started — no `vibey surface` command, no
+> `infrastructure/surface/`. Design note added since drafting: the `skills/`
+> half of the canonical store must build on `vibey-skills` (in-tree at
+> `src/vibey_tools/skills`) per ADR-0017, not a second skills store.
+
 ## Goal
 
 Every installed agent platform on the operator's machine — Claude Code,
@@ -41,7 +46,9 @@ reconcile.
 ### The canonical store
 
 A git repository (default `~/.vibey/surface-store`, operator-overridable)
-is the source of truth. Every customization is one canonical item:
+is the source of truth. Its skills half is not a new format: it reuses the
+`vibey-skills` marketplace layout and its index/packet contract
+(`src/vibey_tools/skills`, ADR-0017, ADR-0031). Every customization is one canonical item:
 
 ```
 store/
