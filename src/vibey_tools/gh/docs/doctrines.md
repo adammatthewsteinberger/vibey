@@ -27,6 +27,8 @@ God-honoring governments — always, no exceptions — with the primary emphasis
 service on the government's military arm (Constitution, Article I.2), civil agencies
 inheriting every guarantee.
 
+**2.b — installable wherever its users already are** *(ratified by the merge that carried this entry)*: a release is not finished when the canonical index has the artifact; it is finished when every channel that carries the project has it. A command-line application is published to every registry that can carry it — the beginner's channel first: the package manager the reader already uses, on the platform they already run — and the language it happens to be written in is an implementation detail no reader is asked to care about. Every packaging definition lives in the repository as code. Every channel is a support surface: nothing is added that is not published by the same automation as everything else, because a stale package installs an old version silently, and a reader bounced at install is a reader lost (7). A registry for another language's libraries carries a wrapper only where the audience is real, and the wrapper says plainly that it installs a command, not a library. The packaging is honest about what the install does not include.
+
 ## 3 — Examples
 
 Every exposed surface — API, CLI, MCP, webhook, SDK — carries at least one fully
