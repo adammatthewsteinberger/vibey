@@ -644,7 +644,7 @@ def test_the_book_and_the_paper_are_findable_on_every_published_surface(tmp_path
     # Every page: the theme script learns which forms exist from the built site.
     assert '"paper_pdf": (site / "paper.pdf").is_file()' in on
     assert '"book_epub": (site / "book.epub").is_file()' in on
-    assert 'replace("__DOC_SURFACES__", json.dumps(surfaces))' in on
+    assert 'replace("__DOC_SURFACES__", encoded)' in on
     script = (SOURCE_RELEASE_ASSETS / "javascripts" / "channel.js").read_text(encoding="utf-8")
     assert "'__DOC_SURFACES__'" in script
     # An unsubstituted placeholder must degrade to "nothing to show", never a syntax error.
@@ -832,7 +832,8 @@ def test_governance_is_published_on_every_surface_when_configured(tmp_path):
     assert (
         'names = ["constitution.md", "doctrines.md", "commandments.md", "bill-of-rights.md"]' in on
     )
-    assert 'names += sorted(p.name for p in source.glob("sd-*.md"))' in on
+    assert 're.fullmatch(r"sd-[a-z0-9][a-z0-9-]*\\.md", p.name)' in on
+    assert 'raise SystemExit(f"governance source is missing {origin}")' in on
     assert "shutil.copyfile(origin, published / page)" in on
     assert 'data["nav"] = [*data.get("nav", []), {"Governance": entries}]' in on
     assert 'heading.replace(":", " —")' in on
@@ -841,16 +842,12 @@ def test_governance_is_published_on_every_surface_when_configured(tmp_path):
     ship = on.index('cp "src/tools/gh/corpus-index.json" channel-site/corpus-index.json')
     assert ship > on.index("properdocs build --strict")
     assert "Ship the governance corpus index" not in on
-    assert (
-        '"governance": sorted(p.parent.name for p in (site / "governance").glob("*/index.html"))'
-        in on
-    )
+    assert 'if re.fullmatch(r"[a-z0-9][a-z0-9-]*", p.parent.name)' in on
     assert "<strong>Governance</strong>" in on
     assert "[ -f pages/main/governance/constitution/index.html ] && SURFACE_LINES=" in on
     script = (SOURCE_RELEASE_ASSETS / "javascripts" / "channel.js").read_text(encoding="utf-8")
-    assert (
-        '["Governance", governancePages.length > 0, `governance/${governancePages[0]}/`]' in script
-    )
+    assert "/^[a-z0-9][a-z0-9-]*$/.test(slug)" in script
+    assert "encodeURIComponent(slug)" in script and "escapeText(" in script
     assert 'governanceLinks ? `<strong>Governance</strong> ${governanceLinks}` : ""' in script
 
 

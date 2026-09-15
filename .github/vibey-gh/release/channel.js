@@ -88,7 +88,13 @@
     "bill-of-rights": "Bill of Rights",
   };
   const governanceOrder = ["constitution", "doctrines", "commandments", "bill-of-rights"];
-  const publishedGovernance = Array.isArray(surfaces.governance) ? surfaces.governance : [];
+  // Slugs come from repository file names: only plain ones are linked, the URL component is
+  // encoded and the label escaped, so a name can never inject markup into a page.
+  const publishedGovernance = (Array.isArray(surfaces.governance) ? surfaces.governance : []).filter(
+    (slug) => typeof slug === "string" && /^[a-z0-9][a-z0-9-]*$/.test(slug),
+  );
+  const escapeText = (text) =>
+    String(text).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const governancePages = [
     ...governanceOrder.filter((slug) => publishedGovernance.includes(slug)),
     ...publishedGovernance.filter((slug) => !governanceOrder.includes(slug)).sort(),
@@ -96,7 +102,7 @@
   const governanceLinks = governancePages
     .map(
       (slug) =>
-        `<a href="${channelRoot}governance/${slug}/">${governanceNames[slug] || slug.replace(/^(sd-\d+).*$/i, "$1").toUpperCase()}</a>`,
+        `<a href="${channelRoot}governance/${encodeURIComponent(slug)}/">${escapeText(governanceNames[slug] || slug.replace(/^(sd-\d+).*$/i, "$1").toUpperCase())}</a>`,
     )
     .join(' <span aria-hidden="true">·</span> ');
   const bookLinks = surfaceLinks([
@@ -113,7 +119,7 @@
         ? "book.epub"
         : "book-print.html";
     for (const [label, present, file] of [
-      ["Governance", governancePages.length > 0, `governance/${governancePages[0]}/`],
+      ["Governance", governancePages.length > 0, `governance/${encodeURIComponent(governancePages[0] || "")}/`],
       ["Paper", Boolean(paperLinks), surfaces.paper_html ? "paper/" : "paper.pdf"],
       ["Book", Boolean(bookLinks), bookTarget],
     ]) {

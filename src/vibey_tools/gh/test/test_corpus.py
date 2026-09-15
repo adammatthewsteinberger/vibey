@@ -87,3 +87,30 @@ def test_overlapping_patterns_never_duplicate_a_document(tmp_path: Path, monkeyp
     monkeypatch.setattr(corpus, "CORPUS_DOCUMENTS", ("docs/constitution.md", "docs/const*.md"))
     index = corpus.build(cfg)
     assert index["documents"].count("docs/constitution.md") == 1
+
+
+def test_the_configured_source_and_index_path_are_honoured(tmp_path: Path):
+    """`[documentation] governance_source` and `corpus_index` drive the command, and the
+    index records paths relative to itself, so indexing the same corpus from a monorepo
+    root and from the package's own root writes identical bytes to the same file."""
+    from vibey_gh.config import DocumentationConfig
+
+    package = tmp_path / "src" / "tools" / "gh"
+    package.mkdir(parents=True)
+    _law(package)
+    from_package = corpus.write(GhConfig(root=package)).read_bytes()
+    root_cfg = GhConfig(
+        root=tmp_path,
+        documentation=DocumentationConfig(
+            governance_source="src/tools/gh/docs", corpus_index="src/tools/gh/corpus-index.json"
+        ),
+    )
+    target = corpus.write(root_cfg)
+    assert target == package / "corpus-index.json"
+    assert target.read_bytes() == from_package
+    assert corpus.index_path(root_cfg) == target
+    assert corpus.check(root_cfg)[0]
+    assert '"docs/doctrines.md"' in target.read_text(encoding="utf-8")
+    (package / "docs" / "doctrines.md").write_text("# changed\n", encoding="utf-8")
+    ok, message = corpus.check(root_cfg)
+    assert not ok and "corpus drift" in message

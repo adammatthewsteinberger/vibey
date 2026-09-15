@@ -233,6 +233,7 @@ jobs:
           python - "$config" <<'PY'
           import os
           import pathlib
+          import re
           import shutil
           import sys
 
@@ -320,7 +321,11 @@ jobs:
           if governance_source:
               source = pathlib.Path(governance_source)
               names = ["constitution.md", "doctrines.md", "commandments.md", "bill-of-rights.md"]
-              names += sorted(p.name for p in source.glob("sd-*.md"))
+              # Only plainly named documents are published: the name becomes a URL path and a
+              # link on every page, so nothing that could carry markup or quotes gets through.
+              names += sorted(
+                  p.name for p in source.glob("sd-*.md") if re.fullmatch(r"sd-[a-z0-9][a-z0-9-]*\.md", p.name)
+              )
               published = docs_dir / "governance"
               entries = []
               for page in names:
@@ -637,11 +642,17 @@ jobs:
               "book_epub": (site / "book.epub").is_file(),
               "book_pdf": (site / "book.pdf").is_file(),
               "book_print": (site / "book-print.html").is_file(),
-              "governance": sorted(p.parent.name for p in (site / "governance").glob("*/index.html")),
+              "governance": sorted(
+                  p.parent.name
+                  for p in (site / "governance").glob("*/index.html")
+                  if re.fullmatch(r"[a-z0-9][a-z0-9-]*", p.parent.name)
+              ),
           }
           script = site / "javascripts" / "channel.js"
           if script.is_file():
-              script.write_text(script.read_text().replace("__DOC_SURFACES__", json.dumps(surfaces)))
+              # Substituted into a single-quoted JavaScript string: escape what could end it.
+              encoded = json.dumps(surfaces).replace("\\", "\\\\").replace("'", "\\'").replace("</", "<\\/")
+              script.write_text(script.read_text().replace("__DOC_SURFACES__", encoded))
           print("surfaces on this channel: " + ", ".join(k for k, v in surfaces.items() if v))
           PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
