@@ -310,8 +310,10 @@ def render_workflow(source: Path, cfg: GhConfig) -> str:
         ("__VIBEY_GH_DOC_PRODUCTION_INDEX__", cfg.documentation.production_indexing),
         ("__VIBEY_GH_DOC_PREVIEW_INDEX__", cfg.documentation.preview_indexing),
         ("__VIBEY_GH_SOCIAL_SIGNALS__", cfg.social_signals.enabled),
+        ("__VIBEY_GH_GITHUB_RELEASE_ENABLED__", cfg.github_release.enabled),
     ):
         wanted = wanted.replace(marker, "true" if enabled else "false")
+    wanted = wanted.replace("__VIBEY_GH_RELEASE_TAG_PREFIX__", cfg.github_release.tag_prefix)
     wanted = wanted.replace("__VIBEY_GH_SELF_SOURCE__", cfg.self_source)
     if cfg.pin_version:
         # Only the floating fallback install is pinned. The self-hosting branch just
