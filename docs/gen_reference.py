@@ -58,7 +58,7 @@ def split_frontmatter(text: str) -> tuple[dict[str, str], str]:
             fields[key] = value.strip().strip("'\"")
         elif key:  # folded continuation line
             fields[key] = f"{fields[key]} {raw.strip()}".strip()
-    return fields, text[m.end():]
+    return fields, text[m.end() :]
 
 
 def absolutise(text: str, source_dir: str) -> str:
@@ -112,13 +112,8 @@ def main() -> None:
             fd.write("\n\n## Skills in this plugin\n\n")
             for skill in skills:
                 fd.write(f"- [{skill}]({skill}.md)\n")
-            fd.write(
-                f"\n---\n\n[View `{name}` on GitHub]"
-                f"({BLOB}/plugins/{name})\n"
-            )
-        mkdocs_gen_files.set_edit_path(
-            f"reference/{name}/index.md", f"../plugins/{name}/README.md"
-        )
+            fd.write(f"\n---\n\n[View `{name}` on GitHub]({BLOB}/plugins/{name})\n")
+        mkdocs_gen_files.set_edit_path(f"reference/{name}/index.md", f"../plugins/{name}/README.md")
 
         summary.append(f"* [{name}](" + f"{name}/index.md)")
         sub_items: list[str] = []

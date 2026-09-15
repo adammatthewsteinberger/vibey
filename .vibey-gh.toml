@@ -18,6 +18,10 @@ sources = [
   "tools/*.py",
   "src/**/*.py",
   "docs/*.py",
+  # Added when this package became a monorepo tenant: the vibey root fingerprints
+  # `src/**/*.py` across the whole tree, so a file stamped there but not here would be
+  # reported by one repository and not the other.
+  "tests/*.py",
   ".github/workflows/*.yml",
 ]
 

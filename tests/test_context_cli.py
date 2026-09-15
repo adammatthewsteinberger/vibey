@@ -1,4 +1,4 @@
-# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
+# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """CLI and process-contract tests for retrieval packet generation."""
 
 from __future__ import annotations
@@ -11,9 +11,9 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from vibey_skills.cli import main
-
 from test_context_engine import _skill
+
+from vibey_skills.cli import main
 
 
 class ContextCliTests(unittest.TestCase):
@@ -61,16 +61,29 @@ class ContextCliTests(unittest.TestCase):
         packet = self.root / "packet.md"
         provenance = self.root / "packet.json"
         request.write_text(
-            json.dumps({
-                "objective": "parallel PostgreSQL tests",
-                "required_skills": ["python-quality-testing"],
-            }),
+            json.dumps(
+                {
+                    "objective": "parallel PostgreSQL tests",
+                    "required_skills": ["python-quality-testing"],
+                }
+            ),
             encoding="utf-8",
         )
-        code, stdout, stderr = self.run_cli([
-            "packet", "--request", str(request), "--index", str(self.index),
-            "--budget", "1000", "--output", str(packet), "--manifest", str(provenance),
-        ])
+        code, stdout, stderr = self.run_cli(
+            [
+                "packet",
+                "--request",
+                str(request),
+                "--index",
+                str(self.index),
+                "--budget",
+                "1000",
+                "--output",
+                str(packet),
+                "--manifest",
+                str(provenance),
+            ]
+        )
         self.assertEqual((code, stdout, stderr), (0, "", ""))
         self.assertIn("pytest-xdist", packet.read_text(encoding="utf-8"))
         result = json.loads(provenance.read_text(encoding="utf-8"))

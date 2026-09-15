@@ -189,8 +189,7 @@ def cmd_install(args: argparse.Namespace) -> int:
         if skipped:
             print(f"  skip (already present): {', '.join(sorted(skipped))}")
         print(
-            f"\n{len(planned)} skill(s) would be {verbed}, "
-            f"{len(skipped)} skipped, into {dest_root}"
+            f"\n{len(planned)} skill(s) would be {verbed}, {len(skipped)} skipped, into {dest_root}"
         )
         return 0
 
@@ -258,7 +257,9 @@ def cmd_search(args: argparse.Namespace) -> int:
         sys.stdout.write("\n")
     else:
         for item in result:
-            print(f"{item['score']:10.4f}  {item['plugin']}/{item['skill']}  {' > '.join(item['heading_path'])}")
+            print(
+                f"{item['score']:10.4f}  {item['plugin']}/{item['skill']}  {' > '.join(item['heading_path'])}"
+            )
     return 0
 
 
@@ -268,7 +269,9 @@ def cmd_packet(args: argparse.Namespace) -> int:
     request = json.loads(Path(args.request).read_text(encoding="utf-8"))
     markdown, manifest = compile_packet(Path(args.index), request, budget=args.budget)
     Path(args.output).write_text(markdown, encoding="utf-8")
-    Path(args.manifest).write_text(json.dumps(manifest, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8")
+    Path(args.manifest).write_text(
+        json.dumps(manifest, indent=2, ensure_ascii=False, sort_keys=True) + "\n", encoding="utf-8"
+    )
     return 0 if manifest["status"] == "ok" else 2
 
 

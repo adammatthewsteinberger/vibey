@@ -72,12 +72,15 @@ def select(names: list[str], per_run: int, week: int) -> list[str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--per-run", type=int, default=4,
-                        help="how many plugins to audit in one run (default: 8)")
-    parser.add_argument("--week", type=int, default=None,
-                        help="ISO week number to select for (default: this week)")
-    parser.add_argument("--plugins", default=None,
-                        help="comma-separated plugin names, bypassing the rotation")
+    parser.add_argument(
+        "--per-run", type=int, default=4, help="how many plugins to audit in one run (default: 8)"
+    )
+    parser.add_argument(
+        "--week", type=int, default=None, help="ISO week number to select for (default: this week)"
+    )
+    parser.add_argument(
+        "--plugins", default=None, help="comma-separated plugin names, bypassing the rotation"
+    )
     parser.add_argument("--format", choices=("markdown", "names", "json"), default="markdown")
     args = parser.parse_args()
 
@@ -100,8 +103,9 @@ def main() -> int:
         return 0
 
     cycle = (len(names) + args.per_run - 1) // args.per_run
-    print(f"## Plugins to audit this run ({len(chosen)} of {len(names)}; "
-          f"full cycle ≈ {cycle} runs)\n")
+    print(
+        f"## Plugins to audit this run ({len(chosen)} of {len(names)}; full cycle ≈ {cycle} runs)\n"
+    )
     for p in chosen:
         note = currency_note(p)
         print(f"### {p}\n")
@@ -109,8 +113,10 @@ def main() -> int:
         if note:
             print(f"- Currency note: {note}")
         else:
-            print("- Currency note: none — this plugin has no dated anchor. Only propose a "
-                  "change if you find something that plainly contradicts the text.")
+            print(
+                "- Currency note: none — this plugin has no dated anchor. Only propose a "
+                "change if you find something that plainly contradicts the text."
+            )
         print()
     return 0
 

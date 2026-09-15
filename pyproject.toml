@@ -92,6 +92,25 @@ dev = [
 vibey-skills = "vibey_skills.cli:main"
 vibe-skills = "vibey_skills.cli:deprecated_alias_main"
 
+# This package has never been linted. It gets a table of its own not for tidiness but
+# because of where it is going: inside the vibey monorepo, a file with no nearer
+# configuration resolves against the ROOT pyproject, whose `target-version = "py312"` would
+# have `UP` rewrite this package into syntax its own `requires-python = ">=3.10"` forbids.
+#
+# `include` is the other half, and it is not decoration. Without it ruff discovers Markdown
+# and format-checks the Python fences inside all 644 SKILL.md -- files that are the product,
+# verified byte-for-byte against the documents they were split from.
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+include = ["src/**/*.py", "tools/*.py", "tests/*.py", "docs/*.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+# E501 only, and only because of the provenance header: one exact line compared
+# byte-for-byte, unwrappable without failing the check that mandates it.
+ignore = ["E501"]
+
 [tool.hatch.version]
 path = "src/vibey_skills/__init__.py"
 

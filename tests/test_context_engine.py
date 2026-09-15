@@ -1,4 +1,4 @@
-# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
+# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """Hermetic coverage for the lexical context engine walking skeleton."""
 
 from __future__ import annotations
@@ -145,7 +145,9 @@ class ContextEngineTests(unittest.TestCase):
         included = packet["included_chunks"]
         self.assertTrue(all(item["source_path"] and item["line_start"] for item in included))
         self.assertTrue(all(item["content_sha256"] and item["reasons"] for item in included))
-        self.assertEqual(packet["packet_sha256"], __import__("hashlib").sha256(markdown.encode()).hexdigest())
+        self.assertEqual(
+            packet["packet_sha256"], __import__("hashlib").sha256(markdown.encode()).hexdigest()
+        )
 
     def test_budget_insufficient_never_truncates_mandatory_text(self) -> None:
         path = self.plugins / "quality-engineering/skills/python-quality-testing/SKILL.md"

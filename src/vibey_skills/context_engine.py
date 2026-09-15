@@ -7,8 +7,8 @@ import hashlib
 import json
 import re
 import sqlite3
-import urllib.parse
 import time
+import urllib.parse
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
@@ -22,20 +22,44 @@ MAX_BUDGET = 32_000
 _HEADING = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
 _TOKEN = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.+-]*")
 _SECRET = re.compile(r"(?i)(api[_-]?key|token|password|secret)\s*[:=]\s*\S+")
-_SECRET_VALUE = re.compile(
-    r"(?i)\b(?:sk-|ghp_|github_pat_|xox[baprs]-)[-A-Za-z0-9_]{8,}\b"
-)
+_SECRET_VALUE = re.compile(r"(?i)\b(?:sk-|ghp_|github_pat_|xox[baprs]-)[-A-Za-z0-9_]{8,}\b")
 _REQUEST_FIELDS = {
-    "schema_version", "title", "objective", "requirements", "acceptance_criteria",
-    "phase", "job_kind", "languages", "dependencies", "paths", "commands",
-    "target_files", "changed_files", "prior_failure_class", "error_summary",
-    "required_plugins", "excluded_plugins", "required_skills", "excluded_skills",
-    "maximum_context_tokens", "ranking_mode", "compatibility_mode",
+    "schema_version",
+    "title",
+    "objective",
+    "requirements",
+    "acceptance_criteria",
+    "phase",
+    "job_kind",
+    "languages",
+    "dependencies",
+    "paths",
+    "commands",
+    "target_files",
+    "changed_files",
+    "prior_failure_class",
+    "error_summary",
+    "required_plugins",
+    "excluded_plugins",
+    "required_skills",
+    "excluded_skills",
+    "maximum_context_tokens",
+    "ranking_mode",
+    "compatibility_mode",
 }
 _LIST_FIELDS = {
-    "requirements", "acceptance_criteria", "languages", "dependencies", "paths",
-    "commands", "target_files", "changed_files", "required_plugins", "excluded_plugins",
-    "required_skills", "excluded_skills",
+    "requirements",
+    "acceptance_criteria",
+    "languages",
+    "dependencies",
+    "paths",
+    "commands",
+    "target_files",
+    "changed_files",
+    "required_plugins",
+    "excluded_plugins",
+    "required_skills",
+    "excluded_skills",
 }
 _METADATA_LISTS = {"domains", "phases", "languages", "technologies", "mandatory_sections"}
 
@@ -171,12 +195,20 @@ def build_manifest(root: Path | None = None) -> dict[str, Any]:
             raise ContextEngineError(f"missing mandatory heading(s) in {path}: {sorted(missing)}")
         relative = path.relative_to(root.parent).as_posix()
         skill = {
-            "plugin": plugin, "name": name, "description": description,
+            "plugin": plugin,
+            "name": name,
+            "description": description,
             "version": entries.get(plugin, {}).get("version", ""),
             "category": entries.get(plugin, {}).get("category", ""),
-            "source_path": relative, "source_sha256": source_hash,
-            "headings": headings, "mandatory_sections": sorted(mandatory),
-            "retrieval": {k: metadata[k] for k in sorted(_METADATA_LISTS | {"retrieval_version"}) if k in metadata},
+            "source_path": relative,
+            "source_sha256": source_hash,
+            "headings": headings,
+            "mandatory_sections": sorted(mandatory),
+            "retrieval": {
+                k: metadata[k]
+                for k in sorted(_METADATA_LISTS | {"retrieval_version"})
+                if k in metadata
+            },
         }
         skills.append(skill)
         retrieval_terms = " ".join(
@@ -188,19 +220,38 @@ def build_manifest(root: Path | None = None) -> dict[str, Any]:
             end = starts[position + 1][0] if position + 1 < len(starts) else len(lines)
             content = "".join(lines[start:end]).rstrip() + "\n"
             content_hash = sha256(content)
-            chunks.append({
-                "id": sha256(canonical_json([source_hash, heading_path, start + 1]))[:24],
-                "plugin": plugin, "skill": name, "skill_version": skill["version"],
-                "heading_path": heading_path, "heading": title, "source_path": relative,
-                "line_start": start + 1, "line_end": end,
-                "content_sha256": content_hash, "content_class": _content_class(title, mandatory),
-                "text": content,
-                "normalized_text": _normal(
-                    " ".join(heading_path) + " " + description + " " + retrieval_terms + " " + content
-                ),
-                "token_estimate": estimate_tokens(content),
-            })
-    core = {"schema_version": SCHEMA_VERSION, "skills_release": __version__, "skills": skills, "chunks": chunks}
+            chunks.append(
+                {
+                    "id": sha256(canonical_json([source_hash, heading_path, start + 1]))[:24],
+                    "plugin": plugin,
+                    "skill": name,
+                    "skill_version": skill["version"],
+                    "heading_path": heading_path,
+                    "heading": title,
+                    "source_path": relative,
+                    "line_start": start + 1,
+                    "line_end": end,
+                    "content_sha256": content_hash,
+                    "content_class": _content_class(title, mandatory),
+                    "text": content,
+                    "normalized_text": _normal(
+                        " ".join(heading_path)
+                        + " "
+                        + description
+                        + " "
+                        + retrieval_terms
+                        + " "
+                        + content
+                    ),
+                    "token_estimate": estimate_tokens(content),
+                }
+            )
+    core = {
+        "schema_version": SCHEMA_VERSION,
+        "skills_release": __version__,
+        "skills": skills,
+        "chunks": chunks,
+    }
     core["corpus_sha256"] = sha256(canonical_json(core))
     return core
 
@@ -217,13 +268,26 @@ def build_index(output: Path, root: Path | None = None) -> dict[str, Any]:
             CREATE TABLE chunks (id TEXT PRIMARY KEY, document TEXT NOT NULL);
             CREATE VIRTUAL TABLE chunk_fts USING fts5(id UNINDEXED, plugin, skill, heading, text, tokenize='unicode61');
         """)
-        connection.execute("INSERT INTO metadata VALUES (?, ?)", ("index_version", str(INDEX_VERSION)))
-        connection.execute("INSERT INTO metadata VALUES (?, ?)", ("corpus_sha256", manifest["corpus_sha256"]))
+        connection.execute(
+            "INSERT INTO metadata VALUES (?, ?)", ("index_version", str(INDEX_VERSION))
+        )
+        connection.execute(
+            "INSERT INTO metadata VALUES (?, ?)", ("corpus_sha256", manifest["corpus_sha256"])
+        )
         for chunk in manifest["chunks"]:
-            connection.execute("INSERT INTO chunks VALUES (?, ?)", (chunk["id"], canonical_json(chunk)))
-            connection.execute("INSERT INTO chunk_fts VALUES (?, ?, ?, ?, ?)", (
-                chunk["id"], chunk["plugin"], chunk["skill"], " ".join(chunk["heading_path"]), chunk["normalized_text"],
-            ))
+            connection.execute(
+                "INSERT INTO chunks VALUES (?, ?)", (chunk["id"], canonical_json(chunk))
+            )
+            connection.execute(
+                "INSERT INTO chunk_fts VALUES (?, ?, ?, ?, ?)",
+                (
+                    chunk["id"],
+                    chunk["plugin"],
+                    chunk["skill"],
+                    " ".join(chunk["heading_path"]),
+                    chunk["normalized_text"],
+                ),
+            )
         connection.commit()
         connection.execute("VACUUM")
     finally:
@@ -255,9 +319,14 @@ def _load_manifest(index_dir: Path) -> tuple[Path, dict[str, Any]]:
 
 def inspect_index(index_dir: Path) -> dict[str, Any]:
     _, manifest = _load_manifest(index_dir)
-    return {"schema_version": manifest["schema_version"], "index_version": INDEX_VERSION,
-            "skills_release": manifest["skills_release"], "corpus_sha256": manifest["corpus_sha256"],
-            "skill_count": len(manifest["skills"]), "chunk_count": len(manifest["chunks"])}
+    return {
+        "schema_version": manifest["schema_version"],
+        "index_version": INDEX_VERSION,
+        "skills_release": manifest["skills_release"],
+        "corpus_sha256": manifest["corpus_sha256"],
+        "skill_count": len(manifest["skills"]),
+        "chunk_count": len(manifest["chunks"]),
+    }
 
 
 def validate_request(request: dict[str, Any], *, budget: int | None = None) -> dict[str, Any]:
@@ -271,10 +340,16 @@ def validate_request(request: dict[str, Any], *, budget: int | None = None) -> d
     if clean.get("schema_version", 1) != 1:
         raise ContextEngineError("unsupported request schema_version")
     for field in _LIST_FIELDS:
-        if field in clean and (not isinstance(clean[field], list) or not all(isinstance(v, str) for v in clean[field])):
+        if field in clean and (
+            not isinstance(clean[field], list) or not all(isinstance(v, str) for v in clean[field])
+        ):
             raise ContextEngineError(f"{field} must be a list of strings")
     for field, value in clean.items():
-        if field not in _LIST_FIELDS and field not in {"schema_version", "maximum_context_tokens"} and not isinstance(value, str):
+        if (
+            field not in _LIST_FIELDS
+            and field not in {"schema_version", "maximum_context_tokens"}
+            and not isinstance(value, str)
+        ):
             raise ContextEngineError(f"{field} must be a string")
     maximum = budget if budget is not None else clean.get("maximum_context_tokens", 6000)
     if not isinstance(maximum, int) or not MIN_BUDGET <= maximum <= MAX_BUDGET:
@@ -301,9 +376,22 @@ def _redact_request(request: dict[str, Any]) -> dict[str, Any]:
 
 def _request_text(request: dict[str, Any]) -> str:
     parts: list[str] = []
-    for key in ("title", "objective", "requirements", "acceptance_criteria", "phase", "job_kind",
-                "languages", "dependencies", "paths", "commands", "target_files", "changed_files",
-                "prior_failure_class", "error_summary"):
+    for key in (
+        "title",
+        "objective",
+        "requirements",
+        "acceptance_criteria",
+        "phase",
+        "job_kind",
+        "languages",
+        "dependencies",
+        "paths",
+        "commands",
+        "target_files",
+        "changed_files",
+        "prior_failure_class",
+        "error_summary",
+    ):
         value = request.get(key, [])
         parts.extend(value if isinstance(value, list) else [value])
     return redact_secrets(" ".join(parts))
@@ -314,15 +402,27 @@ def _fts_query(text: str) -> str:
     return " OR ".join('"' + word.replace('"', '""') + '"' for word in words[:128])
 
 
-def search(index_dir: Path, request: dict[str, Any] | str, *, limit: int = 20) -> list[dict[str, Any]]:
+def search(
+    index_dir: Path, request: dict[str, Any] | str, *, limit: int = 20
+) -> list[dict[str, Any]]:
     if not isinstance(limit, int) or limit < 1 or limit > 500:
         raise ContextEngineError("search limit must be between 1 and 500")
-    request = validate_request({"objective": request}) if isinstance(request, str) else validate_request(request)
+    request = (
+        validate_request({"objective": request})
+        if isinstance(request, str)
+        else validate_request(request)
+    )
     fts = _fts_query(_request_text(request))
     if not fts and not request.get("required_plugins") and not request.get("required_skills"):
         return []
-    required_plugins, excluded_plugins = set(request.get("required_plugins", [])), set(request.get("excluded_plugins", []))
-    required_skills, excluded_skills = set(request.get("required_skills", [])), set(request.get("excluded_skills", []))
+    required_plugins, excluded_plugins = (
+        set(request.get("required_plugins", [])),
+        set(request.get("excluded_plugins", [])),
+    )
+    required_skills, excluded_skills = (
+        set(request.get("required_skills", [])),
+        set(request.get("excluded_skills", [])),
+    )
     index_dir, _ = _load_manifest(index_dir)
     # URI-escape the path: SQLite's URI parser truncates at `?` or `#` and %-decodes,
     # so an unescaped checkout path containing those opens the wrong file or none.
@@ -331,22 +431,32 @@ def search(index_dir: Path, request: dict[str, Any] | str, *, limit: int = 20) -
     try:
         rows = []
         if fts:
-            rows.extend(connection.execute(
-                "SELECT c.document, bm25(chunk_fts, 0.0, 4.0, 6.0, 2.0) FROM chunk_fts "
-                "JOIN chunks c ON c.id = chunk_fts.id WHERE chunk_fts MATCH ? "
-                "ORDER BY 2, chunk_fts.id LIMIT 500", (fts,),
-            ).fetchall())
+            rows.extend(
+                connection.execute(
+                    "SELECT c.document, bm25(chunk_fts, 0.0, 4.0, 6.0, 2.0) FROM chunk_fts "
+                    "JOIN chunks c ON c.id = chunk_fts.id WHERE chunk_fts MATCH ? "
+                    "ORDER BY 2, chunk_fts.id LIMIT 500",
+                    (fts,),
+                ).fetchall()
+            )
         if required_plugins or required_skills:
             # Explicit activation precedes lexical ranking. The identifiers remain values,
             # never SQL fragments, and duplicate documents are removed below.
-            for raw, in connection.execute("SELECT document FROM chunks ORDER BY id"):
+            for (raw,) in connection.execute("SELECT document FROM chunks ORDER BY id"):
                 chunk = json.loads(raw)
                 if chunk["plugin"] in required_plugins or chunk["skill"] in required_skills:
                     rows.append((raw, 0.0))
     finally:
         connection.close()
-    signals = {token.lower() for field in ("phase", "languages", "dependencies", "commands", "paths")
-               for token in _TOKEN.findall(" ".join(request.get(field, [])) if isinstance(request.get(field), list) else str(request.get(field, "")))}
+    signals = {
+        token.lower()
+        for field in ("phase", "languages", "dependencies", "commands", "paths")
+        for token in _TOKEN.findall(
+            " ".join(request.get(field, []))
+            if isinstance(request.get(field), list)
+            else str(request.get(field, ""))
+        )
+    }
     ranked = []
     seen_ids: set[str] = set()
     for raw, bm25 in rows:
@@ -354,9 +464,13 @@ def search(index_dir: Path, request: dict[str, Any] | str, *, limit: int = 20) -
         if chunk["id"] in seen_ids:
             continue
         seen_ids.add(chunk["id"])
-        if (required_plugins and chunk["plugin"] not in required_plugins) or chunk["plugin"] in excluded_plugins:
+        if (required_plugins and chunk["plugin"] not in required_plugins) or chunk[
+            "plugin"
+        ] in excluded_plugins:
             continue
-        if (required_skills and chunk["skill"] not in required_skills) or chunk["skill"] in excluded_skills:
+        if (required_skills and chunk["skill"] not in required_skills) or chunk[
+            "skill"
+        ] in excluded_skills:
             continue
         matched = sorted(signals.intersection(set(chunk["normalized_text"].split())))
         boost = (
@@ -366,15 +480,20 @@ def search(index_dir: Path, request: dict[str, Any] | str, *, limit: int = 20) -
             + (50 if chunk["content_class"] == "mandatory" else 0)
         )
         chunk["score"] = round(-float(bm25) + boost, 6)
-        chunk["reasons"] = (["lexical_match"] + ["signal:" + value for value in matched] +
-                            (["required_plugin"] if chunk["plugin"] in required_plugins else []) +
-                            (["required_skill"] if chunk["skill"] in required_skills else []))
+        chunk["reasons"] = (
+            ["lexical_match"]
+            + ["signal:" + value for value in matched]
+            + (["required_plugin"] if chunk["plugin"] in required_plugins else [])
+            + (["required_skill"] if chunk["skill"] in required_skills else [])
+        )
         ranked.append(chunk)
     ranked.sort(key=lambda item: (-item["score"], item["plugin"], item["skill"], item["id"]))
     return ranked[:limit]
 
 
-def compile_packet(index_dir: Path, raw_request: dict[str, Any], *, budget: int | None = None) -> tuple[str, dict[str, Any]]:
+def compile_packet(
+    index_dir: Path, raw_request: dict[str, Any], *, budget: int | None = None
+) -> tuple[str, dict[str, Any]]:
     started = time.perf_counter_ns()
     request = validate_request(raw_request, budget=budget)
     index_dir, manifest = _load_manifest(index_dir)
@@ -393,7 +512,15 @@ def compile_packet(index_dir: Path, raw_request: dict[str, Any], *, budget: int 
         if len(activated) >= max(4, len(required_skills) + len(required_plugins)):
             break
     by_id = {chunk["id"]: chunk for chunk in manifest["chunks"]}
-    mandatory = sorted((chunk for chunk in manifest["chunks"] if chunk["content_class"] == "mandatory" and (chunk["plugin"], chunk["skill"]) in activated), key=lambda item: (item["plugin"], item["skill"], item["line_start"]))
+    mandatory = sorted(
+        (
+            chunk
+            for chunk in manifest["chunks"]
+            if chunk["content_class"] == "mandatory"
+            and (chunk["plugin"], chunk["skill"]) in activated
+        ),
+        key=lambda item: (item["plugin"], item["skill"], item["line_start"]),
+    )
     selected: list[dict[str, Any]] = []
     seen_hashes: set[str] = set()
     header = "# Vibey Skills Context Packet\n\n"
@@ -403,13 +530,24 @@ def compile_packet(index_dir: Path, raw_request: dict[str, Any], *, budget: int 
             seen_hashes.add(chunk["content_sha256"])
     maximum = request["maximum_context_tokens"]
     query_hash = sha256(canonical_json(request))
-    base = {"schema_version": 1, "index_version": INDEX_VERSION, "query_sha256": query_hash,
-            "corpus_sha256": manifest["corpus_sha256"], "skills_release": manifest["skills_release"]}
+    base = {
+        "schema_version": 1,
+        "index_version": INDEX_VERSION,
+        "query_sha256": query_hash,
+        "corpus_sha256": manifest["corpus_sha256"],
+        "skills_release": manifest["skills_release"],
+    }
     mandatory_markdown = _render_packet(header, selected)
     used = estimate_tokens(mandatory_markdown)
     if used > maximum:
-        return "", {**base, "status": "budget_insufficient", "maximum_context_tokens": maximum,
-                    "mandatory_token_estimate": used, "included_chunks": [], "omitted_chunks": []}
+        return "", {
+            **base,
+            "status": "budget_insufficient",
+            "maximum_context_tokens": maximum,
+            "mandatory_token_estimate": used,
+            "included_chunks": [],
+            "omitted_chunks": [],
+        }
     omitted: list[dict[str, Any]] = []
     for item in ranked:
         chunk = by_id[item["id"]]
@@ -422,19 +560,58 @@ def compile_packet(index_dir: Path, raw_request: dict[str, Any], *, budget: int 
             seen_hashes.add(chunk["content_sha256"])
             used = estimate_tokens(candidate_markdown)
         else:
-            omitted.append({"id": chunk["id"], "reason": "budget", "token_estimate": chunk["token_estimate"]})
+            omitted.append(
+                {"id": chunk["id"], "reason": "budget", "token_estimate": chunk["token_estimate"]}
+            )
     if not selected:
-        return "", {**base, "status": "low_confidence", "fallback": "activate_full_native_skills",
-                    "maximum_context_tokens": maximum, "included_chunks": [], "omitted_chunks": omitted}
+        return "", {
+            **base,
+            "status": "low_confidence",
+            "fallback": "activate_full_native_skills",
+            "maximum_context_tokens": maximum,
+            "included_chunks": [],
+            "omitted_chunks": omitted,
+        }
     markdown = _render_packet(header, selected)
-    included = [{k: chunk[k] for k in ("id", "plugin", "skill", "heading_path", "source_path", "line_start", "line_end", "content_sha256", "token_estimate", "score", "reasons")} for chunk in selected]
-    packet = {**base, "status": "ok", "deterministic_signals": json.loads(canonical_json(request)),
-              "selected_plugins": sorted({c["plugin"] for c in selected}), "selected_skills": sorted({c["skill"] for c in selected}),
-              "included_chunks": included, "omitted_chunks": omitted,
-              "mandatory_token_estimate": sum(c["token_estimate"] for c in selected if c["content_class"] == "mandatory"),
-              "retrieved_token_estimate": sum(c["token_estimate"] for c in selected if c["content_class"] != "mandatory"),
-              "packet_token_estimate": estimate_tokens(markdown), "maximum_context_tokens": maximum,
-              "retrieval_latency_ns": time.perf_counter_ns() - started, "fallback": None, "packet_sha256": sha256(markdown)}
+    included = [
+        {
+            k: chunk[k]
+            for k in (
+                "id",
+                "plugin",
+                "skill",
+                "heading_path",
+                "source_path",
+                "line_start",
+                "line_end",
+                "content_sha256",
+                "token_estimate",
+                "score",
+                "reasons",
+            )
+        }
+        for chunk in selected
+    ]
+    packet = {
+        **base,
+        "status": "ok",
+        "deterministic_signals": json.loads(canonical_json(request)),
+        "selected_plugins": sorted({c["plugin"] for c in selected}),
+        "selected_skills": sorted({c["skill"] for c in selected}),
+        "included_chunks": included,
+        "omitted_chunks": omitted,
+        "mandatory_token_estimate": sum(
+            c["token_estimate"] for c in selected if c["content_class"] == "mandatory"
+        ),
+        "retrieved_token_estimate": sum(
+            c["token_estimate"] for c in selected if c["content_class"] != "mandatory"
+        ),
+        "packet_token_estimate": estimate_tokens(markdown),
+        "maximum_context_tokens": maximum,
+        "retrieval_latency_ns": time.perf_counter_ns() - started,
+        "fallback": None,
+        "packet_sha256": sha256(markdown),
+    }
     return markdown, packet
 
 
@@ -479,14 +656,16 @@ def evaluate(index_dir: Path, cases_path: Path, *, top_k: int = 10) -> dict[str,
         found_total += len(set(expected).intersection(found_skills))
         mandatory_total += len(mandatory)
         mandatory_found += len(set(mandatory).intersection(found_headings))
-        results.append({
-            "case_id": str(case.get("id", position)),
-            "query_sha256": sha256(canonical_json(validate_request(case["request"]))),
-            "expected_skills": expected,
-            "found_skills": sorted(found_skills),
-            "missing_skills": sorted(set(expected).difference(found_skills)),
-            "missing_mandatory_headings": sorted(set(mandatory).difference(found_headings)),
-        })
+        results.append(
+            {
+                "case_id": str(case.get("id", position)),
+                "query_sha256": sha256(canonical_json(validate_request(case["request"]))),
+                "expected_skills": expected,
+                "found_skills": sorted(found_skills),
+                "missing_skills": sorted(set(expected).difference(found_skills)),
+                "missing_mandatory_headings": sorted(set(mandatory).difference(found_headings)),
+            }
+        )
     return {
         "schema_version": 1,
         "case_count": len(cases),

@@ -60,9 +60,7 @@ LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 # pattern *selects* which links get checked, so a self-link naming any other branch is not
 # reported as wrong — it is silently skipped. Repointing the plugin table at `develop` once
 # left 79 links unvalidated while this checker still printed "ok".
-SELF_PATH = re.compile(
-    rf"https://github\.com/{re.escape(SLUG)}/(blob|tree)/main/([^)#\s]+)"
-)
+SELF_PATH = re.compile(rf"https://github\.com/{re.escape(SLUG)}/(blob|tree)/main/([^)#\s]+)")
 
 # Capture the repo name, then compare it exactly. A negative lookahead was tried first and
 # was wrong: `(?!<repo>(?:[/.)]|$))` treats `$` as end-of-STRING, not end-of-line, so a URL
@@ -100,11 +98,7 @@ def check_root_docs_are_absolute(problems: list[str]) -> None:
 
 def scanned_markdown() -> list[Path]:
     """Markdown files that will actually be published."""
-    return [
-        p
-        for p in REPO.rglob("*.md")
-        if not SKIP_DIRS.intersection(p.relative_to(REPO).parts)
-    ]
+    return [p for p in REPO.rglob("*.md") if not SKIP_DIRS.intersection(p.relative_to(REPO).parts)]
 
 
 def check_self_paths_exist(problems: list[str]) -> None:
@@ -115,7 +109,9 @@ def check_self_paths_exist(problems: list[str]) -> None:
             if not target.exists():
                 problems.append(f"{rel}: links to `{path}` via /{kind}/, which does not exist")
             elif kind == "blob" and target.is_dir():
-                problems.append(f"{rel}: `{path}` is a directory but linked with /blob/ (use /tree/)")
+                problems.append(
+                    f"{rel}: `{path}` is a directory but linked with /blob/ (use /tree/)"
+                )
             elif kind == "tree" and target.is_file():
                 problems.append(f"{rel}: `{path}` is a file but linked with /tree/ (use /blob/)")
 
