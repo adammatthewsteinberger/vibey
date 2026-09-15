@@ -77,6 +77,8 @@ explorer is optimized for human consumption first and machine consumption after 
 always and forever, amen. One standard for every searcher: no privileged reader, no
 gated truth.
 
+**7.b — governance in plain sight** *(ratified by the merge that carried this entry)*: the governance of this project — the Constitution, the Twelve Doctrines and every sub-doctrine, the Ten Commandments, the Bill of Rights, every standing subdoctrine, and the decision records that argue them — is as easy to find and as visible as possible to every human reader, on every human-readable surface of the entire codebase, forever, no matter what, no exceptions. Every README, landing page, documentation page, book, paper, package listing, release, and contributor, support or agent guide carries a direct path to it, near the top rather than buried, so the law is never more than one link from wherever a person is reading; a surface that cannot carry a link names where the law lives. It is published in every form the documentation takes, at stable addresses, in plain words, and never behind an account, a paywall, a search or a machine-only format. When the law moves or grows, every surface follows in the same change. Law nobody can find binds nobody fairly.
+
 ## 8 — Local authority
 
 When paid credits run out, local is the source of truth: green local work reaches
