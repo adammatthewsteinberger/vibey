@@ -1,8 +1,12 @@
 # Runbook: vibey-explorer — find work in the open, build it, ship it
 
+> **Status (2026-09-15):** not started. It ships as a uv workspace member
+> (`src/vibey_tools/explorer`) or a `vibey-gh` capability in this repository,
+> not as a submodule — runbook 19 landed as a monorepo (ADR-0021).
+
 ## Goal
 
-A new repo, `vibey-explorer`, submoduled into the umbrella (runbook 19).
+A new workspace package, `vibey-explorer` (`src/vibey_tools/explorer`).
 Daily, it looks for open-source work worth doing — features people are
 asking for, bugs people are hitting — picks the ones this system is
 genuinely capable of finishing, builds them, and ships:
@@ -53,7 +57,9 @@ median contributor rather than worse. Non-negotiable:
   project that declines machine-generated contributions is skipped, and
   that skip is recorded so it is never re-evaluated by accident.
 - **Disclose.** Every PR says plainly that it was machine-authored, via
-  the provenance line from runbook 18. A maintainer should never have to
+  the provenance header `vibey-gh` enforces (see runbook 18) plus an
+  explicit machine-authored disclosure paragraph in the PR body. A
+  maintainer should never have to
   work that out.
 - **Prefer the issue over the PR.** Where a project's norm is to discuss
   first, open the issue with the diagnosis and offer the patch — do not
@@ -94,7 +100,9 @@ preferred outlet when no upstream exists.
 
 ## Work items
 
-1. Repo scaffold matching family conventions.
+1. Workspace package scaffold matching family conventions (onion, own
+   gates per ADR-0022, registered in `vibey_gh/surfaces.py` if built as a
+   `vibey-gh` capability).
 2. Discovery source adapters behind one Protocol, fixture-tested.
 3. Pure scorer: fit gate + attention ranking, property-tested.
 4. Policy reader (CONTRIBUTING, templates, AI policy) + skip registry.

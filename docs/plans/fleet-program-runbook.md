@@ -1,5 +1,35 @@
 # Fleet Program Runbook — vibey + the four *loop runners
 
+> **Status as of 2026-09-15: superseded as an executable plan — do not hand
+> this file to a runner.** It was written 2026-08-15 for five separate
+> repositories. The runners now live in this repository under
+> `src/vibey_runners/{claude,codex,cursor,agy,qwen}` next to
+> `src/vibey_tools/{gh,skills,bootstrap}`, as one uv workspace (ADR-0021); the
+> sibling GitHub repositories no longer exist, so the `~/git/<repo>` checkouts,
+> `git fetch origin` steps and per-repo PR flow below point at nothing. A fifth
+> runner, `qwenloop`, is an opt-in engine (ADR-0015) and the sovereign DESIGN
+> provider (ADR-0027); this runbook does not cover it.
+>
+> **Landed since:** §Coverage for vibey (all four layers at 100% branch in
+> `ci.yml`, ADR-0023); §1.4d for codexloop and cursorloop; §2.1 (`EngineSelector`
+> wired in `bootstrap.py`, `LoopProcessAdapter`, `LOOP_EVENT_MAP`,
+> `MAX_WIND_DOWNS = 3`); §2.5 (`tests/live/`, ADR-0030); §3.1 (public
+> repository, docs site at
+> <https://the-vibey-project.github.io/vibey/main/>, PyPI releases).
+> **Still open:** §1.4d for agyloop; §1.5; §1.7 (no API, MCP, SDK or OpenClaw
+> surface; `notify/webhook.py` is still unwired); §1.8.1–§1.8.3; the
+> `FakeAzureClient` consolidation and AKS decision in §1.8.4; most of §1.8.5;
+> §2.3; §2.4; §2.6; §3.4.
+>
+> **Runner gates:** the monorepo `ci.yml` runs vibey's gates and the
+> `vibey-gh`/`vibey-skills`/`vibey-bootstrap` suites, but no job runs the
+> `src/vibey_runners/*` test suites, so the runners' per-layer floors are
+> enforced only when run locally (`cd src/vibey_runners/<runner> && uv run pytest …`).
+> ADR-0022 records that absorbed packages keep their gates.
+>
+> Version pins, the "Verified current state" table, and the audit defects below
+> are historical.
+
 > **This document is an executable plan.** It is written to be handed to
 > `claudeloop run` as the plan file for an unattended session. Task ordering is
 > the §Sequencing table at the bottom; work the phases in order, and do not start
@@ -31,6 +61,10 @@
 
 ## Context
 
+**Historical (2026-08-15).** As of 2026-09-15 all five runners and vibey live in
+this repository; vibey is gated at 100% on all four layers; no CI job runs the
+runners' own test suites (see the status banner above).
+
 Five repos: `vibey` (orchestrator) and four autonomous session runners `claudeloop`,
 `codexloop`, `cursorloop`, `agyloop`. The goal is a system a non-technical person can
 drive end to end, that survives rate limits and credit exhaustion without losing work,
@@ -61,6 +95,11 @@ All five on `develop`, in sync with origin, CI green.
 vibey has no `domain/loop.py`, `domain/control.py` or `application/runner.py` — it is the
 orchestrator, not a runner. The wind-down half is architecturally n/a there.
 
+*Changed since (2026-09-15), without rewriting the table:* codexloop and cursorloop now
+have the `wind-down` command and the exit-75 marker read path (`WindDownCommand` in
+`codexloop/domain/control.py`, `WindDown` in `cursorloop/domain/control.py`); agyloop
+still has neither. qwenloop has a `wind-down` command and exit code 75.
+
 ### Defects found in the audit, to fix as part of this work
 
 1. **claudeloop's "full suite" CI step gates nothing** — `pytest --cov-report=term-missing
@@ -73,8 +112,12 @@ orchestrator, not a runner. The wind-down half is architecturally n/a there.
    `develop`). cursorloop/codexloop local `main` are stale; claudeloop's local `main` has
    no upstream.
 5. `uv.lock` untracked in claudeloop/cursorloop/codexloop — commit or ignore, consistently.
-6. **vibey's `apply_third_party_level` does not exist** — the logic is inlined in
-   `configure_logging`, inconsistent with the other four.
+6. ~~**vibey's `apply_third_party_level` does not exist** — the logic is inlined in
+   `configure_logging`, inconsistent with the other four.~~ **Fixed:**
+   `infrastructure/logging.py::apply_third_party_level`, called from `configure_logging`.
+
+Items 1, 2, 4 and 5 describe per-repository CI, branches and lockfiles that no longer
+exist in that form after the move into the monorepo.
 
 ---
 
@@ -129,9 +172,16 @@ Run coverage with a fresh data file every time (`COVERAGE_FILE=<tmp>` or `rm -f
 
 ## Wave 1 remainder
 
-### 1.4d Finish the soft stop (agyloop, cursorloop, codexloop)
+### 1.4d Finish the soft stop (agyloop only remaining)
 
-claudeloop is the reference. Each of the other three needs:
+**Status 2026-09-15: partial.** codexloop and cursorloop have landed it (`wind-down`
+CLI, `write_handoff_marker`, tri-state interrupt with `"wind_down"`, exit 75).
+agyloop has none of it: no `WindDownCommand`, no `wind-down` command (only the
+unrelated `unwind`), no `write_handoff_marker`, no tri-state sleep; it has only
+`WindDownAndFinish` and `_finish_wound_down` in its runner. codexloop still handles
+`WindDownAndFinish` inline — it has no `_finish_wound_down`.
+
+claudeloop is the reference. Each of the other three needed:
 - `WindDownCommand` in `domain/control.py`, outranked by `StopCommand` in `stop_outranks`.
   Held, not dropped, when it arrives mid-turn — discarding it makes the command depend on
   poll timing.
@@ -149,6 +199,10 @@ claudeloop is the reference. Each of the other three needs:
 
 ### 1.3 TUI: full conversation, live, hotkeys
 
+**Status 2026-09-15: partial, not audited per runner.** claudeloop, codexloop,
+cursorloop and agyloop each have a `stream_ui` module (qwenloop has none); vibey's worker now uses `LISTEN vibey_job_ready`, but vibey
+has no `ChatPanel`.
+
 claudeloop's `infrastructure/stream_ui/app.py` is the reference (two `RichLog` panes,
 header/thinking bars, 5 bindings, 10 Hz live / 5 Hz tail / 20 Hz replay, delta dedupe).
 Port to the other three; add `f` follow-toggle, `/` filter, and an events pane fed by
@@ -161,6 +215,9 @@ with a live tail. vibey: `ChatPanel` tailing the active engine via the existing
 
 ### 1.5 `credits`
 
+**Status 2026-09-15: not started.** No runner has a `credits` command (codexloop and
+qwenloop have `capacity`).
+
 `<loop> credits` reads balance/limits/usage; `credits add --usd N` raises the vendor spend
 limit bounded by `[credits] ceiling_usd`. No vendor sells credits over an API — this
 raises caps and otherwise notifies + parks. codexloop's real `capacity` command is the
@@ -169,6 +226,10 @@ model; cursorloop's `usage` stub gets implemented.
 ---
 
 ## Wave 1.7 — seven surfaces, every repo (NEW)
+
+**Status 2026-09-15: not started** beyond the CLI and TUI. vibey has no FastAPI, MCP,
+SDK or OpenClaw surface, and `infrastructure/notify/webhook.py` is still not imported
+outside its package.
 
 Every repo — all five — exposes the same seven surfaces. (You said six; you listed seven.)
 
@@ -192,6 +253,8 @@ they drift and only the CLI stays correct.
 
 ### 1.8.1 GitHub: PR management + remote-branch deep scan
 
+**Status 2026-09-15: not started** in vibey (no `GitHubClient`).
+
 Today: `claudeloop/infrastructure/github_import.py` is the **only** GitHub client in any
 repo — one endpoint (`repos/{o}/{r}/issues/{n}`), with a two-tier `gh api` →
 `urllib`+`GITHUB_TOKEN` fallback that is a near-drop-in template for more. **No repo has
@@ -208,6 +271,9 @@ any PR handling, and none fetches a remote branch** — `resources/adapter.py:73
   `shell=True`, and the fetch is bounded by the existing scope guard.
 
 ### 1.8.2 Deep scan of local code
+
+**Status 2026-09-15: not started.** No `CodeScanner`; `ClaudeLoopDesignProvider.research()`
+still says "Do not inspect repository files".
 
 Today: **no repo imports `ast` or walks a source tree.** The nearest things are
 subprocess linter runners and SDK object-tree introspection.
@@ -227,6 +293,8 @@ subprocess linter runners and SDK object-tree introspection.
 
 ### 1.8.3 Automated tests for CI/CD runners
 
+**Status 2026-09-15: not started.** No `tests/ci/test_workflow_contract.py`.
+
 Today: **nothing parses or asserts on workflow YAML in any repo**, and no repo checks
 that CI job names match what branch protection requires. That gap is exactly what bit
 codexloop — its ruleset required claudeloop's job names, so every PR was blocked forever.
@@ -243,7 +311,15 @@ codexloop — its ruleset required claudeloop's job names, so every PR was block
 
 ### 1.8.4 Automated fakes for Azure/AKS
 
-Today the Azure port is small and complete (`AzureClientPort`, 4 methods, 3 DTOs), and
+**Status 2026-09-15: partial.** Azure is wired in `bootstrap.py` (the in-memory
+adapter by default; `vibey worker` selects `AzCliClientAdapter`, which runs
+`az … -o json` subprocesses), so the "wire Azure into `bootstrap.py`" bullet is done.
+Still open: three `class FakeAzureClient` copies remain in `tests/`,
+`tests/fakes/azure.py` does not exist, failure semantics are not modelled, and there
+is no AKS `service_type` or AKS-scope ADR. (ADR-0025 covers running vibey itself on
+Kubernetes with KEDA and an operator; it does not add AKS as a deployment target.)
+
+Original text (2026-08-15): Today the Azure port is small and complete (`AzureClientPort`, 4 methods, 3 DTOs), and
 there are doubles in **both** src and tests — but three independent `FakeAzureClient`
 classes exist across test files, `bootstrap.py` has **no Azure wiring at all**, and
 `AzureCliAdapter` never actually invokes `az` (there is no subprocess call in the whole
@@ -262,6 +338,10 @@ is `container_app`; AKS appears only in ADR prose.
   standards pack while no code models it.
 
 ### 1.8.5 Automated fakes for every other third-party surface
+
+**Status 2026-09-15: partial.** `tests/fakes/test_port_parity.py` and
+`tests/contracts/test_rotation_cursor_contract.py` landed; per-port fakes are not
+consolidated into `tests/fakes/`, and agyloop still ships no `scripted.py`.
 
 Surfaces with **no double anywhere**: the `anthropic` SDK client object, the `openai` SDK
 client object, **`asyncpg`/Postgres**, the GitHub HTTP/`gh` surface, and agyloop's
@@ -293,7 +373,9 @@ client object, **`asyncpg`/Postgres**, the GitHub HTTP/`gh` surface, and agyloop
 
 Unchanged from the previous revision except where noted:
 
-- **2.1 Live engine adapters + rotation wiring** — one parameterized `LoopProcessAdapter`
+- **2.1 Live engine adapters + rotation wiring** — **✅ landed (vibey PR #17 and
+  follow-ups #32, #34, #35):** `EngineSelector` is constructed in `bootstrap.py`,
+  `application/rotation_handoff.py` sets `MAX_WIND_DOWNS = 3`. Original scope: one parameterized `LoopProcessAdapter`
   (not four), `loop_events.py::LOOP_EVENT_MAP` (without it `tailer.translate_event` raises
   on line one of any real run), `RotationCursorRepository`, `EngineSelector` (first caller
   of `domain/rotation.py`), `EngineHealthService`, `rotation_handoff.py`. A wind-down
@@ -302,13 +384,20 @@ Unchanged from the previous revision except where noted:
   per work item, then `--no-wind-down`.
 - **2.2 Engine specialization** via existing `Capability` + `affinity_factor` — zero lines
   change in `rotation.py`.
-- **2.3 Standards pack + skills + research** — `ProvisionSpec.non_negotiables` is a field
+- **2.3 Standards pack + skills + research** — **not started as scoped** (2026-09-15:
+  `ProvisionSpec.non_negotiables` still has no config key; skills-context packets are
+  ADR-0031) — `ProvisionSpec.non_negotiables` is a field
   with no config key and no population today, and the BUILD prompt carries no standards at
   all.
 - **2.4 Adaptive interactive sessions** — vibey has *no* interactive TTY prompting today.
+  **Status 2026-09-15: not started** (`cli/main.py` has no `typer.prompt`/`typer.confirm`).
 - **2.5 Test harness** — two-mode (faked/live), unwind ledger, post-prod run in Phase ⑤.
+  **✅ landed** as `tests/live/` (`-m live` faked, `-m paid` real models; ADR-0030) plus
+  `tests/system/test_full_worker_faked.py`.
 
 ### 2.6 Rich intake for the initial prompt (NEW)
+
+**Status 2026-09-15: not started.** `vibey new` has no `--attach` or `--from-github`.
 
 The prompt that starts a vibey job must accept everything a normal AI prompt accepts.
 Effort stays **high/standard** as today — this widens *inputs*, not effort.
@@ -332,7 +421,8 @@ Effort stays **high/standard** as today — this widens *inputs*, not effort.
 
 ## Wave 3 — Docs, publish, governance
 
-- **3.1 vibey public surface** — mkdocs + Pages, community health files, CODEOWNERS,
+- **3.1 vibey public surface** — **✅ landed** (public repository, docs site built with
+  properdocs rather than mkdocs, PyPI releases). Original scope: mkdocs + Pages, community health files, CODEOWNERS,
   dependabot, CHANGELOG. **Stays private and free until it is genuinely publishable**;
   branch protection on a private repo needs GitHub Pro, so vibey is ungated until then.
 - **3.2 Docs refresh, all five** — every new surface from Waves 1–2, plus ADRs for each
@@ -342,7 +432,11 @@ Effort stays **high/standard** as today — this widens *inputs*, not effort.
   credentials) and `Integration:1210556` (the Cursor app); everyone else needs PR +
   1 review + all checks. If Codex/Antigravity ever need to be revocable independently,
   they need their own GitHub Apps — today revoking one revokes all.
-- **3.4 Close the publish hole** — `publish-to-pypi.yml` is `build → publish` with **no
+- **3.4 Close the publish hole** — **Status 2026-09-15: still open.** The workflow is now
+  `.github/workflows/release.yml` (owned by `vibey-gh`, ADR-0028: `develop` publishes
+  `vibey-dev` to TestPyPI, `main` publishes to PyPI); `testpypi` and `pypi` each `needs:`
+  only `build`, and `pypi` does not depend on `verify-testpypi`. Original text:
+  `publish-to-pypi.yml` is `build → publish` with **no
   test job** in every repo. Insert a `harness` job both `needs:`, running the full gate
   set plus `pytest -m live` and the unwind residue check.
 - **3.5 Publish order** — TestPyPI → smoke-install into a clean venv → PyPI, per repo.
@@ -387,7 +481,7 @@ uv run pytest -m live                            # real pg + git + binaries, scr
 vibey new --attach ./spec.pdf --from-github o/r@main --web-search --deep-research
 vibey start                                      # onboarding on a fresh machine
 
-# Wave 3
+# Wave 3  (the docs site is now built with properdocs, not mkdocs)
 mkdocs build --strict && python -m build && twine check --strict dist/*
 ```
 
@@ -406,7 +500,8 @@ mkdocs build --strict && python -m build && twine check --strict dist/*
 
 ## How this runbook is executed
 
-`claudeloop` 0.5.5 runs this file unattended. The three things that make an
+`claudeloop` 0.5.5 (0.8.0 in this repository as of 2026-09-15) was meant to run this
+file unattended; see the status banner before trying. The three things that make an
 unattended run safe here are a **disposable worktree**, an explicit **`--cwd` on
 every subcommand**, and **hard budget caps** — the runner will otherwise default
 its working directory to wherever it was invoked, which is how an earlier session
@@ -431,15 +526,20 @@ claudeloop run ~/git/vibey/docs/plans/fleet-program-runbook.md \
   --skill security-first-dev \
   --web-search \
   --max-turns 400 --max-dollars 40 --max-wait 21600 \
-  --permission-mode acceptEdits \
   --done-marker CLAUDELOOP_TASK_FULLY_COMPLETE \
   --log-level INFO --log-file "$WT/.claudeloop/run.log" \
   --stream-ui
 ```
 
+Do not pass `--permission-mode acceptEdits`: it leaves Bash commands unapproved, so a run
+blocks on "User approval needed" at its first gate sweep. claudeloop's default is
+`bypass` (see the comment in `scripts/fleet/run.sh`).
+
 ### Running it with agyloop instead
 
-agyloop 0.1.0 has a different surface. The differences are not cosmetic — three
+agyloop 0.1.0 (0.5.0 as of 2026-09-15) has a different surface. The gaps below —
+`--done-marker`, `--stream-ui`, `--skill`, `--web-search`, `--attach`, `wind-down` —
+were still accurate on 2026-09-15. The differences are not cosmetic — three
 of them are gaps this very runbook exists to close, so a run driven by agyloop
 is working with fewer inputs than one driven by claudeloop:
 

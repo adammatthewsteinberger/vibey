@@ -19,7 +19,10 @@ src/vibey/
 ## Where does new code go?
 
 1. **Touches FS, network, clock, database, or an SDK?** → `infrastructure/`,
-   behind a `Protocol` in `application/ports.py`. Never `import asyncpg` or
+   behind a `Protocol` in `application/interfaces/<area>.py` (`azure`, `build`,
+   `design`, `engines`, `gates`, `ledger`, `observability`, `projects`, `queue`,
+   `review`, `system`, `visual`). `application/ports.py` is a compatibility
+   re-export shim of seven names — never add to it. Never `import asyncpg` or
    vendor SDKs elsewhere.
 2. **Pure decision, zero I/O?** → `domain/`. Examples: `phase.py`,
    `rotation.py`, `noloss.py`, `circuit.py`, `effort.py`.
@@ -37,18 +40,26 @@ resort — a package's `__all__` façade, a `__main__` entry point, a bare funct
 some library contract requires — and where you use one, write the reason at the
 definition. "It is only a few lines" is not a reason.
 
-**Every class has an interface beside it**, in a mirrored `interfaces/` directory:
+**Every class has an interface beside it**, in a mirrored `interfaces/` directory
+(illustrative paths — there is no `services/` package):
 
 ```
 src/vibey/services/github_service.py
 src/vibey/services/interfaces/github_service_interface.py
 ```
 
+This is the target shape, not the current one. Today's interfaces packages
+(`application/interfaces/`, `cli/interfaces/`, and the empty
+`infrastructure/interfaces/`) are mostly organised by area; `cli/interfaces/early_signals_interface.py`
+is the one module that already follows the `<module>_interface.py` mirror.
+
 The mapping is mechanical: the directory gains an `interfaces/` child, the module
 gains an `_interface` suffix. Interfaces **declare**; they never consume — an
 interface module imports the standard library and other interfaces, nothing else
-from its own tree. That is the `interfaces-declare-only` contract, and it applies
-to every `interfaces/` package, not just `application/interfaces`.
+from its own tree. The rule applies to every `interfaces/` package; the
+`interfaces-declare-only` contract in `.importlinter` enforces part of it today, for
+`application/interfaces` only (it forbids imports of `vibey.infrastructure`,
+`vibey.cli`, `vibey.tui` and `vibey.bootstrap`).
 
 Why: a class behind an interface is substituted at its seam. The caller takes the
 interface, the test passes a double, and nothing is patched — so the test depends
@@ -58,14 +69,16 @@ reachable only by `monkeypatch.setattr` is a branch whose test breaks for reason
 unrelated to its subject.
 
 This applies to **new and changed code**. The existing tree (289 module-level
-functions, 288 unfaced classes, measured 2026-09-15) converges module by module,
+functions, and 278 module-level classes outside an `interfaces/` package, 277 of
+them with no mirrored `_interface` module — AST walk of `src/vibey/**/*.py`,
+top-level definitions only, measured 2026-09-15) converges module by module,
 and the absorbed subtrees under `src/vibey_runners/` and `src/vibey_tools/`
 converge as they are touched — rewriting them on import would destroy the
 property their import exists to create. `domain/` gets no exemption: a pure
 function becomes a method on a stateless class, and purity is preserved, because
 purity was never about the absence of a class.
 
-See ADR-0016.
+See ADR-0016 and sub-doctrine 9.b (the declared seam).
 
 ## Dogfood the family first
 
@@ -88,7 +101,42 @@ at the call site, and the reason must be a capability gap. If ours is missing
 something, the fix is to add it to ours.
 
 Measured 2026-09-15: `src/vibey` imports **zero** family packages. See ADR-0017
-for the parity backlog.
+(and sub-doctrine 10.e) for the parity backlog.
+
+## The workspace tenants
+
+This repository is a uv workspace (`[tool.uv.workspace] members =
+["src/vibey_runners/*", "src/vibey_tools/*"]`, ADR-0021). `vibey` is the root
+package; the tenants are absorbed packages that still publish to PyPI under their
+own names. Their former GitHub repositories (`the-vibey-project/claudeloop`,
+`vibey-gh`, and the rest) no longer exist — never link them; link the directory in
+this repository instead.
+
+| Directory | PyPI name | Python floor | Own checks |
+|---|---|---|---|
+| `src/vibey_runners/claude` | `claudeloop` | 3.10 | pytest, ruff, mypy, import-linter |
+| `src/vibey_runners/codex` | `codexloop` | 3.12 | pytest, ruff, mypy, import-linter |
+| `src/vibey_runners/cursor` | `cursorloop` | 3.12 | pytest, ruff, mypy, import-linter |
+| `src/vibey_runners/agy` | `agyloop` | 3.12 | pytest, ruff, mypy, import-linter |
+| `src/vibey_runners/qwen` | `qwenloop` | 3.12 | pytest, ruff, mypy, import-linter |
+| `src/vibey_runners/common` | `vibey-runners-common` | 3.10 | ruff, mypy, import-linter (no test directory yet) |
+| `src/vibey_tools/gh` | `vibey-gh` | 3.11 | pytest (100% branch), black, isort, mypy, bandit |
+| `src/vibey_tools/skills` | `vibey-skills` | 3.10 | manifest/link validators, unittest |
+| `src/vibey_tools/bootstrap` | `vibey-bootstrap` | 3.11 | pytest (100% line), black, isort, mypy, bandit |
+
+Rules for working inside a tenant:
+
+- **Its own configuration governs it.** Each tenant's `pyproject.toml` carries its
+  own tool sections and test directory (`test/` for `gh` and `bootstrap`, `tests/`
+  for the rest). Run its checks from its own directory; the root `pytest`
+  (`testpaths = ["tests"]`) and the root `mypy`/`bandit`/coverage gates never
+  reach it. Root `ruff check .` and `ruff format --check .` do (`include =
+  ["src/**/*.py", "tests/**/*.py"]`). Absorbed packages keep the gates they
+  arrived with (ADR-0022); see the `vibey-quality-gates` skill for the commands.
+- **Converge as touched.** ADR-0016 and ADR-0017 apply to tenants only as their
+  code is changed. Do not restyle or restructure a tenant on import.
+- **The root layers do not import tenants,** except the dependency-free family
+  packages `domain/` may use (below) and adapters in `infrastructure/`.
 
 ## Everything-as-code, and never less of it
 
@@ -128,7 +176,44 @@ an ADR leaves it with no ratification, no ratchet protection and no chunk in the
 corpus. Write both: the sub-doctrine states the rule, the ADR argues it.
 
 "PostgreSQL, not SQLite" is a mechanism and stays an ADR. "Dogfood the family" is
-a rule and belongs in the canon. See ADR-0020.
+a rule and belongs in the canon. See ADR-0020 and sub-doctrine 12.b.
+
+### Filing a sub-doctrine
+
+1. **Pick the parent.** Find the one of the twelve `## N — title` headings in
+   `src/vibey_tools/gh/docs/doctrines.md` the rule stands under. Use the next free
+   letter (existing entries: 2.a–2.b, 4.a, 7.a, 8.a, 9.a–9.b, 10.a–10.e, 12.a–12.c).
+2. **Write it in the established form** — one bold run-in paragraph under the parent
+   heading:
+
+   ```
+   **9.c — short title** *(ratified by the merge that carried this entry)*: the rule,
+   stated as conduct, in present tense.
+   ```
+
+   The ratification note becomes a date only after the fact; do not pre-date it.
+3. **Write the ADR** that argues it and cite the sub-doctrine by number (ADR-0016
+   through ADR-0020 pair with 9.b, 10.e, 12.c, 2.b and 12.b).
+4. **Regenerate and check the corpus index** from the tenant directory:
+
+   ```bash
+   cd src/vibey_tools/gh
+   uv run vibey-gh corpus-index          # rewrites corpus-index.json
+   uv run vibey-gh corpus-index --check  # "corpus intact: N chunk(s)"
+   ```
+
+   The index lives at `src/vibey_tools/gh/corpus-index.json` (32 chunks on
+   2026-09-15); there is no root copy. Commit it with the doctrine change.
+5. **Ratify by human merge.** Article II.3: the doctrines' sub-entries are ratified
+   by humans through reviewed pull requests — a machine may draft, a human
+   ratifies. Article IV.2 (the ratchet): a change may clarify, strengthen or
+   extend; it may never weaken.
+6. **Know the blast radius.** Article V.4: a ratified change to the canon yanks
+   every prior release of the code. A sub-doctrine merge is a release-level event.
+
+A standing subdoctrine carried verbatim in agent files (such as SD-01 in
+`CLAUDE.md`) is amended only by the operator, with a version bump — never edited
+in passing.
 
 ## The forbidden imports
 
@@ -137,14 +222,16 @@ a rule and belongs in the canon. See ADR-0020.
 - Third-party: `asyncpg`, `psycopg`, `httpx`, `typer`, `structlog`, `pydantic`, `textual`
 - `vibey_bootstrap` — named rather than categorised: it carries the Azure SDK and
   OpenTelemetry, so importing it here pulls a third-party graph in transitively
+- I/O, async and wall-clock from stdlib: `tests/domain/test_domain_purity.py` walks
+  the AST and rejects imports of `asyncio`, `asyncpg`, `subprocess`, `socket` and
+  `pathlib` (plus the third-party names above), calls to `open()`, `os.environ`,
+  `os.getenv`, `datetime.now()`/`today()`, `time.time()`, and any `async def`,
+  `await`, `async with` or `async for`
 
 `domain/` **may** import a family package that is itself dependency-free —
 `vibey_gh`, `vibey_skills`, `vibey_runners.common` all declare `dependencies = []`,
 so they add nothing to the graph that stdlib-only did not already allow. This is the
 ADR-0017 caveat to the stdlib-only rule: a first-party package is not third-party.
-- I/O from stdlib: tested by `tests/domain/test_domain_purity.py` (an
-  AST-walking test that scans for `open()`, `pathlib`, `subprocess`, `os.environ`,
-  `datetime.now()`, `async def`, `await`)
 
 `application/` must never import:
 - `vibey.infrastructure`, `vibey.cli`, `vibey.tui`
@@ -157,6 +244,10 @@ uv run lint-imports
 
 If it fails, the error names the contract and the violating import. Fix it by
 moving the offending code to a layer that can legally import the dependency,
-or by abstracting the dependency behind a Protocol in `application/ports.py`.
+or by abstracting the dependency behind a Protocol in
+`application/interfaces/<area>.py` (`ports.py` is a compatibility re-export shim —
+never add to it).
 
-See ADR-0001 (onion architecture).
+The onion layering has no ADR of its own: its authority is `.importlinter` and
+`docs/plans/architecture-and-roadmap.md`. ADR-0016 governs the class/interface
+shape; ADR-0021 records the monorepo layout.

@@ -1,5 +1,9 @@
 # Workstream 13 Front 1 — independent validation record
 
+> **Status (2026-09-15):** historical record, still accurate for PR #70. Since
+> then the suite has grown (1574 collected tests) and moved to the pre-push hook
+> stage; re-measure before scoping Front 1 items 5–6.
+
 Verification of PR #70 (`7067b2a`) re-measured **on merged develop by the
 operator's session**, not taken from the building engine's own evidence
 file (`13-front1-before-after.md`). Every number below was produced by a

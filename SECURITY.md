@@ -62,8 +62,9 @@ Vibey is a queue-based conductor for autonomous software delivery. Because Vibey
   `application/design_handler.py`, `application/build_implement_handler.py`,
   etc.) frames untrusted input through it. This includes the skills-context
   packet: `infrastructure/skills_context.py`'s `VibeySkillsContextCompiler`
-  retrieves markdown from the independently-versioned, third-party
-  `vibey-skills` marketplace, and `build_implement_handler.py` appends it
+  retrieves markdown from the separately versioned `vibey-skills`
+  marketplace (a workspace member at `src/vibey_tools/skills`, invoked as a
+  subprocess), whose skill files are themselves third-party content, and `build_implement_handler.py` appends it
   verbatim to the BUILD prompt whenever a project's `skills_context.mode` is
   `inject` — with no `PromptShield` framing. **Do not rely on the controls
   below: seed prompts, interview answers, issue descriptions, skills-context
@@ -95,6 +96,7 @@ Vibey is a queue-based conductor for autonomous software delivery. Because Vibey
 If you discover a security vulnerability in Vibey, please report it responsibly:
 
 1. **Do NOT open a public issue.**
-2. Send a detailed report to the security team or repository maintainers.
+2. Email the maintainer privately at **adam@matthewsteinberger.com** with the subject
+   `[vibey security]` (the same published contact as the Code of Conduct).
 3. Include reproducible steps, affected versions, and potential impact.
 4. We will acknowledge receipt within 48 hours and coordinate remediation before public disclosure.

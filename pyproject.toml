@@ -17,6 +17,17 @@ dependencies = [
     "tomli-w>=1.1",
 ]
 
+[project.urls]
+# Shown in the PyPI sidebar. The paper and the book are the documentation's two
+# downloadable forms, published beside it on the production channel.
+Homepage = "https://the-vibey-project.github.io/vibey/"
+Documentation = "https://the-vibey-project.github.io/vibey/main/"
+"Research paper" = "https://the-vibey-project.github.io/vibey/main/paper.pdf"
+Book = "https://the-vibey-project.github.io/vibey/main/book.pdf"
+Source = "https://github.com/the-vibey-project/vibey"
+Issues = "https://github.com/the-vibey-project/vibey/issues"
+Changelog = "https://github.com/the-vibey-project/vibey/blob/main/CHANGELOG.md"
+
 [project.scripts]
 vibey = "vibey.cli.main:app"
 

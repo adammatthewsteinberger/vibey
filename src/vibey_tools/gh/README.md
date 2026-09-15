@@ -1,5 +1,7 @@
 # vibey-gh
 
+> **Now part of the vibey monorepo.** `vibey-gh` lives in [the-vibey-project/vibey](https://github.com/the-vibey-project/vibey) at [`src/vibey_tools/gh`](https://github.com/the-vibey-project/vibey/tree/develop/src/vibey_tools/gh) (vibey ADR-0021). It is still published on PyPI as [`vibey-gh`](https://pypi.org/project/vibey-gh/).
+
 Shipping a change safely through review, merge, versioning, and release usually means
 hand-wiring a dozen GitHub Actions steps — and they drift out of sync, silently skip a
 check, or let a stale result approve code that has since changed. `vibey-gh` replaces that

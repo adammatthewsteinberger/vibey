@@ -1,0 +1,57 @@
+# Citation metadata for vibey. GitHub renders this as "Cite this repository" on the
+# repository page; citation managers (Zotero, Zenodo, ...) read it directly.
+# Format: Citation File Format 1.2.0 — https://citation-file-format.github.io/
+cff-version: 1.2.0
+message: >-
+  If you use vibey, or build on its design, please cite the research paper listed under
+  preferred-citation, and cite this repository for the software itself.
+title: vibey
+type: software
+abstract: >-
+  A queue-based, six-phase conductor for autonomous software delivery on top of the
+  *loop autonomous session runners: spec interview, design, build, review, and opt-in
+  deployment, with an append-only PostgreSQL ledger and a lossless engine handoff.
+authors:
+  - family-names: Steinberger
+    given-names: Adam Matthew
+    website: https://vibewithadam.matthewsteinberger.com/
+license: MIT
+version: 0.6.0
+date-released: "2026-09-14"
+repository-code: https://github.com/the-vibey-project/vibey
+url: https://the-vibey-project.github.io/vibey/main/
+keywords:
+  - autonomous software delivery
+  - coding agents
+  - orchestration
+  - event-sourced ledger
+  - PostgreSQL
+  - engine rotation
+preferred-citation:
+  type: article
+  title: >-
+    Ledger-Mediated Orchestration: Vendor-Independent Autonomous Software Delivery over
+    a Pool of Coding Agents
+  authors:
+    - family-names: Steinberger
+      given-names: Adam Matthew
+  year: 2026
+  url: https://the-vibey-project.github.io/vibey/main/paper.pdf
+  notes: >-
+    Published on the project's documentation site as a journal-formatted PDF
+    (https://the-vibey-project.github.io/vibey/main/paper.pdf) and as HTML
+    (https://the-vibey-project.github.io/vibey/main/paper/). The Markdown source is
+    docs/paper.md in the repository. No DOI or preprint identifier has been assigned yet.
+references:
+  - type: book
+    title: "vibey — The Documentation"
+    authors:
+      - family-names: Steinberger
+        given-names: Adam Matthew
+    year: 2026
+    url: https://the-vibey-project.github.io/vibey/main/book.pdf
+    notes: >-
+      The complete documentation exported as a book: EPUB at
+      https://the-vibey-project.github.io/vibey/main/book.epub, print-ready PDF at
+      https://the-vibey-project.github.io/vibey/main/book.pdf, and print HTML at
+      https://the-vibey-project.github.io/vibey/main/book-print.html.

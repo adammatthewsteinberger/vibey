@@ -1,5 +1,9 @@
 # Runbook: cost & performance — insanely optimized, tests and runtime
 
+> **Status (2026-09-15):** Front 1 items 1–4 landed (PR #70, 2026-08-21); the
+> commit hook was later reduced to ruff only. Item 5 half-landed (uv cache in
+> CI); item 6 and all of Front 2 are open.
+
 ## Goal
 
 Drive both dollars-per-delivered-work-item and seconds-per-feedback-loop
@@ -9,7 +13,7 @@ spend + orchestration efficiency).
 
 ## Front 1: the test/CI loop
 
-Current pain (measured this week): the full suite is ~6:20, the commit
+Pain at drafting (measured the week of 2026-08-17): the full suite was ~6:20, the commit
 hook runs it **twice** (~13 min per commit), CI repeats it, and the four
 per-layer coverage gates re-run the whole suite four more times
 sequentially (~25 min locally). Concurrent suites deadlock on the shared
@@ -45,10 +49,14 @@ Engine spend (the real money):
    tier per engine from ledger data (`cost_usd` by effort by outcome —
    the data already exists) and tune `PHASE_BASE_EFFORT` + projections
    empirically.
-2. **Cost-aware rotation**: extend SWRR effective weight with a cost
-   penalty (cheaper engine wins ties at equal health/fidelity; ADR-0005
-   compatible — it's just weight shaping). `cost_usd_cycle` column
-   already exists in engine_health.
+2. **Measured cost-aware rotation**: `domain/rotation.py::cost_factor`
+   already shapes the SWRR effective weight (clamped to 0.5–1.5) from the
+   descriptors' list prices (`cost_per_mtok_in + cost_per_mtok_out`
+   against the pool median), and has since the pure domain landed
+   (2026-08-14). Replace its input with the ledger-measured per-engine
+   cost (`engine_health.cost_usd_cycle`, TurnCompleted `cost_usd`) so the
+   penalty tracks what was actually billed. ADR-0005 compatible — still
+   weight shaping.
 3. **Prompt budget**: seed prompts + house rules are resent every
    session; measure and trim rendered prompt sizes; cache-stable prefix
    ordering for engines whose APIs support prompt caching.
@@ -100,6 +108,17 @@ granularity, crash recovery, and protected-file integrity all pass.
 **Closing this gap is the job of items 5 and 6 below**, which remain
 open; do not treat the ≤90s target as abandoned, only as deferred to
 them.
+
+**Update 2026-09-15.** Item 4 was later tightened: every heavy local hook
+(test suite, mypy, lint-imports, coverage gates, bandit, pip-audit) is now
+`stages: [pre-push]` in `.pre-commit-config.yaml`, so `git commit` runs
+ruff and ruff-format only and the ≤2 min commit target is met by
+construction. The suite has grown to 1574 collected tests (the hook
+config's own comment cites 259 s for 1519 tests before the move), so the
+135 s median above is historical; re-measure before scoping items 5–6.
+Item 5 is half-landed: CI enables the uv cache (`setup-uv`
+`enable-cache: true`); the hypothesis DB cache and a fail-fast lint stage
+are not there. Item 6 (duration regression guard) is absent.
 
 ## Needs from operator
 
