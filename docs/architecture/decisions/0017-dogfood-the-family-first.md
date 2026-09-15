@@ -2,6 +2,8 @@
 
 **Status:** accepted · **Date:** 2026-09-15
 
+**Canon:** sub-doctrine 10.e — *the family first*, filed under doctrine 10 — No guarantees (ADR-0020). It is law from the operator's ratifying merge of the change that carries it.
+
 ## Context
 
 This organisation ships a conductor, five session runners, a GitHub automation
