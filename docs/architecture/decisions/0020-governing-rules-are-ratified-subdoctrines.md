@@ -77,7 +77,19 @@ other, and a rule with only the argument is the gap this closes.
 
 ## Consequences
 
-**There is a backlog, and it is the four ADRs named above.** Each is a standing
+**This ADR files its own sub-doctrine, in the same change.** Anything else would
+have been the rule announcing itself and then exempting itself: it passes its own
+three-part test, so it owes the canon an entry. That entry is **12.b — the ratified
+rule**, filed under *Humans first*, because what the rule actually says is that law
+is not law until a human ratifies it — which is that doctrine applied to this
+project's own governance, including the authority it already names above the human.
+`corpus-index.json` is regenerated in the same change, because the index is built
+from the documents and is never a second source of truth.
+
+The parent remains the ratifying human's to change. Filing it under 12 is a
+proposal like any other, and the merge that carries it is what makes it law.
+
+**There is a backlog beyond it, and it is the four ADRs named above.** Each is a standing
 rule with no sub-doctrine. They are proposed individually, not as a batch: the
 parent doctrine is a real choice each time, and a batch would hide four of them
 behind one act of ratification.
