@@ -129,6 +129,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
+      # vibey-gh's suite shells out to `uv` where it verifies that bumping a version also
+      # re-locks: `test_bumping_a_toml_relocks_uv_when_a_lockfile_is_present` fails with
+      # FileNotFoundError without it. That is the test doing its job -- the behaviour it
+      # covers is a real `uv lock` -- so the binary is provided rather than the test
+      # weakened. Its own repository's CI never needed this because nothing there ran the
+      # suite on a runner without uv already present.
+      - uses: astral-sh/setup-uv@v3
       - name: Install
         working-directory: ${{ matrix.dir }}
         run: ${{ matrix.install }}

@@ -69,6 +69,13 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           BASE_REF: ${{ github.event.pull_request.base.ref }}
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          # The PULL REQUEST's head, not the checked-out ref. On a pull_request event
+          # actions/checkout gives you `refs/pull/N/merge`, a synthetic merge whose FIRST
+          # parent is the base branch -- so a first-parent walk from it goes straight into
+          # the base and finds nothing. Measured on this repository: 0 commits from the
+          # merge ref, 16 from the branch head. Walking `HEAD` there reports a green gate
+          # having examined nothing at all.
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           INTEGRATION_BRANCH: __VIBEY_GH_INTEGRATION_BRANCH__
           RELEASE_BRANCH: __VIBEY_GH_RELEASE_BRANCH__
         run: |
@@ -79,7 +86,8 @@ jobs:
             vibey-gh check --ci
           elif [ -n "${BASE_SHA:-}" ]; then
             git fetch --quiet --depth=50 origin "${BASE_SHA}" 2>/dev/null || true
-            vibey-gh check --ci --commits "${BASE_SHA}..HEAD"
+            git fetch --quiet --depth=50 origin "${HEAD_SHA}" 2>/dev/null || true
+            vibey-gh check --ci --commits "${BASE_SHA}..${HEAD_SHA}"
           else
             vibey-gh check --ci
           fi

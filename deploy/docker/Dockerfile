@@ -59,10 +59,22 @@ RUN uv sync --frozen --no-dev --extra operator --extra skills
 
 FROM python:3.12-slim-bookworm AS runtime
 
+# tini is here for one reason, and it is not tidiness. Linux discards a signal sent to
+# PID 1 while its disposition is still SIG_DFL, so whatever runs as PID 1 must have its
+# handlers installed before the orchestrator can possibly signal it. A Python process
+# cannot meet that bar: interpreter start and imports take hundreds of milliseconds on a
+# cold container, and measured on minikube a pod was deleted ~600ms after its container
+# started -- inside that window. The signal was not delivered late, it was discarded, and
+# the worker then sat out its full 7200s grace period claiming jobs nobody wanted.
+#
+# tini is ready in microseconds and forwards to the child, which turns an unwinnable race
+# into an ordinary one: SIGTERM during boot terminates a worker that has claimed nothing,
+# which is both correct and prompt; SIGTERM after boot is drained gracefully.
+#
 # Git is independently a genuine runtime dependency: BUILD phase work happens
 # in real git worktrees the worker creates itself.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends git ca-certificates \
+    && apt-get install -y --no-install-recommends git ca-certificates tini \
     && rm -rf /var/lib/apt/lists/*
 
 # python:slim ships a system pip that this image never uses -- everything
@@ -94,5 +106,7 @@ USER vibey
 # No default subcommand: the chart's worker and server Deployments supply
 # their own args, and an image that silently starts a worker is a footgun
 # when someone runs it just to inspect the filesystem.
-ENTRYPOINT ["vibey"]
+# `-g` forwards to the whole process group, so an engine subprocess the worker started is
+# signalled too rather than being orphaned onto init.
+ENTRYPOINT ["/usr/bin/tini", "-g", "--", "vibey"]
 CMD ["--help"]

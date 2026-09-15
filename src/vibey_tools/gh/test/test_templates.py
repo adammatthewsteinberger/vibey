@@ -1250,6 +1250,26 @@ def test_conventional_commits_self_heal_only_guarded_topic_history():
     assert "--delete-branch" not in text
 
 
+def test_provenance_walks_the_pull_requests_head_not_the_merge_ref():
+    """A first-parent walk from `refs/pull/N/merge` examines nothing.
+
+    On a pull_request event `actions/checkout` gives you a synthetic merge commit whose
+    FIRST parent is the base branch. `git log --first-parent BASE..HEAD` from there walks
+    straight into the base and reports zero commits -- a green provenance gate that looked
+    at nothing. Measured on the repository where this was found: 0 commits from the merge
+    ref, 16 from the branch head.
+
+    The commit checks need first-parent to skip imported subtree history, so the fix is
+    the endpoint rather than the traversal.
+    """
+    text = (WORKFLOWS / "provenance.yml").read_text(encoding="utf-8")
+    assert "HEAD_SHA: ${{ github.event.pull_request.head.sha }}" in text
+    assert '--commits "${BASE_SHA}..${HEAD_SHA}"' in text
+    # ...and the head has to be fetchable before it can be walked.
+    assert 'git fetch --quiet --depth=50 origin "${HEAD_SHA}"' in text
+    assert '--commits "${BASE_SHA}..HEAD"' not in text
+
+
 def test_conventional_commits_installs_the_published_package_not_the_adopting_repo():
     """A repo with `dependencies = []` that only pulls in vibey-gh as a CI tool must not
     have this step assume its own `pip install .` yields the vibey-gh CLI.
@@ -1291,7 +1311,7 @@ def test_promotion_checks_provenance_without_rewriting_or_reauditing_history():
     assert '[ "$BASE_REF" = "$RELEASE_BRANCH" ]' in text
     assert "Promotion PR: checking repository provenance" in text
     assert "vibey-gh check --ci" in text
-    assert 'vibey-gh check --ci --commits "${BASE_SHA}..HEAD"' in text
+    assert 'vibey-gh check --ci --commits "${BASE_SHA}..${HEAD_SHA}"' in text
 
 
 def test_pin_version_pins_every_managed_templates_tooling_install(tmp_path: Path):
