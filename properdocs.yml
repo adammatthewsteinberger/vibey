@@ -4,7 +4,7 @@ site_description: >-
   runners — spec interview, design, build, review, deploy. PostgreSQL-backed.
 site_url: https://the-vibey-project.github.io/vibey/
 repo_url: https://github.com/the-vibey-project/vibey
-repo_name: adammatthewsteinberger/vibey
+repo_name: the-vibey-project/vibey
 edit_uri: edit/main/docs/
 
 # ProperDocs, matching the rest of the family. `theme: mkdocs` because ProperDocs ships
