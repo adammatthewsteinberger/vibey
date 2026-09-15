@@ -35,13 +35,24 @@ ENV UV_COMPILE_BYTECODE=1 \
 # Dependency layer first: the lockfile changes far less often than source,
 # so this caches across almost every rebuild.
 COPY pyproject.toml uv.lock README.md ./
+# vibey-skills is a workspace member now, not a PyPI download, so uv has to be able to
+# BUILD it in this layer -- without it the sync fails outright with "Distribution not
+# found at: .../src/vibey_tools/skills". Only this one member is needed: the runners and
+# the other tools are not dependencies of `vibey[operator,skills]`, so uv never looks for
+# them. Copying the subtree whole rather than cherry-picking its manifest is deliberate;
+# its wheel force-includes plugins/ and .claude-plugin/, and a narrower copy silently rots
+# the moment that list grows.
+COPY src/vibey_tools/skills/ ./src/vibey_tools/skills/
 # --extra operator: the same image serves the worker and the operator
 # Deployment, so kopf has to be present. --extra skills makes the optional
 # context compiler available when a VibeyProject enables it; its process is
 # never started for projects that leave the feature off.
 RUN uv sync --frozen --no-install-project --no-dev --extra operator --extra skills
 
-COPY src/ ./src/
+# src/vibey only. This was `COPY src/ ./src/`, which already shipped five runner subtrees
+# into a runtime image that cannot execute them; with three tools absorbed as well it
+# became roughly 160 MB of tests, docs and marketplace Markdown in the layer.
+COPY src/vibey/ ./src/vibey/
 COPY migrations/ ./migrations/
 RUN uv sync --frozen --no-dev --extra operator --extra skills
 

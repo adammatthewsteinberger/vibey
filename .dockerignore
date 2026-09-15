@@ -1,0 +1,18 @@
+# There was none, so `COPY` sent the whole working tree -- .git included -- to the builder
+# on every build. These are the entries that are never right to ship and never right to
+# upload. Note what is deliberately NOT here: **/*.md. vibey-skills' 644 SKILL.md are
+# product data that its wheel force-includes, and excluding them would build a wheel that
+# fails its own "carries every skill" contract.
+.git
+**/.venv
+**/site
+**/htmlcov
+**/__pycache__
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+**/.coverage
+**/coverage.xml
+**/*.egg-info
+**/build
+**/dist
