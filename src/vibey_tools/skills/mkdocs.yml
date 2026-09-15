@@ -4,7 +4,7 @@ site_description: >-
   references packaged as a Claude Code plugin marketplace.
 site_url: https://the-vibey-project.github.io/vibey-skills/
 repo_url: https://github.com/the-vibey-project/vibey-skills
-repo_name: adammatthewsteinberger/vibey-skills
+repo_name: the-vibey-project/vibey-skills
 edit_uri: edit/main/docs/
 
 # Fail the build on a bad internal link rather than shipping one. `mkdocs build --strict`
