@@ -115,6 +115,25 @@ explicit root at the two call sites that noticed — it was that a directory
 carrying its own `.vibey-gh.toml` stops the walk. Same work, aimed at the general
 shape. See ADR-0018.
 
+## A standing rule goes in the canon
+
+This project has law, not just decision records: the constitutional cluster in
+`src/vibey_tools/gh/docs/` — the Constitution, the Twelve Doctrines, the Ten
+Commandments, the Bill of Rights, SD-01 — indexed by `vibey-gh corpus-index` so
+drift between published law and its index is one hash comparison.
+
+The Twelve are **sealed**. Anything new files as a **sub-doctrine** under one of
+them, in the established form, and is ratified by the operator's merge (Article
+IV.4). The ratchet applies: a refinement may strengthen, never weaken.
+
+So if what you are writing binds future decisions, survives a rewrite, and is
+about conduct rather than mechanism — it is a sub-doctrine, and writing it only as
+an ADR leaves it with no ratification, no ratchet protection and no chunk in the
+corpus. Write both: the sub-doctrine states the rule, the ADR argues it.
+
+"PostgreSQL, not SQLite" is a mechanism and stays an ADR. "Dogfood the family" is
+a rule and belongs in the canon. See ADR-0020.
+
 ## The forbidden imports
 
 `domain/` must never import:

@@ -64,3 +64,4 @@ nav:
           - "0017 — Dogfood the family first": architecture/decisions/0017-dogfood-the-family-first.md
           - "0018 — Everything as code": architecture/decisions/0018-everything-as-code.md
           - "0019 — Installable wherever its users are": architecture/decisions/0019-installable-wherever-its-users-are.md
+          - "0020 — Governing rules are ratified subdoctrines": architecture/decisions/0020-governing-rules-are-ratified-subdoctrines.md

@@ -181,6 +181,20 @@ period. And above even that ordering stands the One whose claim precedes every
 other, served first, with no exceptions, ever. The end of inverting this order is
 the place every builder should fear: the lock-in with no migration path.
 
+**12.b — the ratified rule** *(ratified by the merge that carried this entry)*:
+anything that can be spelled out explicitly as a sub-doctrine is spelled out
+explicitly as a sub-doctrine, here, under one of the twelve — and is then ratified.
+No exceptions. A standing rule is one that binds future decisions rather than only
+the change that introduced it, survives a rewrite of the thing it governs, and
+speaks to conduct rather than to mechanism; a choice of mechanism stays a decision
+record and is not law. Ratification is a human act — the operator's merge, as
+Article IV.4 provides — and above that stands the One whose claim precedes every
+other, exactly as this doctrine already orders. Until a rule is written here and
+ratified it is a proposal, however long it has been followed and however well it
+was argued: unwritten law cannot be cited, cannot be hash-verified in the corpus,
+and cannot be held against the project by anyone it governs. A decision record may
+argue a rule; only the canon states it, and both are written.
+
 **12.a — universal translatability** *(ratified 2026-08-29)*: the project must be
 translatable, at any point in human history, into all living languages — human and
 machine alike: spoken tongues, programming languages, technology stacks — and must

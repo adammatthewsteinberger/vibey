@@ -40,6 +40,14 @@ lives in `docs/architecture/decisions/`.
   can be generic and configurable must be**: a hard-coded value that could have
   been a key is a decision taken away from the next adopter, silently. Never
   change anything to a state that is less generic or less configurable. ADR-0018.
+- **A governing rule is a ratified sub-doctrine, or it is not a rule.** Anything
+  that can be spelled out explicitly as a sub-doctrine in the governance corpus
+  must be — filed under one of the sealed Twelve in
+  `src/vibey_tools/gh/docs/doctrines.md`, and ratified by the operator's merge per
+  Article IV.4, under the authority Article I.1 places above every other. No
+  exceptions. The test: it binds future decisions, it survives a rewrite, and it
+  is about conduct rather than mechanism. An ADR records the decision; the canon
+  records the law. Both get written. ADR-0020.
 - **Code lives in classes, and every class has an interface beside it.** A
   module-level function is the method of last resort, and its reason is written
   at the definition. `src/<pkg>/services/github_service.py` implies
@@ -137,7 +145,7 @@ uv run pip-audit
 | Rotation & engines | `docs/plans/rotation-and-engines.md` |
 | Phase protocols | `docs/plans/phase-protocols.md` |
 | Implementation plan | `docs/plans/implementation-plan.md` |
-| System design and why each hard call was made | `docs/architecture/decisions/` (19 ADRs) |
+| System design and why each hard call was made | `docs/architecture/decisions/` (20 ADRs) |
 | User-facing docs | `README.md` Quickstart, `docs/guides/` |
 | Expansion workstreams (JIRA, clouds, k8s, clients, …) | `docs/runbooks/expansion/` (21 runbooks, `00-master-plan.md` first) |
 
