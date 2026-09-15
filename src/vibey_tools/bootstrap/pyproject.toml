@@ -41,7 +41,13 @@ dependencies = [
     # The GitHub automation that used to live in vibey_bootstrap.gh. Split out because
     # it has no dependencies of its own and release tooling should not drag the Azure
     # SDK into every repository that adopts it.
-    "vibey-gh==1.70.0",
+    # Was `==1.70.0`. One workspace resolves one version of a distribution, and
+    # vibey-skills pinned a different exact version -- two exact pins on the same
+    # distribution cannot co-resolve, and `uv lock --check` is the CI job every other job
+    # depends on. Widening is strictly compatible for downstream: every environment that
+    # satisfied ==1.70.0 still satisfies this. The floor stays the version this package was
+    # validated against; the ceiling is the major boundary.
+    "vibey-gh>=1.70,<2",
     "azure-appconfiguration-provider>=1.0.0",
     # Imported directly by vibey_bootstrap.health for a cheap readiness probe.
     # It also arrives transitively via the provider, but we import it, so we

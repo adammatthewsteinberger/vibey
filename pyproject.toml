@@ -65,7 +65,19 @@ packages = ["src/vibey"]
 allow-direct-references = true
 
 [tool.uv.workspace]
-members = ["src/vibey_runners/*"]
+# Two grouping directories, two globs. Both are globs so a new member registers itself,
+# which is why `common` needed no wiring when it was added after the runner import.
+members = ["src/vibey_runners/*", "src/vibey_tools/*"]
+
+[tool.uv.sources]
+# This repository is now the source of truth for both, so the workspace resolves them from
+# the tree rather than from PyPI. This is NOT a direct reference: `tool.uv.sources` is uv
+# metadata, stripped at build time, and the requirement strings in the published METADATA
+# stay exactly as `[project.optional-dependencies]` declares them below. That distinction
+# is the whole difference from the git pin that once broke publishing outright with PyPI's
+# "400 Can't have direct dependency".
+vibey-gh = { workspace = true }
+vibey-skills = { workspace = true }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
