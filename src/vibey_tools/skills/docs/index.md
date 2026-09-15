@@ -20,7 +20,7 @@ assemble budgeted context packets for an agent.
 === "Claude Code marketplace"
 
     ```bash
-    /plugin marketplace add adammatthewsteinberger/vibey-skills
+    /plugin marketplace add the-vibey-project/vibey-skills
     /plugin install security-principles@vibey-skills
     ```
 
