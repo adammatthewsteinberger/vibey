@@ -41,17 +41,16 @@ jobs:
       - name: Install trusted release tooling
         run: |
           set -euo pipefail
-          # The pyproject that DECLARES the tooling, wherever it sits: the top of the tree
-          # in the standalone repository, under src/ in the monorepo that absorbed it. A
-          # repository that carries it must install that source, never a published release
-          # that is always behind its own integration branch.
-          self=""
-          for candidate in $(git ls-files --full-name '*pyproject.toml'); do
-            grep -qE '^name = "vibey-gh"' "$candidate" || continue
-            self=${candidate%/pyproject.toml}
-            if [ "$self" = "$candidate" ]; then self=.; fi
-            break
-          done
+          # Where this repository keeps its own copy of the tooling, from
+          # `[install] self_source` in .vibey-gh.toml -- a DECLARED path, never a search.
+          # Searching the tree for a pyproject declaring `name = "vibey-gh"` would read a
+          # pull request's own files: a branch that adds one anywhere gets it installed
+          # here, with this job's permissions, and hands the provenance gate a tool of the
+          # contributor's choosing. The path is verified below before anything runs.
+          self="."
+          # Verified, not assumed: a misconfigured path must fall back to the published
+          # release rather than install whatever happens to sit there.
+          grep -qE '^name = "vibey-gh"' "$self/pyproject.toml" 2>/dev/null || self=""
           if [ -n "$self" ]; then
             python -m pip install --quiet -e "$self"
           else

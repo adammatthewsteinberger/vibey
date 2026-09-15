@@ -46,6 +46,45 @@ def outcomes(actions) -> dict[str, str]:
     return {a.hook: a.outcome for a in actions}
 
 
+@pytest.mark.parametrize(
+    "value",
+    ["/abs/path", "../escape", "src/../../escape", "~/somewhere", "", "   "],
+)
+def test_install_self_source_refuses_anything_that_escapes_the_repository(value, tmp_path):
+    """This value decides what a workflow installs and a hook executes.
+
+    Rejected rather than normalised: "probably fine after cleanup" is not a standard a
+    path with those consequences gets held to.
+    """
+    from vibey_gh.config import load_config
+
+    (tmp_path / ".vibey-gh.toml").write_text(f'[install]\nself_source = "{value}"\n')
+    with pytest.raises(ValueError, match="self_source"):
+        load_config(tmp_path)
+
+
+def test_install_self_source_defaults_to_the_repository_root(tmp_path):
+    from vibey_gh.config import load_config
+
+    (tmp_path / ".vibey-gh.toml").write_text("[install]\n")
+    assert load_config(tmp_path).self_source == "."
+
+
+def test_install_self_source_normalises_a_relative_subtree(tmp_path):
+    from vibey_gh.config import load_config
+
+    (tmp_path / ".vibey-gh.toml").write_text('[install]\nself_source = "src/vibey_tools/gh/"\n')
+    assert load_config(tmp_path).self_source == "src/vibey_tools/gh"
+
+
+def test_install_self_source_rejects_a_non_string(tmp_path):
+    from vibey_gh.config import load_config
+
+    (tmp_path / ".vibey-gh.toml").write_text("[install]\nself_source = 3\n")
+    with pytest.raises(ValueError, match="self_source"):
+        load_config(tmp_path)
+
+
 def test_a_project_inside_a_repository_loads_its_own_configuration(tmp_path):
     """A monorepo tenant is a project; the repository root belongs to something else.
 

@@ -24,6 +24,10 @@ owner           = "adammatthewsteinberger"
 trusted_authors = ["adammatthewsteinberger", "claude[bot]", "github-actions[bot]", "vibey[bot]"]
 
 [install]
+# This repository vendors the tooling at src/vibey_tools/gh. Declared rather than
+# discovered: a workflow that searched the tree for a pyproject declaring
+# `name = "vibey-gh"` would read a pull request's own files and install what it found.
+self_source = "src/vibey_tools/gh"
 # Pin every rendered template to the version that rendered it. Unpinned, a runner adopts
 # whatever is newest -- the failure mode that took vibey-skills' CI red for two days.
 pin_version = true

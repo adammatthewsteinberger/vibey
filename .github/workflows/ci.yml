@@ -86,6 +86,81 @@ jobs:
       - name: Gate 7 - pip-audit
         run: uv run pip-audit
 
+  tools:
+    name: ${{ matrix.package }} on ${{ matrix.python }}
+    needs: [uv-lock]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Plain pip and setup-python, NOT `uv sync --package`. The workspace lock
+          # resolves at requires-python >=3.12 -- the intersection of every member -- so a
+          # uv environment cannot exercise the 3.10 and 3.11 floors these wheels publish.
+          # A floor nothing runs on is a claim, not a contract.
+          #
+          # Each command is the repository's own, ported verbatim. Absorbing a package
+          # must not quietly lower what it was already held to: vibey-gh carries a 100%
+          # BRANCH floor over 984 tests and vibey-bootstrap a 100% LINE floor over 1057,
+          # and both are enforced by their own pyproject addopts, not by anything here.
+          - {package: vibey-gh, dir: src/vibey_tools/gh, python: "3.11",
+             install: 'pip install -e ".[dev]"', test: 'python -m pytest -q'}
+          - {package: vibey-gh, dir: src/vibey_tools/gh, python: "3.12",
+             install: 'pip install -e ".[dev]"', test: 'python -m pytest -q'}
+          - {package: vibey-gh, dir: src/vibey_tools/gh, python: "3.13",
+             install: 'pip install -e ".[dev]"', test: 'python -m pytest -q'}
+          - {package: vibey-skills, dir: src/vibey_tools/skills, python: "3.10",
+             install: 'pip install -e .',
+             test: 'python3 tools/validate_manifests.py && python3 tools/check_links.py && PYTHONPATH=src python3 -m unittest discover -s tests'}
+          - {package: vibey-skills, dir: src/vibey_tools/skills, python: "3.12",
+             install: 'pip install -e .',
+             test: 'python3 tools/validate_manifests.py && python3 tools/check_links.py && PYTHONPATH=src python3 -m unittest discover -s tests'}
+          - {package: vibey-bootstrap, dir: src/vibey_tools/bootstrap, python: "3.11",
+             install: 'pip install -e ".[test,all]"',
+             test: 'pytest test/ -m "not integration" --cov=vibey_bootstrap --cov-report=term'}
+          - {package: vibey-bootstrap, dir: src/vibey_tools/bootstrap, python: "3.12",
+             install: 'pip install -e ".[test,all]"',
+             test: 'pytest test/ -m "not integration" --cov=vibey_bootstrap --cov-report=term'}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # vibey-gh's suite drives real git history.
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install
+        working-directory: ${{ matrix.dir }}
+        run: ${{ matrix.install }}
+      - name: Its own suite, unchanged
+        working-directory: ${{ matrix.dir }}
+        run: ${{ matrix.test }}
+
+  tools-lint:
+    name: Absorbed tools - their own linters
+    needs: [uv-lock]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: vibey-gh - black, isort, mypy
+        working-directory: src/vibey_tools/gh
+        run: |
+          python -m pip install --quiet -e ".[dev]"
+          python -m black --check vibey_gh test
+          isort --check-only vibey_gh test
+          python -m mypy vibey_gh
+      - name: vibey-gh - it installs its own managed automation without drift
+        working-directory: src/vibey_tools/gh
+        run: |
+          python - <<'PY'
+          from vibey_gh.config import load_config
+          from vibey_gh.install import installed
+          ok, problems = installed(load_config(), local=False)
+          raise SystemExit("managed automation drift: " + "; ".join(problems) if not ok else 0)
+          PY
+
   image:
     name: Container image (amd64 + arm64)
     runs-on: ubuntu-latest

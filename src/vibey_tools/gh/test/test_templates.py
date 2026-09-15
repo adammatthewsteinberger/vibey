@@ -783,8 +783,8 @@ def _resolver(hook: str) -> str:
 
 def _run_resolver(hook: str, cwd) -> str:
     script = _resolver(hook) + "\nvibey_gh_self\n"
-    # `set -eu` on purpose: pre-push runs under it, and an unguarded `[ a = b ] && x`
-    # inside the resolver would abort the hook instead of falling through.
+    # `set -eu` on purpose: pre-push runs under it, and an unguarded test inside the
+    # resolver would abort the hook instead of falling through.
     done = subprocess.run(
         ["sh", "-c", "set -eu\n" + script], cwd=cwd, capture_output=True, text=True, check=False
     )
@@ -792,52 +792,59 @@ def _run_resolver(hook: str, cwd) -> str:
     return done.stdout
 
 
+def _tree(root, *, config: str | None, at: str = "src/tools/gh") -> None:
+    (root / at / "vibey_gh").mkdir(parents=True, exist_ok=True)
+    (root / "pyproject.toml").write_text('name = "vibey"\n')
+    (root / at / "pyproject.toml").write_text('name = "vibey-gh"\n')
+    if config is not None:
+        (root / ".vibey-gh.toml").write_text(f'[install]\nself_source = "{config}"\n')
+
+
 @pytest.mark.parametrize("hook", ["pre-push", "commit-msg"])
-def test_the_tooling_is_found_wherever_the_tree_keeps_it(hook, tmp_path):
-    """Standalone repository, monorepo tenant, and ordinary adopter — one resolver.
-
-    The path used to be hard-coded to the repository root, which is right for the
-    standalone repository and wrong for a monorepo that absorbed it: the root pyproject
-    there says `name = "vibey"`, so every workflow fell through to a published release
-    and then judged the in-tree templates against its own older copies.
-    """
-
-    def commit(root):
-        subprocess.run(["git", "init", "-q", "."], cwd=root, check=True)
-        subprocess.run(["git", "add", "-A"], cwd=root, check=True)
-        subprocess.run(
-            ["git", "-c", "user.email=t@e.com", "-c", "user.name=t", "commit", "-qm", "base"],
-            cwd=root,
-            check=True,
-        )
+def test_the_hook_runs_the_tooling_this_repository_declares(hook, tmp_path):
+    """A declared path, so a monorepo tenant is found and a standalone repo is unchanged."""
+    mono = tmp_path / "mono"
+    _tree(mono, config="src/tools/gh")
+    assert _run_resolver(hook, mono) == "src/tools/gh"
 
     standalone = tmp_path / "standalone"
     (standalone / "vibey_gh").mkdir(parents=True)
     (standalone / "pyproject.toml").write_text('name = "vibey-gh"\n')
-    (standalone / "vibey_gh" / "__init__.py").write_text("")
-    commit(standalone)
+    (standalone / ".vibey-gh.toml").write_text("[install]\n")
     assert _run_resolver(hook, standalone) == "."
 
-    monorepo = tmp_path / "monorepo"
-    tenant = monorepo / "src" / "vibey_tools" / "gh"
-    (tenant / "vibey_gh").mkdir(parents=True)
-    (monorepo / "pyproject.toml").write_text('name = "vibey"\n')
-    (tenant / "pyproject.toml").write_text('name = "vibey-gh"\n')
-    (tenant / "vibey_gh" / "__init__.py").write_text("")
-    commit(monorepo)
-    assert _run_resolver(hook, monorepo) == "src/vibey_tools/gh"
-
-    # An ordinary adopter resolves to nothing and falls through to its installed CLI.
     adopter = tmp_path / "adopter"
     adopter.mkdir()
     (adopter / "pyproject.toml").write_text('name = "something-else"\n')
-    commit(adopter)
     assert _run_resolver(hook, adopter) == ""
 
-    # A vendored copy under an ignored directory is not this repository's tooling.
-    (adopter / ".venv" / "vibey_gh").mkdir(parents=True)
-    (adopter / ".venv" / "pyproject.toml").write_text('name = "vibey-gh"\n')
-    assert _run_resolver(hook, adopter) == ""
+
+@pytest.mark.parametrize("hook", ["pre-push", "commit-msg"])
+def test_the_hook_never_discovers_a_tool_a_branch_added(hook, tmp_path):
+    """The resolver must not search the tree.
+
+    A hook executes what it resolves. Searching for "the first tracked pyproject.toml
+    declaring name = vibey-gh" reads whatever is in the working tree, which on a
+    contributor's branch is whatever they put there.
+    """
+    root = tmp_path / "repo"
+    _tree(root, config=None)
+    (root / "evil" / "vibey_gh").mkdir(parents=True)
+    (root / "evil" / "pyproject.toml").write_text('name = "vibey-gh"\n')
+
+    # No declaration: nothing is used, even though two candidates exist on disk.
+    assert _run_resolver(hook, root) == ""
+
+    # Declared: exactly what was declared, never the planted one.
+    (root / ".vibey-gh.toml").write_text('[install]\nself_source = "src/tools/gh"\n')
+    assert _run_resolver(hook, root) == "src/tools/gh"
+
+
+@pytest.mark.parametrize("bad", ["/etc", "../outside", "src/tools/absent"])
+def test_the_hook_refuses_a_path_that_escapes_or_is_not_the_tooling(bad, tmp_path):
+    root = tmp_path / "repo"
+    _tree(root, config=bad)
+    assert _run_resolver("pre-push", root) == ""
 
 
 @pytest.mark.parametrize("hook", ["pre-push", "commit-msg"])
@@ -1249,7 +1256,7 @@ def test_conventional_commits_installs_the_published_package_not_the_adopting_re
     """
     text = (WORKFLOWS / "conventional-commits.yml").read_text(encoding="utf-8")
     assert "pip install --quiet ./automation" not in text
-    assert """grep -qE '^name = "vibey-gh"' "$candidate\"""" in text
+    assert 'self="__VIBEY_GH_SELF_SOURCE__"' in text
     assert 'python -m pip install --quiet -e "$self"' in text
     assert "python -m pip install --quiet vibey-gh" in text
     assert "name: Check out trusted automation" in text
@@ -1272,7 +1279,7 @@ def test_pr_automation_never_assumes_the_adopting_repos_own_package_is_vibey_gh(
     """
     text = (WORKFLOWS / "pr-automation.yml").read_text(encoding="utf-8")
     assert "pip install --quiet ./automation" not in text
-    checks = re.findall(r"git -C automation ls-files --full-name '\*pyproject\.toml'", text)
+    checks = re.findall(r'self="automation/__VIBEY_GH_SELF_SOURCE__"', text)
     assert len(checks) == 5  # review, repair, resolve-conflict, escalate, review-fallback
     installs = re.findall(r"python -m pip install --quiet vibey-gh\b", text)
     assert len(installs) == 6  # the five guarded installs above plus the evaluate job's own

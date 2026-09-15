@@ -32,18 +32,20 @@ red() { printf '\033[0;31m%s\033[0m\n' "$1"; }
 # `site/` can never match, and it is available here by definition: hooks run inside a
 # git repository, from the top of the working tree.
 vibey_gh_self() {
-  # A plain loop, not a pipeline: `set -e` is on in pre-push, and a `break` out of a
-  # `while read` would SIGPIPE `git ls-files`, which under `pipefail` fails the hook.
-  for candidate in $(git ls-files --full-name '*pyproject.toml' 2>/dev/null); do
-    grep -qE '^name = "vibey-gh"' "$candidate" 2>/dev/null || continue
-    dir=${candidate%/pyproject.toml}
-    if [ "$dir" = "$candidate" ]; then
-      dir=.
-    fi
-    [ -d "$dir/vibey_gh" ] || continue
-    printf '%s' "$dir"
-    return 0
-  done
+  # Read from `[install] self_source` in .vibey-gh.toml at runtime rather than rendered
+  # in: `install.installed()` compares these hooks byte-for-byte against the template, so
+  # a substituted hook would be permanently "out of date" and refuse every push.
+  #
+  # A DECLARED path, never a search. Searching the tree for a pyproject that declares
+  # `name = "vibey-gh"` reads whatever is in the working tree, which on a contributor's
+  # branch is whatever they put there -- and this hook executes what it finds.
+  dir=$(sed -n 's/^[[:space:]]*self_source[[:space:]]*=[[:space:]]*"\(.*\)".*/\1/p' \
+    .vibey-gh.toml 2>/dev/null | head -n 1)
+  [ -n "$dir" ] || dir=.
+  case "$dir" in /*|*..*) return 0 ;; esac
+  grep -qE '^name = "vibey-gh"' "$dir/pyproject.toml" 2>/dev/null || return 0
+  [ -d "$dir/vibey_gh" ] || return 0
+  printf '%s' "$dir"
 }
 
 

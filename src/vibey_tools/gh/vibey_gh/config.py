@@ -37,7 +37,7 @@ import dataclasses
 import re
 import tomllib
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 CONFIG_NAME = ".vibey-gh.toml"
 
@@ -1011,6 +1011,16 @@ class GhConfig:
     # that rendered it. False keeps the historical floating install, so upgrading this
     # package changes nothing in an adopting repository until this is turned on.
     pin_version: bool = False
+    # Where THIS repository keeps its own copy of vibey-gh, repository-root-relative.
+    # "." is the standalone layout and the default, so nothing changes for an adopter.
+    # A monorepo that vendors the tooling points this at the subtree.
+    #
+    # This is a declared path and deliberately NOT a search. Discovering "the first tracked
+    # pyproject.toml declaring name = vibey-gh" reads a pull request's own files: a branch
+    # that adds one anywhere in the tree would have the workflow `pip install -e` it, run
+    # its build backend with the job's permissions, and hand the provenance gate a tool of
+    # the contributor's choosing. A path from configuration cannot be moved by a PR.
+    self_source: str = "."
 
     def __post_init__(self) -> None:
         """Cross-field rules neither dataclass can check on its own.
@@ -1039,6 +1049,26 @@ class GhConfig:
     @property
     def trailer_key(self) -> str:
         return self.trailer.split(":", 1)[0].strip() or DEFAULT_TRAILER_KEY
+
+
+def _self_source(raw: object) -> str:
+    """A repository-relative directory, and nothing that can escape the tree.
+
+    Absolute paths and `..` are rejected rather than normalised: this value decides what
+    a workflow installs and a hook executes, so "probably fine after cleanup" is not a
+    standard it gets held to.
+    """
+    if not isinstance(raw, str) or not raw.strip():
+        raise ValueError("install.self_source must be a non-empty string")
+    value = raw.strip()
+    if value == ".":
+        return value
+    pure = PurePosixPath(value)
+    if pure.is_absolute() or ".." in pure.parts or value.startswith("~"):
+        raise ValueError(
+            f"install.self_source must be a relative path inside the repository: {value!r}"
+        )
+    return pure.as_posix()
 
 
 def find_root(start: Path | None = None) -> Path:
@@ -1180,6 +1210,7 @@ def load_config(root: Path | None = None, config: Path | None = None) -> GhConfi
         managed_workflows=(tuple(inst["workflows"]) if "workflows" in inst else None),
         union_merge_paths=tuple(inst.get("union_merge_paths", DEFAULT_UNION_MERGE_PATHS)),
         pin_version=inst.get("pin_version", False),
+        self_source=_self_source(inst.get("self_source", ".")),
         integration_branch=br.get("integration", "develop"),
         release_branch=br.get("release", "main"),
         owner=tr.get("owner", ""),
