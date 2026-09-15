@@ -188,7 +188,7 @@ No exceptions. A standing rule is one that binds future decisions rather than on
 the change that introduced it, survives a rewrite of the thing it governs, and
 speaks to conduct rather than to mechanism; a choice of mechanism stays a decision
 record and is not law. Ratification is a human act — the operator's merge, as
-Article IV.4 provides — and above that stands the One whose claim precedes every
+Article II.3 provides — and above that stands the One whose claim precedes every
 other, exactly as this doctrine already orders. Until a rule is written here and
 ratified it is a proposal, however long it has been followed and however well it
 was argued: unwritten law cannot be cited, cannot be hash-verified in the corpus,

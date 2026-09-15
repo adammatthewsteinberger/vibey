@@ -87,7 +87,7 @@
   {
    "anchor": "12 — Humans first",
    "document": "docs/doctrines.md",
-   "sha256": "caa14fda78fbd5b311ad399d074eb891e6c95ac249b9b99cf4d1c922f411540e",
+   "sha256": "857d378e1db4dccfa7606e3da7b0101da9bd0464a8d2d1e675faec525d9d3f9d",
    "start_line": 177,
    "text_lines": 33
   },
@@ -225,7 +225,7 @@
    "text_lines": 4
   }
  ],
- "corpus_sha256": "6fb46b2b207c537912f7abf9ddac93e192b26f895bf710dcc3edb93271226f90",
+ "corpus_sha256": "46e131590f1e04d5512c79f41c0367091183017174721097602a76d1bf66aa07",
  "documents": [
   "docs/doctrines.md",
   "docs/constitution.md",
