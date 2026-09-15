@@ -27,6 +27,8 @@ God-honoring governments — always, no exceptions — with the primary emphasis
 service on the government's military arm (Constitution, Article I.2), civil agencies
 inheriting every guarantee.
 
+**2.b — installable wherever its users already are** *(ratified by the merge that carried this entry)*: a release is not finished when the canonical index has the artifact; it is finished when every channel that carries the project has it. A command-line application is published to every registry that can carry it — the beginner's channel first: the package manager the reader already uses, on the platform they already run — and the language it happens to be written in is an implementation detail no reader is asked to care about. Every packaging definition lives in the repository as code. Every channel is a support surface: nothing is added that is not published by the same automation as everything else, because a stale package installs an old version silently, and a reader bounced at install is a reader lost (7). A registry for another language's libraries carries a wrapper only where the audience is real, and the wrapper says plainly that it installs a command, not a library. The packaging is honest about what the install does not include.
+
 ## 3 — Examples
 
 Every exposed surface — API, CLI, MCP, webhook, SDK — carries at least one fully
@@ -116,6 +118,8 @@ discussions, stashes, work in progress, imperfect words are the warmth of the
 project. Losslessness governs cleanup: automation deletes only what is provably
 redundant, and everything else is reported to the human, never removed by a machine.
 
+**9.b — the declared seam** *(ratified by the merge that carried this entry)*: code lives in classes, and every class has its contract declared beside it — an interface in a mirrored `interfaces/` package, which declares and never consumes. A bare module-level function is the method of last resort, permitted only where a language or library contract requires one, and its reason is written at the definition. Substitution happens at the declared seam, never by patching an import: a test that must reach around a contract to do its work is bound to the import graph, and green code bound to its import graph is momentum borrowed, not earned. An interface with one implementation is still correct — the test double is the second, and it exists from the first day. No layer is exempt: a pure function becomes a method on a class that carries no state, and purity survives, because purity was never the absence of a class. The existing tree, and every absorbed package, converges module by module as it is touched; a sweeping rewrite that leaves every test green is the shape of change that hides a regression, and it is not taken.
+
 ## 10 — No guarantees
 
 Internet, power, the developer's laptop, and every third-party dependency: never
@@ -167,6 +171,8 @@ about a lapsed clearance is the failure this forbids.
 [read it in full](sd-01-counterparties-trust-verification.md). One standard for
 everyone; default posture unverified; nothing presumed human; the law is a floor.
 
+**10.e — the family first** *(ratified by the merge that carried this entry)*: if a capability exists inside this family, the family's is used — never reimplemented, and never displaced by a third-party equivalent. The bar is not whether ours is better; it is whether ours does this at all. A second implementation of something the family already ships carries a written reason at the call site, and the only reason admitted is a capability gap — which is closed by teaching ours, not by replacing it. This holds in process and across process boundaries alike: in imports, in CI, and in operations. Every dependency is a party who can be pressured (10.a); the family is the one that cannot be, and a project that ships delivery tooling it does not itself run is making a claim it has not tested. Layer purity is not relaxed by this: a family package is imported only where its own dependencies are allowed, and behind a port everywhere else.
+
 ## 11 — The living roadmap
 
 Every project keeps an active, living roadmap until its goal is achieved and its
@@ -200,6 +206,8 @@ translatable, at any point in human history, into all living languages — human
 machine alike: spoken tongues, programming languages, technology stacks — and must
 survive all such changes, always. Meaning lives in plain structured text; the formal
 core is re-implementable from its specification.
+
+**12.c — the declared state** *(ratified by the merge that carried this entry)*: anything that can be declared in the repository is declared in the repository — infrastructure, configuration, policy, pipelines, documentation, repository settings — reviewed in a pull request and reconciled from the file: never clicked, never run by hand and left unrecorded. Declared, not merely documented: the test is whether a stranger with a clone and admin rights can restore the state from the tree. Reconciled, not merely written: where a reconciler exists it runs in automation, and where none can, the desired state is still recorded in the file that would own it and reality is checked against it. No convenience ever trades this away. And everything that can be made generic and configurable is made so, and nothing is ever changed to a state that is less generic or less configurable: a hard-coded value that could have been a key is a decision taken away from the next human adopter, silently. A default is configurability with an opinion; a constant is not. This stands under humans first because clicked state is state no human reviewed and no human agreed to — the configuration-shaped twin of 12.b.
 
 ---
 

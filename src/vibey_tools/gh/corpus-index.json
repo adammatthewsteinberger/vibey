@@ -17,79 +17,79 @@
   {
    "anchor": "2 — Audience channels",
    "document": "docs/doctrines.md",
-   "sha256": "0a2239615218c39e05e1844cf14a26370f6823feb068593b5953eb1caa3ca1fa",
+   "sha256": "80973f387330f39f4627ae18373637c77d358613d6465259f5786a2be6b8999f",
    "start_line": 19,
-   "text_lines": 11
+   "text_lines": 13
   },
   {
    "anchor": "3 — Examples",
    "document": "docs/doctrines.md",
    "sha256": "ff353466d65f98e1e7b13794f57a2eacce3a25fb9f782b8e70127c224acfbc3f",
-   "start_line": 30,
+   "start_line": 32,
    "text_lines": 5
   },
   {
    "anchor": "4 — Site scope",
    "document": "docs/doctrines.md",
    "sha256": "0936dd0c8cb4170caddeec0d52986e943c69e67d67e2f9386abbe5d975b81052",
-   "start_line": 35,
+   "start_line": 37,
    "text_lines": 17
   },
   {
    "anchor": "5 — The document arc",
    "document": "docs/doctrines.md",
    "sha256": "5d7ec696bd8c4a45bb4e179d9df2aa9756f63fa67ca2a8fcfa944c641c3ec0a7",
-   "start_line": 52,
+   "start_line": 54,
    "text_lines": 6
   },
   {
    "anchor": "6 — The research paper",
    "document": "docs/doctrines.md",
    "sha256": "b5159f9defd1472ac7ae122c548d8a81d3459dbad2c8873be744fe1d7f30c95b",
-   "start_line": 58,
+   "start_line": 60,
    "text_lines": 5
   },
   {
    "anchor": "7 — The never-lost reader",
    "document": "docs/doctrines.md",
    "sha256": "228ff45a40c65c441f38ab8f4b6abca55a125de3df25858806cf08cfa4066f55",
-   "start_line": 63,
+   "start_line": 65,
    "text_lines": 15
   },
   {
    "anchor": "8 — Local authority",
    "document": "docs/doctrines.md",
    "sha256": "883bcbd7f06fc80783935992a554ed0735602d26b8ba4d16dcbef2cbdfb68829",
-   "start_line": 78,
+   "start_line": 80,
    "text_lines": 27
   },
   {
    "anchor": "9 — The vibe",
    "document": "docs/doctrines.md",
-   "sha256": "a3d32c056e0008353b11a8dcb3120d7ebf792503ec7919ec457b4d82132dc43b",
-   "start_line": 105,
-   "text_lines": 14
+   "sha256": "71bd94d7661fabc2792e325309a4cef3323fc6fa0e39008acbcf80330ab56455",
+   "start_line": 107,
+   "text_lines": 16
   },
   {
    "anchor": "10 — No guarantees",
    "document": "docs/doctrines.md",
-   "sha256": "09c13bc4800bef8ee1e28856ce6675c85ea6e410e6479a88794d5f99e1459e26",
-   "start_line": 119,
-   "text_lines": 51
+   "sha256": "677fd38aa9853ec58bb044740f0cff31321ef441d2bfc47d3f53b87c88e1d89d",
+   "start_line": 123,
+   "text_lines": 53
   },
   {
    "anchor": "11 — The living roadmap",
    "document": "docs/doctrines.md",
    "sha256": "2b7af17bfc318721c526df138ff45715828a18d9f4892ca8a80d194c4328548d",
-   "start_line": 170,
+   "start_line": 176,
    "text_lines": 7
   },
   {
    "anchor": "12 — Humans first",
    "document": "docs/doctrines.md",
-   "sha256": "caa14fda78fbd5b311ad399d074eb891e6c95ac249b9b99cf4d1c922f411540e",
-   "start_line": 177,
-   "text_lines": 33
+   "sha256": "2799d16df54b88d6f793574a7dc70b137e72a038ede864662362975f36251892",
+   "start_line": 183,
+   "text_lines": 35
   },
   {
    "anchor": "The Constitution",
@@ -225,7 +225,7 @@
    "text_lines": 4
   }
  ],
- "corpus_sha256": "6fb46b2b207c537912f7abf9ddac93e192b26f895bf710dcc3edb93271226f90",
+ "corpus_sha256": "f4f0052e085d24835c830c96e89aa9aac6b3ce09274ccc8a9d4075ab66bf29ac",
  "documents": [
   "docs/doctrines.md",
   "docs/constitution.md",
