@@ -124,7 +124,7 @@ drift between published law and its index is one hash comparison.
 
 The Twelve are **sealed**. Anything new files as a **sub-doctrine** under one of
 them, in the established form, and is ratified by the operator's merge (Article
-IV.4). The ratchet applies: a refinement may strengthen, never weaken.
+II.3). The ratchet applies: a refinement may strengthen, never weaken.
 
 So if what you are writing binds future decisions, survives a rewrite, and is
 about conduct rather than mechanism — it is a sub-doctrine, and writing it only as
