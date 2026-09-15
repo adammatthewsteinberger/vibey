@@ -25,12 +25,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from vibey_gh.config import GhConfig
 
-__all__ = ["CORPUS_DOCUMENTS", "Chunk", "build", "check", "write"]
+__all__ = ["CORPUS_DOCUMENTS", "Chunk", "build", "check", "index_path", "write"]
 
 # The governance corpus, in the constitutional cluster's own order. sd-*.md globs in
 # the standing subdoctrines so future SD filings index without a code change.
@@ -54,14 +55,36 @@ class Chunk:
     text_lines: int
 
 
+def _source(cfg: GhConfig) -> Path:
+    """The directory holding the corpus: `[documentation] governance_source`, else `docs`."""
+    return cfg.root / (cfg.documentation.governance_source or "docs")
+
+
+def index_path(cfg: GhConfig) -> Path:
+    """Where the index lives: `[documentation] corpus_index`, relative to the root."""
+    return cfg.root / cfg.documentation.corpus_index
+
+
+def _relative(cfg: GhConfig, path: Path) -> str:
+    """A document's path as recorded in the index: relative to the index's own directory.
+
+    Not to the configured root. In a monorepo the same corpus is indexed from the
+    repository root (`governance_source = "src/tools/gh/docs"`) and from the absorbed
+    package's own root (the `docs` default); both must write the same bytes to the same
+    file, and a root-relative path would make them disagree on every document.
+    """
+    return Path(os.path.relpath(path, index_path(cfg).parent)).as_posix()
+
+
 def _documents(cfg: GhConfig) -> list[Path]:
     found: list[Path] = []
+    source = _source(cfg)
     for pattern in CORPUS_DOCUMENTS:
-        if "*" in pattern:
-            base, _, glob = pattern.rpartition("/")
-            found.extend(sorted((cfg.root / base).glob(glob)))
+        name = pattern.rpartition("/")[2]
+        if "*" in name:
+            found.extend(sorted(source.glob(name)))
         else:
-            path = cfg.root / pattern
+            path = source / name
             if path.is_file():
                 found.append(path)
     # De-duplicate while preserving the constitutional order.
@@ -75,7 +98,7 @@ def _documents(cfg: GhConfig) -> list[Path]:
 
 
 def _chunks_of(cfg: GhConfig, path: Path) -> list[Chunk]:
-    rel = path.relative_to(cfg.root).as_posix()
+    rel = _relative(cfg, path)
     lines = path.read_text(encoding="utf-8").split("\n")
     chunks: list[Chunk] = []
     anchor, start = "", 1
@@ -113,14 +136,14 @@ def build(cfg: GhConfig) -> dict:
         walk.update(c.sha256.encode("ascii"))
     return {
         "corpus_sha256": walk.hexdigest(),
-        "documents": [p.relative_to(cfg.root).as_posix() for p in _documents(cfg)],
+        "documents": [_relative(cfg, p) for p in _documents(cfg)],
         "chunks": [asdict(c) for c in chunks],
     }
 
 
 def write(cfg: GhConfig, out: Path | None = None) -> Path:
     """Deterministic bytes: same corpus, same file, byte for byte."""
-    target = out or (cfg.root / INDEX_PATH)
+    target = out or index_path(cfg)
     index = build(cfg)
     target.write_text(
         json.dumps(index, indent=1, ensure_ascii=False, sort_keys=True) + "\n",
@@ -129,9 +152,9 @@ def write(cfg: GhConfig, out: Path | None = None) -> Path:
     return target
 
 
-def check(cfg: GhConfig, index_path: Path | None = None) -> tuple[bool, str]:
+def check(cfg: GhConfig, index_path_override: Path | None = None) -> tuple[bool, str]:
     """Drift between the published index and the documents fails loudly (#249)."""
-    target = index_path or (cfg.root / INDEX_PATH)
+    target = index_path_override or index_path(cfg)
     if not target.is_file():
         return False, f"{target.name} is missing — the corpus has law but no index"
     try:

@@ -50,6 +50,7 @@ packages = ["vibey_gh"]
 [tool.hatch.build.targets.wheel.force-include]
 "docs/stylesheets/vibey.css" = "vibey_gh/templates/release/vibey.css"
 "docs/javascripts/channel.js" = "vibey_gh/templates/release/channel.js"
+"docs/javascripts/math.js" = "vibey_gh/templates/release/math.js"
 
 [tool.hatch.build.targets.sdist]
 include = [

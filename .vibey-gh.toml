@@ -102,6 +102,12 @@ trusted_only = true
 fallback_enabled = true
 
 [documentation]
+# Governance in plain sight (sub-doctrine 7.b): the canon is published on every channel site,
+# in the book, and linked from every page, from its single source in the absorbed vibey-gh.
+governance_source = "src/vibey_tools/gh/docs"
+corpus_index = "src/vibey_tools/gh/corpus-index.json"
+# The research paper and the architecture pages carry LaTeX; render it on the site.
+math = true
 # The named author of the published paper, the book and every page's metadata. Unset, the
 # exporters fall back to the GitHub owner and the paper's byline reads "the-vibey-project".
 author = "Adam Matthew Steinberger"
