@@ -123,6 +123,12 @@ DEFAULT_RELEASE_RULESET_CHECKS = DEFAULT_RULESET_CHECKS
 # classic branch protection it replaced) never exempts administrators on its own. This
 # grants an admin no authority they lack: anyone who can bypass a ruleset can already
 # rewrite it. It only removes the detour.
+# Bypass actor types the rulesets API identifies by type alone. Every other type is a
+# `<type>:<numeric id>` pair, and requiring the id is what keeps a typo from silently
+# granting bypass to the wrong team. These two have no id to give: GitHub returns
+# `actor_id: null` for them, and sending one is rejected.
+IDLESS_BYPASS_ACTOR_TYPES = ("OrganizationAdmin", "DeployKey")
+
 DEFAULT_RULESET_BYPASS_ACTORS = ("RepositoryRole:5",)
 # Managed issue-automation labels. They live here rather than beside the policy because
 # `IssueAutomationConfig` defaults name one of them, and configuration must not import
@@ -719,7 +725,14 @@ class RulesetConfig:
             raise ValueError("rulesets.required_approvals must be between 0 and 6")
         for actor in self.bypass_actors:
             actor_type, sep, actor_id = actor.partition(":")
-            if not sep or not actor_type.strip() or not actor_id.strip().isdigit():
+            actor_type = actor_type.strip()
+            if actor_type in IDLESS_BYPASS_ACTOR_TYPES:
+                if sep:
+                    raise ValueError(
+                        f"rulesets.bypass_actors: {actor_type} takes no id, got {actor!r}"
+                    )
+                continue
+            if not sep or not actor_type or not actor_id.strip().isdigit():
                 raise ValueError(f"rulesets.bypass_actors entry is malformed: {actor!r}")
 
 
@@ -1029,8 +1042,23 @@ class GhConfig:
 
 
 def find_root(start: Path | None = None) -> Path:
-    """The repository root — where `.git` lives — walking up from `start`."""
+    """The project root: the nearest directory that declares one, else where `.git` lives.
+
+    A repository used to be a project, so `.git` was the only marker needed. A monorepo
+    breaks that: `src/vibey_tools/gh` is a project -- its own distribution, its own version
+    line, its own fingerprint globs -- inside a repository whose root belongs to something
+    else. Walking straight past it to `.git` loaded the WRONG configuration, silently, and
+    every path in it then resolved against the wrong tree.
+
+    So a directory that carries its own `.vibey-gh.toml` stops the walk. That is already
+    the thing which says "a vibey-gh project lives here", it needs no new marker file, and
+    it leaves the standalone case exactly as it was -- there, the config sits at the git
+    root and both rules give the same answer.
+    """
     here = (start or Path.cwd()).resolve()
+    for candidate in (here, *here.parents):
+        if (candidate / CONFIG_NAME).is_file():
+            return candidate
     for candidate in (here, *here.parents):
         if (candidate / ".git").exists():
             return candidate

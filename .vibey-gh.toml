@@ -29,6 +29,41 @@ trusted_authors = ["adammatthewsteinberger", "claude[bot]", "github-actions[bot]
 pin_version = true
 workflows = ["merge-train.yml", "promote-to-main.yml", "provenance.yml", "release-surfaces.yml", "pr-automation.yml", "automation-bootstrap.yml"]
 
+# Declared here rather than clicked, per ADR-0018. `vibey-gh` has reconciled both of these
+# from configuration since 1.x and vibey-skills has used them for months; this repository,
+# which now CONTAINS vibey-gh, had neither -- its branch protection and its profile were
+# settings-page state with no history, no review and no way to restore them.
+#
+# These values are the live configuration as it stood on 2026-09-15, transcribed rather
+# than invented. Reconciling them is therefore a no-op; the point is that from here a
+# change to them is a pull request.
+[repository_profile]
+description = "A queue-based, six-phase conductor for autonomous software delivery on top of the *loop runners — spec interview → design → build → review → deploy. PostgreSQL-backed."
+topics = [
+  "agents", "ai-agents", "autonomous-agents", "claude", "claude-code", "cli",
+  "delivery-automation", "devtools", "gemini", "gpt", "llm", "mit-license",
+  "orchestration", "postgresql", "python",
+]
+
+[rulesets]
+enabled = true
+
+# `gates` is the whole 7-gate sweep in one job, which is why one check covers it. Bypass is
+# OrganizationAdmin plus RepositoryRole:5 (admin): the merge train needs a seat that can
+# land a green PR, and a ruleset the automation cannot satisfy is a ruleset somebody
+# switches off.
+[rulesets.integration]
+required_checks  = ["gates"]
+required_approvals = 1
+bypass_actors    = ["OrganizationAdmin", "RepositoryRole:5"]
+
+# main additionally pins the lock: every other CI job `needs` the uv-lock job, so a release
+# branch that drifts there is a release branch whose gates never ran.
+[rulesets.release]
+required_checks  = ["gates", "uv.lock is in sync with pyproject.toml"]
+required_approvals = 1
+bypass_actors    = ["OrganizationAdmin", "RepositoryRole:5"]
+
 [pr_automation]
 # This repository's real PR-triggered workflows. The default set names "Docs", which
 # nothing here answers to -- a gate waiting on a scan that can never complete never posts.

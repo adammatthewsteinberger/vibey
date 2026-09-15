@@ -62,3 +62,4 @@ nav:
           - "0015 — Qwenloop standby": architecture/decisions/0015-qwenloop-standby.md
           - "0016 — Classes behind interfaces": architecture/decisions/0016-classes-behind-interfaces.md
           - "0017 — Dogfood the family first": architecture/decisions/0017-dogfood-the-family-first.md
+          - "0018 — Everything as code": architecture/decisions/0018-everything-as-code.md

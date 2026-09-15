@@ -46,6 +46,52 @@ def outcomes(actions) -> dict[str, str]:
     return {a.hook: a.outcome for a in actions}
 
 
+def test_a_project_inside_a_repository_loads_its_own_configuration(tmp_path):
+    """A monorepo tenant is a project; the repository root belongs to something else.
+
+    `src/vibey_tools/gh` has its own distribution, version line and fingerprint globs
+    inside a repository whose root config describes the conductor. Walking past it to
+    `.git` loaded the wrong file silently, and every path in it then resolved against the
+    wrong tree -- which is how vibey-gh's own documentation-contract test started
+    asserting against vibey's configuration.
+    """
+    from vibey_gh.config import find_root, load_config
+
+    (tmp_path / ".git").mkdir()
+    (tmp_path / ".vibey-gh.toml").write_text('[fingerprint]\nsources = ["outer/*.py"]\n')
+    tenant = tmp_path / "src" / "tools" / "inner"
+    tenant.mkdir(parents=True)
+    (tenant / ".vibey-gh.toml").write_text('[fingerprint]\nsources = ["inner/*.py"]\n')
+    deep = tenant / "pkg"
+    deep.mkdir()
+
+    assert find_root(tenant) == tenant
+    assert find_root(deep) == tenant
+    assert load_config(tenant).sources == ("inner/*.py",)
+
+    # A directory with no config of its own still resolves to the repository root.
+    plain = tmp_path / "src" / "conductor"
+    plain.mkdir(parents=True)
+    assert find_root(plain) == tmp_path
+    assert load_config(plain).sources == ("outer/*.py",)
+
+
+def test_a_repository_with_no_configuration_anywhere_still_resolves_to_git(tmp_path):
+    from vibey_gh.config import find_root
+
+    (tmp_path / ".git").mkdir()
+    nested = tmp_path / "a" / "b"
+    nested.mkdir(parents=True)
+    assert find_root(nested) == tmp_path
+
+
+def test_find_root_falls_back_to_the_starting_directory(tmp_path):
+    """Neither a config nor a .git anywhere above: the caller's directory is the answer."""
+    from vibey_gh.config import find_root
+
+    assert find_root(tmp_path) == tmp_path.resolve()
+
+
 def test_installing_twice_reports_everything_unchanged(repo):
     cfg = GhConfig(root=repo)
     install.install(cfg)

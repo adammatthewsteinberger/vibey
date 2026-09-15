@@ -26,6 +26,7 @@ from vibey_gh.config import (
     load_config,
 )
 from vibey_gh.install import render_workflow
+from vibey_gh.rulesets import bypass_actor_payload
 
 
 def completed(code=0, out="", err=""):
@@ -69,6 +70,37 @@ def test_bypass_actors_must_be_type_colon_numeric_id(actor):
 def test_an_empty_bypass_actor_is_rejected_as_nonempty_before_format():
     with pytest.raises(ValueError, match="non-empty"):
         RulesetConfig(bypass_actors=("",))
+
+
+@pytest.mark.parametrize("actor", ["OrganizationAdmin", "DeployKey"])
+def test_an_actor_type_with_no_id_is_accepted_and_sends_a_null_id(actor):
+    """Not every bypass actor has a numeric id.
+
+    The rulesets API identifies `OrganizationAdmin` and `DeployKey` by type alone --
+    it returns `actor_id: null` for them and rejects an id. Requiring `<type>:<id>`
+    for everything made a live ruleset inexpressible: vibey's own bypass list is
+    `OrganizationAdmin` plus `RepositoryRole:5`, and the first half could not be
+    written down at all.
+    """
+    cfg = RulesetConfig(bypass_actors=(actor,))
+    assert cfg.bypass_actors == (actor,)
+    assert bypass_actor_payload(cfg.bypass_actors) == [
+        {"actor_id": None, "actor_type": actor, "bypass_mode": "always"}
+    ]
+
+
+def test_an_idless_actor_type_given_an_id_is_rejected():
+    """The API rejects it, so the config should say so rather than pass it through."""
+    with pytest.raises(ValueError, match="takes no id"):
+        RulesetConfig(bypass_actors=("OrganizationAdmin:1",))
+
+
+def test_the_two_actor_shapes_mix_in_one_list():
+    cfg = RulesetConfig(bypass_actors=("OrganizationAdmin", "RepositoryRole:5"))
+    assert bypass_actor_payload(cfg.bypass_actors) == [
+        {"actor_id": None, "actor_type": "OrganizationAdmin", "bypass_mode": "always"},
+        {"actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "always"},
+    ]
 
 
 def test_a_well_formed_bypass_actor_is_accepted():

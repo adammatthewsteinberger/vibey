@@ -87,9 +87,15 @@ def bypass_actor_payload(bypass_actors: tuple[str, ...]) -> list[dict[str, Any]]
     """
     payload = []
     for actor in bypass_actors:
-        actor_type, _, actor_id = actor.partition(":")
+        actor_type, sep, actor_id = actor.partition(":")
         payload.append(
-            {"actor_id": int(actor_id), "actor_type": actor_type, "bypass_mode": "always"}
+            {
+                # `OrganizationAdmin` and `DeployKey` are identified by type alone; the API
+                # returns `actor_id: null` for them and rejects an id.
+                "actor_id": int(actor_id) if sep else None,
+                "actor_type": actor_type,
+                "bypass_mode": "always",
+            }
         )
     return payload
 

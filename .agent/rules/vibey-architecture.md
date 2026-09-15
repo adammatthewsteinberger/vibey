@@ -90,6 +90,27 @@ something, the fix is to add it to ours.
 Measured 2026-09-15: `src/vibey` imports **zero** family packages. See ADR-0017
 for the parity backlog.
 
+## Everything-as-code, and never less of it
+
+If a thing can be declared in the repository and reconciled from it, that is how
+it is done. Branch protection and the repository profile live in `.vibey-gh.toml`
+(`[rulesets]`, `[repository_profile]`) and are reconciled by `vibey-gh`; pipelines
+are rendered from templates; policy is `.importlinter` and the coverage gates. No
+settings page, no one-off `gh api`, no runbook step that says "then set X".
+
+And **everything that can be generic and configurable must be.** A hard-coded
+value that could have been a key, a special case that could have been a rule, a
+path that could have been discovered — each takes a decision away from whoever
+adopts this next, silently. Never change anything to a state that is less generic
+or less configurable. A default is fine; a default is configurability with an
+opinion. A constant is not.
+
+Worked example: `find_root` walked to `.git`, which broke the moment a project
+lived inside a repository belonging to something else. The fix was not an
+explicit root at the two call sites that noticed — it was that a directory
+carrying its own `.vibey-gh.toml` stops the walk. Same work, aimed at the general
+shape. See ADR-0018.
+
 ## The forbidden imports
 
 `domain/` must never import:

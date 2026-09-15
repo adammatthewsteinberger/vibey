@@ -33,6 +33,13 @@ lives in `docs/architecture/decisions/`.
   ours. A new implementation of something the family already ships needs a
   written reason at the call site, and the reason must be a capability gap — in
   which case the fix is to add it to ours. ADR-0017.
+- **Everything-as-code, and never less of it.** If a thing can be declared in the
+  repository and reconciled from it, that is how it is done — branch protection,
+  repository profile, pipelines, policy, infrastructure. No settings page, no
+  one-off `gh api`, no runbook step that says "then set X". And **everything that
+  can be generic and configurable must be**: a hard-coded value that could have
+  been a key is a decision taken away from the next adopter, silently. Never
+  change anything to a state that is less generic or less configurable. ADR-0018.
 - **Code lives in classes, and every class has an interface beside it.** A
   module-level function is the method of last resort, and its reason is written
   at the definition. `src/<pkg>/services/github_service.py` implies
@@ -130,7 +137,7 @@ uv run pip-audit
 | Rotation & engines | `docs/plans/rotation-and-engines.md` |
 | Phase protocols | `docs/plans/phase-protocols.md` |
 | Implementation plan | `docs/plans/implementation-plan.md` |
-| System design and why each hard call was made | `docs/architecture/decisions/` (17 ADRs) |
+| System design and why each hard call was made | `docs/architecture/decisions/` (18 ADRs) |
 | User-facing docs | `README.md` Quickstart, `docs/guides/` |
 | Expansion workstreams (JIRA, clouds, k8s, clients, …) | `docs/runbooks/expansion/` (21 runbooks, `00-master-plan.md` first) |
 
