@@ -31,7 +31,10 @@ self_source = "src/vibey_tools/gh"
 # Pin every rendered template to the version that rendered it. Unpinned, a runner adopts
 # whatever is newest -- the failure mode that took vibey-skills' CI red for two days.
 pin_version = true
-workflows = ["merge-train.yml", "promote-to-main.yml", "provenance.yml", "release-surfaces.yml", "pr-automation.yml", "automation-bootstrap.yml"]
+# github-release.yml: the immutable tag and GitHub Release for every version promoted to
+# main. Releases stopped at v0.1.2 when release-please was retired (#77) and nothing took
+# over the tagging; the book and the paper are attached to each Release from here on.
+workflows = ["merge-train.yml", "promote-to-main.yml", "provenance.yml", "release-surfaces.yml", "pr-automation.yml", "automation-bootstrap.yml", "github-release.yml"]
 
 # Declared here rather than clicked, per ADR-0018. `vibey-gh` has reconciled both of these
 # from configuration since 1.x and vibey-skills has used them for months; this repository,
