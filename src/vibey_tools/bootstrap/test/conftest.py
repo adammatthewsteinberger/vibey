@@ -1,3 +1,4 @@
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """Test-suite-wide fixtures.
 
 The ``AZURE_BOOTSTRAP_ALLOW_RESET`` env-guard is the single sentinel that

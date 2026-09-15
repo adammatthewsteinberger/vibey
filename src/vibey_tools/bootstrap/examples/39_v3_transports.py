@@ -1,3 +1,4 @@
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """Example 39 — v3 logging transports (panther, file, blob, sql, nosql)."""
 
 from __future__ import annotations

@@ -1,8 +1,8 @@
 site_name: qwenloop
 site_description: >-
   Autonomous local Qwen 2.5 Coder agent runner for llama.cpp, vLLM, and Vibey.
-site_url: https://adammatthewsteinberger.github.io/qwenloop/
-repo_url: https://github.com/adammatthewsteinberger/qwenloop
+site_url: https://the-vibey-project.github.io/qwenloop/
+repo_url: https://github.com/the-vibey-project/qwenloop
 repo_name: adammatthewsteinberger/qwenloop
 edit_uri: edit/main/docs/
 

@@ -1,4 +1,4 @@
-# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """The never-block-on-a-human guarantees. See
 docs/architecture/decisions/0007-ask-user-question-denied-with-guidance.md and
 docs/guides/never-blocking.md for the full mitigation table this implements."""

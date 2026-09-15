@@ -1,4 +1,4 @@
-# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 name: Currency research
 
 # Weekly audit of the marketplace's dated claims.
@@ -132,7 +132,7 @@ jobs:
 
           # The method lives in the marketplace, not here.
           plugin_marketplaces: |
-            https://github.com/adammatthewsteinberger/vibey-skills.git
+            https://github.com/the-vibey-project/vibey-skills.git
           plugins: |
             currency-research@vibey-skills
 
@@ -196,7 +196,7 @@ jobs:
             Every commit you make must carry the repository's fingerprint trailer, on
             its own line at the end of the message. CI rejects commits without it:
 
-              Made-With: Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+              Made-With: Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 
             `gh` is available for that. Use it to create and describe the pull request
             and nothing else: never `gh pr merge`, never merge or close anything, never

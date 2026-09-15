@@ -7,7 +7,7 @@ body:
       value: |
         Thanks for the report. Please search existing issues first. Suspected
         security problems (including a skill that recommends something unsafe)
-        go through [private reporting](https://github.com/adammatthewsteinberger/vibey-skills/security/advisories/new),
+        go through [private reporting](https://github.com/the-vibey-project/vibey-skills/security/advisories/new),
         not a public issue.
 
   - type: dropdown

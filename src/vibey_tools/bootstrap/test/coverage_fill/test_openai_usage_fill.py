@@ -1,3 +1,4 @@
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """AI usage governance: pricing overrides, the soft TPM cap, and threshold alerts.
 
 The governing rule for this module is stated in its own docstrings — cost tracking and

@@ -10,9 +10,9 @@ body:
         unreproducible.
 
         Please search existing issues first. Usage questions belong in
-        [Discussions](https://github.com/adammatthewsteinberger/vibey-bootstrap/discussions),
+        [Discussions](https://github.com/the-vibey-project/vibey-bootstrap/discussions),
         not here. Security vulnerabilities go through
-        [private reporting](https://github.com/adammatthewsteinberger/vibey-bootstrap/security/advisories/new).
+        [private reporting](https://github.com/the-vibey-project/vibey-bootstrap/security/advisories/new).
 
   - type: input
     id: version

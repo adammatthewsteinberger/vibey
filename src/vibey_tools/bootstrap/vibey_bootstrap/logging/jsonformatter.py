@@ -1,3 +1,4 @@
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """v2.1 JSON log formatter — one JSON object per record.
 
 Distinct from :class:`ExtraFieldsFormatter` (human-readable ``key=repr(value)``

@@ -1,3 +1,4 @@
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """Tiered alert dispatcher: WARN (log-only), ERROR (digest + escalation), CRITICAL (email).
 
 Best-effort end-to-end. Every public call is wrapped — alerts are the last

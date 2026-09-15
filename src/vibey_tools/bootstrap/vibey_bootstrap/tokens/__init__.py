@@ -1,3 +1,4 @@
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """HMAC-SHA256 action-token signer (generalized DLQ-resubmit pattern).
 
 Tokens are ``payload_b64url.signature_b64url`` strings. The payload is a

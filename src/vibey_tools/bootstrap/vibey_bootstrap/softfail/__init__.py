@@ -1,3 +1,4 @@
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """Helpers for the "log + alert + continue with degraded result" pattern.
 
 Apps wrap fragile code paths (AI summarization, optional enrichment, etc.)

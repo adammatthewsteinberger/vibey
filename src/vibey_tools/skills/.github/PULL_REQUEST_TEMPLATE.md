@@ -8,4 +8,4 @@
 - [ ] `plugin.json` version bumped and mirrored into `.claude-plugin/marketplace.json`; README plugin table updated if the skill count or summary changed
 - [ ] `python3 tools/validate_manifests.py` and `python3 tools/check_links.py` pass
 - [ ] `mkdocs build --strict` passes if you touched docs or added a skill
-- [ ] I agree to the [Code of Conduct](https://github.com/adammatthewsteinberger/vibey-skills/blob/main/CODE_OF_CONDUCT.md) and to license this contribution under the MIT License
+- [ ] I agree to the [Code of Conduct](https://github.com/the-vibey-project/vibey-skills/blob/main/CODE_OF_CONDUCT.md) and to license this contribution under the MIT License

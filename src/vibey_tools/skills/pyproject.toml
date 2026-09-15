@@ -63,11 +63,11 @@ classifiers = [
 # A package page that does not link to its own source is a dead end, so these point at the
 # canonical repo. `tools/check_links.py` keeps them consistent with the SLUG it enforces.
 [project.urls]
-Homepage = "https://adammatthewsteinberger.github.io/vibey-skills/"
-Documentation = "https://adammatthewsteinberger.github.io/vibey-skills/"
-Repository = "https://github.com/adammatthewsteinberger/vibey-skills"
-Issues = "https://github.com/adammatthewsteinberger/vibey-skills/issues"
-Changelog = "https://github.com/adammatthewsteinberger/vibey-skills/releases"
+Homepage = "https://the-vibey-project.github.io/vibey-skills/"
+Documentation = "https://the-vibey-project.github.io/vibey-skills/"
+Repository = "https://github.com/the-vibey-project/vibey-skills"
+Issues = "https://github.com/the-vibey-project/vibey-skills/issues"
+Changelog = "https://github.com/the-vibey-project/vibey-skills/releases"
 
 # Docs-only dependencies. Runtime `dependencies` stays empty on purpose — building the
 # documentation site must never add anything to what `uvx vibey-skills` has to resolve.

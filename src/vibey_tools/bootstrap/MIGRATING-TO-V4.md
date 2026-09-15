@@ -2,7 +2,7 @@
 
 4.0.0 is a **rename-only** major release. `azure-bootstrap` is now
 **`vibey-bootstrap`**, published under
-[adammatthewsteinberger/vibey-bootstrap](https://github.com/adammatthewsteinberger/vibey-bootstrap)
+[adammatthewsteinberger/vibey-bootstrap](https://github.com/the-vibey-project/vibey-bootstrap)
 (see [NOTICE.md](NOTICE.md) for the attribution history). No function, class,
 signature, default, or environment variable changed — only the names you type
 to install and import it.
@@ -13,7 +13,7 @@ to install and import it.
 | Import package | `azure_bootstrap` | `vibey_bootstrap` |
 | Console script | `azbootstrap` | `vibey-bootstrap` (`azbootstrap` kept as a deprecated alias) |
 | GitHub | `TheViziusGroup/azure-bootstrap` | `adammatthewsteinberger/vibey-bootstrap` |
-| Docs | `theviziusgroup.github.io/azure-bootstrap` | `adammatthewsteinberger.github.io/vibey-bootstrap` |
+| Docs | `theviziusgroup.github.io/azure-bootstrap` | `the-vibey-project.github.io/vibey-bootstrap` |
 
 ## Upgrade steps
 

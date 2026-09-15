@@ -1,6 +1,6 @@
 # Contributing to vibey-skills
 
-> Read [CLAUDE.md](https://github.com/adammatthewsteinberger/vibey-skills/blob/main/CLAUDE.md) before making changes. It is the governing convention for this
+> Read [CLAUDE.md](https://github.com/the-vibey-project/vibey-skills/blob/main/CLAUDE.md) before making changes. It is the governing convention for this
 > repository and takes precedence over this document wherever they overlap.
 
 This repository is a **Claude Code plugin marketplace**: 127 plugins composed of 644 Agent
@@ -9,13 +9,13 @@ is Markdown (skill content) and JSON (manifests). "Correct" means valid manifest
 accurate, well-triggered skill content.
 
 Contributions are welcome. By submitting a pull request you agree that your contribution is
-licensed under the same [MIT License](https://github.com/adammatthewsteinberger/vibey-skills/blob/main/LICENSE) that covers this project — inbound licensing
+licensed under the same [MIT License](https://github.com/the-vibey-project/vibey-skills/blob/main/LICENSE) that covers this project — inbound licensing
 matches outbound, with no separate CLA to sign.
 
 Questions, bug reports, and proposals all go through
-[GitHub issues](https://github.com/adammatthewsteinberger/vibey-skills/issues). For
-suspected security issues, see [SECURITY.md](https://github.com/adammatthewsteinberger/vibey-skills/blob/main/SECURITY.md) instead. Participation is governed
-by our [Code of Conduct](https://github.com/adammatthewsteinberger/vibey-skills/blob/main/CODE_OF_CONDUCT.md).
+[GitHub issues](https://github.com/the-vibey-project/vibey-skills/issues). For
+suspected security issues, see [SECURITY.md](https://github.com/the-vibey-project/vibey-skills/blob/main/SECURITY.md) instead. Participation is governed
+by our [Code of Conduct](https://github.com/the-vibey-project/vibey-skills/blob/main/CODE_OF_CONDUCT.md).
 
 ---
 
@@ -143,7 +143,7 @@ only make sense inside one company belongs in a private marketplace, not this on
 1. Create `plugins/<plugin>/skills/<new-skill>/SKILL.md`.
 2. Add a bullet for it in `plugins/<plugin>/README.md`.
 3. Bump the plugin `version` and mirror it into `.claude-plugin/marketplace.json`.
-4. Update the skill count and summary for that plugin in the root [README.md](https://github.com/adammatthewsteinberger/vibey-skills/blob/main/README.md) table.
+4. Update the skill count and summary for that plugin in the root [README.md](https://github.com/the-vibey-project/vibey-skills/blob/main/README.md) table.
 
 ### Add a new plugin
 
@@ -151,7 +151,7 @@ only make sense inside one company belongs in a private marketplace, not this on
    one skill under `skills/`.
 2. Add a plugin entry to `.claude-plugin/marketplace.json` with `name`, `source`
    (`./plugins/<plugin>`), `description`, `version`, `category`, and `author`.
-3. Add a row to the plugin table in the root [README.md](https://github.com/adammatthewsteinberger/vibey-skills/blob/main/README.md).
+3. Add a row to the plugin table in the root [README.md](https://github.com/the-vibey-project/vibey-skills/blob/main/README.md).
 
 ## 6. Validation
 
@@ -194,5 +194,5 @@ Also keep these in sync, or installation breaks:
 
 ---
 
-*Questions? Check [CLAUDE.md](https://github.com/adammatthewsteinberger/vibey-skills/blob/main/CLAUDE.md) first, then
-[open a GitHub issue](https://github.com/adammatthewsteinberger/vibey-skills/issues/new).*
+*Questions? Check [CLAUDE.md](https://github.com/the-vibey-project/vibey-skills/blob/main/CLAUDE.md) first, then
+[open a GitHub issue](https://github.com/the-vibey-project/vibey-skills/issues/new).*

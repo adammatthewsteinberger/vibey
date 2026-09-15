@@ -22,7 +22,7 @@ issue or a PR fixing it.
 ## Environment setup
 
 ```bash
-git clone https://github.com/adammatthewsteinberger/claudeloop.git
+git clone https://github.com/the-vibey-project/claudeloop.git
 cd claudeloop
 python3 -m venv .venv
 source .venv/bin/activate
@@ -224,10 +224,10 @@ for why this was chosen over convention-only layering.
 
 | I want to... | Go here |
 |---|---|
-| User/operator docs | [https://adammatthewsteinberger.github.io/claudeloop/](https://adammatthewsteinberger.github.io/claudeloop/) |
-| Ask a question or discuss design | [GitHub Discussions](https://github.com/adammatthewsteinberger/claudeloop/discussions) |
-| Report a bug | [Bug report form](https://github.com/adammatthewsteinberger/claudeloop/issues/new?template=bug_report.yml) |
-| Propose a feature | [Feature request form](https://github.com/adammatthewsteinberger/claudeloop/issues/new?template=feature_request.yml) |
+| User/operator docs | [https://the-vibey-project.github.io/claudeloop/](https://the-vibey-project.github.io/claudeloop/) |
+| Ask a question or discuss design | [GitHub Discussions](https://github.com/the-vibey-project/claudeloop/discussions) |
+| Report a bug | [Bug report form](https://github.com/the-vibey-project/claudeloop/issues/new?template=bug_report.yml) |
+| Propose a feature | [Feature request form](https://github.com/the-vibey-project/claudeloop/issues/new?template=feature_request.yml) |
 | Report a vulnerability | [SECURITY.md](SECURITY.md) — privately |
 | Same map, shorter | [SUPPORT.md](SUPPORT.md) |
 

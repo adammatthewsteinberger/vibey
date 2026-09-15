@@ -1,3 +1,4 @@
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """``@traced`` decorator: auto-async, latency recording, slow alerts, error alerts.
 
 Lazy-imports ``vibey_bootstrap.alerts`` so apps without the alerts extra still

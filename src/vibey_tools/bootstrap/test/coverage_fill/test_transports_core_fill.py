@@ -1,3 +1,4 @@
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """The buffered-shipper base, the registry, and the file/sumologic transports.
 
 `_BufferedShipper` is the shared spine of every transport, so its guarantee — that a

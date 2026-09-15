@@ -3,7 +3,7 @@
 ## Clone and install
 
 ```bash
-git clone https://github.com/adammatthewsteinberger/claudeloop.git
+git clone https://github.com/the-vibey-project/claudeloop.git
 cd claudeloop
 python3 -m venv .venv
 source .venv/bin/activate
@@ -106,6 +106,6 @@ needing to remember each command individually.
 
 See [`../architecture/overview.md`](../architecture/overview.md#where-new-code-belongs-a-quick-test)
 for the decision test, and the
-[`claudeloop-architecture`](https://github.com/adammatthewsteinberger/claudeloop/blob/main/.claude/skills/claudeloop-architecture/SKILL.md)
+[`claudeloop-architecture`](https://github.com/the-vibey-project/claudeloop/blob/main/.claude/skills/claudeloop-architecture/SKILL.md)
 Claude Code skill if you're using Claude Code itself to contribute — it
 applies the same test automatically.

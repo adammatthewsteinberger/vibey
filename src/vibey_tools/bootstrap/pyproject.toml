@@ -191,10 +191,10 @@ vibey-bootstrap = "vibey_bootstrap.contrib.scaffold:main"
 azbootstrap = "vibey_bootstrap.contrib.scaffold:main_azbootstrap"
 
 [project.urls]
-Homepage = "https://github.com/adammatthewsteinberger/vibey-bootstrap"
-Repository = "https://github.com/adammatthewsteinberger/vibey-bootstrap"
-Documentation = "https://adammatthewsteinberger.github.io/vibey-bootstrap/"
-Issues = "https://github.com/adammatthewsteinberger/vibey-bootstrap/issues"
+Homepage = "https://github.com/the-vibey-project/vibey-bootstrap"
+Repository = "https://github.com/the-vibey-project/vibey-bootstrap"
+Documentation = "https://the-vibey-project.github.io/vibey-bootstrap/"
+Issues = "https://github.com/the-vibey-project/vibey-bootstrap/issues"
 
 [tool.setuptools]
 packages = [

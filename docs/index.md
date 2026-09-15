@@ -15,7 +15,7 @@ losing a single open question.
 For the precise version: a queue-based, six-phase conductor for autonomous
 software delivery — with an optional visual-design interstitial and opt-in
 Azure deployment — built on top of the [`*loop` autonomous session
-runners](https://github.com/adammatthewsteinberger/claudeloop).
+runners](https://github.com/the-vibey-project/claudeloop).
 
 ## What problem this solves
 
@@ -37,7 +37,7 @@ in one vendor's chat session.
 | Runs on | macOS / Linux, local. No cloud control plane required. |
 | Language | Python 3.12+ |
 | Queue | PostgreSQL (`FOR UPDATE SKIP LOCKED`) |
-| Engines | [`claudeloop`](https://github.com/adammatthewsteinberger/claudeloop), [`codexloop`](https://github.com/adammatthewsteinberger/codexloop), [`cursorloop`](https://github.com/adammatthewsteinberger/cursorloop), [`agyloop`](https://github.com/adammatthewsteinberger/agyloop) |
+| Engines | [`claudeloop`](https://github.com/the-vibey-project/claudeloop), [`codexloop`](https://github.com/the-vibey-project/codexloop), [`cursorloop`](https://github.com/the-vibey-project/cursorloop), [`agyloop`](https://github.com/the-vibey-project/agyloop) |
 | State dir | `.vibey/` |
 | Env prefix | `VIBEY_` |
 | Done marker | Each loop's own marker (CLAUDELOOP_TASK_FULLY_COMPLETE, etc.) |
@@ -129,7 +129,7 @@ that project's stored config at creation time — see the
 
 `infrastructure/notify/` implements a `NotificationService` that dispatches
 desktop alerts and HMAC-SHA256-signed webhooks (`X-Vibey-Signature`, see
-[SECURITY.md](https://github.com/adammatthewsteinberger/vibey/blob/main/SECURITY.md#6-webhook-payload-integrity)),
+[SECURITY.md](https://github.com/the-vibey-project/vibey/blob/main/SECURITY.md#6-webhook-payload-integrity)),
 and it is covered by tests. It is **not yet wired into `bootstrap.py`, the
 worker, or the CLI** — no flag or `vibey.toml` key constructs it today.
 Treat it as implemented-and-tested, not yet an active runtime path.
@@ -195,20 +195,20 @@ things those runners deliberately do not do:
 
 | Document | What's in it |
 |---|---|
-| [Architecture map](https://github.com/adammatthewsteinberger/vibey/blob/main/docs/project.mmd) | Comprehensive Mermaid diagram: every layer, the six phases, the ledger/handoff data flow, the security boundary, and the release channels |
+| [Architecture map](https://github.com/the-vibey-project/vibey/blob/main/docs/project.mmd) | Comprehensive Mermaid diagram: every layer, the six phases, the ledger/handoff data flow, the security boundary, and the release channels |
 | [CLI reference](reference/cli.md) | Every command, subcommand, flag, and default |
 | [Configuration reference](reference/configuration.md) | The full `vibey.toml` schema, with defaults and an example file |
 | [Kubernetes guide](guides/kubernetes.md) | Container, Helm chart, KEDA autoscaling, and its own troubleshooting section |
 | [Greeter live-demo runbook](guides/greeter-live-demo.md) | A full paid run, end to end, with the zero-touch contracts |
-| [Expansion runbooks](https://github.com/adammatthewsteinberger/vibey/blob/main/docs/runbooks/expansion/) | 21 workstreams: JIRA, more clouds, Kubernetes server mode, clients, store submissions, … |
-| [Architecture & roadmap](https://github.com/adammatthewsteinberger/vibey/blob/main/docs/plans/architecture-and-roadmap.md) | The master design: context, containers, layers, phases, risks, milestones |
-| [Domain model](https://github.com/adammatthewsteinberger/vibey/blob/main/docs/plans/domain-model.md) | Every value object, ADT, and invariant in `domain/` |
-| [Data model](https://github.com/adammatthewsteinberger/vibey/blob/main/docs/plans/data-model.md) | Full PostgreSQL DDL, queue semantics, indices |
-| [Handoff protocol](https://github.com/adammatthewsteinberger/vibey/blob/main/docs/plans/handoff-protocol.md) | The event ledger, the envelope, and the no-loss gate |
-| [Rotation & engines](https://github.com/adammatthewsteinberger/vibey/blob/main/docs/plans/rotation-and-engines.md) | Capability matrix, effort normalization, smooth weighted round robin |
-| [Phase protocols](https://github.com/adammatthewsteinberger/vibey/blob/main/docs/plans/phase-protocols.md) | What all six phases do, turn by turn |
-| [Implementation plan](https://github.com/adammatthewsteinberger/vibey/blob/main/docs/plans/implementation-plan.md) | Milestone-by-milestone, test-first task breakdown |
-| [Decision records](https://github.com/adammatthewsteinberger/vibey/blob/main/docs/architecture/decisions/) | Why each hard call was made (15 ADRs) |
+| [Expansion runbooks](https://github.com/the-vibey-project/vibey/blob/main/docs/runbooks/expansion/) | 21 workstreams: JIRA, more clouds, Kubernetes server mode, clients, store submissions, … |
+| [Architecture & roadmap](https://github.com/the-vibey-project/vibey/blob/main/docs/plans/architecture-and-roadmap.md) | The master design: context, containers, layers, phases, risks, milestones |
+| [Domain model](https://github.com/the-vibey-project/vibey/blob/main/docs/plans/domain-model.md) | Every value object, ADT, and invariant in `domain/` |
+| [Data model](https://github.com/the-vibey-project/vibey/blob/main/docs/plans/data-model.md) | Full PostgreSQL DDL, queue semantics, indices |
+| [Handoff protocol](https://github.com/the-vibey-project/vibey/blob/main/docs/plans/handoff-protocol.md) | The event ledger, the envelope, and the no-loss gate |
+| [Rotation & engines](https://github.com/the-vibey-project/vibey/blob/main/docs/plans/rotation-and-engines.md) | Capability matrix, effort normalization, smooth weighted round robin |
+| [Phase protocols](https://github.com/the-vibey-project/vibey/blob/main/docs/plans/phase-protocols.md) | What all six phases do, turn by turn |
+| [Implementation plan](https://github.com/the-vibey-project/vibey/blob/main/docs/plans/implementation-plan.md) | Milestone-by-milestone, test-first task breakdown |
+| [Decision records](https://github.com/the-vibey-project/vibey/blob/main/docs/architecture/decisions/) | Why each hard call was made (15 ADRs) |
 
 ## Status
 
@@ -242,7 +242,7 @@ test — the no-loss handoff gate is deterministic code, not a model's opinion.
 Vibey is pre-1.0: minor versions may change `vibey.toml` fields, ledger
 event shapes, or CLI flags. Before upgrading:
 
-1. Read the [changelog](https://github.com/adammatthewsteinberger/vibey/blob/main/CHANGELOG.md)
+1. Read the [changelog](https://github.com/the-vibey-project/vibey/blob/main/CHANGELOG.md)
    for the versions between your current version and the target.
 2. Re-run `vibey doctor --conformance --record` afterward — engine
    contracts and conformance checks can gain new checks between releases.
@@ -257,20 +257,20 @@ install vibey` / `pip install vibey`) tracks stable releases.
 
 | | |
 |---|---|
-| Contributing | [CONTRIBUTING.md](https://github.com/adammatthewsteinberger/vibey/blob/main/CONTRIBUTING.md) |
-| Security policy | [SECURITY.md](https://github.com/adammatthewsteinberger/vibey/blob/main/SECURITY.md) |
-| Getting help | [SUPPORT.md](https://github.com/adammatthewsteinberger/vibey/blob/main/SUPPORT.md) |
-| Code of Conduct | [CODE_OF_CONDUCT.md](https://github.com/adammatthewsteinberger/vibey/blob/main/CODE_OF_CONDUCT.md) |
-| Changelog | [CHANGELOG.md](https://github.com/adammatthewsteinberger/vibey/blob/main/CHANGELOG.md) |
+| Contributing | [CONTRIBUTING.md](https://github.com/the-vibey-project/vibey/blob/main/CONTRIBUTING.md) |
+| Security policy | [SECURITY.md](https://github.com/the-vibey-project/vibey/blob/main/SECURITY.md) |
+| Getting help | [SUPPORT.md](https://github.com/the-vibey-project/vibey/blob/main/SUPPORT.md) |
+| Code of Conduct | [CODE_OF_CONDUCT.md](https://github.com/the-vibey-project/vibey/blob/main/CODE_OF_CONDUCT.md) |
+| Changelog | [CHANGELOG.md](https://github.com/the-vibey-project/vibey/blob/main/CHANGELOG.md) |
 
 ## Related projects
 
 | Project | What it is |
 |---|---|
-| [claudeloop](https://github.com/adammatthewsteinberger/claudeloop) | Autonomous Claude Code session runner — the design the family transplants |
-| [codexloop](https://github.com/adammatthewsteinberger/codexloop) | The same design retargeted onto OpenAI Codex |
-| [cursorloop](https://github.com/adammatthewsteinberger/cursorloop) | The same design retargeted onto Cursor |
-| [agyloop](https://github.com/adammatthewsteinberger/agyloop) | The same design retargeted onto Google Antigravity / Gemini |
+| [claudeloop](https://github.com/the-vibey-project/claudeloop) | Autonomous Claude Code session runner — the design the family transplants |
+| [codexloop](https://github.com/the-vibey-project/codexloop) | The same design retargeted onto OpenAI Codex |
+| [cursorloop](https://github.com/the-vibey-project/cursorloop) | The same design retargeted onto Cursor |
+| [agyloop](https://github.com/the-vibey-project/agyloop) | The same design retargeted onto Google Antigravity / Gemini |
 
 ## License
 

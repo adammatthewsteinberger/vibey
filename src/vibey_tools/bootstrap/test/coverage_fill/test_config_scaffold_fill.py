@@ -1,3 +1,4 @@
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """`refresh_setting`, the enhanced config repository, and the scaffold CLI.
 
 The common thread is precedence: a value already in ``os.environ`` — typically a local

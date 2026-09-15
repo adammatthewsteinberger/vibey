@@ -13,10 +13,10 @@ accurate, well-triggered skill content.
 
 ## Source of truth
 
-- [.claude-plugin/marketplace.json](https://github.com/adammatthewsteinberger/vibey-skills/blob/main/.claude-plugin/marketplace.json) — the marketplace
+- [.claude-plugin/marketplace.json](https://github.com/the-vibey-project/vibey-skills/blob/main/.claude-plugin/marketplace.json) — the marketplace
   manifest Codex reads when this repo is added with `/plugin marketplace add`. Each
   entry's `source` points at a directory under `plugins/`.
-- [plugins/](https://github.com/adammatthewsteinberger/vibey-skills/tree/main/plugins) — the authoritative plugin sources. Edit skills here.
+- [plugins/](https://github.com/the-vibey-project/vibey-skills/tree/main/plugins) — the authoritative plugin sources. Edit skills here.
 
 `plugins/` must stay at the repository root: Codex requires
 `.claude-plugin/marketplace.json` at the root with `source: ./plugins/<name>`. The Python
@@ -93,7 +93,7 @@ description: Use when … Triggers on … Also triggers on …
 3. Mirror `version`, `description`, and `category` into the matching entry in
    `.claude-plugin/marketplace.json`.
 4. Update `plugins/<name>/README.md` and the plugin table in the root
-   [README.md](https://github.com/adammatthewsteinberger/vibey-skills/blob/main/README.md) if the skill list or summary changed.
+   [README.md](https://github.com/the-vibey-project/vibey-skills/blob/main/README.md) if the skill list or summary changed.
 5. Run both checkers — each must exit 0:
    ```bash
    python3 tools/validate_manifests.py
@@ -112,7 +112,7 @@ three different base URLs:
 |---|---|---|
 | GitHub repo view | the repo root | work |
 | PyPI project page | `https://pypi.org/project/vibey-skills/` | **break** |
-| Pages site | `https://adammatthewsteinberger.github.io/vibey-skills/` | work only inside `docs/` |
+| Pages site | `https://the-vibey-project.github.io/vibey-skills/` | work only inside `docs/` |
 
 - **Root Markdown** (`README.md`, `CONTRIBUTING.md`, `AGENTS.md`, `SECURITY.md`,
   `CODE_OF_CONDUCT.md`) must use **absolute** `https://github.com/…/blob/main/…` URLs —
@@ -128,7 +128,7 @@ because a link checker that needs the network gets switched off the first time C
 
 `mkdocs.yml` builds a Material site that CI validates with `mkdocs build --strict` (the
 **Build docs (strict)** job in `.github/workflows/ci.yml`). The site actually published to
-<https://adammatthewsteinberger.github.io/vibey-skills/> is built separately, by
+<https://the-vibey-project.github.io/vibey-skills/> is built separately, by
 `.github/workflows/release-surfaces.yml`, from the near-identical `properdocs.yml` (via
 ProperDocs, not mkdocs-material) after each successful `Release` run.
 
@@ -230,9 +230,9 @@ pushes to `main` — it had no way to skip a push that carried no version bump, 
 tooling-only. Fixed upstream in 1.27.0: that case is now a clean no-op
 (`ReleaseResult(tag_created=False, release_created=False)`) rather than an error, gated
 behind `[github_release] require_new_version` (left at its default `false`). Full history
-in [.vibey-gh.toml](https://github.com/adammatthewsteinberger/vibey-skills/blob/main/.vibey-gh.toml)'s
+in [.vibey-gh.toml](https://github.com/the-vibey-project/vibey-skills/blob/main/.vibey-gh.toml)'s
 `[install]` comment.
-[.github/workflows/release-artifacts.yml](https://github.com/adammatthewsteinberger/vibey-skills/blob/main/.github/workflows/release-artifacts.yml)
+[.github/workflows/release-artifacts.yml](https://github.com/the-vibey-project/vibey-skills/blob/main/.github/workflows/release-artifacts.yml)
 (hand-authored) still attaches build artifacts to whatever release this workflow
 creates, since `vibey_gh.github_release.publish()` has no artifact-attachment capability
 of its own.
@@ -300,9 +300,9 @@ reviewed diff, never silently underneath a floating specifier.
 **Every code change carries it. This is mandatory and CI enforces it.**
 
 ```
-# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 
-Made-With: Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+Made-With: Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 ```
 
 Two places, because a change can be either:

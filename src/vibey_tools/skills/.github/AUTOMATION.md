@@ -4,7 +4,7 @@ This document explains the automation that lives in this directory: what runs, w
 runs, what it is and is not trusted to do, and how to change it safely. It is written for
 whoever next touches a workflow file — a maintainer, a contributor, or an agent — not for
 users of the marketplace itself (that's the root
-[README.md](https://github.com/adammatthewsteinberger/vibey-skills/blob/main/README.md)).
+[README.md](https://github.com/the-vibey-project/vibey-skills/blob/main/README.md)).
 
 ## Delivery model
 
@@ -19,7 +19,7 @@ merge train squash-merges ready pull requests into `develop`, and a promotion op
 once its checks pass, rebase-merges) the pull request that carries `develop` into `main`
 when the two differ. Full detail, including why `develop` used to fall behind `main` and
 how that's fixed, is in
-[CLAUDE.md](https://github.com/adammatthewsteinberger/vibey-skills/blob/main/CLAUDE.md).
+[CLAUDE.md](https://github.com/the-vibey-project/vibey-skills/blob/main/CLAUDE.md).
 
 ## Workflow inventory
 
@@ -66,7 +66,7 @@ documentation contract is declared in `.vibey-gh.toml`, so none is enforced.
 1.26.0 it failed on most pushes to `main`, since it had no way to skip a push that
 carried no version bump and most of this repository's promotions are exactly that —
 fixed upstream in 1.27.0, where that case is now a clean no-op rather than an error. See
-[.vibey-gh.toml](https://github.com/adammatthewsteinberger/vibey-skills/blob/main/.vibey-gh.toml)'s
+[.vibey-gh.toml](https://github.com/the-vibey-project/vibey-skills/blob/main/.vibey-gh.toml)'s
 `[install]` comment for the full history. `release.yml`'s own tag-triggered release job
 still creates a correct, artifact-carrying release independently of this workflow.
 
@@ -186,4 +186,4 @@ by `vibey-gh install`; removing one requires deleting the generated file by hand
 
 ---
 
-Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).

@@ -1,3 +1,4 @@
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """Local rotating-file logging transport — stdlib only, no extra required.
 
 ``make_file_handler()`` builds a :class:`logging.handlers.RotatingFileHandler`

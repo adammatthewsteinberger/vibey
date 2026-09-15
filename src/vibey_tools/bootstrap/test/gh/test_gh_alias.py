@@ -1,4 +1,4 @@
-# Made with love by Vibey, the auto-vibecoding machine by Adam Matthew Steinberger.
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """`vibey_bootstrap.gh` is an alias for the standalone `vibey-gh` package.
 
 The implementation and its tests moved to that package. What still has to hold HERE is

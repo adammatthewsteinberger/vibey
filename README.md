@@ -3,8 +3,8 @@
 [![PyPI](https://img.shields.io/pypi/v/vibey)](https://pypi.org/project/vibey/)
 [![PyPI downloads](https://img.shields.io/pypi/dm/vibey)](https://pypi.org/project/vibey/)
 [![Python versions](https://img.shields.io/pypi/pyversions/vibey)](https://pypi.org/project/vibey/)
-[![CI](https://github.com/adammatthewsteinberger/vibey/actions/workflows/ci.yml/badge.svg)](https://github.com/adammatthewsteinberger/vibey/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/adammatthewsteinberger/vibey/blob/develop/LICENSE)
+[![CI](https://github.com/the-vibey-project/vibey/actions/workflows/ci.yml/badge.svg)](https://github.com/the-vibey-project/vibey/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/the-vibey-project/vibey/blob/develop/LICENSE)
 
 **You've used an AI coding agent. Then you babysat it** — re-prompting when it
 lost the thread, re-explaining everything after a crash, copying results
@@ -29,7 +29,7 @@ the work, and only interrupting you when a decision is truly yours.
 For the precise version: a queue-based, six-phase conductor for autonomous
 software delivery — with an optional visual-design interstitial and opt-in
 Azure deployment — built on top of the [`*loop` autonomous session
-runners](https://github.com/adammatthewsteinberger/claudeloop).
+runners](https://github.com/the-vibey-project/claudeloop).
 
 ## What problem this solves
 
@@ -51,7 +51,7 @@ in one vendor's chat session.
 | Runs on | macOS / Linux, local. No cloud control plane required. |
 | Language | Python 3.12+ |
 | Queue | PostgreSQL (`FOR UPDATE SKIP LOCKED`) |
-| Engines | [`claudeloop`](https://github.com/adammatthewsteinberger/claudeloop), [`codexloop`](https://github.com/adammatthewsteinberger/codexloop), [`cursorloop`](https://github.com/adammatthewsteinberger/cursorloop), [`agyloop`](https://github.com/adammatthewsteinberger/agyloop) |
+| Engines | [`claudeloop`](https://github.com/the-vibey-project/claudeloop), [`codexloop`](https://github.com/the-vibey-project/codexloop), [`cursorloop`](https://github.com/the-vibey-project/cursorloop), [`agyloop`](https://github.com/the-vibey-project/agyloop) |
 | State dir | `.vibey/` |
 | Env prefix | `VIBEY_` |
 | Done marker | Each loop's own marker (CLAUDELOOP_TASK_FULLY_COMPLETE, etc.) |
@@ -296,7 +296,7 @@ ledger alone — so vendor credit exhaustion is a scheduling event, not a loss
 of state: $\text{state}(t) = f(\text{ledger}_{\leq t})$, independent of any
 vendor session. The full treatment — with the queue-fairness argument and the
 gate-soundness proof sketch — lives in the
-[architecture documentation](https://adammatthewsteinberger.github.io/vibey/).
+[architecture documentation](https://the-vibey-project.github.io/vibey/).
 
 ## Project links
 
@@ -312,10 +312,10 @@ gate-soundness proof sketch — lives in the
 
 | Project | What it is |
 |---|---|
-| [claudeloop](https://github.com/adammatthewsteinberger/claudeloop) | Autonomous Claude Code session runner — the design the family transplants |
-| [codexloop](https://github.com/adammatthewsteinberger/codexloop) | The same design retargeted onto OpenAI Codex |
-| [cursorloop](https://github.com/adammatthewsteinberger/cursorloop) | The same design retargeted onto Cursor |
-| [agyloop](https://github.com/adammatthewsteinberger/agyloop) | The same design retargeted onto Google Antigravity / Gemini |
+| [claudeloop](https://github.com/the-vibey-project/claudeloop) | Autonomous Claude Code session runner — the design the family transplants |
+| [codexloop](https://github.com/the-vibey-project/codexloop) | The same design retargeted onto OpenAI Codex |
+| [cursorloop](https://github.com/the-vibey-project/cursorloop) | The same design retargeted onto Cursor |
+| [agyloop](https://github.com/the-vibey-project/agyloop) | The same design retargeted onto Google Antigravity / Gemini |
 
 ## License
 

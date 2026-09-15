@@ -5,10 +5,10 @@ that matches what you need:
 
 | I want to... | Go here |
 |---|---|
-| Install, configure, or run an unattended session | [Documentation](https://adammatthewsteinberger.github.io/agyloop/) |
-| Ask a question or discuss design | [GitHub Discussions](https://github.com/adammatthewsteinberger/agyloop/discussions) |
-| Report a bug | [Bug report](https://github.com/adammatthewsteinberger/agyloop/issues/new?template=bug_report.yml) |
-| Propose a feature | [Feature request](https://github.com/adammatthewsteinberger/agyloop/issues/new?template=feature_request.yml) |
+| Install, configure, or run an unattended session | [Documentation](https://the-vibey-project.github.io/agyloop/) |
+| Ask a question or discuss design | [GitHub Discussions](https://github.com/the-vibey-project/agyloop/discussions) |
+| Report a bug | [Bug report](https://github.com/the-vibey-project/agyloop/issues/new?template=bug_report.yml) |
+| Propose a feature | [Feature request](https://github.com/the-vibey-project/agyloop/issues/new?template=feature_request.yml) |
 | Report a security vulnerability | [SECURITY.md](SECURITY.md) — privately, never as a public issue |
 | Contribute code | [CONTRIBUTING.md](CONTRIBUTING.md) |
 

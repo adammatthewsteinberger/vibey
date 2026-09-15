@@ -1,3 +1,4 @@
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """
 vibey-bootstrap (formerly azure-bootstrap)
 
@@ -22,7 +23,7 @@ Quick Start:
     # Now all configs are in os.environ
     db_host = os.getenv("DATABASE_HOST")
 
-For detailed usage, see: https://github.com/adammatthewsteinberger/vibey-bootstrap
+For detailed usage, see: https://github.com/the-vibey-project/vibey-bootstrap
 """
 
 __version__ = "4.2.3"

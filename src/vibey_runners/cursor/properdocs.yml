@@ -2,8 +2,8 @@ site_name: cursorloop
 site_description: Onion-architected, autonomous Cursor Agent session runner — never
   blocks on a human, distinguishes rate-limit windows from exhausted credits, and
   resumes safely across usage windows.
-site_url: https://adammatthewsteinberger.github.io/cursorloop/
-repo_url: https://github.com/adammatthewsteinberger/cursorloop
+site_url: https://the-vibey-project.github.io/cursorloop/
+repo_url: https://github.com/the-vibey-project/cursorloop
 repo_name: adammatthewsteinberger/cursorloop
 edit_uri: edit/develop/docs/
 

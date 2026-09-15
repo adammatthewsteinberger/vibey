@@ -14,7 +14,7 @@ authors = [{ name = "Adam Matthew Steinberger", email = "adam@matthewsteinberger
 dependencies = []
 
 [project.urls]
-Homepage = "https://github.com/adammatthewsteinberger/claudeloop"
+Homepage = "https://github.com/the-vibey-project/claudeloop"
 
 [project.optional-dependencies]
 dev = [

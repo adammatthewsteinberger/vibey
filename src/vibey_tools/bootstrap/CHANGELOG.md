@@ -9,7 +9,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 **Breaking — rename only.** `azure-bootstrap` is now **`vibey-bootstrap`**,
 republished under
-[adammatthewsteinberger/vibey-bootstrap](https://github.com/adammatthewsteinberger/vibey-bootstrap)
+[adammatthewsteinberger/vibey-bootstrap](https://github.com/the-vibey-project/vibey-bootstrap)
 with the permission of The Vizius Group (see [NOTICE.md](NOTICE.md)). No
 runtime behaviour, symbol, signature, default, or environment variable changed;
 the major bump exists because the import path changed. Upgrade path:
@@ -25,7 +25,7 @@ the major bump exists because the import path changed. Upgrade path:
   scaffold CLI (`list` / `scaffold` / `version`).
 - **Repository / docs / issue URLs**: `TheViziusGroup/azure-bootstrap` →
   `adammatthewsteinberger/vibey-bootstrap`; documentation site moves to
-  <https://adammatthewsteinberger.github.io/vibey-bootstrap/>.
+  <https://the-vibey-project.github.io/vibey-bootstrap/>.
 - `[project] authors` / `maintainers` email → `adam@matthewsteinberger.com`;
   `__author__` → Adam Matthew Steinberger.
 - `LICENSE` now carries both copyright lines (The Vizius Group; Adam Matthew

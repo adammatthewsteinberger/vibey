@@ -1,3 +1,4 @@
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """`handle_message` under adverse conditions: odd bodies, lost locks, broken alerting.
 
 Every branch here ends the same way — the message is settled exactly once and

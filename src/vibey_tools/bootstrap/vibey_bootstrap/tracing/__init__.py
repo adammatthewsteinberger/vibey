@@ -1,3 +1,4 @@
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """Tier 1 tracing primitives: @traced decorator, latency histograms, slow thresholds."""
 
 from vibey_bootstrap.tracing.decorators import traced, traced_async

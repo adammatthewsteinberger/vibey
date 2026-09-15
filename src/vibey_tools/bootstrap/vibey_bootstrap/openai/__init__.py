@@ -1,3 +1,4 @@
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """SDK-agnostic Azure OpenAI / Anthropic usage tracker.
 
 Records tokens + cost per deployment in three sliding windows (60s, 60m,

@@ -1,11 +1,11 @@
 # Security
 
 The canonical policy is
-[SECURITY.md](https://github.com/adammatthewsteinberger/vibey-skills/blob/main/SECURITY.md).
+[SECURITY.md](https://github.com/the-vibey-project/vibey-skills/blob/main/SECURITY.md).
 
 ## Reporting
 
-Use GitHub's [private vulnerability reporting](https://github.com/adammatthewsteinberger/vibey-skills/security/advisories/new).
+Use GitHub's [private vulnerability reporting](https://github.com/the-vibey-project/vibey-skills/security/advisories/new).
 Please do not open a public issue for a suspected vulnerability.
 
 ## What counts as a security issue here

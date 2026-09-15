@@ -280,7 +280,7 @@ from vibey_bootstrap.services.interfaces import (
 
 ```bash
 # Clone repository
-git clone https://github.com/adammatthewsteinberger/vibey-bootstrap
+git clone https://github.com/the-vibey-project/vibey-bootstrap
 cd vibey-bootstrap
 
 # Create virtual environment
@@ -331,7 +331,7 @@ git push origin main
 
 ### Documentation Site
 
-The site at <https://adammatthewsteinberger.github.io/vibey-bootstrap/> is built with
+The site at <https://the-vibey-project.github.io/vibey-bootstrap/> is built with
 MkDocs Material and deployed by `.github/workflows/docs.yml` on every push to
 `main`.
 
@@ -730,8 +730,8 @@ def hello(req):
 
 ## Support
 
-- **Repository**: https://github.com/adammatthewsteinberger/vibey-bootstrap
-- **Issues**: https://github.com/adammatthewsteinberger/vibey-bootstrap/issues
+- **Repository**: https://github.com/the-vibey-project/vibey-bootstrap
+- **Issues**: https://github.com/the-vibey-project/vibey-bootstrap/issues
 - **PyPI**: https://pypi.org/project/vibey-bootstrap/
 
 ---
@@ -940,7 +940,7 @@ Patch release. One runtime fix, plus documentation and CI infrastructure.
 - **Added**: `azure-appconfiguration>=1.9.0` as a declared core dependency
   (previously relied on the provider's transitive edge).
 - **Added**: documentation site at
-  <https://adammatthewsteinberger.github.io/vibey-bootstrap/> — MkDocs Material,
+  <https://the-vibey-project.github.io/vibey-bootstrap/> — MkDocs Material,
   generated API reference via mkdocstrings, deployed by `.github/workflows/docs.yml`
   on push to `main`. Assembled at build time from the repo-root markdown by
   `docs/gen_pages.py`; nothing is duplicated into the tree.
@@ -965,7 +965,7 @@ test surface are byte-identical to 2.1.0 (released to PyPI; that version is
 immutable, so the doc corrections ship as a patch). Changes:
 
 - README links rewritten from repo-relative to absolute
-  `https://github.com/adammatthewsteinberger/vibey-bootstrap/blob/main/…` URLs so they
+  `https://github.com/the-vibey-project/vibey-bootstrap/blob/main/…` URLs so they
   resolve on the PyPI project page (which renders the README with no repo base
   URL); relative links worked only on GitHub.
 - Refreshed stale metrics in README and CONTRIBUTING (469 tests / 87.48 %

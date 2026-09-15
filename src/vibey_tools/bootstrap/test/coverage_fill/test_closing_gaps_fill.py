@@ -1,3 +1,4 @@
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """The closing set: bootstrap logging, DB helpers, the outbox, and rendering variants.
 
 Nothing exotic left — these are the last untaken branches, mostly "the optional path"

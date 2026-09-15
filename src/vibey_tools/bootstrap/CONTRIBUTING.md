@@ -42,7 +42,7 @@ This library is used across 17+ production Azure Functions applications. Changes
 
 ```bash
 # Clone the repository
-git clone https://github.com/adammatthewsteinberger/vibey-bootstrap
+git clone https://github.com/the-vibey-project/vibey-bootstrap
 cd vibey-bootstrap
 
 # Create virtual environment
@@ -88,7 +88,7 @@ main (protected)
 - **Purpose**: Production-ready code only
 - **Protection**: Direct commits disabled, requires PR approval
 - **CI/CD**: Triggers automatic publish to PyPI, and deploys the
-  [documentation site](https://adammatthewsteinberger.github.io/vibey-bootstrap/) to
+  [documentation site](https://the-vibey-project.github.io/vibey-bootstrap/) to
   GitHub Pages
 - **Tags**: All releases tagged here (e.g., `v1.0.0`)
 
@@ -433,7 +433,7 @@ radon mi vibey_bootstrap/
 #### Documentation Site
 
 Docstrings are not just for readers of the source — they are rendered into the
-[documentation site](https://adammatthewsteinberger.github.io/vibey-bootstrap/), which
+[documentation site](https://the-vibey-project.github.io/vibey-bootstrap/), which
 is assembled at build time from the repo-root markdown plus every package's
 docstrings. Two consequences for contributors:
 
@@ -784,7 +784,7 @@ git push origin feature/your-feature
    - Verify package published to PyPI
    - Confirm the `Validate Installation` job installed the exact new version
    - Check the **Documentation** workflow deployed, and that
-     <https://adammatthewsteinberger.github.io/vibey-bootstrap/> shows the new version's
+     <https://the-vibey-project.github.io/vibey-bootstrap/> shows the new version's
      changelog entry
 
 8. **Announce Release**

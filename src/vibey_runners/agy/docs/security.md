@@ -1,6 +1,6 @@
 # Security
 
-Repository-root [SECURITY.md](https://github.com/adammatthewsteinberger/agyloop/blob/main/SECURITY.md)
+Repository-root [SECURITY.md](https://github.com/the-vibey-project/agyloop/blob/main/SECURITY.md)
 is the reporting policy. Operator notes:
 
 - Never `shell=True`. The CLI gateway builds argv lists.

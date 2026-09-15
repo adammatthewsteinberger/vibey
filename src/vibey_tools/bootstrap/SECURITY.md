@@ -17,7 +17,7 @@ receive none — upgrade (the v2 → v3 path is additive; see
 
 Report privately via one of:
 
-1. [GitHub Security Advisories](https://github.com/adammatthewsteinberger/vibey-bootstrap/security/advisories/new)
+1. [GitHub Security Advisories](https://github.com/the-vibey-project/vibey-bootstrap/security/advisories/new)
    for this repository (preferred — supports coordinated disclosure).
 2. Email **adam@matthewsteinberger.com** with a description, steps to
    reproduce, and the affected version.

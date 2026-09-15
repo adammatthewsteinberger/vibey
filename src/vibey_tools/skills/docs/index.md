@@ -1,6 +1,6 @@
 # vibey-skills
 
-Formerly **vibe-engineering-skills** — see [NOTICE.md](https://github.com/adammatthewsteinberger/vibey-skills/blob/main/NOTICE.md).
+Formerly **vibe-engineering-skills** — see [NOTICE.md](https://github.com/the-vibey-project/vibey-skills/blob/main/NOTICE.md).
 
 **127 plugins. 644 Agent Skills.** Evidence-grounded practitioner references for the parts of
 software engineering an agent is most likely to get confidently wrong: security, compliance,
@@ -47,11 +47,11 @@ and the [Skills reference](reference/index.md) for all 644 skills.
 ## License
 
 MIT, © 2026 The Vizius Group and Adam Matthew Steinberger. See
-[LICENSE](https://github.com/adammatthewsteinberger/vibey-skills/blob/main/LICENSE) and
-[NOTICE.md](https://github.com/adammatthewsteinberger/vibey-skills/blob/main/NOTICE.md) —
+[LICENSE](https://github.com/the-vibey-project/vibey-skills/blob/main/LICENSE) and
+[NOTICE.md](https://github.com/the-vibey-project/vibey-skills/blob/main/NOTICE.md) —
 the project was originally developed at The Vizius Group as `vibe-engineering-skills` and is
 republished here with their permission.
 
 ---
 
-Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).

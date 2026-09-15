@@ -2,8 +2,8 @@ site_name: vibey
 site_description: >-
   A queue-based, six-phase conductor for autonomous software delivery on top of the *loop
   runners — spec interview, design, build, review, deploy. PostgreSQL-backed.
-site_url: https://adammatthewsteinberger.github.io/vibey/
-repo_url: https://github.com/adammatthewsteinberger/vibey
+site_url: https://the-vibey-project.github.io/vibey/
+repo_url: https://github.com/the-vibey-project/vibey
 repo_name: adammatthewsteinberger/vibey
 edit_uri: edit/main/docs/
 

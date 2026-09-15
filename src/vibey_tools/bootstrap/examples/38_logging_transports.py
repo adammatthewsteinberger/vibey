@@ -1,3 +1,4 @@
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """Example 38 — Logging transport layer (console / App Insights / Sumo Logic).
 
 v2.1 adds a transport registry: each log sink is a named ``logging.Handler``

@@ -5,10 +5,10 @@ body:
   - type: markdown
     attributes:
       value: |
-        Please search [existing issues](https://github.com/adammatthewsteinberger/vibey-skills/issues)
-        and skim the [Skills reference](https://adammatthewsteinberger.github.io/vibey-skills/reference/)
+        Please search [existing issues](https://github.com/the-vibey-project/vibey-skills/issues)
+        and skim the [Skills reference](https://the-vibey-project.github.io/vibey-skills/reference/)
         before proposing something that may already exist. Read
-        [CONTRIBUTING.md](https://github.com/adammatthewsteinberger/vibey-skills/blob/main/CONTRIBUTING.md)
+        [CONTRIBUTING.md](https://github.com/the-vibey-project/vibey-skills/blob/main/CONTRIBUTING.md)
         if you intend to write it yourself.
 
   - type: textarea

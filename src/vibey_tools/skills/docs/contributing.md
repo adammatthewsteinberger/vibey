@@ -1,9 +1,9 @@
 # Contributing
 
 The full workflow lives in
-[CONTRIBUTING.md](https://github.com/adammatthewsteinberger/vibey-skills/blob/main/CONTRIBUTING.md);
+[CONTRIBUTING.md](https://github.com/the-vibey-project/vibey-skills/blob/main/CONTRIBUTING.md);
 repository conventions and the `SKILL.md` format are in
-[CLAUDE.md](https://github.com/adammatthewsteinberger/vibey-skills/blob/main/CLAUDE.md).
+[CLAUDE.md](https://github.com/the-vibey-project/vibey-skills/blob/main/CLAUDE.md).
 
 ## The short version
 

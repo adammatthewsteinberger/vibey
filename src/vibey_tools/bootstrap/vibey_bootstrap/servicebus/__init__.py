@@ -1,3 +1,4 @@
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """Tier 3 Service Bus helpers: consumer watchdog, DLQ growth alarm, daily digest."""
 
 from vibey_bootstrap.servicebus.async_ext import (

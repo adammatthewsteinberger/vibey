@@ -50,7 +50,7 @@ means it would have failed for you too.
   GitHub and in the built site. **Exception: `README.md` at the repo root**
   is also the PyPI project description — PyPI rewrites relative links under
   `https://pypi.org/project/claudeloop/`, which 404s. Use absolute
-  `https://adammatthewsteinberger.github.io/claudeloop/...` and GitHub
+  `https://the-vibey-project.github.io/claudeloop/...` and GitHub
   `blob`/`tree` URLs in `README.md` only.
 - **State the "why," not just the "what."** A page that only restates what a
   function's signature already says isn't earning its place — the value is
@@ -80,7 +80,7 @@ Settings → General, not in this tree. Keep them in lockstep with
 | Field | Value |
 |---|---|
 | Description | The `[project].description` string from `pyproject.toml` (GitHub caps this at 350 characters) |
-| Website | `https://adammatthewsteinberger.github.io/claudeloop/` |
+| Website | `https://the-vibey-project.github.io/claudeloop/` |
 | Topics | `python`, `cli`, `anthropic`, `claude`, `claude-code`, `llm`, `agent`, `automation`, `mit-license` |
 | Default branch | `develop` (contributors PR here; `main` stays the releasable line) |
 | Discussions | enabled |

@@ -1,3 +1,4 @@
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """Example 07 — Local settings + USE_MOCK_BOOTSTRAP.
 
 Demonstrates the Azure-Functions-style ``local.settings.json`` loader and

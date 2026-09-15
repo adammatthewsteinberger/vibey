@@ -2,8 +2,8 @@ site_name: vibey-skills
 site_description: >-
   Agent Skills for vibe engineering — 644 evidence-grounded practitioner
   references packaged as a Claude Code plugin marketplace.
-site_url: https://adammatthewsteinberger.github.io/vibey-skills/
-repo_url: https://github.com/adammatthewsteinberger/vibey-skills
+site_url: https://the-vibey-project.github.io/vibey-skills/
+repo_url: https://github.com/the-vibey-project/vibey-skills
 repo_name: adammatthewsteinberger/vibey-skills
 edit_uri: edit/main/docs/
 
@@ -58,6 +58,6 @@ nav:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/adammatthewsteinberger/vibey-skills
+      link: https://github.com/the-vibey-project/vibey-skills
     - icon: fontawesome/brands/python
       link: https://pypi.org/project/vibey-skills/

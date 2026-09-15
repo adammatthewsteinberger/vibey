@@ -1,3 +1,4 @@
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """Generate the MkDocs site from the repo-root markdown sources.
 
 Executed by mkdocs-gen-files during `mkdocs build` / `mkdocs serve`. Nothing is
@@ -20,7 +21,7 @@ from markdown.extensions.toc import slugify as md_slugify
 log = logging.getLogger(f"mkdocs.plugins.{__name__}")
 
 REPO = Path(__file__).resolve().parent.parent
-GITHUB = "https://github.com/adammatthewsteinberger/vibey-bootstrap"
+GITHUB = "https://github.com/the-vibey-project/vibey-bootstrap"
 BLOB = f"{GITHUB}/blob/main/"
 TREE = f"{GITHUB}/tree/main/"
 

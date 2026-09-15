@@ -1,3 +1,4 @@
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """v2 log formatter: appends extra={} fields as `key=repr(value)` pairs.
 
 Distinct from the v1 ``ExtraFieldsFormatter`` at

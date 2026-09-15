@@ -32,7 +32,7 @@ works too, inside whatever virtual environment you're already using.
 ## From source (for development)
 
 ```bash
-git clone https://github.com/adammatthewsteinberger/claudeloop.git
+git clone https://github.com/the-vibey-project/claudeloop.git
 cd claudeloop
 python3 -m venv .venv
 source .venv/bin/activate

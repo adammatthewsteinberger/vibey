@@ -1,3 +1,4 @@
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """Fail-closed-for-auth / fail-open-for-features env helpers.
 
 ``ConfigurationError`` is re-exported from :mod:`vibey_bootstrap.models.exceptions`

@@ -1,3 +1,4 @@
+# Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
 """Dynamic log-level refresh via App Configuration.
 
 Wire ``refresh_log_flags`` into APScheduler at ``CronTrigger(minute='*')`` so

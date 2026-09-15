@@ -10,7 +10,7 @@
 > date, plus explicit flags on the parts that are still unverified.
 >
 > **Blueprint.** `agyloop` forks the design (not the code) of
-> [`claudeloop` 0.5.4](https://github.com/adammatthewsteinberger/claudeloop) —
+> [`claudeloop` 0.5.4](https://github.com/the-vibey-project/claudeloop) —
 > an onion-architected autonomous Claude Code session runner whose two
 > non-negotiables are (1) **never block on a human** and (2) **never conflate an
 > exhausted rate-limit window (waitable, has a reset instant) with exhausted
@@ -137,7 +137,7 @@ Secondary / corroborating (treated as **[S]** throughout):
 | X3 | `imbue-ai/catalyst` commit — *Run agy sandboxed; auto-approve via permissions policy (not skip-permissions)* | <https://github.com/imbue-ai/catalyst/commit/430f31fd82182881c5e13c47593847d512457c5c> |
 | X4 | Gemini API developer forum — *Handling 429 / 503 errors* | <https://discuss.ai.google.dev/t/handling-429-503-errors-from-the-gemini-api/124640> |
 | X5 | Gemini API developer forum — *RPD is not being reset* | <https://discuss.ai.google.dev/t/rpd-is-not-being-reset/145704> |
-| X6 | claudeloop 0.5.4 — the blueprint being forked | <https://github.com/adammatthewsteinberger/claudeloop> |
+| X6 | claudeloop 0.5.4 — the blueprint being forked | <https://github.com/the-vibey-project/claudeloop> |
 
 ---
 
@@ -1292,4 +1292,4 @@ boundary happens to be knowable, not a precondition for correctness.
 | X3 | `imbue-ai/catalyst` — validated sandbox-safe configuration with a negative control. <https://github.com/imbue-ai/catalyst/commit/430f31fd82182881c5e13c47593847d512457c5c> | [S] |
 | X4 | Gemini developer forum — handling 429 / 503. <https://discuss.ai.google.dev/t/handling-429-503-errors-from-the-gemini-api/124640> | [S] |
 | X5 | Gemini developer forum — RPD reset confusion and the AI Studio 90-day peak view. <https://discuss.ai.google.dev/t/rpd-is-not-being-reset/145704> | [S] |
-| X6 | claudeloop 0.5.4 — the blueprint. <https://github.com/adammatthewsteinberger/claudeloop> | [V] |
+| X6 | claudeloop 0.5.4 — the blueprint. <https://github.com/the-vibey-project/claudeloop> | [V] |
