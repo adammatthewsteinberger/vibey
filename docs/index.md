@@ -12,6 +12,9 @@ unattended across a pool of engines, brings you back only for the decisions
 that are genuinely yours, and survives crashes and credit exhaustion without
 losing a single open question.
 
+**Read it first:** the design is a research paper — [PDF](https://the-vibey-project.github.io/vibey/main/paper.pdf) · [HTML](paper.md) —
+and the whole documentation is a book — [PDF](https://the-vibey-project.github.io/vibey/main/book.pdf) · [EPUB](https://the-vibey-project.github.io/vibey/main/book.epub) · [print](https://the-vibey-project.github.io/vibey/main/book-print.html).
+
 For the precise version: a queue-based, six-phase conductor for autonomous
 software delivery — with an optional visual-design interstitial and opt-in
 Azure deployment — built on top of the [`*loop` autonomous session
@@ -196,6 +199,8 @@ things those runners deliberately do not do:
 | Document | What's in it |
 |---|---|
 | [Architecture map](https://github.com/the-vibey-project/vibey/blob/main/docs/project.mmd) | Comprehensive Mermaid diagram: every layer, the six phases, the ledger/handoff data flow, the security boundary, and the release channels |
+| [Research paper](https://the-vibey-project.github.io/vibey/main/paper/) · [PDF](https://the-vibey-project.github.io/vibey/main/paper.pdf) | *Ledger-Mediated Orchestration: Vendor-Independent Autonomous Software Delivery over a Pool of Coding Agents* — the ledger invariant, queue semantics, gate soundness, and vendor independence, stated formally |
+| [The book](https://the-vibey-project.github.io/vibey/main/book.pdf) · [EPUB](https://the-vibey-project.github.io/vibey/main/book.epub) · [print HTML](https://the-vibey-project.github.io/vibey/main/book-print.html) | Every page of the documentation site, in reading order, as one downloadable book |
 | [CLI reference](reference/cli.md) | Every command, subcommand, flag, and default |
 | [Configuration reference](reference/configuration.md) | The full `vibey.toml` schema, with defaults and an example file |
 | [Kubernetes guide](guides/kubernetes.md) | Container, Helm chart, KEDA autoscaling, and its own troubleshooting section |

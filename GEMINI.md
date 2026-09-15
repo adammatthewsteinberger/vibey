@@ -74,6 +74,9 @@ uv run pip-audit
 |---|---|
 | Procedures | `.agent/rules/`, `.claude/skills/`, `.cursor/rules/`, `.agents/skills/` |
 | Comprehensive architecture diagram | `docs/project.mmd` |
+| Formal model (research paper) | `docs/paper.md` — https://the-vibey-project.github.io/vibey/main/paper/ · https://the-vibey-project.github.io/vibey/main/paper.pdf |
+| Documentation as a book | https://the-vibey-project.github.io/vibey/main/book.pdf · https://the-vibey-project.github.io/vibey/main/book.epub · https://the-vibey-project.github.io/vibey/main/book-print.html |
+| Governing law (doctrines, constitution) | `src/vibey_tools/gh/docs/doctrines.md` |
 | CLI reference | `docs/reference/cli.md` |
 | `vibey.toml` schema reference | `docs/reference/configuration.md` |
 | Architecture | `docs/plans/architecture-and-roadmap.md` |

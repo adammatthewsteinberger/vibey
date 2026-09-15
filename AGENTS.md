@@ -103,6 +103,9 @@ uv run pip-audit
 |---|---|
 | How to work on any specific part of this codebase | `.claude/skills/`, `.cursor/rules/`, `.agents/skills/`, `.agent/rules/` |
 | Comprehensive architecture diagram (layers, phases, data flow, security boundary, release channels) | `docs/project.mmd` |
+| The formal model: ledger invariant, queue semantics, gate soundness | The research paper — source `docs/paper.md`; published at https://the-vibey-project.github.io/vibey/main/paper/ and https://the-vibey-project.github.io/vibey/main/paper.pdf |
+| The whole documentation, offline, in reading order | The book — https://the-vibey-project.github.io/vibey/main/book.pdf · https://the-vibey-project.github.io/vibey/main/book.epub · https://the-vibey-project.github.io/vibey/main/book-print.html (built from `properdocs.yml` nav on every release) |
+| The governing law: the Twelve Doctrines, sub-doctrines, the Constitution | `src/vibey_tools/gh/docs/doctrines.md`, `constitution.md` (index: `corpus-index.json`) |
 | Every CLI command, subcommand, flag, default | `docs/reference/cli.md` |
 | Full `vibey.toml` schema | `docs/reference/configuration.md` |
 | System design and why each hard call was made | `docs/architecture/decisions/` (20 ADRs) |

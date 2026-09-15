@@ -19,7 +19,7 @@ body:
     attributes:
       label: vibey version
       description: Output of `vibey --version`
-      placeholder: "0.1.1"
+      placeholder: "vibey 0.6.0"
     validations:
       required: true
 
@@ -27,7 +27,7 @@ body:
     id: os
     attributes:
       label: Operating system
-      description: Windows is not a supported target (see the installation guide).
+      description: Windows is not a supported target (see the README's Install section).
       options:
         - macOS
         - Linux
@@ -48,7 +48,7 @@ body:
     id: command
     attributes:
       label: Exact command you ran
-      placeholder: "vibey run handoff.md --preset low --max-turns 40"
+      placeholder: "vibey worker --provider claudeloop --max-turns 25"
     validations:
       required: true
 

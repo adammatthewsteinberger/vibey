@@ -5,6 +5,12 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/vibey)](https://pypi.org/project/vibey/)
 [![CI](https://github.com/the-vibey-project/vibey/actions/workflows/ci.yml/badge.svg)](https://github.com/the-vibey-project/vibey/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/the-vibey-project/vibey/blob/develop/LICENSE)
+[![Docs](https://img.shields.io/badge/docs-read-blue.svg)](https://the-vibey-project.github.io/vibey/main/)
+[![Research paper](https://img.shields.io/badge/paper-PDF%20%7C%20HTML-6f42c1.svg)](https://the-vibey-project.github.io/vibey/main/paper.pdf)
+[![Book](https://img.shields.io/badge/book-PDF%20%7C%20EPUB-0a7ea4.svg)](https://the-vibey-project.github.io/vibey/main/book.pdf)
+
+**Read it first:** the design is a research paper — [PDF](https://the-vibey-project.github.io/vibey/main/paper.pdf) · [HTML](https://the-vibey-project.github.io/vibey/main/paper/) —
+and the whole documentation is a book — [PDF](https://the-vibey-project.github.io/vibey/main/book.pdf) · [EPUB](https://the-vibey-project.github.io/vibey/main/book.epub) · [print](https://the-vibey-project.github.io/vibey/main/book-print.html).
 
 **You've used an AI coding agent. Then you babysat it** — re-prompting when it
 lost the thread, re-explaining everything after a crash, copying results
@@ -221,6 +227,8 @@ things those runners deliberately do not do:
 | Document | What's in it |
 |---|---|
 | [Architecture map](docs/project.mmd) | Comprehensive Mermaid diagram: every layer, the six phases, the ledger/handoff data flow, the security boundary, and the release channels |
+| [Research paper](https://the-vibey-project.github.io/vibey/main/paper/) · [PDF](https://the-vibey-project.github.io/vibey/main/paper.pdf) | *Ledger-Mediated Orchestration: Vendor-Independent Autonomous Software Delivery over a Pool of Coding Agents* — the ledger invariant, queue semantics, gate soundness, and vendor independence, stated formally |
+| [The book](https://the-vibey-project.github.io/vibey/main/book.pdf) · [EPUB](https://the-vibey-project.github.io/vibey/main/book.epub) · [print HTML](https://the-vibey-project.github.io/vibey/main/book-print.html) | Every page of the documentation site, in reading order, as one downloadable book |
 | [CLI reference](docs/reference/cli.md) | Every command, subcommand, flag, and default |
 | [Configuration reference](docs/reference/configuration.md) | The full `vibey.toml` schema, with defaults and an example file |
 | [Kubernetes guide](docs/guides/kubernetes.md) | Container, Helm chart, KEDA autoscaling, and its own troubleshooting section |
@@ -294,9 +302,11 @@ handoff is a row in an append-only ledger *before* it takes effect
 (write-ahead intent), and engine handoff re-derives session context from the
 ledger alone — so vendor credit exhaustion is a scheduling event, not a loss
 of state: $\text{state}(t) = f(\text{ledger}_{\leq t})$, independent of any
-vendor session. The full treatment — with the queue-fairness argument and the
-gate-soundness proof sketch — lives in the
-[architecture documentation](https://the-vibey-project.github.io/vibey/).
+vendor session. The full treatment — with the queue-fairness argument and the gate-soundness
+proof sketch — is the research paper, *Ledger-Mediated Orchestration: Vendor-Independent Autonomous Software Delivery over a Pool of Coding Agents*:
+[read it online](https://the-vibey-project.github.io/vibey/main/paper/) or [download the PDF](https://the-vibey-project.github.io/vibey/main/paper.pdf)
+(source: [`docs/paper.md`](docs/paper.md)). The complete documentation is also a book:
+[PDF](https://the-vibey-project.github.io/vibey/main/book.pdf) · [EPUB](https://the-vibey-project.github.io/vibey/main/book.epub) · [print HTML](https://the-vibey-project.github.io/vibey/main/book-print.html).
 
 ## Project links
 
@@ -332,3 +342,7 @@ spec to deployed software, without losing a single open question.
 ```bash
 uv tool install vibey claudeloop && vibey doctor
 ```
+
+**Prefer to read first?** The design is a [research paper](https://the-vibey-project.github.io/vibey/main/paper/)
+([PDF](https://the-vibey-project.github.io/vibey/main/paper.pdf)), and the whole documentation is a [book](https://the-vibey-project.github.io/vibey/main/book.pdf)
+([EPUB](https://the-vibey-project.github.io/vibey/main/book.epub)).
