@@ -1,0 +1,72 @@
+site_name: agyloop
+site_description: >-
+  Onion-architected, autonomous Google Antigravity / Gemini session runner.
+site_url: https://adammatthewsteinberger.github.io/agyloop/
+repo_url: https://github.com/adammatthewsteinberger/agyloop
+repo_name: adammatthewsteinberger/agyloop
+edit_uri: edit/main/docs/
+
+# ProperDocs, matching vibey-gh and vibey-skills. `theme: mkdocs` rather than Material:
+# ProperDocs ships its own theme package and the Material palette/features block has no
+# equivalent here, so the styling lives in stylesheets/vibey.css instead.
+theme: mkdocs
+
+extra_css:
+  - stylesheets/vibey.css
+extra_javascript:
+  - javascripts/channel.js
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+
+exclude_docs: |
+  plans/**
+  superpowers/**
+
+validation:
+  omitted_files: ignore
+  absolute_links: ignore
+  unrecognized_links: warn
+  anchors: warn
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Installation: getting-started/installation.md
+      - Quickstart: getting-started/quickstart.md
+      - Configuration: getting-started/configuration.md
+  - Usage: usage.md
+  - Guides:
+      - Rate limits vs. credits: guides/rate-limits-and-credits.md
+      - Never blocking on a human: guides/never-blocking.md
+      - The generated REST surface: guides/rest-api-surface.md
+  - Architecture:
+      - Decision records:
+          - "0001 — Onion architecture": architecture/decisions/0001-onion-architecture.md
+          - "0002 — SDK primary gateway": architecture/decisions/0002-sdk-primary-gateway.md
+          - "0003 — Five-member CapacityState": architecture/decisions/0003-five-member-capacity-state.md
+          - "0004 — Quota-aware probes": architecture/decisions/0004-quota-aware-probes.md
+          - "0005 — Bounded in-process retry": architecture/decisions/0005-bounded-in-process-retry.md
+          - "0006 — Defer Gemini REST (superseded)": architecture/decisions/0006-defer-genai-rest.md
+          - "0007 — Deny ask_question with guidance": architecture/decisions/0007-deny-ask-question-with-guidance.md
+          - "0008 — Never skip-permissions with sandbox": architecture/decisions/0008-never-skip-permissions-with-sandbox.md
+          - "0009 — Token budgets; labeled dollar estimates": architecture/decisions/0009-budgets-are-token-denominated.md
+          - "0010 — Persist conversation_id with fsync": architecture/decisions/0010-conversation-id-fsync.md
+          - "0011 — Doctor never guesses the auth lane": architecture/decisions/0011-doctor-never-guesses-auth-lane.md
+          - "0012 — Versioned classifier fixtures": architecture/decisions/0012-classifier-patterns-are-versioned.md
+          - "0015 — Generated REST with drift gate": architecture/decisions/0015-generated-gemini-rest-with-drift-gate.md
+  - Contributing:
+      - Development: contributing/development.md
+      - Release process: contributing/release-process.md
+      - Harness patch: contributing/harness-patch.md
+  - Changelog: https://github.com/adammatthewsteinberger/agyloop/blob/main/CHANGELOG.md
+  - Security: security.md
+  - Research paper: paper.md

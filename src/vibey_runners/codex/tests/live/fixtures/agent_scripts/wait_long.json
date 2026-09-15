@@ -1,0 +1,33 @@
+{
+  "probes": [
+    {"error_code": "insufficient_quota", "http_status": 429},
+    {"error_code": "insufficient_quota", "http_status": 429},
+    {"error_code": "insufficient_quota", "http_status": 429},
+    {"error_code": "insufficient_quota", "http_status": 429},
+    {"error_code": "insufficient_quota", "http_status": 429},
+    {"error_code": "insufficient_quota", "http_status": 429},
+    {"error_code": "insufficient_quota", "http_status": 429},
+    {"error_code": "insufficient_quota", "http_status": 429},
+    {"error_code": "insufficient_quota", "http_status": 429},
+    {"error_code": "insufficient_quota", "http_status": 429},
+    {"error_code": "insufficient_quota", "http_status": 429},
+    {"error_code": "insufficient_quota", "http_status": 429},
+    {"error_code": "insufficient_quota", "http_status": 429},
+    {"error_code": "insufficient_quota", "http_status": 429},
+    {"error_code": "insufficient_quota", "http_status": 429},
+    {"error_code": "insufficient_quota", "http_status": 429},
+    {"error_code": "insufficient_quota", "http_status": 429},
+    {"error_code": "insufficient_quota", "http_status": 429},
+    {"error_code": "insufficient_quota", "http_status": 429},
+    {"error_code": "insufficient_quota", "http_status": 429},
+    {}
+  ],
+  "turns": [
+    {
+      "signals": {
+        "final_message": "CODEXLOOP_TASK_FULLY_COMPLETE"
+      },
+      "thread_id": "scripted-wait-long"
+    }
+  ]
+}

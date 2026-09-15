@@ -1,0 +1,170 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "cursorloop"
+version = "0.7.0"
+description = "Onion-architected, autonomous Cursor Agent session runner — never blocks on a human, distinguishes rate-limit windows from exhausted credits, and resumes safely across usage windows."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Adam Matthew Steinberger", email = "adam@matthewsteinberger.com" }]
+keywords = [
+    "cursor",
+    "composer",
+    "cli",
+    "automation",
+    "agent",
+    "llm",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Utilities",
+    "Typing :: Typed",
+]
+dependencies = [
+    "typer>=0.12",
+    "structlog>=24.1",
+    "cursor-sdk>=0.1",
+    "anyio>=4.4",
+    "httpx>=0.27",
+    "textual>=1.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    # Release automation and provenance guardrails, shared by every repo in
+    # the family. Stdlib-only, so adopting it in five places multiplies
+    # nobody's dependency tree.
+    "vibey-gh>=1.2",
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "pytest-asyncio>=0.24",
+    "hypothesis>=6.100",
+    "mypy>=1.10",
+    "ruff>=0.6",
+    "import-linter>=2.0",
+    "bandit>=1.7",
+    "pip-audit>=2.7",
+    "build>=1.2",
+    "twine>=5.0",
+    "pyyaml>=6.0",
+    "types-PyYAML>=6.0",
+    "respx>=0.21",
+    "pre-commit>=3.7",
+]
+docs = [
+    "mkdocs>=1.6",
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.26",
+]
+
+[project.scripts]
+cursorloop = "cursorloop.cli.app:main"
+
+[project.urls]
+Homepage = "https://github.com/adammatthewsteinberger/cursorloop"
+Repository = "https://github.com/adammatthewsteinberger/cursorloop"
+Issues = "https://github.com/adammatthewsteinberger/cursorloop/issues"
+Changelog = "https://github.com/adammatthewsteinberger/cursorloop/blob/main/CHANGELOG.md"
+Documentation = "https://adammatthewsteinberger.github.io/cursorloop/"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cursorloop"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "C4"]
+# E501 only, and only because of the provenance header. `vibey-gh check` requires an
+# exact 230-character comment on the first line of every source file, byte-for-byte, so it
+# cannot be wrapped or annotated without failing the check that mandates it. Line width on
+# real code is still enforced -- ruff-format runs on every commit -- which is why vibey-gh
+# itself leaves E501 unselected rather than fighting its own fingerprint.
+ignore = ["E501"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["typer.Option", "typer.Argument"]
+
+[tool.mypy]
+strict = true
+python_version = "3.12"
+packages = ["cursorloop"]
+mypy_path = "src"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Deliberately NO --cov=... and NO --cov-fail-under here: pytest-cov UNIONS
+# every --cov=X flag it sees, so a blanket --cov=cursorloop would silently
+# widen CI's explicitly-scoped per-layer gates. Scope + floor are passed at
+# each call site instead.
+addopts = "--cov-report=term-missing -m \"not live and not system\""
+asyncio_mode = "auto"
+markers = [
+    "live: exercises a real Cursor account (no token spend). Opt in with -m live.",
+    "paid: additionally spends real tokens/turns. Requires --run-paid-live. Always paired with 'live'.",
+    "system: deterministic system-live harness (real FS/git/CLI adapters + scripted agent). Opt in with -m system.",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["src/cursorloop"]
+
+[tool.importlinter]
+root_package = "cursorloop"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Onion layering"
+type = "layers"
+layers = ["cursorloop.cli", "cursorloop.bootstrap", "cursorloop.application", "cursorloop.domain"]
+
+[[tool.importlinter.contracts]]
+name = "Infrastructure only reachable from bootstrap"
+type = "forbidden"
+source_modules = ["cursorloop.domain", "cursorloop.application"]
+forbidden_modules = ["cursorloop.infrastructure"]
+
+[[tool.importlinter.contracts]]
+name = "No Anthropic anywhere"
+type = "forbidden"
+source_modules = ["cursorloop"]
+forbidden_modules = ["anthropic", "claude_agent_sdk"]
+
+[[tool.importlinter.contracts]]
+name = "Domain imports no third party"
+type = "forbidden"
+source_modules = ["cursorloop.domain"]
+forbidden_modules = ["cursor_sdk", "typer", "structlog", "httpx", "anyio", "textual"]
+
+
+[[tool.importlinter.contracts]]
+name = "Interfaces declare seams, never consume them"
+type = "forbidden"
+source_modules = ["cursorloop.application.interfaces"]
+forbidden_modules = [
+    "cursorloop.application.runner",
+    "cursorloop.application.usecases",
+    "cursorloop.infrastructure",
+    "cursorloop.cli",
+    "cursorloop.bootstrap",
+]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/cursorloop/infrastructure/api/cloud-agents-openapi.yaml" = "cursorloop/infrastructure/api/cloud-agents-openapi.yaml"

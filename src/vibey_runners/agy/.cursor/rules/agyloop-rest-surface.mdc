@@ -1,0 +1,18 @@
+---
+description: Generated agyloop api command tree from Gemini REST discovery, drift gate. Consult before hand-writing api commands.
+alwaysApply: false
+---
+
+> **Cursor rule mirror** of `.claude/skills/agyloop-rest-surface/SKILL.md`. When this guidance changes, update Claude, Cursor, Codex, and Antigravity in the same PR.
+
+# agyloop REST surface (generated)
+
+`agyloop api` is generated from Gemini REST discovery with a CI drift gate
+(ADR 0015). Do not hand-write individual endpoints or the gate is meaningless.
+
+- Developer lane: `GOOGLE_API_KEY` as a query parameter. Treat it as secret.
+- Vertex lane is separate; doctor never guesses when both look possible.
+- Baseline JSON lives under `src/agyloop/infrastructure/api/`.
+- `--json` / file inlining for request bodies.
+
+See `docs/guides/rest-api-surface.md`.

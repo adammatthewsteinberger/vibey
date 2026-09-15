@@ -1,0 +1,23 @@
+name: Feature request
+description: Propose a qwenloop capability or integration.
+title: "feat: "
+labels: [enhancement]
+body:
+  - type: textarea
+    attributes:
+      label: Problem
+      description: What operator or agent problem should this solve?
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Proposed contract
+      description: Describe CLI, persisted-state, security-policy, and compatibility implications.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Acceptance criteria
+      description: List observable, testable outcomes.
+    validations:
+      required: true

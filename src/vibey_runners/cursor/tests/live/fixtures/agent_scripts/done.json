@@ -1,0 +1,16 @@
+{
+  "probes": [{"signals": {}}],
+  "turns": [
+    {
+      "signals": {},
+      "verdict": {"complete": true, "remaining_work": [], "blocked_on": null, "summary": "done"},
+      "output_text": "CURSORLOOP_TASK_FULLY_COMPLETE\n```cursorloop-verdict\n{\"complete\": true, \"remaining_work\": [], \"blocked_on\": null, \"summary\": \"done\"}\n```",
+      "raw_events": [
+        {"type": "tool_call", "name": "Read", "call_id": "call_1", "status": "started"},
+        {"type": "tool_call", "name": "Read", "call_id": "call_1", "status": "completed"},
+        {"type": "status", "status": "thinking", "message": "Processing request"},
+        {"type": "usage", "total_tokens": 150}
+      ]
+    }
+  ]
+}

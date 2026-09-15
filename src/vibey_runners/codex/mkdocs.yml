@@ -1,0 +1,44 @@
+site_name: codexloop
+site_description: Autonomous OpenAI Codex session runner
+site_url: https://adammatthewsteinberger.github.io/codexloop/
+repo_url: https://github.com/adammatthewsteinberger/codexloop
+repo_name: adammatthewsteinberger/codexloop
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - content.code.copy
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - toc:
+      permalink: true
+exclude_docs: |
+  plans/**
+  superpowers/**
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - Guides:
+      - REST API surface: guides/rest-api-surface.md
+  - Architecture:
+      - Overview: architecture/index.md
+      - ADRs:
+          - Index: architecture/adr/index.md
+          - "0001 Onion import-linter": architecture/adr/0001-onion-import-linter.md
+          - "0002 Subprocess codex exec": architecture/adr/0002-subprocess-codex-exec.md
+          - "0003 Credits exhausted": architecture/adr/0003-credits-exhausted.md
+          - "0004 Adaptive probe loop": architecture/adr/0004-adaptive-probe-loop.md
+          - "0005 Layered capacity probe": architecture/adr/0005-layered-capacity-probe.md
+          - "0006 Generated OpenAI REST": architecture/adr/0006-generated-openai-rest.md
+          - "0007 Default approval/sandbox": architecture/adr/0007-default-approval-sandbox.md
+          - "0008 Policy via -c flags": architecture/adr/0008-policy-via-c-flags.md
+          - "0009 Optional app-server": architecture/adr/0009-optional-app-server.md
+          - "0010 Rollout best-effort": architecture/adr/0010-rollout-best-effort.md
+          - "0011 Never consume resets": architecture/adr/0011-never-consume-resets.md
+          - "0012 Minimum Codex version": architecture/adr/0012-minimum-codex-version.md
+  - Reference: reference/cli.md
+  - Contributing: contributing.md
+  - Publishing: publishing.md
+strict: true

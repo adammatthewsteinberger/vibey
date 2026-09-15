@@ -1,0 +1,28 @@
+---
+name: agyloop-testing
+description: Fakes over mocks, FakeClock/FakeSleeper, Hypothesis, pytest markers. Consult before adding tests or mocks.
+allowed-tools: Read Grep Glob Bash(pytest *)
+---
+
+# agyloop testing
+
+```
+tests/domain/            # pure unit + Hypothesis
+tests/application/       # fakes for every port (fakes.py)
+tests/infrastructure/    # adapters
+tests/system/            # marker: system — real FS/git + scripted agent
+tests/live/              # marker: live — real Google account, opt-in
+```
+
+```bash
+pytest                 # skips live + system
+pytest -m system
+pytest -m live         # needs GOOGLE_API_KEY
+```
+
+- **Fakes over mocks.** Implement the `Protocol`; `mypy --strict` checks it.
+- **No `time.sleep` in tests.** `FakeClock` / `FakeSleeper`.
+- Hypothesis for numeric / time-based invariants.
+- `# pragma: no cover` needs a reason.
+- Unit tests set `AGYLOOP_SKIP_HARNESS_RETARGET=1` (autouse) so they do not
+  copy the 99MB bundled `localharness`.

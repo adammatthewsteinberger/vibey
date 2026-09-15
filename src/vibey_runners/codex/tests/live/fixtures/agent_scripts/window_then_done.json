@@ -1,0 +1,23 @@
+{
+  "probes": [
+    {
+      "error_code": "usage_limit_reached",
+      "http_status": 429,
+      "plan_windows": {
+        "primary": {"used_percent": 100, "window_minutes": 300},
+        "secondary": null,
+        "plan_type": "plus",
+        "rate_limit_reached_type": "primary"
+      }
+    },
+    {}
+  ],
+  "turns": [
+    {
+      "signals": {
+        "final_message": "CODEXLOOP_TASK_FULLY_COMPLETE"
+      },
+      "thread_id": "scripted-window"
+    }
+  ]
+}

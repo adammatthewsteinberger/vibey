@@ -1,0 +1,45 @@
+---
+name: codexloop-completion
+description: Three-layer completion evaluation (structured output → marker → continue), capacity rejection outranks completion claim. Use when working with completion.py.
+allowed-tools: Read Grep
+---
+
+# codexloop completion detection
+
+`CompletionEvaluator` in `domain/completion.py` maps `TurnSignals` +
+`CapacityState` into a `CompletionVerdict`.
+
+## CompletionVerdict variants
+
+```python
+Done  # task fully complete
+Continue  # remaining: list[str]
+Blocked  # reason: str — human intervention needed
+```
+
+## Three-layer evaluation
+
+**Capacity rejection always outranks a completion claim.** If the turn is
+not `Available`, return `Continue` regardless of structured output or
+markers.
+
+For an `Available` turn, the layers are:
+
+1. **Structured output** (`StructuredOutput` tool call result):
+   - `blocked_on` set → `Blocked(reason=blocked_on)`.
+   - `complete: true` and `remaining_work: []` → `Done`.
+   - `complete: true` but `remaining_work` not empty → `Continue`.
+   - `complete: false` → `Continue(remaining=remaining_work)`.
+
+2. **Marker on own line**: if `CODEXLOOP_TASK_FULLY_COMPLETE` appears on
+   its own line in the final message → `Done`.
+
+3. **Fallback**: `Continue(remaining=[])`.
+
+The marker check uses `_marker_on_own_line(message, done_marker)`: the
+string must be the only non-whitespace on the line. Partial matches or
+inline occurrences do not count.
+
+**Never treat a non-`Available` turn as `Done`.** Rate-limit windows and
+transient errors are waitable; completion is deferred until capacity
+returns.

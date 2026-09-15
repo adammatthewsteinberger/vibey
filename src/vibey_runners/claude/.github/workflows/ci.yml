@@ -1,0 +1,160 @@
+# Made with ❤️ by [Vibey](https://adammatthewsteinberger.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint & format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e ".[dev]"
+      - run: ruff check src tests scripts
+      - run: ruff format --check src tests scripts
+
+  typecheck:
+    name: mypy --strict
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e ".[dev]"
+      - run: mypy src/claudeloop
+
+  imports:
+    name: import-linter (onion contract)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e ".[dev]"
+      - run: lint-imports
+
+  security:
+    name: bandit + pip-audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e ".[dev]"
+      - run: bandit -q -r src/claudeloop
+      - run: pip-audit
+
+  test:
+    name: pytest (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e ".[dev]"
+      - name: Domain layer - 100% coverage required
+        run: |
+          pytest tests/domain \
+            --cov=claudeloop.domain \
+            --cov-branch \
+            --cov-report=term-missing \
+            --cov-fail-under=100
+      - name: Application layer - 100% coverage required
+        run: |
+          pytest tests/application \
+            --cov=claudeloop.application \
+            --cov-branch \
+            --cov-report=term-missing \
+            --cov-fail-under=100
+      # -n auto only on the two large layers. Measured on a 10-core box:
+      # infrastructure 10.5s -> 7.2s and cli 4.9s -> 3.9s, but domain
+      # 0.9s -> 2.1s and application 0.5s -> 2.0s, where worker startup
+      # costs more than the parallelism saves. A blanket addopts setting
+      # would therefore make two of the four gates slower.
+      - name: Infrastructure layer - 100% coverage required
+        run: |
+          pytest tests/infrastructure -n auto --maxprocesses=8 \
+            --cov=claudeloop.infrastructure \
+            --cov-branch \
+            --cov-report=term-missing \
+            --cov-fail-under=100
+      - name: CLI layer - 100% coverage required
+        run: |
+          pytest tests/cli -n auto --maxprocesses=8 \
+            --cov=claudeloop.cli \
+            --cov-branch \
+            --cov-report=term-missing \
+            --cov-fail-under=100
+
+  skills:
+    name: Claude skill frontmatter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: pip install pyyaml
+      - run: python scripts/check_skill_frontmatter.py
+
+  uv-lock:
+    name: uv.lock is in sync with pyproject.toml
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.12.6"
+          enable-cache: true
+      - run: uv lock --check
+
+  build:
+    name: Package builds and is installable
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip build twine
+      - run: python -m build
+      - run: twine check --strict dist/*
+      - name: Confirm py.typed ships in the wheel
+        run: unzip -l dist/*.whl | grep -q py.typed
+      - name: Install the built wheel into a clean venv and run the console script
+        # This is the check whose absence let a broken [project.scripts] entry
+        # point ship undetected — installing editable never validates it.
+        run: |
+          python -m venv /tmp/claudeloop-smoke
+          /tmp/claudeloop-smoke/bin/pip install --upgrade pip
+          /tmp/claudeloop-smoke/bin/pip install dist/*.whl
+          /tmp/claudeloop-smoke/bin/claudeloop --version
+          /tmp/claudeloop-smoke/bin/claudeloop --help

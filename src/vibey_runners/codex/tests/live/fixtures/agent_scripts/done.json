@@ -1,0 +1,11 @@
+{
+  "probes": [{}],
+  "turns": [
+    {
+      "signals": {
+        "final_message": "CODEXLOOP_TASK_FULLY_COMPLETE"
+      },
+      "thread_id": "scripted-done"
+    }
+  ]
+}

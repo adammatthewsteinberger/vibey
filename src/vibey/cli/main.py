@@ -1274,6 +1274,34 @@ def worker(
         from vibey.bootstrap import preflight_sweep
         from vibey.infrastructure.engines.claudeloop_decompose import ClaudeLoopWorkPlanProducer
 
+        # Kubernetes scale-in is SIGTERM, a wait, then SIGKILL. A
+        # worker that ignores SIGTERM keeps claiming jobs it cannot
+        # possibly finish: the kill lands mid-session, the lease is
+        # orphaned, and a paid turn is thrown away. Draining means
+        # exactly one thing -- finish the job in hand, claim no more --
+        # so the flag is read between jobs and nowhere else. Checking
+        # it mid-job would be the very truncation it exists to avoid.
+        #
+        # SIGTERM only, deliberately. Ctrl-C keeps its immediate-abort
+        # semantics: an operator who interrupts a foreground worker
+        # means now, not "in up to two hours".
+        #
+        # Registered as the very first thing once the event loop is
+        # running -- before any I/O (DB connect, project lookup). On a
+        # freshly scaled pod, kubelet's SIGTERM can arrive within
+        # milliseconds of the process starting, and PID 1 silently
+        # drops an unhandled signal rather than queuing it: a handler
+        # installed even one await later can lose the race and never
+        # see the signal that was actually sent.
+        draining = asyncio.Event()
+
+        def _begin_drain() -> None:
+            typer.echo("draining on SIGTERM: finishing in-flight job, claiming no more")
+            draining.set()
+
+        asyncio.get_running_loop().add_signal_handler(signal.SIGTERM, _begin_drain)
+        typer.echo("sigterm handler registered", err=True)
+
         async with build_app() as resources:
 
             async def _resolve_project() -> ProjectRecord | None:
@@ -1360,33 +1388,25 @@ def worker(
             notifier = PostgresJobReadyNotifier(database_url())
             await notifier.connect()
 
-            # Kubernetes scale-in is SIGTERM, a wait, then SIGKILL. A
-            # worker that ignores SIGTERM keeps claiming jobs it cannot
-            # possibly finish: the kill lands mid-session, the lease is
-            # orphaned, and a paid turn is thrown away. Draining means
-            # exactly one thing -- finish the job in hand, claim no more --
-            # so the flag is read between jobs and nowhere else. Checking
-            # it mid-job would be the very truncation it exists to avoid.
-            #
-            # SIGTERM only, deliberately. Ctrl-C keeps its immediate-abort
-            # semantics: an operator who interrupts a foreground worker
-            # means now, not "in up to two hours".
-            draining = asyncio.Event()
-
-            def _begin_drain() -> None:
-                typer.echo("draining on SIGTERM: finishing in-flight job, claiming no more")
-                draining.set()
-
-            asyncio.get_running_loop().add_signal_handler(signal.SIGTERM, _begin_drain)
-
             typer.echo(
                 f"worker started: project={project.name} "
                 f"engines={engines_opt or 'all'} parallelism={count} provider={provider}"
             )
 
-            async def drive(loop_: WorkerLoop) -> None:
+            # TEMPORARY: pinning down why a scaled-in pod isn't draining within
+            # the expected ~60s on minikube (observed: stuck well past 5m, the
+            # SIGTERM handler registered above never firing its own echo).
+            # Cheap enough to leave on: one line per loop per iteration,
+            # nothing per-job.
+            async def drive(loop_: WorkerLoop, *, idx: int) -> None:
+                iteration = 0
                 while not draining.is_set():
+                    iteration += 1
+                    typer.echo(f"drive[{idx}] iter={iteration} calling run_once", err=True)
                     worked = await loop_.run_once(project.project_id)
+                    typer.echo(
+                        f"drive[{idx}] iter={iteration} run_once returned worked={worked}", err=True
+                    )
                     if worked:
                         typer.echo("processed one job")
                         if once:
@@ -1396,15 +1416,19 @@ def worker(
                         typer.echo("no ready job")
                         return
                     await resources.jobs.reap()
+                    typer.echo(
+                        f"drive[{idx}] iter={iteration} reap done, waiting for notify", err=True
+                    )
                     await notifier.wait_for_job_ready(
                         project.project_id, timeout=timedelta(seconds=5)
                     )
+                typer.echo(f"drive[{idx}] draining flag observed, exiting loop", err=True)
 
             try:
                 if once or count == 1:
-                    await drive(loops[0])
+                    await drive(loops[0], idx=0)
                 else:
-                    await asyncio.gather(*(drive(loop_) for loop_ in loops))
+                    await asyncio.gather(*(drive(loop_, idx=i) for i, loop_ in enumerate(loops)))
             finally:
                 await notifier.close()
 

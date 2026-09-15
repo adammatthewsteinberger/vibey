@@ -1,0 +1,12 @@
+{
+  "name": "rpm-metric",
+  "signals": {
+    "http_status": 429,
+    "status": "RESOURCE_EXHAUSTED",
+    "message": "Resource exhausted",
+    "quota_metric": "rpm"
+  },
+  "expected_state": "WindowExhausted",
+  "expected_rung": "quota_metric",
+  "expected_rate_limit_type": "rpm"
+}

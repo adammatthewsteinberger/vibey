@@ -1,0 +1,81 @@
+%% Comprehensive architecture map of cursorloop: the onion, its capability
+%% surfaces, the release automation that ships it, and the security boundaries.
+%% Kept current by the exact-head documentation review, which treats a stale
+%% relationship here as blocking.
+flowchart TD
+    subgraph CLI[CLI surface - cursorloop]
+        RunCmds[run / resume / stop / wind-down / prompt]
+        Observe[status / logs / watch / runs / usage]
+        StateCmds[savepoints / snapshot / unwind / reset]
+        EnvCmds[doctor / whoami / models / agents / hooks]
+        CloudCli[cloud - status / me / models / create / get / cancel]
+    end
+
+    subgraph Application[Application layer]
+        UseCases[Use cases: run plan, resume, control, list]
+        Ports[Ports in application/ports.py]
+    end
+
+    subgraph Domain[Domain core - pure, no I/O]
+        Loop[Run-loop state machine: PREFLIGHT -> RUNNING <-> WAITING/PROBING -> COMPLETE or FAILED]
+        CapacityADT[Capacity ADT + waiting policy]
+        Ledger[Budget ledger - max_dollars]
+        Verdicts[Completion verdicts: fence, marker, empty-turn, reconciliation]
+    end
+
+    subgraph Infrastructure[Infrastructure adapters]
+        AgentT[agent - Cursor session transport]
+        CloudApi[api - generated Cloud Agents REST, drift-gated]
+        Savepoints[git_savepoints]
+        Cfg[config - CURSORLOOP_* env + file + defaults]
+        Obs[events + state_bus + stream_ui + logging + audit + redact]
+        Control[control + run_control + lock + rundir - .cursorloop/ control plane]
+    end
+
+    subgraph External[External systems]
+        CursorCLI[Cursor agent CLI]
+        CloudAgents[Cursor Cloud Agents API - CURSOR_API_KEY]
+    end
+
+    subgraph Release[Release automation - vibey-gh]
+        FeaturePR[feature/* PR] -->|squash| Develop[develop]
+        Develop -->|every push| TestPyPI[TestPyPI .devN build]
+        Develop -->|promote-to-main: derived version, rebase| Main[main]
+        Main -->|Trusted Publishing OIDC| PyPI[PyPI]
+        Develop --> Surfaces[release-surfaces.yml]
+        Main --> Surfaces
+        Surfaces -->|/develop/ and /main/ channels| Pages[GitHub Pages docs site]
+        Provenance[Provenance check] --> Gate[PR automation gate]
+        MergeTrain[Merge train] -->|green, conflict-free, reviewed heads only| Develop
+    end
+
+    subgraph SecurityBoundary[Security boundary]
+        Fork[Fork PR] -.->|never trusted with write access| Gate
+        AutomergeToken[AUTOMERGE_TOKEN] -->|merges only| MergeTrain
+        AnthropicKey[ANTHROPIC_API_KEY] -->|review and repair only, no merge| Gate
+        LocalFallback[Local review fallback - self-hosted vibey-local runner + Ollama] -->|only when the paid review returned no verdict| Gate
+        LocalFallback -.->|trusted_only - fork PRs never reach the runner| Fork
+        RuntimeSecret[CURSOR_API_KEY] -.->|runtime only, never used by CI| CloudAgents
+        Redact[redact adapter] -->|strips secrets before the audit trail| Obs
+    end
+
+    RunCmds --> UseCases
+    Observe --> UseCases
+    StateCmds --> Control
+    StateCmds --> Savepoints
+    EnvCmds --> Cfg
+    CloudCli --> CloudApi
+    UseCases --> Ports
+    Ports --> Loop
+    Loop --> CapacityADT
+    Loop --> Ledger
+    Loop --> Verdicts
+    Ports --> AgentT
+    Ports --> CloudApi
+    Ports --> Cfg
+    Ports --> Obs
+    Ports --> Control
+    Loop --> Savepoints
+    AgentT --> CursorCLI
+    CloudApi --> CloudAgents
+    CursorCLI --> CloudAgents

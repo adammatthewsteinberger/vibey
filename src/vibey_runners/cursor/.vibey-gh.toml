@@ -1,0 +1,75 @@
+# vibey-gh owns provenance and release automation for this repository.
+# release-please has been retired: two systems deriving versions and opening
+# release pull requests against one branch is a race, not redundancy.
+
+[fingerprint]
+sources = [
+  "src/**/*.py",
+  "tests/**/*.py",
+  ".github/workflows/*.yml",
+]
+
+[version]
+files         = ["pyproject.toml", "src/cursorloop/__init__.py"]
+content_paths = ["src/cursorloop/"]
+code_paths    = ["src/cursorloop/"]
+
+[branches]
+integration = "develop"
+release     = "main"
+
+[install]
+# Pin every rendered template to the version that rendered it. Unpinned, a runner adopts
+# whatever is newest -- which is how vibey-skills' CI jumped 1.2.0 -> 1.16.0 mid-week and
+# went red on a `check` that had grown teeth. `vibey-gh install` advances the pin now.
+pin_version = true
+# Provenance is repository-owned because cursorloop adopted vibey-gh after
+# several commits already entered the open develop-to-main promotion range.
+workflows = ["merge-train.yml", "promote-to-main.yml", "release-surfaces.yml", "pr-automation.yml", "automation-bootstrap.yml", "provenance.yml"]
+
+[merge_train]
+owner           = "adammatthewsteinberger"
+trusted_authors = ["adammatthewsteinberger", "claude[bot]", "github-actions[bot]", "vibey[bot]"]
+
+[documentation]
+generate_book = true
+generate_paper = true
+
+# GA4 measurement id for the published docs site, rendered into release-surfaces.yml as
+# GA_ID. Public by nature -- it ships in the page source of every site that uses it.
+google_analytics_id = "G-HZMEZ4HX8Y"
+# Off deliberately. The contract is default-on and expects a marketplace manifest, a
+# per-agent rules tree, a mermaid architecture diagram and a dozen other files. Adopting it
+# is a real project, and doing so as a side effect of a version bump would fail `check` on
+# every push.
+enabled = false
+
+[pr_automation]
+# The default set names "Docs", and the hand-authored docs.yml that answered to it only
+# ever triggered on push to main -- so the gate waited for a scan that can never complete
+# for a pull request and never posted at all. Made a required check, that silently blocks
+# every PR; it forced an admin merge of vibey-skills' own promotion. That workflow is gone
+# now, replaced by release-surfaces.yml, so the name goes with it.
+scan_workflows = ["CI", "Provenance"]
+
+[pr_automation.fallback]
+# Reviews with a local model when the paid path returns NO VERDICT AT ALL -- an exhausted
+# ANTHROPIC_API_KEY, expired credentials, an unavailable model. Without it that failure is a
+# hard stop: the gate is required, so a billing problem blocks every pull request. Observed
+# here on the gate-verification PR, where the review job failed and `Local review fallback`
+# was skipped because this was not configured.
+#
+# It never overrides a review that actually ran -- the job requires the primary to have
+# produced no verdict at all, not merely to have failed -- so genuine findings are never
+# discarded for a weaker opinion.
+#
+# The verdict is deliberately narrower than the primary's. Constrained decoding guarantees
+# the output SHAPE, not the judgments, so it assesses only what it can ground in the diff
+# and the gate titles the result "PR automation: gate (local fallback)".
+#
+# `trusted_only` is what makes a self-hosted runner defensible on a public repository:
+# GitHub says they should "almost never" be used there because anyone can open a pull
+# request against them. Excluding forks removes that exposure.
+enabled = true
+runner_label = "vibey-local-cursorloop"
+trusted_only = true

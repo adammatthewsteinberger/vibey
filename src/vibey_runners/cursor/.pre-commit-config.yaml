@@ -1,0 +1,77 @@
+# Install once per clone with:  pre-commit install
+# That single command wires up BOTH hook types below — no extra flags needed,
+# because of `default_install_hook_types`.
+default_install_hook_types: [pre-commit, commit-msg]
+
+repos:
+  # --- Lint / format ---
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.4
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  # --- Generic file hygiene ---
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        # vibey-gh's managed workflow templates are byte-compared by `vibey-gh check`, and
+        # one of them renders with a trailing space. Stripping it locally makes the file
+        # diverge from the template, `check` reports it out of date, and the pre-push hook
+        # then refuses the push -- a formatting hook silently breaking provenance.
+        exclude: ^\.github/workflows/(merge-train|promote-to-main|release-surfaces)\.yml$
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=1024]
+      - id: check-yaml
+      - id: check-toml
+      - id: check-case-conflict
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: debug-statements
+
+  # --- Conventional Commits, enforced at commit-msg time ---
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.4.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args:
+          - --strict
+          - feat
+          - fix
+          - docs
+          - style
+          - refactor
+          - perf
+          - test
+          - build
+          - ci
+          - chore
+          - revert
+
+  # --- Type checking, onion contracts, and security against the project venv ---
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy --strict
+        entry: mypy
+        language: system
+        types: [python]
+        pass_filenames: false
+        args: [src/cursorloop]
+      - id: bandit
+        name: bandit
+        entry: bandit
+        language: system
+        types: [python]
+        pass_filenames: false
+        args: [-q, -r, src/cursorloop]
+      - id: import-linter
+        name: import-linter (onion contract)
+        entry: uv run lint-imports
+        language: system
+        pass_filenames: false

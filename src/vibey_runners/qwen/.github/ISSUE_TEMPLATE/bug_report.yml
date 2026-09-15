@@ -1,0 +1,23 @@
+name: Bug report
+description: Report reproducible qwenloop behavior.
+title: "bug: "
+labels: [bug]
+body:
+  - type: textarea
+    attributes:
+      label: What happened?
+      description: Include the command, expected result, and actual result.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Environment
+      description: OS, hardware, Python, backend, runtime version, and model profile. Never include secrets.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Reproduction
+      description: Provide the smallest safe reproduction and relevant redacted events.
+    validations:
+      required: true

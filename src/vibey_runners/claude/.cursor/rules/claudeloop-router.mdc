@@ -1,0 +1,62 @@
+---
+description: Claudeloop always-on router — non-negotiables, onion layers, and where Cursor/Claude/Codex procedures live
+alwaysApply: true
+---
+
+# claudeloop (Cursor router)
+
+`claudeloop`: an onion-architected, autonomous Claude Code session runner
+and full Anthropic SDK CLI. It never blocks on a human, and it distinguishes
+an exhausted rate-limit window (waitable) from exhausted credits (never
+waitable — needs a human to top up).
+
+**This rule is deliberately short — facts, not procedures.** Procedural
+guidance lives in the other `.cursor/rules/claudeloop-*.mdc` files (mirrors of
+`.claude/skills/` and `.agents/skills/`).
+
+## Non-negotiables
+
+- **Never block on a human.** Every code path must have a way forward that
+  doesn't wait on stdin or a tool call requiring a real person.
+- **Credits ≠ rate limit.** `CreditsExhausted` has no reset time and can
+  never be treated as waitable-with-a-deadline.
+- **`domain/` stays pure.** Stdlib only, no I/O, no async, no third-party
+  imports — enforced by `import-linter`.
+- **A capacity rejection always outranks a completion claim.**
+- **Every commit message follows Conventional Commits.**
+
+## Layer map
+
+```
+domain → application → infrastructure → cli, with bootstrap.py as the sole composition root
+```
+
+## Commands worth memorizing
+
+```bash
+pre-commit install
+pytest
+pytest -m system
+ruff check --fix src tests && ruff format src tests
+mypy src/claudeloop
+lint-imports
+mkdocs serve
+mkdocs build --strict
+```
+
+## Where to go
+
+| Need | Go to |
+|---|---|
+| Architecture / where new code belongs | rule `claudeloop-architecture` (also `.claude/skills/`, `.agents/skills/`) |
+| Domain model | `claudeloop-domain-model` |
+| Testing / system-live harness | `claudeloop-testing` |
+| Quality gates | `claudeloop-quality-gates` |
+| Docs / FOSS link rules | `claudeloop-docs` |
+| Agent SDK | `claudeloop-agent-sdk` |
+| REST surface | `claudeloop-rest-surface` |
+| Releases | `claudeloop-releasing` |
+| User-facing docs | `docs/` |
+| Security | `SECURITY.md` |
+
+When a skill/rule changes, update **Claude + Cursor + Codex** trees in the same PR.
