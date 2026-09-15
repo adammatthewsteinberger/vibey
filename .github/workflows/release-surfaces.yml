@@ -325,8 +325,10 @@ jobs:
               entries = []
               for page in names:
                   origin = source / page
+                  # A configured governance document that is missing is a broken publish,
+                  # never a silent skip: the law would vanish from the site unnoticed.
                   if not origin.is_file():
-                      continue
+                      raise SystemExit(f"governance source is missing {origin}")
                   published.mkdir(exist_ok=True)
                   shutil.copyfile(origin, published / page)
                   heading = next(
