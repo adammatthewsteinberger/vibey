@@ -35,7 +35,7 @@ fast *and* correct. These skills are the reference layer for that.
 **In Claude Code** — add the marketplace, then install the plugins you want:
 
 ```bash
-/plugin marketplace add adammatthewsteinberger/vibey-skills
+/plugin marketplace add the-vibey-project/vibey-skills
 /plugin install security-principles@vibey-skills
 /plugin                                    # browse everything
 ```
