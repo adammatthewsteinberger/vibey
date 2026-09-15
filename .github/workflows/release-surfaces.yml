@@ -180,18 +180,6 @@ jobs:
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
-      - name: Ship the governance corpus index (#249)
-        run: |
-          set -euo pipefail
-          # The index rides the site so a fully-local deployment carries its law
-          # searchable and integrity-checkable offline. Absent index, nothing ships —
-          # the check that ENFORCES its presence lives with the repository, not here.
-          if [ -f corpus-index.json ]; then
-            cp corpus-index.json channel-site/corpus-index.json
-            echo "corpus index shipped with the channel site"
-          else
-            echo "no corpus index in this repository — nothing to ship"
-          fi
       - name: Inject social signals (sub-doctrine 4.a)
         if: false
         run: |
@@ -219,6 +207,10 @@ jobs:
           export GA_ID="G-DMYG7PHCQP"
           python -m pip install --quiet \
             'properdocs==1.6.7' 'properdocs-theme-mkdocs==1.6.7'
+          # LaTeX on the site: arithmatex keeps math intact through the Markdown pass.
+          if [ "true" = "true" ]; then
+            python -m pip install --quiet 'pymdown-extensions==12.0'
+          fi
           # A site declaring plugins or markdown extensions needs them installed before
           # `--strict` will build it, and ProperDocs depends on none of them. Both hooks
           # are no-ops when unused: the list renders empty, and an absent file skips.
@@ -241,6 +233,7 @@ jobs:
           python - "$config" <<'PY'
           import os
           import pathlib
+          import re
           import shutil
           import sys
 
@@ -283,6 +276,74 @@ jobs:
           data.setdefault("repo_url", replacements["__REPOSITORY_URL__"])
           data["edit_uri"] = f"edit/{os.environ['RELEASE_BRANCH']}/docs/"
           data["docs_dir"] = str(docs_dir)
+          # LaTeX rendered on the page, never fetched from a CDN by the reader: MathJax 3.2.2
+          # comes from the npm registry at build time, pinned by version AND checksum and
+          # verified before use, and is served from this site. math.js (the managed release
+          # asset) configures it and turns ```latex environments into styled blocks.
+          if "true" == "true":
+              import hashlib
+              import io
+              import tarfile
+              import urllib.request
+
+              tarball = urllib.request.urlopen(
+                  "https://registry.npmjs.org/mathjax/-/mathjax-3.2.2.tgz", timeout=60
+              ).read()
+              digest = hashlib.sha256(tarball).hexdigest()
+              if digest != "1b9c0a1c44df864e915690558e72adb9cc5203360daefd385084ced3b6c64c09":
+                  raise SystemExit(f"MathJax tarball checksum mismatch: {digest}")
+              with tarfile.open(fileobj=io.BytesIO(tarball)) as archive:
+                  bundle = archive.extractfile("package/es5/tex-svg.js").read()
+              vendor = js_dir / "vendor"
+              vendor.mkdir(exist_ok=True)
+              (vendor / "mathjax-tex-svg.js").write_bytes(bundle)
+              shutil.copyfile(assets / "math.js", js_dir / "math.js")
+              scripts = list(data.get("extra_javascript", []))
+              for script_path in ("javascripts/math.js", "javascripts/vendor/mathjax-tex-svg.js"):
+                  if script_path not in scripts:
+                      scripts.append(script_path)
+              data["extra_javascript"] = scripts
+              extensions = list(data.get("markdown_extensions", []))
+              if not any(
+                  (entry if isinstance(entry, str) else next(iter(entry))) == "pymdownx.arithmatex"
+                  for entry in extensions
+              ):
+                  extensions.append({"pymdownx.arithmatex": {"generic": True}})
+              data["markdown_extensions"] = extensions
+              print("math: MathJax 3.2.2 verified and served from the site; arithmatex enabled")
+          # Governance in plain sight (sub-doctrine 7.b): the governance corpus is published
+          # as its own section of every channel site -- and so as chapters of the book --
+          # copied at build time from its single source, never committed twice. Constitution
+          # first, as the order of authority; then the doctrines, the commandments, the bill
+          # of rights, and every standing subdoctrine. A title keeps no colon, because the
+          # book's nav reader ends a title at the first one.
+          governance_source = "src/vibey_tools/gh/docs"
+          if governance_source:
+              source = pathlib.Path(governance_source)
+              names = ["constitution.md", "doctrines.md", "commandments.md", "bill-of-rights.md"]
+              # Only plainly named documents are published: the name becomes a URL path and a
+              # link on every page, so nothing that could carry markup or quotes gets through.
+              names += sorted(
+                  p.name for p in source.glob("sd-*.md") if re.fullmatch(r"sd-[a-z0-9][a-z0-9-]*\.md", p.name)
+              )
+              published = docs_dir / "governance"
+              entries = []
+              for page in names:
+                  origin = source / page
+                  # A configured governance document that is missing is a broken publish,
+                  # never a silent skip: the law would vanish from the site unnoticed.
+                  if not origin.is_file():
+                      raise SystemExit(f"governance source is missing {origin}")
+                  published.mkdir(exist_ok=True)
+                  shutil.copyfile(origin, published / page)
+                  heading = next(
+                      (line[2:].strip() for line in origin.read_text().splitlines() if line.startswith("# ")),
+                      page.removesuffix(".md"),
+                  )
+                  entries.append({heading.replace(":", " —"): f"governance/{page}"})
+              if entries:
+                  data["nav"] = [*data.get("nav", []), {"Governance": entries}]
+              print(f"governance: published {len(entries)} document(s) from {governance_source}")
           data.setdefault("theme", "mkdocs")
           for key, asset in (
               ("extra_css", "stylesheets/vibey.css"),
@@ -292,7 +353,11 @@ jobs:
               if asset not in values:
                   values.append(asset)
               data[key] = values
-          pathlib.Path(".properdocs-channel.yml").write_text(yaml.safe_dump(data, sort_keys=False))
+          # Unicode kept and lines never folded: the book reads chapter titles from this file line
+          # by line, and an escaped "\u2014" or a folded title would become the chapter's name.
+          pathlib.Path(".properdocs-channel.yml").write_text(
+              yaml.safe_dump(data, sort_keys=False, allow_unicode=True, width=1_000_000)
+          )
           PY
           properdocs build --strict --config-file .properdocs-channel.yml --site-dir channel-site
           # Search must demonstrably work at build time. A site can build --strict with a
@@ -313,6 +378,16 @@ jobs:
               sys.exit("search smoke: the index contains zero documents")
           print(f"search smoke: {len(docs)} documents indexed, all assets present")
           SMOKE
+          # The index rides the site so the published law is searchable and
+          # integrity-checkable offline. Shipped after the build, which cleans the site
+          # directory first. Absent index, nothing ships; the check that enforces its
+          # presence lives with the repository, not here.
+          if [ -f "src/vibey_tools/gh/corpus-index.json" ]; then
+            cp "src/vibey_tools/gh/corpus-index.json" channel-site/corpus-index.json
+            echo "corpus index shipped with the channel site"
+          else
+            echo "no corpus index at src/vibey_tools/gh/corpus-index.json — nothing to ship"
+          fi
           # The documentation as artifacts on the site itself: the doctrine's end
           # results are a KDP-shaped book and a journal-shaped paper, and a reader
           # should download them from the docs they mirror — not hunt a release page.
@@ -567,10 +642,17 @@ jobs:
               "book_epub": (site / "book.epub").is_file(),
               "book_pdf": (site / "book.pdf").is_file(),
               "book_print": (site / "book-print.html").is_file(),
+              "governance": sorted(
+                  p.parent.name
+                  for p in (site / "governance").glob("*/index.html")
+                  if re.fullmatch(r"[a-z0-9][a-z0-9-]*", p.parent.name)
+              ),
           }
           script = site / "javascripts" / "channel.js"
           if script.is_file():
-              script.write_text(script.read_text().replace("__DOC_SURFACES__", json.dumps(surfaces)))
+              # Substituted into a single-quoted JavaScript string: escape what could end it.
+              encoded = json.dumps(surfaces).replace("\\", "\\\\").replace("'", "\\'").replace("</", "<\\/")
+              script.write_text(script.read_text().replace("__DOC_SURFACES__", encoded))
           print("surfaces on this channel: " + ", ".join(k for k, v in surfaces.items() if v))
           PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -949,7 +1031,8 @@ jobs:
                   )
                   if (base / file).is_file()
               ]
-              if not paper and not book:
+              governance = (base / "governance" / "constitution" / "index.html").is_file()
+              if not paper and not book and not governance:
                   return ""
               links = lambda items: " · ".join(f'<a href="{href}">{name}</a>' for name, href in items)
               parts = []
@@ -957,6 +1040,8 @@ jobs:
                   parts.append("<strong>Research paper</strong> " + links(paper))
               if book:
                   parts.append("<strong>The book</strong> " + links(book))
+              if governance:
+                  parts.append(f'<strong>Governance</strong> <a href="{channel}/governance/constitution/">the Constitution, the doctrines and the rights</a>')
               return f"<p>{label}: " + " — ".join(parts) + "</p>"
 
           surface_lines = [
@@ -1024,6 +1109,8 @@ jobs:
           [ -f pages/main/book.pdf ] && SURFACE_LINES="${SURFACE_LINES}- [The book (PDF)](${PAGES_ROOT}main/book.pdf)"$'\n'
           [ -f pages/main/book.epub ] && SURFACE_LINES="${SURFACE_LINES}- [The book (EPUB)](${PAGES_ROOT}main/book.epub)"$'\n'
           [ -f pages/main/book-print.html ] && SURFACE_LINES="${SURFACE_LINES}- [The book (print HTML)](${PAGES_ROOT}main/book-print.html)"$'\n'
+          [ -f pages/main/governance/constitution/index.html ] && SURFACE_LINES="${SURFACE_LINES}- [Governance: the Constitution, the doctrines, the commandments, the bill of rights](${PAGES_ROOT}main/governance/constitution/)"$'\n'
+          [ -f pages/main/corpus-index.json ] && SURFACE_LINES="${SURFACE_LINES}- [Governance corpus index](${PAGES_ROOT}main/corpus-index.json)"$'\n'
           if true; then
             cat > pages/llms.txt <<EOF
           # ${NAME}

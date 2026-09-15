@@ -446,8 +446,10 @@ def test_release_surfaces_ships_the_corpus_index():
     deployment carries its law searchable and integrity-checkable offline."""
     text = (WORKFLOWS / "release-surfaces.yml").read_text(encoding="utf-8")
     flat = " ".join(text.split())
-    assert "Ship the governance corpus index (#249)" in flat
-    assert "cp corpus-index.json channel-site/corpus-index.json" in flat
+    assert 'cp "__VIBEY_GH_DOC_CORPUS_INDEX__" channel-site/corpus-index.json' in flat
+    # After the build, which cleans the site directory: copied before it, the index was
+    # deleted again (or the copy failed outright, the directory not yet existing).
+    assert flat.index("channel-site/corpus-index.json") > flat.index("properdocs build --strict")
 
 
 def test_only_the_tooling_repository_self_hosts_the_install():
@@ -642,7 +644,7 @@ def test_the_book_and_the_paper_are_findable_on_every_published_surface(tmp_path
     # Every page: the theme script learns which forms exist from the built site.
     assert '"paper_pdf": (site / "paper.pdf").is_file()' in on
     assert '"book_epub": (site / "book.epub").is_file()' in on
-    assert 'replace("__DOC_SURFACES__", json.dumps(surfaces))' in on
+    assert 'replace("__DOC_SURFACES__", encoded)' in on
     script = (SOURCE_RELEASE_ASSETS / "javascripts" / "channel.js").read_text(encoding="utf-8")
     assert "'__DOC_SURFACES__'" in script
     # An unsubstituted placeholder must degrade to "nothing to show", never a syntax error.
@@ -802,6 +804,112 @@ def test_review_plugins_load_from_the_config_file(tmp_path):
     cfg = load_config(tmp_path)
     assert cfg.pr_automation.plugin_marketplaces == ("src/skills",)
     assert cfg.pr_automation.plugins == ("quality-engineering@vibey-skills",)
+
+
+def test_governance_is_published_on_every_surface_when_configured(tmp_path):
+    """Sub-doctrine 7.b: the governance corpus is as easy to find as possible. When a
+    source is configured, every channel site publishes it as a Governance section --
+    and so as chapters of the book -- copied from its single source at build time; the
+    theme links only the pages that were published; the chooser and llms.txt link it;
+    and the corpus index ships after the build, from its configured path."""
+    from vibey_gh.config import DocumentationConfig, GhConfig
+    from vibey_gh.install import SOURCE_RELEASE_ASSETS, render_workflow
+
+    source = WORKFLOWS / "release-surfaces.yml"
+    off = render_workflow(source, GhConfig(root=tmp_path))
+    assert 'governance_source = ""' in off
+    assert 'if [ -f "corpus-index.json" ]; then' in off
+    on = render_workflow(
+        source,
+        GhConfig(
+            root=tmp_path,
+            documentation=DocumentationConfig(
+                governance_source="src/tools/gh/docs", corpus_index="src/tools/gh/corpus-index.json"
+            ),
+        ),
+    )
+    assert 'governance_source = "src/tools/gh/docs"' in on
+    assert (
+        'names = ["constitution.md", "doctrines.md", "commandments.md", "bill-of-rights.md"]' in on
+    )
+    assert 're.fullmatch(r"sd-[a-z0-9][a-z0-9-]*\\.md", p.name)' in on
+    assert 'raise SystemExit(f"governance source is missing {origin}")' in on
+    assert "shutil.copyfile(origin, published / page)" in on
+    assert 'data["nav"] = [*data.get("nav", []), {"Governance": entries}]' in on
+    assert 'heading.replace(":", " —")' in on
+    assert "allow_unicode=True, width=1_000_000" in on
+    # The index ships AFTER the build, which cleans the site directory first.
+    ship = on.index('cp "src/tools/gh/corpus-index.json" channel-site/corpus-index.json')
+    assert ship > on.index("properdocs build --strict")
+    assert "Ship the governance corpus index" not in on
+    assert 'if re.fullmatch(r"[a-z0-9][a-z0-9-]*", p.parent.name)' in on
+    assert "<strong>Governance</strong>" in on
+    assert "[ -f pages/main/governance/constitution/index.html ] && SURFACE_LINES=" in on
+    script = (SOURCE_RELEASE_ASSETS / "javascripts" / "channel.js").read_text(encoding="utf-8")
+    assert "/^[a-z0-9][a-z0-9-]*$/.test(slug)" in script
+    assert "encodeURIComponent(slug)" in script and "escapeText(" in script
+    assert 'governanceLinks ? `<strong>Governance</strong> ${governanceLinks}` : ""' in script
+
+
+@pytest.mark.parametrize("key", ["governance_source", "corpus_index"])
+@pytest.mark.parametrize("value", ["/abs", "~/home", "../escape", "has space", "quo'te", "do$llar"])
+def test_governance_paths_are_validated(key, value):
+    from vibey_gh.config import DocumentationConfig
+
+    with pytest.raises(ValueError, match=key):
+        DocumentationConfig(**{key: value})
+
+
+def test_corpus_index_path_must_not_be_empty():
+    from vibey_gh.config import DocumentationConfig
+
+    with pytest.raises(ValueError, match="corpus_index must not be empty"):
+        DocumentationConfig(corpus_index="")
+
+
+def test_governance_settings_load_from_the_config_file(tmp_path):
+    (tmp_path / ".vibey-gh.toml").write_text(
+        '[documentation]\ngovernance_source = "src/gh/docs"\ncorpus_index = "src/gh/corpus-index.json"\n',
+        encoding="utf-8",
+    )
+    cfg = load_config(tmp_path)
+    assert cfg.documentation.governance_source == "src/gh/docs"
+    assert cfg.documentation.corpus_index == "src/gh/corpus-index.json"
+
+
+def test_latex_renders_on_the_site_from_a_verified_self_served_mathjax(tmp_path):
+    """documentation.math: math survives Markdown (arithmatex), and the reader's browser
+    typesets it with a MathJax the site serves itself -- fetched at build time, pinned by
+    version and checksum, verified before use -- never from a third-party CDN."""
+    from vibey_gh.config import DocumentationConfig, GhConfig
+    from vibey_gh.install import SOURCE_RELEASE_ASSETS, render_workflow
+
+    source = WORKFLOWS / "release-surfaces.yml"
+    off = render_workflow(source, GhConfig(root=tmp_path))
+    assert (
+        'if [ "false" = "true" ]; then\n            python -m pip install --quiet \'pymdown-extensions==12.0\''
+        in off
+    )
+    assert 'if "false" == "true":' in off
+    on = render_workflow(
+        source, GhConfig(root=tmp_path, documentation=DocumentationConfig(math=True))
+    )
+    assert "python -m pip install --quiet 'pymdown-extensions==12.0'" in on
+    assert "https://registry.npmjs.org/mathjax/-/mathjax-3.2.2.tgz" in on
+    assert "1b9c0a1c44df864e915690558e72adb9cc5203360daefd385084ced3b6c64c09" in on
+    assert on.index("hexdigest()") < on.index('extractfile("package/es5/tex-svg.js")')
+    assert '("javascripts/math.js", "javascripts/vendor/mathjax-tex-svg.js")' in on
+    assert '{"pymdownx.arithmatex": {"generic": True}}' in on
+    assert "cdn.jsdelivr" not in on and "cdnjs" not in on
+    script = (SOURCE_RELEASE_ASSETS / "javascripts" / "math.js").read_text(encoding="utf-8")
+    assert 'processHtmlClass: "arithmatex"' in script
+    assert "convertLatexFences();" in script
+    assert "\\begin\\{verbatim\\}" in script
+
+
+def test_math_loads_from_the_config_file(tmp_path):
+    (tmp_path / ".vibey-gh.toml").write_text("[documentation]\nmath = true\n", encoding="utf-8")
+    assert load_config(tmp_path).documentation.math is True
 
 
 def test_funding_signage_is_opt_in_validated_and_verbatim(tmp_path):

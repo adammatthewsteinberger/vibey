@@ -603,3 +603,16 @@ footer p { color: #737b94; }
     transition: none !important;
   }
 }
+
+/* LaTeX on the page (documentation.math): theorem-like environments from ```latex fences,
+   and display math that must scroll rather than overflow on a narrow screen. */
+.latex-env {
+  margin: 1.25rem 0;
+  padding: 0.85rem 1.1rem;
+  border-left: 3px solid var(--channel-accent, #9d7bff);
+  background: rgba(157, 123, 255, 0.06);
+  border-radius: 0 8px 8px 0;
+}
+.latex-env p { margin: 0.35rem 0; }
+div.arithmatex { overflow-x: auto; overflow-y: hidden; }
+mjx-container[display="true"] { overflow-x: auto; overflow-y: hidden; max-width: 100%; }
