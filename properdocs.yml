@@ -61,3 +61,4 @@ nav:
           - "0014 — Optional visual design and deployment opt in": architecture/decisions/0014-optional-visual-design-and-deployment-opt-in.md
           - "0015 — Qwenloop standby": architecture/decisions/0015-qwenloop-standby.md
           - "0016 — Classes behind interfaces": architecture/decisions/0016-classes-behind-interfaces.md
+          - "0017 — Dogfood the family first": architecture/decisions/0017-dogfood-the-family-first.md

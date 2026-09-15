@@ -71,11 +71,41 @@ purity was never about the absence of a class.
 
 See ADR-0016.
 
+## Dogfood the family first
+
+If a capability exists inside this family, use it. Do not reimplement it, and do
+not reach for a third-party equivalent. The bar is not "is ours better" — it is
+"does ours do this at all".
+
+Between `vibey_bootstrap`'s retry and a retry loop, use theirs. Between its
+dead-letter routing and a hand-rolled failure path, use its. Between its
+correlation scope and threading a request id by hand, use its. When the choice is
+between using a family feature and not using it, **always prefer using it**.
+
+The shape is the one this codebase already uses: a Protocol in
+`application/interfaces/`, an adapter in `infrastructure/` that satisfies it with
+the family package, and a line in `bootstrap.py`. Dogfooding is not a new pattern
+here — it is the existing one, applied to ourselves.
+
+A new implementation of something the family already ships needs a written reason
+at the call site, and the reason must be a capability gap. If ours is missing
+something, the fix is to add it to ours.
+
+Measured 2026-09-15: `src/vibey` imports **zero** family packages. See ADR-0017
+for the parity backlog.
+
 ## The forbidden imports
 
 `domain/` must never import:
 - Any layer: `vibey.application`, `vibey.infrastructure`, `vibey.cli`, `vibey.tui`
 - Third-party: `asyncpg`, `psycopg`, `httpx`, `typer`, `structlog`, `pydantic`, `textual`
+- `vibey_bootstrap` — named rather than categorised: it carries the Azure SDK and
+  OpenTelemetry, so importing it here pulls a third-party graph in transitively
+
+`domain/` **may** import a family package that is itself dependency-free —
+`vibey_gh`, `vibey_skills`, `vibey_runners.common` all declare `dependencies = []`,
+so they add nothing to the graph that stdlib-only did not already allow. This is the
+ADR-0017 caveat to the stdlib-only rule: a first-party package is not third-party.
 - I/O from stdlib: tested by `tests/domain/test_domain_purity.py` (an
   AST-walking test that scans for `open()`, `pathlib`, `subprocess`, `os.environ`,
   `datetime.now()`, `async def`, `await`)

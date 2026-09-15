@@ -18,8 +18,21 @@ lives in `docs/architecture/decisions/`.
   must never acquire one. This is enforced at three independent layers: the
   type definition, a property test, and a database CHECK constraint.
 - **A capacity rejection always outranks a completion claim.**
-- **`domain/` stays pure.** Stdlib only, no I/O, no async, no third-party
-  imports — enforced by `import-linter` in CI, not convention.
+- **`domain/` stays pure.** No I/O, no async, no clock, no network — enforced by
+  `tests/domain/test_domain_purity.py`, which walks the AST. On imports: stdlib,
+  itself, and **any family package that is itself dependency-free** (`vibey-gh`,
+  `vibey-skills`, `vibey-runners-common` all declare `dependencies = []`, so they
+  add nothing stdlib-only did not already allow). `vibey_bootstrap` is forbidden
+  here by name, not by category — it carries the Azure SDK and OpenTelemetry, so
+  it would pull a third-party graph in transitively. Use it from
+  `infrastructure/`. Enforced by `import-linter` in CI, not convention. ADR-0017.
+- **Dogfood the family, always.** If a capability exists inside this family, use
+  it — do not reimplement it and do not reach for a third-party equivalent. The
+  bar is not "is ours better", it is "does ours do this at all". Between using
+  `vibey_bootstrap`'s retry or dead-letter routing and hand-rolling one, use
+  ours. A new implementation of something the family already ships needs a
+  written reason at the call site, and the reason must be a capability gap — in
+  which case the fix is to add it to ours. ADR-0017.
 - **Code lives in classes, and every class has an interface beside it.** A
   module-level function is the method of last resort, and its reason is written
   at the definition. `src/<pkg>/services/github_service.py` implies
@@ -117,7 +130,7 @@ uv run pip-audit
 | Rotation & engines | `docs/plans/rotation-and-engines.md` |
 | Phase protocols | `docs/plans/phase-protocols.md` |
 | Implementation plan | `docs/plans/implementation-plan.md` |
-| System design and why each hard call was made | `docs/architecture/decisions/` (16 ADRs) |
+| System design and why each hard call was made | `docs/architecture/decisions/` (17 ADRs) |
 | User-facing docs | `README.md` Quickstart, `docs/guides/` |
 | Expansion workstreams (JIRA, clouds, k8s, clients, …) | `docs/runbooks/expansion/` (21 runbooks, `00-master-plan.md` first) |
 
