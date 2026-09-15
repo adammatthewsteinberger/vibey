@@ -1,10 +1,19 @@
 # Runbook: vibey-pr-reviewer — daily review, merge, and deploy across accounts
 
+> **Status (2026-09-15):** partially delivered inside `vibey-gh`
+> (`src/vibey_tools/gh`) for this one repository: `merge_train.py` (mechanical
+> readiness + trusted-author rule, `.github/workflows/merge-train.yml`),
+> `pr_automation.py` (event-driven review and repair,
+> `.github/workflows/pr-automation.yml`), `local_review.py` (local-model review
+> fallback), and `issue_automation.py`, configured by `.vibey-gh.toml
+> [merge_train]`. Open: multi-account scope, the stop-list detector, deploy
+> grant with rollback, kill switch, hold-rate metric. Not a separate
+> repository and not a submodule — extend `vibey-gh` (ADR-0017, ADR-0021).
+
 ## Goal
 
-A new repo, `vibey-pr-reviewer`, submoduled into the umbrella (runbook
-19). Once a day it reviews every open pull request across the operator's
-GitHub accounts, and merges and deploys the ones that are safe — escalating
+A `vibey-gh` capability in this repository, scheduled daily, that reviews
+every open pull request across the operator's GitHub accounts, and merges and deploys the ones that are safe — escalating
 to the human only when there is a catastrophic reason not to proceed.
 
 ## The design problem, stated honestly
@@ -72,7 +81,10 @@ success.
    compromised credential is one account, and the config makes that
    visible rather than implied.
 2. **Review before verdict.** The review is a real one — vibey already
-   has the machinery to run gates, read diffs, and produce findings. A
+   has the machinery to run gates, read diffs, and produce findings, and
+   `vibey-gh` already runs an exact-head review (`pr_automation`, with
+   `local_review` as the fallback when the paid path returns no verdict);
+   reuse both. A
    merge decision made without reading the diff is a rubber stamp with
    extra steps.
 3. **The daily run is a vibey project**, not a bespoke script. Same
@@ -88,12 +100,19 @@ success.
    will be *why*, and the answer has to be reconstructable.
 6. **Kill switch.** One flag stops all merging and deploying across all
    accounts, effective on the next poll, no redeploy needed.
-7. **Attribution.** Merges and comments carry the provenance line
-   (runbook 18), so a collaborator seeing the PR knows what merged it.
+7. **Attribution.** Merges and comments carry the enforced provenance
+   header (see runbook 18), so a collaborator seeing the PR knows what
+   merged it:
+
+   ```
+   # Made with ❤️ by [Vibey](https://the-vibey-project.github.io/vibey/), Developed by [Adam Matthew Steinberger](https://vibewithadam.matthewsteinberger.com/) ([@adammatthewsteinberger](https://github.com/adammatthewsteinberger/)).
+   ```
 
 ## Work items
 
-1. Repo scaffold matching family conventions (onion, gates, release-please).
+1. Register the capability in `vibey_gh/surfaces.py` so it is reachable
+   from CLI, API, MCP, SDK and webhook; extend `merge_train` rather than
+   duplicating it.
 2. Multi-account credential model + per-repo policy (review / merge /
    deploy).
 3. The stop-list detector — mechanical, tested per rule, no model

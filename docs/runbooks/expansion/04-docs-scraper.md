@@ -1,5 +1,8 @@
 # Runbook: integration docs scraper — self-maintaining adapters
 
+> **Status (2026-09-15):** not started — no `docwatch` module, job kind, or
+> `doc_snapshot` migration.
+
 ## Goal
 
 A watcher that monitors the documentation of every external surface vibey
@@ -12,8 +15,9 @@ prove it → PR.
 
 | Surface | Source of truth |
 |---|---|
-| claudeloop/codexloop/cursorloop/agyloop | their repos' docs + `--help` output |
-| GitHub Copilot CLI | github.blog changelog feed + `copilot --help` |
+| Vendor agent CLIs/SDKs the runners wrap (Claude Code, Codex CLI, Cursor SDK via `cursor-sdk-bridge`, Antigravity) | vendor changelogs + `<cli> --help` capture. The runners themselves are in-tree (`src/vibey_runners/`), so their docs are ours, not watched surfaces |
+| llama.cpp / vLLM (qwenloop backends) | GitHub releases |
+| GitHub Copilot CLI (only if 02 is revived) | github.blog changelog feed + `copilot --help` |
 | Jira Cloud REST v3 | developer.atlassian.com changelog |
 | az / aws / gcloud CLIs | release notes feeds + `<cli> version` |
 | App Store Connect / Play Developer APIs | Apple/Google release notes |
@@ -36,8 +40,8 @@ prove it → PR.
 - **Change triage is a model call, upgrades are engine sessions**: the
   finding's payload carries the diff; a `docwatch.triage` job asks an
   engine (TRIVIAL effort) "does this diff affect `owner_paths`? breaking /
-  additive / cosmetic?". Breaking/additive → seed a vibey project on the
-  owning repo with the diff + affected files as DESIGN input. Cosmetic →
+  additive / cosmetic?". Breaking/additive → seed a vibey project on this
+  repository, scoped to the owning package with the diff + affected files as DESIGN input. Cosmetic →
   resolve the finding with the classification recorded.
 - Local `--help` capture is the cheapest, most truthful watcher for CLIs
   — the flags conformance check (#33) already proved help output catches
@@ -54,7 +58,7 @@ prove it → PR.
 4. Canonicalizer + differ (pure, `domain/` if truly pure).
 5. `docwatch.triage` handler → finding resolution or project seeding.
 6. CLI: `vibey docwatch list|scan|status`.
-7. Live: point at the real Copilot changelog feed, replay a known past
+7. Live: point at a real vendor CLI changelog feed, replay a known past
    change, prove a project gets seeded with the right owner_paths.
 
 ## Verification

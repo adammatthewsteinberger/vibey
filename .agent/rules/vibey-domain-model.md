@@ -1,8 +1,5 @@
 # vibey-domain-model (Antigravity mirror of `.claude/skills/vibey-domain-model/SKILL.md`)
 
-description: Phases, jobs, ledger, handoff, rotation, and the no-loss gate — the core domain types and invariants in vibey.
-alwaysApply: false
-
 # vibey domain model
 
 Read `docs/plans/domain-model.md` before touching `domain/`. This skill is a
@@ -44,17 +41,38 @@ See ADR-0014 (optional visual-design and deployment opt-in).
 
 ## Jobs
 
-Job kinds map to phases:
-- `design.interview`, `design.research`, `design.synthesize`, `design.spec`
-- `visual.inventory`, `visual.plan`, `media.generate.*`, `visual.review`
-- `build.decompose`, `build.implement`, `build.verify`, `build.integrate`
-- `review.demo`, `review.collect`, `review.triage`
-- `deploy.interview`, `deploy.spec`, `deploy.discover`, `deploy.plan`,
-  `deploy.validate`, `deploy.apply`, `deploy.release`, `deploy.verify`,
-  `deploy.recover`, `deploy.demo`, `deploy.collect`, `deploy.triage`
-- `handoff.produce`, `handoff.verify`
+Job kinds are strings registered against handlers in `bootstrap.py` (25 kinds
+as of 2026-09-15):
+- DESIGN: `design.interview`, `design.research`, `design.synthesize`, `design.spec`
+- VISUAL_DESIGN: `visual.inventory`, `visual.plan`
+- BUILD: `build.decompose` (alias `build.plan`), `build.implement`, `build.verify`,
+  `build.integrate`
+- REVIEW: `review.demo`, `review.collect`, `review.triage`, `review.deployment_choice`
+- DEPLOY_DESIGN: `deploy.design`, `deploy.interview`, `deploy.synthesize`,
+  `deploy.spec` (alias `deploy.accept`)
+- DEPLOY_EXECUTE: `deploy.execute` (alias `deploy.graph`)
+- DEPLOY_REVIEW: `deploy.demo`, `deploy.triage`, `deploy.route`
 
-**Job lifecycle:** `ready → leased → succeeded | failed | awaiting_human | awaiting_capacity`.
+`docs/plans/phase-protocols.md` also names kinds that are not registered
+(`media.generate.*`, `visual.review`, `deploy.discover`/`plan`/`validate`/`apply`/
+`release`/`verify`/`recover`/`collect`); treat those as planned. Handoff is not a
+job kind: it runs inside the engine-driven job through `application/wind_down.py`
+and `application/handoff_orchestration.py`.
+
+**Job lifecycle (`domain/job.py::JobState`):**
+`ready → leased → succeeded | failed | awaiting_human | awaiting_capacity | cancelled`.
+
+**Failure classes (`domain/job.py::FailureClass`):** `capacity` (opens the
+circuit), `engine` (opens after 3), `work` (the code is wrong; circuit untouched),
+`vibey` (our bug; circuit untouched).
+
+**Bounded ladders park, they do not loop.** When `build.implement` or
+`build.verify` exhausts its effort ladder (or a spend cap), the job parks behind a
+human gate. The answer can grant a bound (`max_attempts` for implement attempts,
+`max_rounds` for verify repair rounds, `max_dollars`/`max_turns` for spend);
+further attempts run at the ladder's top effort until that grant is used up, then
+park again (ADR-0024; `granted_limit`/`granted_amount` in
+`application/build_verify_handler.py`).
 
 **Idempotency:** every job is idempotent under replay via `idempotency_key` —
 a deterministic hash of `(project_id, cycle, kind, subject)`. Re-enqueueing
@@ -62,9 +80,11 @@ the same logical work is a no-op. Handlers also guard their own side effects.
 
 **Parallel vs serial:** some jobs run in parallel (e.g., `build.implement` —
 each work item in its own git worktree). Others are serial (e.g.,
-`build.integrate` — one integration branch).
+`build.integrate` — one integration branch, serialised per project and cycle by a
+Postgres advisory lock in `infrastructure/db/advisory_lock.py`, ADR-0029).
 
-See `domain/job.py`.
+See `domain/job.py` (`JobState`, `FailureClass`, `backoff()`,
+`idempotency_key()`) and the handlers in `application/*_handler.py`.
 
 ## Ledger
 
@@ -73,11 +93,14 @@ Vendor transcripts (`~/.claude/projects/**/*.jsonl`, codex rollouts, cursor
 bridge logs) are copied in as *attachments* referenced by events — they are
 evidence, not state.
 
-**Event kinds (19 total):** `SessionSeeded`, `TurnRequested`, `TurnCompleted`,
-`ToolInvoked`, `FileEdited`, `VerdictRendered`, `CapacityRejected`,
-`QuestionAsked`, `AnswerGiven`, `DecisionRecorded`, `AssumptionStated`,
-`FindingRaised`, `FindingResolved`, `ArtifactProduced`, `SavePointCreated`,
-`HandoffInitiated`, `HandoffAccepted`, `PhaseTransitioned`, `BudgetSpent`.
+**Event kinds (25 total, `domain/ledger.py::EventKind`):** `SessionSeeded`,
+`TurnRequested`, `TurnCompleted`, `ToolInvoked`, `FileEdited`, `VerdictRendered`,
+`CapacityRejected`, `QuestionAsked`, `AnswerGiven`, `DecisionRecorded`,
+`AssumptionStated`, `FindingRaised`, `FindingResolved`, `ArtifactProduced`,
+`SavePointCreated`, `HandoffInitiated`, `HandoffAccepted`, `PhaseTransitioned`,
+`BudgetSpent`, and the ADR-0014 opt-in gate events `VisualDesignOptedIn`,
+`VisualDesignDeclined`, `VisualDesignAccepted`, `VisualDesignWaived`,
+`DeploymentOptedIn`, `DeploymentDeclined`.
 
 **Closable events:** `QuestionAsked`, `DecisionRecorded`, `AssumptionStated`,
 `FindingRaised` — these are the events the no-loss gate checks.
@@ -97,7 +120,9 @@ When an engine hits `CreditsExhausted`, vibey:
 3. If the gate passes, writes the full ledger to
    `<worktree>/.vibey/handoff/ledger.jsonl` and seeds the next engine.
 4. If the gate fails, regenerates (up to 3 attempts), then escalates to
-   `full_transcript` mode (entire ledger inlined), then raises a human gate.
+   `full_transcript` mode, then raises a human gate. In that mode the gate waives
+   R1–R5, R7, R9; the design inlines the whole range, but as built the range is only
+   the `ledger.jsonl` file named in the seed prompt — do not describe it as inlined.
 
 **The 10 rules (R1–R10):**
 - R1: remaining-work closure
@@ -138,6 +163,12 @@ engine), effort escalation, phase transition, operator-requested handoff.
   `effective_weight > 0` has gone unselected longer.
 - Determinism: identical candidate state produces an identical selection.
 
+**Wiring:** `application/engine_selector.py::EngineSelector` calls `select()`
+for engine-driven BUILD jobs, through `SelectingEngineProvider` in `bootstrap.py`.
+Candidates come from `engine_health` rows, so an engine without a recorded
+`vibey doctor --conformance --record` pass is never eligible. qwenloop joins only
+when its feature flag is on, as a standby engine (ADR-0015).
+
 See ADR-0005 (smooth weighted round robin), ADR-0007 (rotate at boundaries),
 and `domain/rotation.py`.
 
@@ -149,11 +180,15 @@ saturate.
 
 **Phase base effort:**
 - ① DESIGN: `HIGH`
+- VISUAL_DESIGN: `HIGH`
 - ② BUILD: `LOW` (auto-escalating to `STANDARD` → `HIGH` after failures)
 - ③ REVIEW: `HIGH`
 - ④ DEPLOY_DESIGN: `HIGH`
 - ⑤ DEPLOY_EXECUTE: `LOW` (auto-escalating)
 - ⑥ DEPLOY_REVIEW: `HIGH`
+
+`Phase` also carries `DEPLOY` (a legacy single-phase bridge, base `LOW`) and
+`ABANDONED`; the phase diagram omits them deliberately.
 
 See ADR-0006 (normalized effort ladder) and `domain/effort.py`.
 
@@ -171,5 +206,7 @@ This is enforced at three independent layers:
    `credits_never_have_a_deadline` that rejects any `INSERT`/`UPDATE` with
    `capacity_state = 'CreditsExhausted'` and non-null `resets_at`.
 
-See `domain/capacity.py`, `domain/circuit.py`, and ADR-0004 (capacity rejection
-outranks completion).
+See `domain/capacity.py`, `domain/circuit.py`, the constraint in
+`migrations/0007_engine_health_rotation.sql`, and the CLAUDE.md non-negotiable "A
+capacity rejection always outranks a completion claim" (it has no ADR of its
+own).

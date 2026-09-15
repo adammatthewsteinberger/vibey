@@ -22,8 +22,8 @@ issue or a PR fixing it.
 ## Environment setup
 
 ```bash
-git clone https://github.com/the-vibey-project/agyloop.git
-cd agyloop
+git clone https://github.com/the-vibey-project/vibey.git
+cd vibey/src/vibey_runners/agy   # agyloop lives here in the vibey monorepo
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev,docs]"
@@ -38,21 +38,26 @@ the default test suite and `pytest -m system` need no Google account. See
 ## The branch model (gitflow)
 
 ```
-main         ← always releasable; release-please opens release PRs against this
-  ▲ (merge commit — preserves individual conventional commits)
-develop      ← integration branch; feature branches target this
-  ▲ (squash-merge — one conventional-commit-titled squash per feature)
+main         ← the vibey monorepo's release branch
+  ▲ rebase merge — promotion PRs opened by `vibey-gh promote`
+develop      ← the monorepo's integration branch; feature branches target this
+  ▲ squash merge — one conventional-commit-titled squash per feature
 feature/*    ← your work
 ```
 
-1. `git checkout -b feature/short-description develop`
+This package is developed inside the [vibey monorepo](https://github.com/the-vibey-project/vibey)
+(`src/vibey_runners/agy`), and its branch model, merge train and release automation are the
+monorepo's: see vibey's [CONTRIBUTING](https://github.com/the-vibey-project/vibey/blob/develop/CONTRIBUTING.md)
+and [ADR-0028](https://github.com/the-vibey-project/vibey/blob/develop/docs/architecture/decisions/0028-vibey-gh-owns-release-and-provenance.md).
+release-please was retired; `vibey-gh` derives versions and publishes.
+
+1. `git checkout -b feature/short-description develop` in the vibey repository.
 2. Commit using [Conventional Commits](#conventional-commits).
-3. Open a PR **into `develop`**, not `main`. CI runs Python 3.12–3.13.
-4. Your feature branch is **squash-merged** into `develop`.
-5. Periodically, `develop` is merged into `main` as a **merge commit**.
-6. Later releases: release-please maintains a standing PR on `main`. The
-   first public tag was `v0.1.0` without waiting for a `0.1.1` bump. See
-   [`docs/contributing/release-process.md`](docs/contributing/release-process.md).
+3. Open a PR **into `develop`**, not `main`. This package's own quality gates
+   still apply and run in vibey's CI.
+4. The merge train squash-merges the PR once its checks and review pass.
+5. `vibey-gh promote` opens the promotion PR into `main`; it is rebase-merged
+   and the release workflow publishes.
 
 Never implement on `main`.
 
@@ -160,10 +165,10 @@ Enforced by `import-linter`. See
 
 | I want to... | Go here |
 |---|---|
-| User/operator docs | [https://the-vibey-project.github.io/agyloop/](https://the-vibey-project.github.io/agyloop/) |
-| Ask a question or discuss design | [GitHub Discussions](https://github.com/the-vibey-project/agyloop/discussions) |
-| Report a bug | [Bug report form](https://github.com/the-vibey-project/agyloop/issues/new?template=bug_report.yml) |
-| Propose a feature | [Feature request form](https://github.com/the-vibey-project/agyloop/issues/new?template=feature_request.yml) |
+| User/operator docs | [`docs/index.md`](https://github.com/the-vibey-project/vibey/blob/develop/src/vibey_runners/agy/docs/index.md) |
+| Ask a question or discuss design | [GitHub Discussions](https://github.com/the-vibey-project/vibey/discussions) |
+| Report a bug | [Bug report form](https://github.com/the-vibey-project/vibey/issues/new?template=bug_report.yml) |
+| Propose a feature | [Feature request form](https://github.com/the-vibey-project/vibey/issues/new?template=feature_request.yml) |
 | Report a vulnerability | [SECURITY.md](SECURITY.md) — privately |
 | Same map, shorter | [SUPPORT.md](SUPPORT.md) |
 

@@ -1,5 +1,7 @@
 # Runbook: JIRA integration
 
+> **Status (2026-09-15):** not started — no Jira code under `src/vibey`.
+
 ## Goal
 
 A user can drive vibey entirely from Jira, and vibey can drive Jira back.
@@ -22,8 +24,10 @@ Both directions, fully comprehensive:
   `NOTIFY vibey_job_ready` (`infrastructure/db/human_gate_repository.py`)
   — a Jira comment handler only has to call the same application service
   the CLI `vibey answer` uses. No queue changes needed.
-- `infrastructure/notify/publishers.py` already fans events out to
-  pluggable publishers — the outbound half slots in as one more publisher.
+- `infrastructure/notify/service.py` already fans `NotificationEvent`s out
+  to a desktop notifier and an HMAC-SHA256-signed `WebhookPublisher`
+  (`infrastructure/notify/webhook.py`, header `X-Vibey-Signature`) — the
+  outbound half slots in as one more publisher behind the same seam.
 
 ## Design
 

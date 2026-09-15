@@ -1,5 +1,9 @@
 # Runbook: clients — mobile, web, desktop, and a finished TUI
 
+> **Status (2026-09-15):** not started. The current-state bullets still hold:
+> the TUI is one dashboard with 5 tests, and the conductor has no HTTP API
+> (hard dependency on 12).
+
 ## Goal
 
 Four first-class operator surfaces over one API: a React Native mobile
@@ -22,7 +26,8 @@ stderr).
 - **Log depth contract (the load-bearing requirement):** one
   `GET /projects/{id}/logs` stream (SSE/WebSocket) with a `depth`
   parameter — `phase` (transitions/parks) → `job` (queue lifecycle) →
-  `ledger` (all 19 event kinds) → `engine` (translated engine events) →
+  `ledger` (every `EventKind` — 25 today; clients read the set from the
+  API, never hardcode the count) → `engine` (translated engine events) →
   `raw` (verbatim events.jsonl lines + captured stderr, straight from the
   run dirs / attachment store). Server-side filtering by level, kind,
   engine, work item; cursor-based backfill from the ledger so every
@@ -37,7 +42,7 @@ stderr).
   token scheme from 12.
 - **React Native app** (`clients/mobile/`, Expo): the on-call surface —
   push notification on parks (server publishes via the existing
-  notify/publishers fan-out → APNs/FCM), answer gates from the phone,
+  `infrastructure/notify/service.py` fan-out → APNs/FCM), answer gates from the phone,
   budget approvals, log viewer with depth control.
 - **Desktop** (`clients/desktop/`): Tauri wrapping the web UI (one Rust
   shell, small binaries, native menus/tray). Targets: macOS dmg,

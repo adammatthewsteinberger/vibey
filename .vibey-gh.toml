@@ -1,6 +1,7 @@
-# vibey-gh owns provenance and release automation for this repository, exactly as it does
-# for the five *loop runners and vibey-skills. Adopted in one pass; the checklist that
-# shaped this file is the one those adoptions debugged the hard way.
+# vibey-gh owns provenance and release automation for this repository — the same tooling the
+# *loop runners and vibey-skills used as standalone repositories before they were absorbed into
+# this workspace (src/vibey_runners/*, src/vibey_tools/*; ADR-0021). The checklist that shaped
+# this file is the one those adoptions debugged the hard way.
 
 [fingerprint]
 sources = [
@@ -107,7 +108,11 @@ governance_source = "src/vibey_tools/gh/docs"
 corpus_index = "src/vibey_tools/gh/corpus-index.json"
 # The research paper and the architecture pages carry LaTeX; render it on the site.
 math = true
-# The living-roadmap doctrine (vibey-gh#211) defaults require_roadmap to true.
+# The named author of the published paper, the book and every page's metadata. Unset, the
+# exporters fall back to the GitHub owner and the paper's byline reads "the-vibey-project".
+author = "Adam Matthew Steinberger"
+# The living-roadmap doctrine (Doctrine 11, src/vibey_tools/gh/docs/doctrines.md) defaults
+# require_roadmap to true.
 # The operator has twice declined roadmap drafts for this repository and owns the decision on its shape; the check stays off until they write the roadmap they want.
 # The exact-head review still judges roadmap liveness on every head.
 require_roadmap = false
