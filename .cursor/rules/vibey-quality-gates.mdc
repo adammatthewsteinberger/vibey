@@ -66,8 +66,10 @@ uv run lint-imports
 ```
 
 If it fails, the error names the contract and the violating import. See
-`.importlinter` for the three contracts: `onion-layers`,
-`domain-independence`, `application-independence`.
+`.importlinter` for the four contracts: `onion-layers`,
+`domain-independence`, `application-independence`, and `interfaces-declare-only`
+— the last of which applies to every `interfaces/` package, not only
+`application/interfaces`. See ADR-0016.
 
 See the `vibey-architecture` skill before fixing a violation.
 

@@ -20,6 +20,12 @@ lives in `docs/architecture/decisions/`.
 - **A capacity rejection always outranks a completion claim.**
 - **`domain/` stays pure.** Stdlib only, no I/O, no async, no third-party
   imports — enforced by `import-linter` in CI, not convention.
+- **Code lives in classes, and every class has an interface beside it.** A
+  module-level function is the method of last resort, and its reason is written
+  at the definition. `src/<pkg>/services/github_service.py` implies
+  `src/<pkg>/services/interfaces/github_service_interface.py`. Interfaces
+  declare; they never consume. New and changed code from 2026-09-15; the
+  existing tree converges module by module. ADR-0016.
 - **The handoff no-loss gate is not negotiable.** A handoff that fails the
   gate is a retry, an escalation to full-transcript mode, or a human gate —
   never a silent partial.
@@ -111,7 +117,7 @@ uv run pip-audit
 | Rotation & engines | `docs/plans/rotation-and-engines.md` |
 | Phase protocols | `docs/plans/phase-protocols.md` |
 | Implementation plan | `docs/plans/implementation-plan.md` |
-| System design and why each hard call was made | `docs/architecture/decisions/` (15 ADRs) |
+| System design and why each hard call was made | `docs/architecture/decisions/` (16 ADRs) |
 | User-facing docs | `README.md` Quickstart, `docs/guides/` |
 | Expansion workstreams (JIRA, clouds, k8s, clients, …) | `docs/runbooks/expansion/` (21 runbooks, `00-master-plan.md` first) |
 

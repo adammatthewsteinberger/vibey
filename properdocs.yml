@@ -60,3 +60,4 @@ nav:
           - "0013 — Deployment is a three phase stage set": architecture/decisions/0013-deployment-is-a-three-phase-stage-set.md
           - "0014 — Optional visual design and deployment opt in": architecture/decisions/0014-optional-visual-design-and-deployment-opt-in.md
           - "0015 — Qwenloop standby": architecture/decisions/0015-qwenloop-standby.md
+          - "0016 — Classes behind interfaces": architecture/decisions/0016-classes-behind-interfaces.md
