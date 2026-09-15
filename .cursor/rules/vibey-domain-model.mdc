@@ -125,7 +125,9 @@ When an engine hits `CreditsExhausted`, vibey:
 3. If the gate passes, writes the full ledger to
    `<worktree>/.vibey/handoff/ledger.jsonl` and seeds the next engine.
 4. If the gate fails, regenerates (up to 3 attempts), then escalates to
-   `full_transcript` mode (entire ledger inlined), then raises a human gate.
+   `full_transcript` mode, then raises a human gate. In that mode the gate waives
+   R1–R5, R7, R9; the design inlines the whole range, but as built the range is only
+   the `ledger.jsonl` file named in the seed prompt — do not describe it as inlined.
 
 **The 10 rules (R1–R10):**
 - R1: remaining-work closure

@@ -480,17 +480,20 @@ flowchart TD
     B -->|violations| C{"attempts < 3?"}
     C -->|yes| D["regenerate brief<br/>with the specific violations fed back"]
     D --> B
-    C -->|no| E["mode = FULL_TRANSCRIPT<br/>inline the entire range"]
+    C -->|no| E["mode = FULL_TRANSCRIPT<br/>closure rules waived;<br/>range delivered as ledger.jsonl"]
     E --> F{"gate FULL"}
     F -->|pass| Z
     F -->|fail| G["raise human gate<br/>job → awaiting_human"]
 ```
 
 - **`STRICT`** — normal. Brief must satisfy all rules.
-- **`FULL_TRANSCRIPT`** — the entire ledger range is inlined into the prompt, and
-  the brief becomes advisory. R1–R5, R7, R9 are auto-satisfied by construction
-  (everything is present); R6, R8, R10 still run. This costs tokens and is the
-  price of correctness — vibey pays it rather than proceeding on a failed gate.
+- **`FULL_TRANSCRIPT`** — the brief becomes advisory and the successor is to work
+  from the whole ledger range. The gate waives R1–R5, R7, R9 and still runs R6, R8,
+  R10. **As built, the range is not inlined:** `DeterministicBriefProducer.produce()`
+  ignores the mode and `render_seed_prompt()` only names
+  `.vibey/handoff/ledger.jsonl`, which the handoff writes into the receiving
+  worktree. The waiver therefore rests on the successor reading that file, not on
+  anything the gate checked — see the note below.
 - **`HUMAN`** — the job parks on a `handoff_gate_failed` human gate whose prompt
   lists the violations; it is answered with the generic `vibey answer GATE_ID`.
   (`handoff_orchestration.py` allows three STRICT attempts, then one
@@ -501,8 +504,11 @@ flowchart TD
   nothing assigns `FORCED`.
 
 FULL_TRANSCRIPT is a gate mode only today: the gate stops checking R1–R5, R7, R9,
-but the wind-down path does not yet inline the range into the prompt; the
-incoming engine gets the seed text and `ledger.jsonl`.
+but nothing inlines the range into the prompt; the incoming engine gets the seed text
+and `ledger.jsonl`. Until the range is inlined, the honest options are to inline it or
+to keep the closure rules enabled in this mode — the `_AUTO_SATISFIED_UNDER_FULL_TRANSCRIPT`
+comment in `domain/noloss.py` and the escalation comment in
+`application/handoff_orchestration.py` describe the intended design, not what runs.
 
 The regeneration feedback is specific, not "try again" (the ladder passes the
 previous attempt's violations to `BriefProducer.produce`; the only producer today
