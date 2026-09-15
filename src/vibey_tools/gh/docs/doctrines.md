@@ -169,6 +169,8 @@ about a lapsed clearance is the failure this forbids.
 [read it in full](sd-01-counterparties-trust-verification.md). One standard for
 everyone; default posture unverified; nothing presumed human; the law is a floor.
 
+**10.e — the family first** *(ratified by the merge that carried this entry)*: if a capability exists inside this family, the family's is used — never reimplemented, and never displaced by a third-party equivalent. The bar is not whether ours is better; it is whether ours does this at all. A second implementation of something the family already ships carries a written reason at the call site, and the only reason admitted is a capability gap — which is closed by teaching ours, not by replacing it. This holds in process and across process boundaries alike: in imports, in CI, and in operations. Every dependency is a party who can be pressured (10.a); the family is the one that cannot be, and a project that ships delivery tooling it does not itself run is making a claim it has not tested. Layer purity is not relaxed by this: a family package is imported only where its own dependencies are allowed, and behind a port everywhere else.
+
 ## 11 — The living roadmap
 
 Every project keeps an active, living roadmap until its goal is achieved and its
