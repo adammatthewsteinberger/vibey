@@ -880,6 +880,41 @@ def test_governance_settings_load_from_the_config_file(tmp_path):
     assert cfg.documentation.corpus_index == "src/gh/corpus-index.json"
 
 
+def test_latex_renders_on_the_site_from_a_verified_self_served_mathjax(tmp_path):
+    """documentation.math: math survives Markdown (arithmatex), and the reader's browser
+    typesets it with a MathJax the site serves itself -- fetched at build time, pinned by
+    version and checksum, verified before use -- never from a third-party CDN."""
+    from vibey_gh.config import DocumentationConfig, GhConfig
+    from vibey_gh.install import SOURCE_RELEASE_ASSETS, render_workflow
+
+    source = WORKFLOWS / "release-surfaces.yml"
+    off = render_workflow(source, GhConfig(root=tmp_path))
+    assert (
+        'if [ "false" = "true" ]; then\n            python -m pip install --quiet \'pymdown-extensions==12.0\''
+        in off
+    )
+    assert 'if "false" == "true":' in off
+    on = render_workflow(
+        source, GhConfig(root=tmp_path, documentation=DocumentationConfig(math=True))
+    )
+    assert "python -m pip install --quiet 'pymdown-extensions==12.0'" in on
+    assert "https://registry.npmjs.org/mathjax/-/mathjax-3.2.2.tgz" in on
+    assert "1b9c0a1c44df864e915690558e72adb9cc5203360daefd385084ced3b6c64c09" in on
+    assert on.index("hexdigest()") < on.index('extractfile("package/es5/tex-svg.js")')
+    assert '("javascripts/math.js", "javascripts/vendor/mathjax-tex-svg.js")' in on
+    assert '{"pymdownx.arithmatex": {"generic": True}}' in on
+    assert "cdn.jsdelivr" not in on and "cdnjs" not in on
+    script = (SOURCE_RELEASE_ASSETS / "javascripts" / "math.js").read_text(encoding="utf-8")
+    assert 'processHtmlClass: "arithmatex"' in script
+    assert "convertLatexFences();" in script
+    assert "\\begin\\{verbatim\\}" in script
+
+
+def test_math_loads_from_the_config_file(tmp_path):
+    (tmp_path / ".vibey-gh.toml").write_text("[documentation]\nmath = true\n", encoding="utf-8")
+    assert load_config(tmp_path).documentation.math is True
+
+
 def test_funding_signage_is_opt_in_validated_and_verbatim(tmp_path):
     """#198: an opt-in contribution line beside the footer provenance. Off by default —
     no default address ever ships, because a payment default is one typo away from

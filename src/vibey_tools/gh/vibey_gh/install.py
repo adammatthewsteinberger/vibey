@@ -71,10 +71,12 @@ def _release_assets(cfg: GhConfig) -> list[tuple[Path, str]]:
         return [
             (PACKAGED_RELEASE_ASSETS / "vibey.css", "vibey.css"),
             (PACKAGED_RELEASE_ASSETS / "channel.js", "channel.js"),
+            (PACKAGED_RELEASE_ASSETS / "math.js", "math.js"),
         ]
     return [
         (SOURCE_RELEASE_ASSETS / "stylesheets" / "vibey.css", "vibey.css"),
         (SOURCE_RELEASE_ASSETS / "javascripts" / "channel.js", "channel.js"),
+        (SOURCE_RELEASE_ASSETS / "javascripts" / "math.js", "math.js"),
     ]
 
 
@@ -310,6 +312,7 @@ def render_workflow(source: Path, cfg: GhConfig) -> str:
         ("__VIBEY_GH_DOC_JSON_LD__", cfg.documentation.generate_json_ld),
         ("__VIBEY_GH_DOC_BOOK__", cfg.documentation.generate_book),
         ("__VIBEY_GH_DOC_PAPER__", cfg.documentation.generate_paper),
+        ("__VIBEY_GH_DOC_MATH__", cfg.documentation.math),
         ("__VIBEY_GH_DOC_BOTTOM_NAV__", cfg.documentation.bottom_nav),
         ("__VIBEY_GH_DOC_PRODUCTION_INDEX__", cfg.documentation.production_indexing),
         ("__VIBEY_GH_DOC_PREVIEW_INDEX__", cfg.documentation.preview_indexing),

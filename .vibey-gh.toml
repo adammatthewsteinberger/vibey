@@ -105,6 +105,8 @@ fallback_enabled = true
 # in the book, and linked from every page, from its single source in the absorbed vibey-gh.
 governance_source = "src/vibey_tools/gh/docs"
 corpus_index = "src/vibey_tools/gh/corpus-index.json"
+# The research paper and the architecture pages carry LaTeX; render it on the site.
+math = true
 # The living-roadmap doctrine (vibey-gh#211) defaults require_roadmap to true.
 # The operator has twice declined roadmap drafts for this repository and owns the decision on its shape; the check stays off until they write the roadmap they want.
 # The exact-head review still judges roadmap liveness on every head.

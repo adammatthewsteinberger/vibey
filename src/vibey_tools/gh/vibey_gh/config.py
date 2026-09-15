@@ -845,6 +845,11 @@ class DocumentationConfig:
     generate_json_ld: bool = True
     generate_book: bool = False
     generate_paper: bool = False
+    # Render LaTeX on the published site: `$...$`/`$$...$$` math (protected from Markdown by
+    # pymdownx.arithmatex) and ```latex theorem-like environments, typeset by a pinned,
+    # checksummed MathJax served from the site itself rather than a CDN. Off by default,
+    # because it turns every `$...$` pair in prose into math.
+    math: bool = False
     bottom_nav: bool = True
     author_name: str = "Adam Matthew Steinberger"
     author_url: str = "https://vibewithadam.matthewsteinberger.com"
@@ -1384,6 +1389,7 @@ def load_config(root: Path | None = None, config: Path | None = None) -> GhConfi
             generate_json_ld=documentation.get("generate_json_ld", True),
             generate_book=documentation.get("generate_book", False),
             generate_paper=documentation.get("generate_paper", False),
+            math=documentation.get("math", False),
             bottom_nav=documentation.get("bottom_nav", True),
             author_name=documentation.get("author_name", "Adam Matthew Steinberger"),
             author_url=documentation.get(

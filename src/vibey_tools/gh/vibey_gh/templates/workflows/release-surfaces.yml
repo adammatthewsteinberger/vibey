@@ -207,6 +207,10 @@ jobs:
           export GA_ID="__VIBEY_GH_DOC_GOOGLE_ANALYTICS_ID__"
           python -m pip install --quiet \
             'properdocs==__VIBEY_GH_PROPERDOCS_VERSION__' 'properdocs-theme-mkdocs==__VIBEY_GH_PROPERDOCS_VERSION__' __VIBEY_GH_DOC_SITE_REQUIREMENTS__
+          # LaTeX on the site: arithmatex keeps math intact through the Markdown pass.
+          if [ "__VIBEY_GH_DOC_MATH__" = "true" ]; then
+            python -m pip install --quiet 'pymdown-extensions==12.0'
+          fi
           # A site declaring plugins or markdown extensions needs them installed before
           # `--strict` will build it, and ProperDocs depends on none of them. Both hooks
           # are no-ops when unused: the list renders empty, and an absent file skips.
@@ -271,6 +275,41 @@ jobs:
           data.setdefault("repo_url", replacements["__REPOSITORY_URL__"])
           data["edit_uri"] = f"edit/{os.environ['RELEASE_BRANCH']}/docs/"
           data["docs_dir"] = str(docs_dir)
+          # LaTeX rendered on the page, never fetched from a CDN by the reader: MathJax 3.2.2
+          # comes from the npm registry at build time, pinned by version AND checksum and
+          # verified before use, and is served from this site. math.js (the managed release
+          # asset) configures it and turns ```latex environments into styled blocks.
+          if "__VIBEY_GH_DOC_MATH__" == "true":
+              import hashlib
+              import io
+              import tarfile
+              import urllib.request
+
+              tarball = urllib.request.urlopen(
+                  "https://registry.npmjs.org/mathjax/-/mathjax-3.2.2.tgz", timeout=60
+              ).read()
+              digest = hashlib.sha256(tarball).hexdigest()
+              if digest != "1b9c0a1c44df864e915690558e72adb9cc5203360daefd385084ced3b6c64c09":
+                  raise SystemExit(f"MathJax tarball checksum mismatch: {digest}")
+              with tarfile.open(fileobj=io.BytesIO(tarball)) as archive:
+                  bundle = archive.extractfile("package/es5/tex-svg.js").read()
+              vendor = js_dir / "vendor"
+              vendor.mkdir(exist_ok=True)
+              (vendor / "mathjax-tex-svg.js").write_bytes(bundle)
+              shutil.copyfile(assets / "math.js", js_dir / "math.js")
+              scripts = list(data.get("extra_javascript", []))
+              for script_path in ("javascripts/math.js", "javascripts/vendor/mathjax-tex-svg.js"):
+                  if script_path not in scripts:
+                      scripts.append(script_path)
+              data["extra_javascript"] = scripts
+              extensions = list(data.get("markdown_extensions", []))
+              if not any(
+                  (entry if isinstance(entry, str) else next(iter(entry))) == "pymdownx.arithmatex"
+                  for entry in extensions
+              ):
+                  extensions.append({"pymdownx.arithmatex": {"generic": True}})
+              data["markdown_extensions"] = extensions
+              print("math: MathJax 3.2.2 verified and served from the site; arithmatex enabled")
           # Governance in plain sight (sub-doctrine 7.b): the governance corpus is published
           # as its own section of every channel site -- and so as chapters of the book --
           # copied at build time from its single source, never committed twice. Constitution
