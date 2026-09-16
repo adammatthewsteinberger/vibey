@@ -81,4 +81,5 @@ nav:
           - "0031 — Skills context is a packet compiled over a process boundary, shadow before inject": architecture/decisions/0031-skills-context-packets-over-a-process-boundary.md
           - "0032 — The documentation ships as a research paper and a book, findable everywhere and built to outlive the site": architecture/decisions/0032-the-docs-ship-as-a-paper-and-a-book.md
           - "0033 — Governance in plain sight — the law is as easy to find and as visible as possible, on every human-readable surface": architecture/decisions/0033-governance-in-plain-sight.md
+          - "0034 — One Claude Code marketplace at the repository root, rendered from the workspace members": architecture/decisions/0034-one-marketplace-at-the-root.md
   - Research paper: paper.md

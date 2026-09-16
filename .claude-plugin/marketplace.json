@@ -1,0 +1,1450 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "vibey",
+  "owner": {
+    "name": "Adam Matthew Steinberger",
+    "email": "adam@matthewsteinberger.com"
+  },
+  "metadata": {
+    "description": "Every Claude Code plugin in this repository: 131 plugin(s) from src/vibey_tools/skills, src/vibey_tools/gh.",
+    "members": [
+      {
+        "path": "src/vibey_tools/skills",
+        "name": "vibey-skills",
+        "version": "2.19.10"
+      },
+      {
+        "path": "src/vibey_tools/gh",
+        "name": "vibey-gh",
+        "version": "1.0.0"
+      }
+    ]
+  },
+  "plugins": [
+    {
+      "name": "aerospace-engineering",
+      "source": "./src/vibey_tools/skills/plugins/aerospace-engineering",
+      "description": "Aerospace Engineering: aerodynamics fundamentals and how lift actually works, airfoils and wings, the drag breakdown, compressible and supersonic flow, aircraft performance, stability and control, air-breathing propulsion, structures and materials, aeroelasticity, flight controls and avionics, drones and UAS including multirotor dynamics and the regulatory picture, launch vehicles, flight test and certification, and the design process.",
+      "version": "0.1.0",
+      "category": "aerospace",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "agile-delivery",
+      "source": "./src/vibey_tools/skills/plugins/agile-delivery",
+      "description": "Agile Delivery: Security-First Scrum methodology, evidence-based delivery velocity, and engineering metrics.",
+      "version": "0.1.0",
+      "category": "engineering-process",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "ai-and-data",
+      "source": "./src/vibey_tools/skills/plugins/ai-and-data",
+      "description": "AI and Data Engineering: data pipelines and warehousing, AI/ML landscape and production patterns, RAG and AI agent development, and LLM token and cost optimization on Azure (including provider-agnostic prompt/context compression).",
+      "version": "0.2.0",
+      "category": "ai",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "ai-chatbot-strategy",
+      "source": "./src/vibey_tools/skills/plugins/ai-chatbot-strategy",
+      "description": "AI Chatbot Strategy: foundational AI and chatbot concepts for business, RAG architecture explained for non-technical decision-makers, custom chatbot build and deployment guide, and chatbot business value with ROI frameworks.",
+      "version": "0.1.0",
+      "category": "ai",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "algorithms-deep-dive",
+      "source": "./src/vibey_tools/skills/plugins/algorithms-deep-dive",
+      "description": "Algorithms Deep Dive: choosing and reasoning about algorithms and data structures, the machine model that makes asymptotic analysis lie (cache, branches, allocation, SIMD), the core data structure families, hash tables and modern probing, trees and the B-tree/LSM storage divide, sorting as it is actually implemented today, searching and indexing, graphs, strings, dynamic programming and amortization, probabilistic and streaming structures, vector and similarity search, concurrent data structures, and the measurement discipline that separates real optimization from folklore.",
+      "version": "0.1.0",
+      "category": "computer-science",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "arm-architecture-deep-dive",
+      "source": "./src/vibey_tools/skills/plugins/arm-architecture-deep-dive",
+      "description": "ARM — A Deep Dive: what \"ARM\" actually names, the licensing model, product families, ISA generations, AArch64, instruction set characteristics, exception levels, the memory model, MMU and translation, vector extensions including NEON, SVE, SVE2 and SME, atomics and synchronization, floating point and numerics, TrustZone, pointer authentication, BTI and MTE, CCA and realms, big.LITTLE and DynamIQ, interrupts and timers, interconnect, boot and firmware, virtualization, Cortex-M and embedded, toolchain and ABI, porting from x86, and performance analysis.",
+      "version": "0.1.0",
+      "category": "hardware",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "art-theory-fundamentals",
+      "source": "./src/vibey_tools/skills/plugins/art-theory-fundamentals",
+      "description": "Art Theory Fundamentals: what kind of claim art theory actually makes, the formal elements, value, colour, composition, pictorial space, medium and materiality, the philosophical questions, beauty and the sublime, taste and judgement, theories of art and the definition problem, art and ethics, a historical skeleton from modernism to contemporary, the canon problem, iconography and iconology, semiotics, critical lenses, intention and the author, how to actually look at a work, and the art world and market.",
+      "version": "0.1.0",
+      "category": "arts",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "assembly-programming",
+      "source": "./src/vibey_tools/skills/plugins/assembly-programming",
+      "description": "Assembly Programming: instruction-level reference for x86-64, AArch64, and RISC-V — the machine model, calling conventions and ABIs, assemblers and toolchains, reading disassembly, performance engineering, SIMD/vector (SSE/AVX/AVX-512, NEON/SVE2/SME, RVV), systems and constant-time cryptographic assembly, inline assembly and intrinsics, and debugging/verification.",
+      "version": "0.1.0",
+      "category": "systems-programming",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "automotive-software",
+      "source": "./src/vibey_tools/skills/plugins/automotive-software",
+      "description": "Automotive Software: what makes vehicle software different, E/E architecture and the shift to zonal and central compute, buses and networking (CAN and its details, Automotive Ethernet and service-oriented communication), AUTOSAR Classic and Adaptive, real-time scheduling, functional safety under ISO 26262 including ASIL determination and decomposition and SOTIF, cybersecurity under ISO/SAE 21434 and the UN R155 and R156 regulations, diagnostics, flashing and OTA, ADAS and autonomy, process and toolchain, testing, the vehicle domains, and supply chain reality.",
+      "version": "0.2.0",
+      "category": "automotive",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "aws-gcp-azure-deep-dive",
+      "source": "./src/vibey_tools/skills/plugins/aws-gcp-azure-deep-dive",
+      "description": "AWS, GCP and Azure Deep Dive: an honest framing of what actually differs between the three, shared responsibility, identity and access where the providers genuinely diverge, resource hierarchy and organization, networking, compute, containers and Kubernetes, serverless, storage, databases, analytics, AI/ML services, observability, cost mechanics, reliability, regions and SLAs, infrastructure as code, lock-in and multi-cloud assessed honestly, migration, and a service equivalence mapping.",
+      "version": "0.3.0",
+      "category": "cloud-infrastructure",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "azure-cloud-infra",
+      "source": "./src/vibey_tools/skills/plugins/azure-cloud-infra",
+      "description": "Azure Cloud Infrastructure: Azure RBAC administration, Kubernetes IaC with GitOps/Helm/Terraform, and Azure service catalog with production decision guide for compute, messaging, networking, and AI.",
+      "version": "0.2.0",
+      "category": "cloud-infrastructure",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "banking-swift-and-payment-networks",
+      "source": "./src/vibey_tools/skills/plugins/banking-swift-and-payment-networks",
+      "description": "Banking, SWIFT and Payment Networks: what a payment actually is, what a bank is and how deposits are created, central banks and reserves, the payment system taxonomy, clearing, netting and settlement risk, correspondent banking, what SWIFT actually is, message formats from MT to ISO 20022, gpi and tracking, governance, sanctions and geopolitics, alternatives and parallel systems, Ripple versus XRP versus the XRP Ledger, XRP Ledger mechanics, Ripple's products, legal status, instant payment systems, stablecoins, CBDCs, tokenized deposits, compliance, security, and the costs and economics of remittances.",
+      "version": "0.1.0",
+      "category": "finance",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "biology-chemistry-foundations",
+      "source": "./src/vibey_tools/skills/plugins/biology-chemistry-foundations",
+      "description": "Biology and Chemistry Foundations: atoms and periodicity, bonding and molecular geometry, intermolecular forces, phases and solutions, thermodynamics, kinetics, equilibrium and acid-base chemistry, redox and electrochemistry, organic chemistry and reaction mechanism, analytical methods and spectroscopy, biomolecules, enzymes, bioenergetics and metabolism, membranes and transport, cell architecture, the cell cycle and signalling, and evolution — the chemistry and biology a technical reader actually needs, with the reasoning that transfers.",
+      "version": "0.1.0",
+      "category": "life-sciences",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "biomedical-engineering-technical",
+      "source": "./src/vibey_tools/skills/plugins/biomedical-engineering-technical",
+      "description": "Biomedical Engineering: physiological signal processing, medical imaging modality physics and DICOM internals, clinical data structures, the technicals of clinical machine learning (prevalence, calibration, shortcut learning, the validation ladder), bioinformatics, structural and systems biology, PK/PD, physiological modelling, biomechanics, biomaterials, tissue engineering, neural interfaces and prosthetics, lab automation and instrumentation, and the biostatistics that determine whether any of it holds up.",
+      "version": "0.1.0",
+      "category": "life-sciences",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "business-marketing-sales-law",
+      "source": "./src/vibey_tools/skills/plugins/business-marketing-sales-law",
+      "description": "Business, Marketing, Sales and Law: business models and unit economics, strategy, operations and organization, financing, marketing fundamentals and what the evidence actually shows, brand and advertising, measurement and attribution, channels, the sales process, qualification, negotiation, sales management, and a deliberately scoped commercial-law layer covering how legal risk materializes, contracts, intellectual property, employment, privacy and data, consumer protection and marketing law, and disputes.",
+      "version": "0.1.0",
+      "category": "business",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "cad-3d-printing",
+      "source": "./src/vibey_tools/skills/plugins/cad-3d-printing",
+      "description": "CAD and 3D Printing: geometry representations and kernels, file formats and what each one loses, code-CAD and scripting including the OpenSCAD versus OCCT trade, mesh processing and repair, the slicing pipeline and G-code, the additive processes and the physics that determines part quality, design for additive manufacturing, tolerances and fits, materials, generative design and lattices, automation pipelines, and scanning and reverse engineering.",
+      "version": "0.2.0",
+      "category": "manufacturing",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "calculus-geometry-algebra",
+      "source": "./src/vibey_tools/skills/plugins/calculus-geometry-algebra",
+      "description": "Calculus, Geometry and Algebra: vector spaces and linear maps, matrices and the four fundamental subspaces, determinants, eigenvalues and diagonalization, inner products and orthogonality, the spectral theorem and SVD, matrix factorizations, conditioning and numerical reality, the derivative and integration, series and Taylor approximation, multivariable and vector calculus, differential forms, constrained optimization, differential equations, geometry, manifolds, tensors done properly, Riemannian geometry, and Lie groups and algebras.",
+      "version": "0.1.0",
+      "category": "mathematics",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "chaos-theory",
+      "source": "./src/vibey_tools/skills/plugins/chaos-theory",
+      "description": "Chaos Theory: what chaos actually is and is not, the stretch-and-fold mechanism, dynamical systems, stability and linearization, bifurcations, the logistic map and Feigenbaum universality, Lyapunov exponents, strange attractors, the routes to chaos, fractals and dimension, Poincare sections and symbolic dynamics, Hamiltonian chaos and KAM, detecting chaos in real data, control and synchronization, where chaos actually appears, and computing chaotic systems numerically.",
+      "version": "0.2.0",
+      "category": "mathematics",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "civil-industrial-engineering-for-software-devs",
+      "source": "./src/vibey_tools/skills/plugins/civil-industrial-engineering-for-software-devs",
+      "description": "Civil and Industrial Engineering for Software Devs: why the engineering comparison keeps coming up, loads and structure, factor of safety, materials, foundations and soil, codes and standards, licensure and liability, failure analysis, construction sequencing, infrastructure systems, what industrial engineering actually is, queueing theory and Little's Law, the Theory of Constraints, lean and the Toyota Production System, Six Sigma and statistical process control, work measurement, scheduling and inventory, human factors and ergonomics, reliability engineering, safety engineering, and an honest account of what transfers to software and what doesn't.",
+      "version": "0.1.0",
+      "category": "industrial-engineering",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "cloud-computing",
+      "source": "./src/vibey_tools/skills/plugins/cloud-computing",
+      "description": "Cloud Computing: the service and deployment models and what they actually cost you, the provider landscape and how to choose, core primitives (compute, storage, networking, identity), architecture and the Well-Architected trade-offs, resilience and the hard lessons of the 2025 outages, cost engineering and FinOps, security and the shared responsibility model, data residency and sovereignty under the EU Data Act, operations and observability, migration strategy, multi-cloud and lock-in, sustainability, and the AI-workload economics now reshaping all of it.",
+      "version": "0.1.0",
+      "category": "cloud-infrastructure",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "communication-technologies",
+      "source": "./src/vibey_tools/skills/plugins/communication-technologies",
+      "description": "Communication Technologies: the federated versus proprietary divide, SMTP and email architecture, retrieval protocols, message format, SPF, DKIM and DMARC, deliverability, email encryption, the PSTN, SS7 and its security problem, VoIP and SIP, VoLTE and VoNR, caller ID spoofing and robocalls, SMS, MMS, RCS, the Signal protocol, the messaging landscape, iMessage and FaceTime, WebRTC, video conferencing architecture, team platforms, push and notifications, what end-to-end encryption actually protects, metadata, interoperability and regulation, the encryption policy debate, and emergency calling and reliability.",
+      "version": "0.1.0",
+      "category": "networking",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "compliance-frameworks",
+      "source": "./src/vibey_tools/skills/plugins/compliance-frameworks",
+      "description": "Compliance Frameworks: NIST 800-171, PCI-DSS v4, SOC 2, CMMC/CUI, and OWASP SAMM security compliance guidance.",
+      "version": "0.1.0",
+      "category": "security",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "computer-hardware-and-data-centers",
+      "source": "./src/vibey_tools/skills/plugins/computer-hardware-and-data-centers",
+      "description": "Computer Hardware Engineering, Custom Rigs and Data Centres: where the bottleneck actually lives, CPU architecture, the memory hierarchy, GPUs and accelerators, storage, interconnect, power supplies, thermals, networking, specifying and assembling a build, firmware and boot, tuning and overclocking honestly, troubleshooting, benchmarking, facility basics, power distribution, cooling at scale, efficiency metrics, racks and physical infrastructure, network and storage architecture, failure at scale, operations, and AI infrastructure specifics.",
+      "version": "0.1.0",
+      "category": "hardware",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "computer-peripherals-design-and-standards",
+      "source": "./src/vibey_tools/skills/plugins/computer-peripherals-design-and-standards",
+      "description": "Computer Peripherals — Design, Building, Standards and Programming: the peripheral stack, USB architecture, USB-C and Power Delivery, Thunderbolt and alternate modes, wireless peripherals, embedded buses, PCIe peripherals, HID, keyboards, mice and pointing devices, displays, audio interfaces, printers and scanners, storage and capture, controllers and haptics, designing a custom peripheral, firmware, PCB and mechanical design, enumeration and debugging, drivers and OS integration, measuring latency, compliance and certification, accessibility, and peripheral security.",
+      "version": "0.1.0",
+      "category": "hardware",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "cooking-cleaning-waste-sciences",
+      "source": "./src/vibey_tools/skills/plugins/cooking-cleaning-waste-sciences",
+      "description": "Cooking, Cleaning and Waste Sciences: the food science (heat transfer, proteins and meat, browning, starch, gluten and gels, fats and emulsions, salt and brining, acid and pH, flavour, fermentation, baking and leavening), food safety (pathogens and temperature, HACCP, cross-contamination and allergens), food service (kitchen organization, restaurant economics, menu engineering, regulation and inspection), cleaning chemistry (surfactants and soil types, water hardness, the cleaning-sanitizing-disinfecting distinction and the mixing dangers, laundry), and waste (wastewater treatment, the waste hierarchy, landfills, recycling assessed honestly, composting).",
+      "version": "0.1.0",
+      "category": "food-and-environment",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "cryptocurrency-development",
+      "source": "./src/vibey_tools/skills/plugins/cryptocurrency-development",
+      "description": "Cryptocurrency Development: blockchain engineering at both layers — protocol (consensus and finality, execution/consensus clients, the EIP process, EVM internals, L2s and rollups, cross-chain) and application (Solidity/Vyper, contract architecture and upgradeability, ERC standards and account abstraction, DeFi primitives and MEV, Foundry/Hardhat testing, fuzzing and formal verification, the vulnerability canon, deployment and key management).",
+      "version": "0.1.0",
+      "category": "blockchain",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "cryptography-and-encryption",
+      "source": "./src/vibey_tools/skills/plugins/cryptography-and-encryption",
+      "description": "Cryptography and Encryption: what cryptography does and doesn't solve, threat models, randomness, hash functions, MACs, symmetric encryption, AEAD, public key cryptography, key exchange and forward secrecy, digital signatures, password storage and KDFs, TLS, PKI and certificates, end-to-end encrypted messaging, disk and file encryption, other protocols, implementation failure modes, key management, crypto agility, advanced constructions, blockchain cryptography, and law and policy.",
+      "version": "0.1.0",
+      "category": "security",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "currency-research",
+      "source": "./src/vibey_tools/skills/plugins/currency-research",
+      "description": "Currency Research: auditing an evidence-grounded reference for staleness — the durability tiers, deciding whether a finding warrants an edit at all, web search and source-quality practice, dating a claim, the fabrication failure mode, editing a SKILL.md without disturbing its structure or cross-references, and opening the weekly pull request.",
+      "version": "0.1.0",
+      "category": "research",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "design-patterns",
+      "source": "./src/vibey_tools/skills/plugins/design-patterns",
+      "description": "Design Patterns: what a pattern actually is (a vocabulary, not a construction kit), the honest critique of the Gang of Four and which of the 23 survive in modern languages, patterns that are language deficiencies versus patterns that are timeless, the functional and data-oriented alternatives, architectural patterns (layered, hexagonal, DDD, modular monolith, microservices), distributed and resilience patterns (saga, outbox, circuit breaker, CQRS, event sourcing), concurrency patterns, the emerging LLM and agentic pattern language, and the anti-patterns of over-application.",
+      "version": "0.1.0",
+      "category": "engineering-process",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "designing-and-building-buildings",
+      "source": "./src/vibey_tools/skills/plugins/designing-and-building-buildings",
+      "description": "Designing and Building Buildings and Other Civil Structures: the disciplines and the lifecycle, site and ground, brief and programming, planning, zoning and entitlement, architectural design, structural systems, foundations, envelope and building physics, building services, fire safety, accessibility, energy and comfort, drawings, specifications and BIM, codes and permitting, procurement and delivery, cost, sequencing and temporary works, materials in construction, quality and inspection, site safety, commissioning and handover, existing buildings and retrofit, and why projects fail.",
+      "version": "0.1.0",
+      "category": "construction",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "desktop-apps-macos-linux",
+      "source": "./src/vibey_tools/skills/plugins/desktop-apps-macos-linux",
+      "description": "Desktop Apps (macOS & Linux): platform architecture (Darwin/launchd/bundles vs kernel/compositor/D-Bus/systemd), SwiftUI/AppKit and GTK4/libadwaita/Qt6, cross-platform frameworks (Electron, Tauri, Flutter, Avalonia, Compose Multiplatform, Rust GUIs), Wayland vs X11, native desktop idioms, packaging and distribution (notarization, Mac App Store, Flatpak, Snap, AppImage, distro packages), auto-update, sandboxing and privacy (TCC, entitlements, XDG portals), and testing/CI.",
+      "version": "0.1.0",
+      "category": "frontend",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "devsecops-cicd",
+      "source": "./src/vibey_tools/skills/plugins/devsecops-cicd",
+      "description": "DevSecOps and CI/CD: end-to-end pipeline security, Bitbucket/Azure DevOps integration, CI/CD field guide with OIDC/supply-chain/progressive delivery, and GitHub/Atlassian advanced practitioner survey.",
+      "version": "0.2.0",
+      "category": "devops",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "digital-logic-and-firmware-engineering",
+      "source": "./src/vibey_tools/skills/plugins/digital-logic-and-firmware-engineering",
+      "description": "CMOS, Logic Gates and Firmware Engineering: the two layers, diodes, transistors as switches, MOSFET switching behaviour, static CMOS gates, sizing and drive strength, other logic families, power in CMOS, standard cells, Boolean algebra, minimization, combinational building blocks, arithmetic circuits, latches and flip-flops, timing and metastability, state machines, clock domain crossing, HDL and synthesis, test and DFT, the firmware landscape, the boot sequence, root of trust and verified boot, ACPI and platform interfaces, embedded firmware practice, and firmware security.",
+      "version": "0.1.0",
+      "category": "electronics",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "diy-kit-dev",
+      "source": "./src/vibey_tools/skills/plugins/diy-kit-dev",
+      "description": "DIY Kit Dev: hobbyist and maker hardware development across Raspberry Pi, Arduino, ESP32, Pico and the wider kit ecosystem — choosing the right board, the current platform lineups and what changed, the electronics fundamentals that stop you destroying things, power (the single biggest cause of mystery failures), sensors and actuators, the software layer (Arduino, MicroPython, CircuitPython, ESP-IDF), physical build and soldering, debugging hardware, networking and home automation, enclosures and fabrication, and the honest path from working prototype to shippable product.",
+      "version": "0.1.0",
+      "category": "embedded",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "dns-domains-and-naming-systems",
+      "source": "./src/vibey_tools/skills/plugins/dns-domains-and-naming-systems",
+      "description": "DNS, Domain Names and Naming Systems: what DNS is for, the namespace, resolution, record types, zones, delegation and glue, caching and TTL, attacks on DNS, DNSSEC, encrypted DNS, modern extensions, operations, DNS as infrastructure, ICANN and the root, TLD types, the registry/registrar/registrant model, registration mechanics, WHOIS and RDAP, disputes, domain security, the aftermarket, why alternatives exist, ENS and other blockchain naming systems, an honest assessment of them, and non-DNS namespaces.",
+      "version": "0.2.0",
+      "category": "networking",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "ecommerce-development",
+      "source": "./src/vibey_tools/skills/plugins/ecommerce-development",
+      "description": "eCommerce Development: commerce and payments systems — architecture, the payment lifecycle (authorization, capture, settlement, refunds), integration engineering (idempotency, webhooks, reconciliation, state machines), PSPs and gateways (Stripe, PayPal, Adyen, Braintree), payment methods and rails (cards, wallets, ACH/SEPA, SWIFT/ISO 20022, BNPL, instant payments), SCA and 3-D Secure, authorization rates and decline handling, fraud and chargebacks, PCI DSS scope and the SAQ A trap, subscriptions and billing, marketplaces and payouts, tax and cross-border, the platform layer (Shopify, headless, custom), catalog/cart/checkout and conversion, and agentic commerce protocols.",
+      "version": "0.2.0",
+      "category": "commerce",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "economics-accounting-tax",
+      "source": "./src/vibey_tools/skills/plugins/economics-accounting-tax",
+      "description": "Economics, Accounting and Tax: how economics knows what it claims, microeconomics, firms and market structure, market failure, macroeconomics, money and monetary policy, fiscal policy and debt, trade and growth, behavioural findings, double-entry bookkeeping, the three statements, accrual accounting and revenue recognition, the judgement-heavy areas, ratio analysis, GAAP versus IFRS, audit and controls, deliberately general tax fundamentals, book-tax differences and deferred tax, and entity choice.",
+      "version": "0.1.0",
+      "category": "finance",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "editors-ide-extension-development",
+      "source": "./src/vibey_tools/skills/plugins/editors-ide-extension-development",
+      "description": "Editors, IDEs and Extension Development: choosing an editor honestly, nano, vim and Neovim's modal model, Emacs, VS Code's multi-process architecture, configuration and workspaces, remote development, the protocol layer of LSP, DAP and Tree-sitter, VS Code extension anatomy, contribution points and activation, API surfaces, webviews, writing a language server, testing and publishing, text buffer data structures, rendering, indexing and code intelligence, the JetBrains platform, terminal UI programming, and editor performance.",
+      "version": "0.1.0",
+      "category": "developer-tools",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "electrical-engineering",
+      "source": "./src/vibey_tools/skills/plugins/electrical-engineering",
+      "description": "Electrical Engineering: circuit fundamentals, real component behaviour and parasitics, DC analysis, AC impedance and filters, semiconductors (diodes, BJTs, MOSFETs, thermal), op-amps, digital logic and interfacing, power and regulators, signal integrity and grounding, EMC and EMI, PCB design, test equipment and how not to lie to yourself with a scope, datasheets and part selection, electrical safety, and hardware debugging.",
+      "version": "0.2.0",
+      "category": "electronics",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "electromagnetism-and-electricity",
+      "source": "./src/vibey_tools/skills/plugins/electromagnetism-and-electricity",
+      "description": "Electromagnetism and the Physics of Electricity: the abstraction ladder, charge and Coulomb's law, fields and Gauss's law, potential and capacitance, dielectrics, what current actually is, resistance and Ohm's law, where the energy actually flows, circuit theory and its validity limits, AC and impedance, power, RMS and power factor, magnetic fields, induction, inductance and transformers, magnetic materials, Maxwell's equations, electromagnetic waves, transmission lines, magnetism as relativistic electrostatics, conduction and band theory, semiconductors, superconductivity, plasma, grounding, shielding and EMC, and the physics of electrical safety.",
+      "version": "0.1.0",
+      "category": "physics",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "embedded-iot-controls",
+      "source": "./src/vibey_tools/skills/plugins/embedded-iot-controls",
+      "description": "Embedded Systems & IoT Controls: silicon, memory, and peripherals; bare-metal, RTOS, and embedded Linux firmware models; C/C++/Rust; real-time concurrency and timing; firmware design patterns; industrial control and OT (PLC, fieldbus, OPC UA, unified namespace); control theory in firmware; connectivity (BLE, Thread, Matter, LoRaWAN, cellular, MQTT/CoAP/Sparkplug); cloud, fleet, and OTA lifecycle; device security and regulation (CRA, RED/EN 18031, IEC 62443, PSA); functional safety (IEC 61508, ISO 26262, DO-178C, IEC 62304); testing; and board bring-up.",
+      "version": "0.1.0",
+      "category": "embedded",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "engineering-process",
+      "source": "./src/vibey_tools/skills/plugins/engineering-process",
+      "description": "Engineering Process: requirements gathering and elicitation, SDLC models and practices, process engineering and project management frameworks, and research methodology with Turabian citation standards.",
+      "version": "0.1.0",
+      "category": "engineering-process",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "entertainment-comedy-drama-storytelling",
+      "source": "./src/vibey_tools/skills/plugins/entertainment-comedy-drama-storytelling",
+      "description": "Entertainment, Comedy, Drama and Storytelling: rules versus heuristics versus descriptions, what a story is, character and desire, structure models assessed honestly, the scene, conflict and tension, dialogue, point of view, theme, exposition and endings, how comedy works, joke mechanics, comedic structure, character comedy and status, improv, standup, timing, offence, acting and directing systems, medium differences, editing and rhythm, and the development process and economics of the entertainment industry.",
+      "version": "0.2.0",
+      "category": "arts",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "exercise-science-physiology",
+      "source": "./src/vibey_tools/skills/plugins/exercise-science-physiology",
+      "description": "Exercise Science and Physiology: how to read claims in a noisy field, muscle structure, energy systems, cardiovascular and respiratory response, endocrine and neural adaptation, thermoregulation and hydration, training principles, strength and hypertrophy, endurance, power, flexibility, recovery and sleep, periodization, resistance programming variables, concurrent training, aging and sarcopenia, fuelling, supplement evidence tiers, under-fuelling and overtraining, injury and load management, and testing. A technical reference, not medical, dietary or personal training advice.",
+      "version": "0.1.0",
+      "category": "health",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "family-and-community-building",
+      "source": "./src/vibey_tools/skills/plugins/family-and-community-building",
+      "description": "Family and Community Building: how to read claims in this field, attachment, what predicts couple stability, conflict and repair, transitions and dissolution, family systems, family roles and life stages, child development, parenting, behaviour genetics, discipline, siblings and birth order, family structure as contested territory, adversity and resilience, caregiving and aging, social capital, networks and belonging, loneliness and social isolation, third places, congregations and voluntary associations, community organizing, collective efficacy, and how to tell whether a program actually works.",
+      "version": "0.1.0",
+      "category": "social-sciences",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "flight-software",
+      "source": "./src/vibey_tools/skills/plugins/flight-software",
+      "description": "Flight Software: what makes spacecraft software different, flight software architecture and the frameworks worth knowing (cFS, F Prime), languages and coding standards including Rust's actual status, flight processors, radiation effects expressed in software terms, real-time discipline and RTOS choice, FDIR, time and clocks, command and telemetry, data handling and in-flight update, GNC software, verification and validation, the ground segment, onboard autonomy and AI, and the failure case studies that produced the rules.",
+      "version": "0.1.0",
+      "category": "aerospace",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "food-and-nutrition-science",
+      "source": "./src/vibey_tools/skills/plugins/food-and-nutrition-science",
+      "description": "Food and Nutrition Science: why nutrition science is hard, confounding and study design, the measurement problem, protein and amino acids, carbohydrates and fibre, fats and lipids, alcohol, vitamins, minerals, supplements, digestion and absorption, energy balance, appetite regulation, the microbiome, food composition and processing, cooking and nutrients, public health nutrition, food allergy and intolerance, dietary patterns, popular diets assessed, weight regulation, disordered eating, life stages, and how to read a nutrition claim. A technical reference, not medical or dietary advice.",
+      "version": "0.2.0",
+      "category": "health",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "frontend-design",
+      "source": "./src/vibey_tools/skills/plugins/frontend-design",
+      "description": "Frontend Design: graphic design and UX/UI best practices, Next.js production patterns, and full-stack performance optimization for Python, Next.js, and Azure.",
+      "version": "0.1.0",
+      "category": "frontend",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "fundamental-physics",
+      "source": "./src/vibey_tools/skills/plugins/fundamental-physics",
+      "description": "Fundamental Physics: quantum mechanics, quantum field theory, the Standard Model, general relativity and astrophysics/cosmology as a single connected reference — the postulates and formalism of QM, path integrals and renormalization, the gauge structure and particle content of the Standard Model, special relativity and the Einstein field equations, black hole solutions and thermodynamics, gravitational waves, FLRW cosmology and ΛCDM, stellar structure and evolution, compact objects, the measurement problem and interpretations, the incompatibility of GR and QFT, and the anomalies that are currently live.",
+      "version": "0.1.0",
+      "category": "physics",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "fundraising-fundamentals",
+      "source": "./src/vibey_tools/skills/plugins/fundraising-fundamentals",
+      "description": "Fundraising Fundamentals: what fundraising actually is, the universal structure and the narrative, running the process, the capital ladder, instruments (priced rounds, convertible notes, SAFEs), dilution and cap table mathematics, term sheet economics including liquidation preference, control and governance, non-dilutive and debt financing, diligence, private company valuation, secondaries and exits, why and how companies go public, IPO mechanics and alternatives, post-IPO raising, public debt, securities regulation, and the non-profit side — the revenue model, the donor pyramid and major gifts, grants, capital campaigns, individual and recurring giving, and metrics and the overhead myth.",
+      "version": "0.2.0",
+      "category": "finance",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "game-theory",
+      "source": "./src/vibey_tools/skills/plugins/game-theory",
+      "description": "Game Theory: the framework and what rationality actually assumes, normal and extensive form representations, dominance, Nash equilibrium and what it is not, the classic games, zero-sum and minimax, sequential games and subgame perfection, repeated games and the folk theorem, incomplete information and Bayesian games, bargaining, cooperative game theory, mechanism design and auctions, matching markets, evolutionary game theory, where the theory fails empirically, and computational game theory.",
+      "version": "0.1.0",
+      "category": "mathematics",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "genetics-neuroscience-technical",
+      "source": "./src/vibey_tools/skills/plugins/genetics-neuroscience-technical",
+      "description": "Genetics and Neuroscience: molecular genetics and the central dogma stated accurately, gene regulation and epigenetics, mutation, variation and inheritance, population and quantitative genetics including heritability and polygenic scores, genome engineering and the CRISPR toolbox, delivery, screens and synthetic biology, neuron biophysics and synapses, plasticity, neural coding, circuit architectures, neuromodulation, development and glia, neural engineering methods, and stimulation and intervention.",
+      "version": "0.1.0",
+      "category": "life-sciences",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "geoscience",
+      "source": "./src/vibey_tools/skills/plugins/geoscience",
+      "description": "Geoscience: Earth structure and plate tectonics, minerals and rocks, deep time and stratigraphy, deformation and structure, earthquakes and seismology including the magnitude-versus-intensity distinction and prediction versus forecasting, volcanism, surface processes, soils, surface hydrology, groundwater, oceanography, the cryosphere, biogeochemical cycles, resources, natural hazards, and observation and geophysics.",
+      "version": "0.1.0",
+      "category": "earth-science",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "geospatial-software",
+      "source": "./src/vibey_tools/skills/plugins/geospatial-software",
+      "description": "Geospatial Software: coordinate systems and the axis-order problem, projections, vector and raster data models, file formats, spatial indexing, spatial databases, tiling, rendering, routing and route-finding, geocoding, GNSS and positioning including real accuracy and the altitude trap, spatial analysis, remote sensing, data sources, and location privacy.",
+      "version": "0.1.0",
+      "category": "geospatial",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "github-jira-deep-dive",
+      "source": "./src/vibey_tools/skills/plugins/github-jira-deep-dive",
+      "description": "GitHub and Jira — A Deep Dive: why the tool is not the process, Git's actual data model, branching, merging and rebasing, recovery, GitHub repos, organizations and permissions, pull requests and review, rulesets and branch protection, Actions, the security products, issues and Projects, the API, Apps and webhooks, enterprise identity, Jira's configuration model, team- versus company-managed projects, workflows and statuses, JQL, boards, sprints and estimation, reports, automation, permissions, Jira Service Management, configuration hygiene, integration patterns, metrics, and anti-patterns.",
+      "version": "0.2.0",
+      "category": "developer-tools",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "graphics-and-vision",
+      "source": "./src/vibey_tools/skills/plugins/graphics-and-vision",
+      "description": "Graphics and Vision: transforms and projective geometry, rasterization, shading and physically based rendering, ray tracing and the rendering equation, GPU architecture and APIs, real-time techniques, colour and tone mapping, image formation and camera calibration, classical computer vision, multiple view geometry, deep learning for vision, neural rendering where the two fields meet, and performance.",
+      "version": "0.1.0",
+      "category": "graphics",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "how-cars-work-and-how-mechanics-work",
+      "source": "./src/vibey_tools/skills/plugins/how-cars-work-and-how-mechanics-work",
+      "description": "How Cars Work — and How Mechanics Do Their Jobs: the four-stroke cycle, engine anatomy, the air path, fuel and injection, ignition and knock, engine management and closed-loop control, cooling and lubrication, emissions aftertreatment, diesel specifics, transmissions, driveline and differentials, suspension, steering and alignment, brakes, tyres, the 12V system, vehicle networks, ADAS, air conditioning, EV architecture, batteries and degradation, high-voltage safety, hybrids, corrosion, diagnostic method, OBD-II and scan data, tools, common misdiagnoses, and maintenance and shop economics.",
+      "version": "0.1.0",
+      "category": "automotive",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "hunting-botany-livestock-agriculture",
+      "source": "./src/vibey_tools/skills/plugins/hunting-botany-livestock-agriculture",
+      "description": "Botany, Agriculture, Livestock and Hunting: plant structure, photosynthesis and the three pathways, water relations, plant nutrition, reproduction and pollination, ecology and succession, plant identification and its hard limits, plant pathology, weeds, soil, fertility management, crop production, integrated pest management, water and irrigation, breeding and genetics, farming systems assessed honestly, ruminant digestion, livestock nutrition, reproduction, herd health and biosecurity, livestock genetics, grazing management, welfare, wildlife management, and hunting law, ethics, safety, shot placement and game meat safety.",
+      "version": "0.1.0",
+      "category": "agriculture",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "investment-strategy-personal-and-business",
+      "source": "./src/vibey_tools/skills/plugins/investment-strategy-personal-and-business",
+      "description": "Gold Standards for Investment Strategy: what comes before investing, risk and return, compounding, diversification, market efficiency honestly, asset classes, factors, costs, tax concepts, asset allocation, rebalancing, vehicle selection, accumulation and decumulation, behavioural failure, how business investment differs, capital budgeting, cost of capital, capital structure, business cash and treasury, valuation, raising capital, fraud and red flags, alternatives honestly, and advisors and conflicts. A mechanics reference, not investment advice.",
+      "version": "0.1.0",
+      "category": "finance",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "it-infrastructure-governance",
+      "source": "./src/vibey_tools/skills/plugins/it-infrastructure-governance",
+      "description": "IT Infrastructure and Governance: the infrastructure layers, compute and virtualization, storage, networking, directory services and hybrid identity, authentication, authorization and RBAC, privileged access, the identity lifecycle (joiner-mover-leaver), access review and certification, segregation of duties, endpoint management and patching, backup, DR and continuity, monitoring and logging, ITSM and change management, asset and configuration management, governance frameworks, capacity and lifecycle, and vendor and third-party risk.",
+      "version": "0.1.0",
+      "category": "it-governance",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "linux-server-admin",
+      "source": "./src/vibey_tools/skills/plugins/linux-server-admin",
+      "description": "Linux Server Administration: the filesystem and file semantics that surprise people, users, permissions and capabilities, processes and resource control, systemd (units, ordering, hardening directives, journald, timers), storage and LVM and filesystems, networking and its diagnosis order, packages and distributions, boot, security hardening including SELinux and AppArmor and SSH, observability and performance with eBPF, a troubleshooting methodology, containers and namespaces, configuration management, and backup and recovery.",
+      "version": "0.1.0",
+      "category": "systems-administration",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "locomotion-and-train-technologies",
+      "source": "./src/vibey_tools/skills/plugins/locomotion-and-train-technologies",
+      "description": "Locomotion and Train Technologies: adhesion and rolling resistance, traction and braking physics, the wheel-rail interface, gradients, curves and cant, steam, diesel, electric and alternative traction, power electronics and regeneration, track structure, continuous welded rail and thermal stress, switches and crossings, electrification infrastructure, block signalling, interlocking, train protection with ATP, ETCS, PTC and CBTC, safety and failure modes, rolling stock and bogies, braking, capacity and headway, freight, maintenance, high-speed rail, urban rail, and maglev.",
+      "version": "0.1.0",
+      "category": "transportation",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "logistics-software-optimization",
+      "source": "./src/vibey_tools/skills/plugins/logistics-software-optimization",
+      "description": "Logistics and Optimization Software: why optimization projects fail, complexity assessed honestly, linear programming, MIP and branch-and-bound, modeling well, constraint programming, metaheuristics, local search and large neighbourhood search, bounds and solution quality, shortest path and network flow, the TSP, vehicle routing as the core problem, packing and loading, assignment and matching, scheduling, facility location and network design, inventory, forecasting, warehouse operations, last mile, the data layer, dynamic and stochastic problems, and solvers and tooling.",
+      "version": "0.1.0",
+      "category": "operations-research",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "low-code-no-code",
+      "source": "./src/vibey_tools/skills/plugins/low-code-no-code",
+      "description": "Low-Code / No-Code: platforms across the whole spectrum — block-based education tools (Scratch, LEGO, micro:bit), workflow automation (n8n, Zapier, Make, Power Automate), integration and iPaaS (MuleSoft, Boomi, Workato), data pipelines and ETL (Alteryx, Matillion, dbt), app builders (Power Apps, Retool, Airtable, Bubble), RPA, and the AI app-generation wave now reshaping the category — plus how to choose, the governance and escape-hatch problems that bite later, licensing traps, the security evidence, and when to write code instead.",
+      "version": "0.1.0",
+      "category": "low-code",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "machine-learning",
+      "source": "./src/vibey_tools/skills/plugins/machine-learning",
+      "description": "Machine Learning: problem framing and when not to use ML, data work and leakage, the classical toolkit (gradient boosting, linear models, clustering), deep learning fundamentals and architectures (transformers, CNNs, diffusion), the PyTorch/JAX ecosystem and torch.compile, training at scale (DDP, FSDP, tensor/pipeline parallelism, mixed precision), fine-tuning and PEFT/LoRA, honest evaluation, debugging training, inference and serving (vLLM, SGLang, quantization, KV cache), MLOps and reproducibility, hardware and cost, and interpretability, fairness, and safety.",
+      "version": "0.1.0",
+      "category": "ai",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "making-fabric-clothing-furniture-laundering",
+      "source": "./src/vibey_tools/skills/plugins/making-fabric-clothing-furniture-laundering",
+      "description": "Making Fabric, Clothing and Furniture — and Caring for Them: fibre properties, yarn and spinning, weaving, knitting, nonwovens and felt, dyeing and finishing, fabric properties, grain, pattern drafting and ease, cutting and layout, seams and stitches, construction order, fitting, machines, needles and thread, hand sewing, wood movement, joinery, adhesives and fasteners, wood finishing, upholstery, seating and frames, how laundering actually works, fibre-specific care, stain removal, drying, ironing and storage, and mending and pest control.",
+      "version": "0.1.0",
+      "category": "crafts",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "manufacturing-mechanical-engineering-for-software-devs",
+      "source": "./src/vibey_tools/skills/plugins/manufacturing-mechanical-engineering-for-software-devs",
+      "description": "Manufacturing and Mechanical Engineering for Software Devs: what mechanical engineers actually do, stress, strain and deflection, failure theories and safety factors, fatigue, materials selection, machine elements, mechanisms and kinematics, tolerances and GD&T, the process families, casting and forming, machining, joining, additive manufacturing, injection moulding, sheet metal, surface treatment, design for manufacture and assembly, metrology and quality, scale economics, CAD, CAE and simulation, PLM as version control for atoms, the physical supply chain, new product introduction, and what transfers to software and what doesn't.",
+      "version": "0.1.0",
+      "category": "manufacturing",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "maritime-engineering-and-building-ships",
+      "source": "./src/vibey_tools/skills/plugins/maritime-engineering-and-building-ships",
+      "description": "Maritime Engineering and Building Ships: the design spiral, buoyancy and hydrostatics, stability, hull form, resistance and powering, propulsion, seakeeping, manoeuvring, structure and longitudinal strength, materials and corrosion, machinery, ship systems, ship types, the shipyard, planning and the build, welding and fabrication, launch, outfitting and trials, naval and specialist vessels, class, flag and IMO, safety regulation, small craft and boatbuilding, operation, drydock and end of life, and why ships are lost.",
+      "version": "0.1.0",
+      "category": "maritime",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "math-science-programming",
+      "source": "./src/vibey_tools/skills/plugins/math-science-programming",
+      "description": "Math and Science Programming: numerical and scientific computing for software engineers — floating-point arithmetic and the errors it causes, conditioning and stability, the BLAS/LAPACK substrate everything stands on, the tool landscape (MATLAB, Python's scientific stack, Julia, R, Fortran, Mathematica) and how to choose, symbolic versus numeric computation, linear systems, ODEs and PDEs, optimization, statistics and uncertainty, high-performance and GPU computing, and the verification, validation and reproducibility practices that separate trustworthy scientific software from plausible-looking output.",
+      "version": "0.1.0",
+      "category": "scientific-computing",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "media-engineering",
+      "source": "./src/vibey_tools/skills/plugins/media-engineering",
+      "description": "Media Engineering: music, audio, video, TV, film and podcast engineering for software engineers — the fundamentals of digital media, containers and codecs as engineering choices, audio production and plugin formats, video production, colour and timecode, loudness standards and why your mix is quiet on streaming, transcoding pipelines and ABR packaging, streaming delivery (HLS, DASH, CMAF, WebRTC and Media over QUIC), DRM, captions and accessibility, podcast infrastructure and dynamic ad insertion, metadata and rights identifiers, and the AI generation layer with its live licensing fight.",
+      "version": "0.1.0",
+      "category": "media",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "medicine-and-pharmacology-fundamentals",
+      "source": "./src/vibey_tools/skills/plugins/medicine-and-pharmacology-fundamentals",
+      "description": "Fundamentals of Medicine and Pharmacology: how to read this field, homeostasis and physiological organization, drug targets, pathophysiology, clinical reasoning, diagnostic testing and its Bayesian logic, pharmacokinetics, pharmacodynamics, dose-response and the therapeutic window, drug interactions, variability between people, adverse effects, the major drug classes across cardiovascular, anti-infective, analgesic, neurological, psychiatric, endocrine, immunological and oncological medicine, evidence-based medicine, trial methodology and its pathologies, drug development and regulation, patient safety, screening and overdiagnosis, and clinical ethics. A technical reference, not medical advice.",
+      "version": "0.1.0",
+      "category": "health",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "medicine-design-software-development",
+      "source": "./src/vibey_tools/skills/plugins/medicine-design-software-development",
+      "description": "Medicine Design Software Development: the drug discovery pipeline and where computation actually helps, targets and modalities, what makes a molecule a drug, molecular representation, cheminformatics toolkits, data sources and their quality problems, splitting and leakage, protein structure and structure prediction, docking, molecular dynamics, free energy methods, QSAR and property prediction, ADMET prediction, generative models, active learning and the DMTA loop, benchmarks, validation that means something, pipeline engineering, compute, reproducibility, GxP and computer system validation, and software as a medical device.",
+      "version": "0.1.0",
+      "category": "life-sciences",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "microarchitecture-and-memory-systems",
+      "source": "./src/vibey_tools/skills/plugins/microarchitecture-and-memory-systems",
+      "description": "CPU, GPU, NPU and Memory Microarchitecture: architecture versus microarchitecture, pipelining, out-of-order execution, branch prediction, execution units and SIMD, cache organization, cache coherence, memory consistency models, virtual memory and translation, prefetching, GPU microarchitecture and memory systems, NPUs and dataflow architectures, numeric formats, DRAM internals, memory controllers, emerging memory interfaces, power and clocking, microarchitectural security, ISA design, simulation and modelling, measurement, roofline and fundamental limits, and specialization.",
+      "version": "0.1.0",
+      "category": "hardware",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "military-science-and-national-defence",
+      "source": "./src/vibey_tools/skills/plugins/military-science-and-national-defence",
+      "description": "Military Science and National Defence: what military science is, Clausewitz, Sun Tzu and other traditions, sea and air power, the levels of war, principles and their limits, manoeuvre, attrition and decision cycles, deterrence, nuclear strategy, escalation, alliances, grand strategy, force structure, logistics, doctrine and institutional learning, intelligence, command and control, defence procurement, unmanned systems, cyber and space, information operations, irregular warfare, total defence and societal resilience, civil-military relations, and the law of armed conflict.",
+      "version": "0.1.0",
+      "category": "defence",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "mobile-development",
+      "source": "./src/vibey_tools/skills/plugins/mobile-development",
+      "description": "Mobile Development: enterprise mobile on Azure — React Native New Architecture, native iOS (Swift/SwiftUI) and Android (Kotlin/Compose), mobile UI/UX and design patterns, Azure hosting/Intune/CI-CD after App Center, and mobile security (OWASP MASVS, secure storage/comms, MFA/passkeys).",
+      "version": "0.1.0",
+      "category": "frontend",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "music-theory-fundamentals",
+      "source": "./src/vibey_tools/skills/plugins/music-theory-fundamentals",
+      "description": "Music Theory Fundamentals: the three layers of claim music theory makes, the harmonic series, psychoacoustics, tuning and temperament, pitch, intervals and notation, scales and modes, rhythm and meter, timbre, chords, functional harmony, cadence and phrase, modulation and chromaticism, counterpoint, form, analytical methods, melody, jazz harmony, popular music, non-Western systems, twentieth-century and later practice, and music and meaning.",
+      "version": "0.1.0",
+      "category": "arts",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "nanotechnology",
+      "source": "./src/vibey_tools/skills/plugins/nanotechnology",
+      "description": "Nanotechnology: the scaling laws and which forces matter at the nanoscale, quantum confinement and tunnelling, top-down fabrication and lithography, bottom-up synthesis and self-assembly, the semiconductor process and what a node name actually means, characterization methods, nanomaterials (carbon, 2D materials, nanoparticles and their optics), DNA nanotechnology, nanomedicine, computational nanoscience from DFT through machine-learned interatomic potentials, and nanoparticle safety and environmental behaviour.",
+      "version": "0.1.0",
+      "category": "emerging-tech",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "negotiation-and-conflict-resolution",
+      "source": "./src/vibey_tools/skills/plugins/negotiation-and-conflict-resolution",
+      "description": "Negotiation and Conflict Resolution: two framings, distributive and integrative bargaining, BATNA, reservation value and ZOPA, interests, positions and issues, preparation, first offers and anchoring, concessions, creating value, the negotiator's dilemma, closing and commitment, biases, emotion, fairness and standards, trust and reputation, hard tactics and responses, multiparty negotiation, agents, teams and mandate, culture, power asymmetry, written and remote negotiation, conflict analysis and escalation, mediation, the dispute resolution spectrum, facilitation and dialogue, workplace and interpersonal conflict, reconciliation, and ethics.",
+      "version": "0.1.0",
+      "category": "communication",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "network-engineering",
+      "source": "./src/vibey_tools/skills/plugins/network-engineering",
+      "description": "Network Engineering: networking fundamentals from first principles through 2026 gold standards including eBPF, Cilium, and AKS.",
+      "version": "0.1.0",
+      "category": "cloud-infrastructure",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "newtonian-mechanics",
+      "source": "./src/vibey_tools/skills/plugins/newtonian-mechanics",
+      "description": "Newtonian Mechanics: kinematics, Newton's laws stated precisely and the misconceptions they generate, free-body diagrams, the forces (gravity, normal, friction, drag, spring and tension), work, energy and power and why conservation laws run deeper than Newton's laws, momentum and collisions, rotation, rigid bodies and gyroscopes, oscillations and resonance, central forces and orbits, non-inertial frames, Lagrangian and Hamiltonian mechanics, fluids, chaos and the limits of prediction, and numerical integration including why symplectic integrators matter.",
+      "version": "0.1.0",
+      "category": "physics",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "nuclear-physics",
+      "source": "./src/vibey_tools/skills/plugins/nuclear-physics",
+      "description": "Nuclear Physics: nuclear structure and the binding energy curve, radioactive decay, reactions and cross sections, radiation and dose, fission physics, reactor physics including criticality, moderation, delayed neutrons and reactivity feedback, reactor types, the fuel cycle and waste, reactor safety, fusion physics, magnetic and inertial confinement, why fusion is hard to engineer, and detection and measurement.",
+      "version": "0.1.0",
+      "category": "physics",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "okta-api-reference",
+      "source": "./src/vibey_tools/skills/plugins/okta-api-reference",
+      "description": "Okta API Reference: the core Management REST API and official Python SDK, the Identity Governance (OIG) API surface and its lack of a Python SDK, and the current landscape of MCP servers for Okta core and IGA automation.",
+      "version": "0.1.0",
+      "category": "cloud-infrastructure",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "okta-workflows",
+      "source": "./src/vibey_tools/skills/plugins/okta-workflows",
+      "description": "Okta Workflows: a field reference for identity source-of-truth → Okta sync pipelines (e.g. Entra ID) — the platform's production quirks, hard record caps, and verified workarounds across branching (If/Else & If/ElseIf), looping constructs, Tables, event hooks/streaming/handler flows, the Okta and Azure AD/Microsoft Entra ID connectors, execution limits & throttling, error handling & retry, and flopack import/export, plus the recent 2025–2026 platform changes.",
+      "version": "0.1.0",
+      "category": "cloud-infrastructure",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "organic-chemistry-and-plastics-engineering",
+      "source": "./src/vibey_tools/skills/plugins/organic-chemistry-and-plastics-engineering",
+      "description": "Organic Chemistry and Plastics Engineering: why carbon, bonding and structure, functional groups, stereochemistry, acidity and basicity, reaction mechanisms, reaction classes, aromaticity, kinetic versus thermodynamic control, characterization, synthesis strategy, green chemistry, what makes a polymer, polymerization, molecular weight, Tg, melting and morphology, mechanical behaviour, the commodity plastics, engineering and high-performance polymers, additives, elastomers, thermosets and composites, processing, degradation and failure, recycling honestly, bioplastics honestly, and health, migration and regulation.",
+      "version": "0.1.0",
+      "category": "chemistry",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "os-development-kernel-shell",
+      "source": "./src/vibey_tools/skills/plugins/os-development-kernel-shell",
+      "description": "OS Development (Linux Kernel & Shell): kernel architecture and programming in C and Rust, modules and drivers, kernel concurrency, syscalls and the userspace ABI, eBPF and sched_ext, boot and init, systemd/cgroups/containers, the kernel development process, debugging and tracing (ftrace, perf, KASAN, crash dumps), security and hardening, plus the shell layer — POSIX sh/bash/zsh/fish/nushell semantics and their traps, choosing a shell, defensive scripting, and the coreutils/systemd userland.",
+      "version": "0.1.0",
+      "category": "systems-programming",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "package-manager-development",
+      "source": "./src/vibey_tools/skills/plugins/package-manager-development",
+      "description": "Package Manager Development: version schemes and constraints, manifests, dependency resolution (backtracking, SAT, PubGrub, MVS), lockfiles and reproducibility, registry design, cache/layout/linking (flat, nested, content-addressed, PnP), publishing and authentication (trusted publishing, OIDC, provenance, Sigstore, SLSA), supply-chain attacks and defenses, lifecycle scripts, workspaces and monorepos, performance, UX, the cross-ecosystem comparison (npm, pip/uv, Cargo, Go modules, Maven, NuGet, apt/dnf, Nix), and governance.",
+      "version": "0.1.0",
+      "category": "systems-programming",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "pedagogy-and-the-study-of-learning",
+      "source": "./src/vibey_tools/skills/plugins/pedagogy-and-the-study-of-learning",
+      "description": "Pedagogy and the Study of Learning and Teaching: the reliability gradient in education research, memory architecture, cognitive load theory, the robust effects of spacing, retrieval and interleaving, prior knowledge and expertise, motivation, metacognition and the illusion of fluency, explicit instruction versus discovery, worked examples, explaining and modelling, questioning, feedback, assessment, reading and mathematics instruction, curriculum and sequencing, classroom practice, differentiation, higher education, adult learning, educational technology, how to read education research, zombie ideas, and teacher expertise.",
+      "version": "0.2.0",
+      "category": "education",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "penetration-testing",
+      "source": "./src/vibey_tools/skills/plugins/penetration-testing",
+      "description": "Penetration Testing and Offensive Security: authorized offensive work as a profession — the authorization and legal foundation (CFAA, Computer Misuse Act, bug bounty and VDP scope, rules of engagement) that separates it from a crime, engagement types and scoping, the standard methodologies (PTES, OWASP WSTG, NIST SP 800-115, MITRE ATT&CK), reconnaissance and attack surface, testing per domain (web, network, Active Directory and identity, cloud, API/mobile/wireless/OT/hardware), social engineering and physical, red/purple teaming and post-exploitation, testing AI systems, and reporting, remediation, coordinated disclosure, and career and certification. A methodology, process, and professional-practice reference — not an exploit cookbook.",
+      "version": "0.1.0",
+      "category": "security",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "political-science-human-systems-governance",
+      "source": "./src/vibey_tools/skills/plugins/political-science-human-systems-governance",
+      "description": "Political Science, Human Systems and Governance: what political science can and cannot establish, power, authority and legitimacy, the state, theory traditions, collective action problems, the commons and Ostrom's correction, social choice, voting systems, constitutional design, electoral systems in practice, executives and legislatures, federalism, courts and judicial review, bureaucracy and public administration, parties and party systems, voter behaviour, public opinion and measurement, polarization, regimes and transitions, state capacity, corruption, IR theory, conflict and cooperation, the policy process, and the field's own problems.",
+      "version": "0.1.0",
+      "category": "social-sciences",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "power-engineering",
+      "source": "./src/vibey_tools/skills/plugins/power-engineering",
+      "description": "Power Engineering: AC power fundamentals including real, reactive and apparent power and frequency as the balance signal, generation, transmission and distribution, power system analysis (power flow, state estimation, fault analysis, stability), protection and relaying, SCADA, EMS and DMS, the protocols, inverters, renewables and the inertia problem including grid-following versus grid-forming, storage, markets and dispatch, writing grid software and why OT is not IT, and datacenter power.",
+      "version": "0.1.0",
+      "category": "energy",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "programming-language-development",
+      "source": "./src/vibey_tools/skills/plugins/programming-language-development",
+      "description": "Programming Language Development: language design decisions and their consequences, lexing and parsing, names/scopes/modules, type systems (inference, HM, bidirectional, subtyping, generics, traits, effects, ownership, dependent types), intermediate representations (SSA, CPS, ANF, MLIR-style), optimization, code generation and backends (LLVM, Cranelift, custom, WebAssembly), runtime systems and GC, interpreters and JITs, diagnostics, incremental compilation and IDE support, testing and verification, standard library and ecosystem design, and language evolution and governance.",
+      "version": "0.1.0",
+      "category": "systems-programming",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "psychology-sociology-cultural-sciences",
+      "source": "./src/vibey_tools/skills/plugins/psychology-sociology-cultural-sciences",
+      "description": "Psychology, Sociology and Cultural Sciences: the epistemic situation after the replication crisis and how to read a claim in these fields, why they are hard, what reform changed, perception and attention, memory, learning and conditioning, cognition, reasoning and bias, emotion, development, personality, motivation, social psychology, clinical psychology and what the evidence says actually works, intelligence, neurodiversity, sociological thinking and the theory traditions, stratification and mobility, networks, institutions and organizations, deviance and social control, religion and secularization, culture and anthropology, and the WEIRD problem.",
+      "version": "0.1.0",
+      "category": "social-sciences",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "quality-engineering",
+      "source": "./src/vibey_tools/skills/plugins/quality-engineering",
+      "description": "Quality Engineering: Python testing and quality practices, test strategy and frameworks, and systematic debugging with observability — structured logging, OpenTelemetry, distributed tracing, and error handling patterns.",
+      "version": "0.3.0",
+      "category": "engineering-process",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "quantum-computing",
+      "source": "./src/vibey_tools/skills/plugins/quantum-computing",
+      "description": "Quantum Computing: the physical and mathematical foundations and the circuit model, what quantum computers can and cannot do, the algorithm canon (Shor, Grover, HHL, VQE/QAOA, quantum simulation) and their honest complexity claims, noise and the NISQ era, error correction and fault tolerance, hardware modalities and where the hardware actually is, the software stack (Qiskit, Cirq, PennyLane, CUDA-Q, OpenQASM), resource estimation, evaluating quantum-advantage claims, applications, quantum networking and sensing, and post-quantum cryptography and migration deadlines.",
+      "version": "0.1.0",
+      "category": "emerging-tech",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "quantum-cryptography-and-quantum-internet",
+      "source": "./src/vibey_tools/skills/plugins/quantum-cryptography-and-quantum-internet",
+      "description": "Quantum Cryptography, Quantum Encryption and the Quantum Internet: why QKD and post-quantum cryptography are two completely different things, qubits and measurement, the no-cloning theorem, entanglement and Bell inequalities, quantum channels and loss, BB84, entanglement-based and continuous-variable QKD, key distillation, what unconditional security actually claims, attacks on real QKD systems, device-independent approaches, trusted nodes, quantum repeaters, quantum memory, entanglement distribution, satellite QKD, the quantum internet roadmap, quantum random number generation, the quantum computing threat, and how to choose.",
+      "version": "0.1.0",
+      "category": "emerging-tech",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "radio-technology-for-software-devs",
+      "source": "./src/vibey_tools/skills/plugins/radio-technology-for-software-devs",
+      "description": "Radio Technology for Software Developers: why wireless breaks software intuitions, spectrum and bands, the link budget, the range/rate/power triangle, antennas, propagation and fading, noise and interference, modulation, Shannon's limit, spread spectrum, OFDM, coding and retransmission, multiple access, SDR and IQ sampling, sampling and DSP essentials, the SDR toolchain, the protocol stack, Wi-Fi, Bluetooth and BLE, LPWAN and cellular IoT, 802.15.4, Zigbee, Thread and Matter, GNSS, the regulatory layer, wireless security, and debugging RF problems from software.",
+      "version": "0.1.0",
+      "category": "wireless",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "refrigeration-ac-climate-control-food-water",
+      "source": "./src/vibey_tools/skills/plugins/refrigeration-ac-climate-control-food-water",
+      "description": "Refrigeration, AC, Climate Control and Food/Water Storage: the vapour-compression cycle in practice, components, refrigerant properties and safety classification, charge, evacuation and leaks, diagnosis by superheat and subcooling, alternative cooling approaches, load calculation, air distribution, humidity control, ventilation and indoor air quality, heat pumps, controls, the building envelope, why food spoils, the cold chain as a system, temperature limits, chilling and freezing, controlled atmosphere, transport refrigeration, monitoring and validation, the pharmaceutical cold chain, preservation without refrigeration, and water storage and treatment.",
+      "version": "0.1.0",
+      "category": "building-systems",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "reporting-and-dashboards",
+      "source": "./src/vibey_tools/skills/plugins/reporting-and-dashboards",
+      "description": "Reporting and Dashboards: the analytics architecture, dimensional modelling, the aggregation traps (fan-out, the chasm trap, additivity, and why distinct counts do not decompose), metric definition pitfalls, the semantic layer, time handling, query performance, caching and freshness, dashboard design, chart selection, alerting, access control, embedded analytics, and testing analytics.",
+      "version": "0.1.0",
+      "category": "data-engineering",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "resource-extraction-mining-and-oil",
+      "source": "./src/vibey_tools/skills/plugins/resource-extraction-mining-and-oil",
+      "description": "Resource Extraction — Mining, Oil and Gas: grade, tonnage and the nature of ore, how deposits form, exploration, resources versus reserves, surface and underground mining, drilling and blasting, comminution, mineral processing, extractive metallurgy, gold, tailings, water and drainage, petroleum geology, seismic exploration, drilling, well control, completion and hydraulic fracturing, production and decline, offshore, refining and processing, coal, economics, safety, closure and legacy, and social licence and artisanal mining.",
+      "version": "0.1.0",
+      "category": "resources",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "roads-bridges-and-public-infrastructure",
+      "source": "./src/vibey_tools/skills/plugins/roads-bridges-and-public-infrastructure",
+      "description": "Roads, Bridges and Public Infrastructure: infrastructure as a system, geometric design, pavement, earthworks, geotechnics and drainage, traffic engineering and capacity, intersections and interchanges, road safety and the Safe System approach, construction and maintenance, bridge types and structural logic, loads and load rating, materials and details, bridge failure modes, inspection and condition rating, water supply, wastewater and stormwater, transit, ports, rail and airports, utility coordination, procurement and delivery, cost estimation and optimism bias, asset management, funding and finance, environmental review, resilience and climate adaptation, induced demand, and the distributional legacy of highway building.",
+      "version": "0.1.0",
+      "category": "construction",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "robotics-software",
+      "source": "./src/vibey_tools/skills/plugins/robotics-software",
+      "description": "Robotics Software: professional robotics software engineering — the architecture of a real robot stack, ROS 2 and the middleware layer, perception and sensor fusion, state estimation and SLAM, motion planning, control theory from PID through MPC and whole-body control, the learning layer (reinforcement learning, imitation learning, and the vision-language-action foundation models now reshaping the field), simulation and sim-to-real, real-time and safety-critical engineering, testing and field deployment, functional safety and the ISO 10218:2025 regime, and aerospace flight-software practice.",
+      "version": "0.1.0",
+      "category": "robotics",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "rocket-science",
+      "source": "./src/vibey_tools/skills/plugins/rocket-science",
+      "description": "Rocket Science: the physics and engineering mathematics of rocketry — derivation of the rocket equation and staging optimization, nozzle thermodynamics and isentropic flow, combustion chamber physics and characteristic velocity, turbomachinery and cycle thermodynamics, regenerative cooling and heat transfer, propellant chemistry, orbital mechanics from the two-body problem through patched conics and perturbations, ascent trajectory optimization, aerodynamic loads, structural mechanics of thin-walled tanks, guidance and control mathematics, reentry heating physics, and combustion instabilities and failure physics.",
+      "version": "0.1.0",
+      "category": "aerospace",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "security-first-dev",
+      "source": "./src/vibey_tools/skills/plugins/security-first-dev",
+      "description": "Security-First Development: secure greenfield development with Security-First Scrum, codebase modernization, and enterprise cybersecurity implementation.",
+      "version": "0.1.0",
+      "category": "security",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "security-principles",
+      "source": "./src/vibey_tools/skills/plugins/security-principles",
+      "description": "Security Principles: cybersecurity first principles, threat modeling playbook, AI-era security field guide, and AI safety and secure development practices for Python and TypeScript/Next.js.",
+      "version": "0.2.0",
+      "category": "security",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "semiconductors-and-chip-manufacturing",
+      "source": "./src/vibey_tools/skills/plugins/semiconductors-and-chip-manufacturing",
+      "description": "Semiconductors and Chip Manufacturing: the abstraction stack, carriers, doping and silicon, junctions and contacts, the MOSFET, scaling and what ended, transistor architectures, interconnect, memory, from sand to wafer, the cleanroom, lithography, deposition, etch, implant and anneal, CMP, process integration, yield, metrology and inspection, test, advanced packaging, PCB fabrication, assembly and soldering, reliability, design flow, economics, and supply chain concentration.",
+      "version": "0.1.0",
+      "category": "electronics",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "signal-processing",
+      "source": "./src/vibey_tools/skills/plugins/signal-processing",
+      "description": "Signal Processing: digital signal processing for software engineers — sampling, aliasing and quantization, the frequency domain and the FFT (including the windowing and leakage traps), filter design and the FIR/IIR trade-off, convolution and correlation, multirate processing, adaptive filtering and estimation, spectral analysis, audio and speech processing, RF and communications, image and video as 2D signals, the fixed-point and real-time implementation layer, and the classical-versus-learned convergence now reshaping audio DSP.",
+      "version": "0.1.0",
+      "category": "scientific-computing",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "smart-tv-app-development",
+      "source": "./src/vibey_tools/skills/plugins/smart-tv-app-development",
+      "description": "Smart TV App Development: the platform landscape (Roku, Tizen, webOS, Android TV/Google TV, Fire OS, Vega OS, tvOS, VIDAA, SmartCast) and programming model per platform, the 10-foot UI and focus/spatial navigation, remote-control input, video playback and adaptive streaming (HLS/DASH), DRM (Widevine, PlayReady, FairPlay), performance and memory on constrained hardware, lifecycle and deep linking, monetization and CTV advertising (VAST, SSAI, ad pods), certification and store submission, testing on real devices, analytics/QoE, cross-platform strategy, and accessibility, privacy, and ACR.",
+      "version": "0.1.0",
+      "category": "frontend",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "social-media-engineering",
+      "source": "./src/vibey_tools/skills/plugins/social-media-engineering",
+      "description": "Social Media Engineering: building social systems (feed and timeline architecture, social graphs, ranking, notifications, media handling, moderation at scale), integrating with platform APIs and surviving their pricing and policy changes, the open protocols (ActivityPub and AT Protocol) and what federation actually costs, the regulatory layer (DSA, Online Safety Act, age assurance) that now determines what you may ship, spam and abuse engineering, and the practical question of a developer's own presence.",
+      "version": "0.1.0",
+      "category": "social",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "software-architecture",
+      "source": "./src/vibey_tools/skills/plugins/software-architecture",
+      "description": "Software Architecture: production architecture for Python, Next.js/TypeScript, and Azure at scale; Azure architecture patterns; and the software design process including ADRs, C4 model, fitness functions, and just-enough design.",
+      "version": "0.2.0",
+      "category": "engineering-process",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "space-exploration",
+      "source": "./src/vibey_tools/skills/plugins/space-exploration",
+      "description": "Space Exploration: mission architecture and the design cascade where everything is mass, trajectory and mission design, power, thermal control, communications and the link budget, navigation and autonomy, attitude control and in-space propulsion, entry, descent and landing and surface operations, human physiology and its hard limits, life support and ISRU, radiation environments and shielding, instrumentation, planetary protection, and reliability and margins.",
+      "version": "0.2.0",
+      "category": "aerospace",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "speaking-influence-and-community",
+      "source": "./src/vibey_tools/skills/plugins/speaking-influence-and-community",
+      "description": "Public Speaking, Influence and Community: what this field actually knows, speech anxiety, audience and purpose, structure, openings and closings, language for the ear, delivery, visual aids, Q&A and hostility, formats, practice, listening, rapport and trust, difficult conversations, negotiation, feedback, conflict, what actually persuades, the ethics of influence, how groups actually work, building a community, facilitation, organizing and mobilizing, volunteers and burnout, community conflict, and communication difference.",
+      "version": "0.1.0",
+      "category": "communication",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "survival-skills",
+      "source": "./src/vibey_tools/skills/plugins/survival-skills",
+      "description": "Survival Skills: what actually kills people, survival psychology, priority ordering, thermoregulation and shelter, water, fire, why food comes last, navigation and being lost, signalling and rescue, field medical priorities, heat illness, animals in proportion, cold, desert, tropical, water and maritime and urban disaster environments, preventive planning, kit that earns its weight, vehicle and home preparedness, practising, and the survival myths that get people killed. Orientation grounded in the evidence, not a substitute for training, a guide, or emergency services.",
+      "version": "0.1.0",
+      "category": "survival",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "theory-of-computation",
+      "source": "./src/vibey_tools/skills/plugins/theory-of-computation",
+      "description": "Theory of Computation: what is computable and what isn't (halting, Rice's theorem, and why your linter has false positives), automata and the Chomsky hierarchy as a practical design tool, regular languages and the ReDoS failure mode, parsing and grammar classes, Turing machines and reductions, complexity classes and NP-completeness recognition, what to actually do when your problem is NP-hard, SAT/SMT solvers, fine-grained complexity and conditional lower bounds, space complexity and streaming, distributed computing impossibility results (FLP, CAP, consensus), type systems and Curry–Howard, and randomness and approximation.",
+      "version": "0.1.0",
+      "category": "computer-science",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "thermodynamics-fluid-mechanics",
+      "source": "./src/vibey_tools/skills/plugins/thermodynamics-fluid-mechanics",
+      "description": "Thermodynamics and Fluid Mechanics — A Deep Dive: systems and properties, the zeroth, first and second laws, entropy, property relations, equations of state, phase behaviour, power cycles, refrigeration and heat pumps, exergy, combustion, psychrometrics, fluid properties and statics, the control volume, Bernoulli and the lift myth, Navier-Stokes, boundary layers, dimensional analysis, internal and external flow, drag, turbulence, compressible flow, turbomachinery, conduction, convection, radiation, heat exchangers and phase change, plus CFD practice.",
+      "version": "0.1.0",
+      "category": "physics",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "trading-mechanics",
+      "source": "./src/vibey_tools/skills/plugins/trading-mechanics",
+      "description": "Trading Mechanics: what the outcome evidence actually shows about retail trading, market microstructure, orders and execution, the asset classes, derivatives, technical analysis assessed honestly, quantitative and factor approaches, swing and day trading, real versus apparent arbitrage, forex, DeFi mechanics, risk and position sizing, costs and frictions, backtesting pitfalls, psychology and harm, and regulation and tax. A mechanics reference, not investment advice or a strategy.",
+      "version": "0.1.0",
+      "category": "finance",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "trip-planning-and-travel-strategies",
+      "source": "./src/vibey_tools/skills/plugins/trip-planning-and-travel-strategies",
+      "description": "Trip Planning and Travel Strategies: matching trip type to purpose, choosing a destination, constraints-first planning, timing and seasonality, budgeting, how airfare pricing actually works, flight strategy, points and miles honestly, accommodation, ground transport, booking order and optionality, documents and entry, travel insurance, health, safety in proportion, money abroad, itinerary pacing, packing, jet lag, connectivity and navigation, language and culture, food and water, travelling with others, long-term travel, and handling disruption.",
+      "version": "0.2.0",
+      "category": "travel",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "ui-ux-design-principles",
+      "source": "./src/vibey_tools/skills/plugins/ui-ux-design-principles",
+      "description": "UI/UX Design Principles: the perceptual and cognitive science underneath interface decisions, usability heuristics and mental models, information architecture and navigation, input and interaction per form factor, layout and responsive/adaptive design, visual design (typography, color, space, motion, iconography), design systems and tokens, platform conventions (Apple HIG, Material 3, GNOME/KDE HIG, Fluent), accessibility law and practice (WCAG 2.2/3.0, EAA, ADA Title II, APCA), UX writing, forms/onboarding/conversion, research and evaluation, ethics and dark-pattern regulation, and AI-era interface patterns.",
+      "version": "0.1.0",
+      "category": "frontend",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "vibey-bootstrap",
+      "source": "./src/vibey_tools/skills/plugins/vibey-bootstrap",
+      "description": "vibey-bootstrap (formerly azure-bootstrap): usage reference for the vibey-bootstrap Python library (v4.0.0) — the 4-phase logging↔config bootstrap, v2 stdlib primitives, ten logging transports, opt-in Tier 2/Tier 3 subpackages, v3 DB/outbox/email/HTTP/AKS/governance/scaffold modules, end-to-end recipes, and TypeScript/Next.js HTTP integration plus pattern ports.",
+      "version": "0.3.0",
+      "category": "cloud-infrastructure",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "video-game-development",
+      "source": "./src/vibey_tools/skills/plugins/video-game-development",
+      "description": "Video Game Development: engine selection and licensing, the game loop and time step, code architecture (ECS vs OOP), rendering pipelines and graphics APIs, physics and collision, animation, audio, gameplay AI and pathfinding, networking and multiplayer (rollback, prediction, lag compensation), tools and content pipelines, performance and frame budgets, game feel, build/test/QA and certification, production and scope management, and the business context (live ops, monetization, platforms, legal).",
+      "version": "0.1.0",
+      "category": "game-development",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "vr-ar-development",
+      "source": "./src/vibey_tools/skills/plugins/vr-ar-development",
+      "description": "VR and AR Development: the perceptual constraints (motion-to-photon latency, cybersickness, the vergence-accommodation conflict, presence), displays and optics, tracking, the XR rendering pipeline including reprojection and foveated rendering, input and interaction with locomotion as the highest-risk design decision, AR spatial understanding, platforms and APIs, spatial audio, comfort, safety and accessibility, UX design for 3D, and performance budgeting.",
+      "version": "0.1.0",
+      "category": "xr",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "weather-science",
+      "source": "./src/vibey_tools/skills/plugins/weather-science",
+      "description": "Weather Science: the structure of the atmosphere, radiation and the energy budget, thermodynamics and stability, moisture and clouds, the dynamical balances (geostrophic, thermal wind, vorticity), the general circulation, synoptic meteorology and baroclinic instability, thunderstorms and severe weather, tropical cyclones, the boundary layer, observation, numerical weather prediction including data assimilation and ensembles, forecast verification, predictability and chaos, machine-learning weather prediction, and the weather-versus-climate distinction.",
+      "version": "0.2.0",
+      "category": "earth-science",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "web-browser-development",
+      "source": "./src/vibey_tools/skills/plugins/web-browser-development",
+      "description": "Web Browser Development: the engine landscape, the multi-process model with IPC and sandboxing, networking (HTTP/2/3, TLS, caching, DNS), HTML parsing and the DOM, CSS cascade and style resolution, layout/paint/compositing and the GPU pipeline, JavaScript engine integration and the event loop, the security model (same-origin policy, CORS, CSP, site isolation, Spectre mitigations, memory safety), privacy and anti-tracking, extensions, storage/media/capabilities, accessibility, standards and interop, and testing, telemetry, and shipping.",
+      "version": "0.1.0",
+      "category": "systems-programming",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "web-scraping",
+      "source": "./src/vibey_tools/skills/plugins/web-scraping",
+      "description": "Web Scraping: the legal and regulatory landscape (CFAA and the hiQ/Bright Data line, contract and ToS exposure, the DMCA §1201 shift, copyright and TDM, GDPR and the EDPB's 2026 scraping guidelines, the EU AI Act), when not to scrape and what to do instead, robots.txt and the emerging crawl-permission layer, how the modern web actually serves data, the tool ladder (requests, curl_cffi, Scrapy, Playwright, managed services), parsing and extraction, bot detection, scale and reliability engineering, data quality, storage and pipelines, operational ethics, scraping for AI and RAG, and building a site that handles crawlers well.",
+      "version": "0.1.0",
+      "category": "data-engineering",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "wellbeing-purpose-and-drive",
+      "source": "./src/vibey_tools/skills/plugins/wellbeing-purpose-and-drive",
+      "description": "Wellbeing, Purpose and Drive: two traditions of wellbeing, measurement problems, adaptation and the set point, money, the replication problem, what actually holds up, relationships, sleep, movement and the physical substrate, time and attention, self-determination theory, intrinsic motivation and rewards, goals, habits and behaviour change, willpower, flow, procrastination, how meaning and happiness come apart, sources of meaning, work, vocation and calling, adversity and growth, finitude, interventions, burnout, self-criticism and self-compassion, the limits of individual technique, and the industry critique. Research orientation, not clinical guidance.",
+      "version": "0.1.0",
+      "category": "social-sciences",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "wireless-technologies-and-rf-engineering",
+      "source": "./src/vibey_tools/skills/plugins/wireless-technologies-and-rf-engineering",
+      "description": "Wireless Technologies — RF, Standards, Building and Programming: why wireless is hard, propagation and the link budget, modulation and multiple access, antennas, spectrum and regulation, Wi-Fi and Wi-Fi in practice, Bluetooth and BLE programming, NFC and RFID, Thread, Zigbee and Matter, LoRa and LPWAN, cellular and cellular IoT, UWB, choosing a radio, antenna integration, certification, low-power design, provisioning and onboarding, RF debugging, wireless security, coexistence, and positioning and sensing.",
+      "version": "0.1.0",
+      "category": "wireless",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "working-with-wood-and-metal",
+      "source": "./src/vibey_tools/skills/plugins/working-with-wood-and-metal",
+      "description": "Working with Wood and Metal: the two materials compared, shop safety, reading wood, stock selection and preparation, layout and marking, hand tools, sharpening, machines, the table saw, joinery technique, glue-ups, wood finishing, metal in the shop, what changes when you work metal, marking out, cutting metal, drilling and tapping, manual machining, the welding processes, brazing and soldering, forming and forging, heat treatment, metal finishing, fasteners and fits, measurement, and shop setup with dust and fume control.",
+      "version": "0.1.0",
+      "category": "crafts",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "writing-craft",
+      "source": "./src/vibey_tools/skills/plugins/writing-craft",
+      "description": "Writing Craft: white paper writing, prose mechanics, technical prose, narrative structure, and elite legal brief writing.",
+      "version": "0.1.0",
+      "category": "content",
+      "author": {
+        "name": "Adam Matthew Steinberger",
+        "email": "adam@matthewsteinberger.com"
+      }
+    },
+    {
+      "name": "vibey-gh-development",
+      "source": "./src/vibey_tools/gh/plugins/vibey-gh-development",
+      "version": "1.0.0",
+      "category": "development",
+      "description": "Architecture, implementation, testing, and dependency policy."
+    },
+    {
+      "name": "vibey-gh-documentation",
+      "source": "./src/vibey_tools/gh/plugins/vibey-gh-documentation",
+      "version": "1.0.0",
+      "category": "documentation",
+      "description": "Comprehensive FOSS, API, SEO, crawler, and LLM documentation maintenance."
+    },
+    {
+      "name": "vibey-gh-release-security",
+      "source": "./src/vibey_tools/gh/plugins/vibey-gh-release-security",
+      "version": "1.0.0",
+      "category": "security",
+      "description": "Safe releases, provenance, publishing, branch protection, and incident response."
+    },
+    {
+      "name": "vibey-gh-pr-automation",
+      "source": "./src/vibey_tools/gh/plugins/vibey-gh-pr-automation",
+      "version": "1.0.0",
+      "category": "productivity",
+      "description": "Exact-head PR review, repair, conflict resolution, and merge-train operations."
+    }
+  ]
+}

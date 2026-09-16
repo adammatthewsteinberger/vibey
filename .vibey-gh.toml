@@ -101,6 +101,15 @@ trusted_only = true
 # key degrades to one bounded triage comment instead of silence.
 fallback_enabled = true
 
+[marketplace]
+# The one Claude Code marketplace `/plugin marketplace add the-vibey-project/vibey` reads.
+# Rendered by `vibey-gh marketplace` from the workspace members' own manifests (ADR-0034);
+# `check` reports drift. The name is the root's own — `<plugin>@vibey` — because Claude
+# Code registers one marketplace per name per user and the PyPI-packaged vibey-skills
+# still ships its manifest as `vibey-skills`.
+name = "vibey"
+members = ["src/vibey_tools/skills", "src/vibey_tools/gh"]
+
 [documentation]
 # Governance in plain sight (sub-doctrine 7.b): the canon is published on every channel site,
 # in the book, and linked from every page, from its single source in the absorbed vibey-gh.

@@ -1,6 +1,7 @@
 [importlinter]
 root_packages =
     vibey
+    vibey_gh
 include_external_packages = True
 
 [importlinter:contract:onion-layers]
@@ -66,3 +67,17 @@ forbidden_modules =
     vibey.cli
     vibey.tui
     vibey.bootstrap
+
+# The same rule for the first `interfaces/` package in the absorbed vibey-gh (ADR-0016:
+# tenants converge module by module, and a new module arrives with its seam declared).
+[importlinter:contract:vibey-gh-interfaces-declare-only]
+name = vibey_gh interfaces declare seams, never consume them
+type = forbidden
+source_modules =
+    vibey_gh.interfaces
+forbidden_modules =
+    vibey_gh.cli
+    vibey_gh.marketplace
+    vibey_gh.documentation
+    vibey_gh.doctor
+    vibey_gh.install
