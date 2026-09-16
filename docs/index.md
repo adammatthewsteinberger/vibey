@@ -94,6 +94,20 @@ packets to BUILD prompts. Missing tools, timeouts, low-confidence retrieval, and
 insufficient budgets all fall back to the original prompt. The feature is off by
 default, and wind-down prompts are never modified (ADR-0031).
 
+The same tree is a Claude Code plugin marketplace — every plugin in the family, the 127
+skills plugins and vibey-gh's four, from one address and nothing else:
+
+```text
+/plugin marketplace add the-vibey-project/vibey
+/plugin install security-principles@vibey
+/plugin                                    # browse all 131
+```
+
+The root manifest is rendered from the workspace members by `vibey-gh marketplace` and
+held to them by `vibey-gh check` ([ADR-0034](architecture/decisions/0034-one-marketplace-at-the-root.md)); it is never edited by hand. The PyPI package
+`vibey-skills` still ships its own marketplace under the name `vibey-skills`, so both can
+be registered side by side.
+
 ## Quickstart
 
 ```bash
@@ -268,7 +282,7 @@ things those runners deliberately do not do:
 | [Phase protocols](https://github.com/the-vibey-project/vibey/blob/main/docs/plans/phase-protocols.md) | What all six phases do, turn by turn |
 | [Implementation plan](https://github.com/the-vibey-project/vibey/blob/main/docs/plans/implementation-plan.md) | Milestone-by-milestone, test-first task breakdown |
 | [CLAUDE.md](https://github.com/the-vibey-project/vibey/blob/main/CLAUDE.md) | The short facts file every coding agent working on vibey loads first: non-negotiables, layer map, gate commands |
-| [Decision records](https://github.com/the-vibey-project/vibey/blob/main/docs/architecture/decisions/) | Why each hard call was made (33 ADRs) |
+| [Decision records](https://github.com/the-vibey-project/vibey/blob/main/docs/architecture/decisions/) | Why each hard call was made (34 ADRs) |
 
 ## Status
 

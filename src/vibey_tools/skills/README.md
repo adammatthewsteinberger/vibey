@@ -33,18 +33,29 @@ fast *and* correct. These skills are the reference layer for that.
 
 ## Quick start
 
-**In Claude Code** — add the marketplace, then install the plugins you want:
+**In Claude Code** — add the monorepo as a marketplace, then install the plugins you want:
+
+```bash
+/plugin marketplace add the-vibey-project/vibey
+/plugin install security-principles@vibey
+/plugin                                    # browse everything
+```
+
+That one address serves every plugin in the family: these 127 and vibey-gh's four. The
+root manifest is rendered from this tree's own `.claude-plugin/marketplace.json` by
+`vibey-gh marketplace` (vibey ADR-0034), so nothing here is duplicated by hand.
+
+**From the PyPI package instead** — the same 127 plugins under the name `vibey-skills`,
+with no clone of the monorepo:
 
 ```bash
 uvx vibey-skills marketplace               # prints the packaged marketplace.json path
 /plugin marketplace add <that path>
 /plugin install security-principles@vibey-skills
-/plugin                                    # browse everything
 ```
 
 The former `/plugin marketplace add the-vibey-project/vibey-skills` shortcut pointed at the
-standalone repository, which has been retired; the marketplace now ships inside the PyPI
-package.
+standalone repository, which has been retired.
 
 **From PyPI** — same skills, any agent that reads `SKILL.md`:
 
@@ -86,8 +97,8 @@ ai-and-data  (0.2.0, ai, 4 skills)
 | PyPI package | `pip install vibe-engineering-skills` | `pip install vibey-skills` |
 | Python import | `import vibe_engineering_skills` | `import vibey_skills` |
 | CLI | `vibe-engineering-skills`, `vibe-skills` | `vibey-skills` (`vibe-skills` kept as a deprecated alias; the long form is gone) |
-| Marketplace | `/plugin marketplace add TheViziusGroup/vibe-engineering-skills` | `/plugin marketplace add adammatthewsteinberger/vibey-skills` |
-| Plugin install | `<plugin>@vibe-engineering-skills` | `<plugin>@vibey-skills` |
+| Marketplace | `/plugin marketplace add TheViziusGroup/vibe-engineering-skills` | `/plugin marketplace add the-vibey-project/vibey` (or the packaged manifest via `uvx vibey-skills marketplace`) |
+| Plugin install | `<plugin>@vibe-engineering-skills` | `<plugin>@vibey` (`<plugin>@vibey-skills` from the packaged manifest) |
 | Docs | theviziusgroup.github.io/vibe-engineering-skills | [`src/vibey_tools/skills/docs/`](https://github.com/the-vibey-project/vibey/tree/develop/src/vibey_tools/skills/docs) in the vibey monorepo |
 
 Uninstall the old package (`pip uninstall vibe-engineering-skills` / `uv tool uninstall

@@ -28,6 +28,7 @@ from vibey_gh import (
     versioning,
 )
 from vibey_gh.config import load_config
+from vibey_gh.interfaces.marketplace_renderer_interface import MarketplaceRendererInterface
 
 
 def _check(args) -> int:
@@ -36,9 +37,17 @@ def _check(args) -> int:
     report = fingerprints.check(cfg, rev_range=args.commits, apply=args.apply)
     docs = documentation.check(cfg)
     scan = pr_automation.check_scan_workflows(cfg)
+    # The root marketplace is a rendered file like the workflows: when the repository
+    # declares members, the manifest on disk must be what they render to.
+    marketplace_ok, marketplace_problem = True, ""
+    if cfg.marketplace.members:
+        from vibey_gh.marketplace import MarketplaceRenderer
+
+        marketplace_ok, marketplace_problem = MarketplaceRenderer().check(cfg)
+    clean = ok and report.ok and docs.ok and scan.ok and marketplace_ok
 
     if args.quiet:
-        return 0 if (ok and report.ok and docs.ok and scan.ok) else 1
+        return 0 if clean else 1
 
     for problem in problems:
         print(f"  hooks: {problem}", file=sys.stderr)
@@ -65,8 +74,10 @@ def _check(args) -> int:
         print(f"  documentation: {problem}", file=sys.stderr)
     for problem in scan.problems:
         print(f"  {problem}", file=sys.stderr)
+    if not marketplace_ok:
+        print(f"  marketplace: {marketplace_problem}", file=sys.stderr)
 
-    if ok and report.ok and docs.ok and scan.ok:
+    if clean:
         scope = f"{report.checked_files} source file(s)"
         if args.commits:
             scope += f" and every commit in {args.commits}"
@@ -448,6 +459,29 @@ def _corpus_index(args) -> int:
         f"vibey-gh corpus-index: wrote {target.name} — {len(index['chunks'])} chunk(s)"
         f" across {len(index['documents'])} document(s), corpus"
         f" {index['corpus_sha256'][:12]}…"
+    )
+    return 0
+
+
+def _marketplace(args, renderer: MarketplaceRendererInterface | None = None) -> int:
+    from vibey_gh.marketplace import MarketplaceError, MarketplaceRenderer
+
+    cfg = load_config()
+    renderer = renderer or MarketplaceRenderer()
+    if args.check:
+        ok, message = renderer.check(cfg)
+        print(f"vibey-gh marketplace: {message}", file=None if ok else sys.stderr)
+        return 0 if ok else 1
+    try:
+        manifest = renderer.build(cfg)
+        target = renderer.write(cfg)
+    except MarketplaceError as exc:
+        print(f"vibey-gh marketplace: {exc}", file=sys.stderr)
+        return 1
+    print(
+        f"vibey-gh marketplace: wrote {target.relative_to(cfg.root).as_posix()} —"
+        f" {len(manifest['plugins'])} plugin(s) from {len(cfg.marketplace.members)}"
+        f" member(s) as {manifest['name']!r}"
     )
     return 0
 
@@ -1057,6 +1091,15 @@ def main(argv: list[str] | None = None) -> int:
     )
     ci_.add_argument("--check", action="store_true", help="fail loudly on corpus drift")
     ci_.set_defaults(func=_corpus_index)
+
+    mk = sub.add_parser(
+        "marketplace",
+        help="render the root Claude Code marketplace from the workspace members",
+    )
+    mk.add_argument(
+        "--check", action="store_true", help="fail loudly when the root manifest drifts"
+    )
+    mk.set_defaults(func=_marketplace)
 
     sv = sub.add_parser(
         "sovereign",

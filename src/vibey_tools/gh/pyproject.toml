@@ -75,7 +75,14 @@ source = ["vibey_gh"]
 omit = ["test/*"]
 
 [tool.coverage.report]
-exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:", "if __name__ == .__main__.:"]
+# A Protocol declares a seam (vibey ADR-0016); its `...` bodies are declarations, not code,
+# and nothing legitimately executes them.
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+]
 
 [tool.black]
 line-length = 100

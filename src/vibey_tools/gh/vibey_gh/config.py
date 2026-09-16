@@ -1034,6 +1034,45 @@ class DocumentationConfig:
 
 
 @dataclass(frozen=True)
+class MarketplaceConfig:
+    """`[marketplace]`: the one Claude Code marketplace at the repository root.
+
+    `/plugin marketplace add owner/repo` reads only `<repo>/.claude-plugin/marketplace.json`.
+    A monorepo whose plugin marketplaces are workspace members declares them here, and
+    `vibey-gh marketplace` renders the root manifest from theirs — every plugin, its source
+    re-rooted to the repository — while `check` reports drift. `name` is the root's own:
+    Claude Code registers one marketplace per name per user, and each member's package
+    still ships its manifest under its own name. Empty `members` is every standalone
+    adopter: nothing rendered, nothing checked.
+    """
+
+    name: str = ""
+    members: tuple[str, ...] = ()
+    # The manifest's human description. Empty derives one from the members.
+    description: str = ""
+
+    def __post_init__(self) -> None:
+        _unique_nonempty("marketplace.members", self.members)
+        for member in self.members:
+            if (
+                member.startswith(("/", "~"))
+                or ".." in PurePosixPath(member).parts
+                or any(char.isspace() or char in "'\"$`\\" for char in member)
+            ):
+                raise ValueError(
+                    "marketplace.members entries must be repository-relative paths without"
+                    f" '..', whitespace or shell metacharacters: {member!r}"
+                )
+        if self.members and not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", self.name):
+            raise ValueError(
+                "marketplace.name must be kebab-case (it is what users type after '@')"
+                f" when members are declared: {self.name!r}"
+            )
+        if self.name and not self.members:
+            raise ValueError("marketplace.name is set but marketplace.members is empty")
+
+
+@dataclass(frozen=True)
 class GhConfig:
     root: Path
     text: str = DEFAULT_TEXT
@@ -1061,6 +1100,7 @@ class GhConfig:
     rulesets: RulesetsConfig = RulesetsConfig()
     repository_profile: RepositoryProfileConfig = RepositoryProfileConfig()
     documentation: DocumentationConfig = DocumentationConfig()
+    marketplace: MarketplaceConfig = MarketplaceConfig()
     # Which bundled workflow templates this repository wants installed and kept current.
     # None means all of them, which is the right default for a repository adopting the
     # whole thing. A repository with its own richer workflows sets `workflows = []` and
@@ -1234,6 +1274,7 @@ def load_config(root: Path | None = None, config: Path | None = None) -> GhConfi
     rulesets_data = data.get("rulesets", {})
     profile = data.get("repository_profile", {})
     documentation = data.get("documentation", {})
+    marketplace = data.get("marketplace", {})
     automation = PrAutomationConfig(
         enabled=auto.get("enabled", True),
         scan_workflows=tuple(auto.get("scan_workflows", DEFAULT_SCAN_WORKFLOWS)),
@@ -1436,6 +1477,11 @@ def load_config(root: Path | None = None, config: Path | None = None) -> GhConfi
             funding_monero=documentation.get("funding_monero", ""),
             funding_ethereum=documentation.get("funding_ethereum", ""),
             funding_label=documentation.get("funding_label", "Support this work"),
+        ),
+        marketplace=MarketplaceConfig(
+            name=marketplace.get("name", ""),
+            members=tuple(marketplace.get("members", ())),
+            description=marketplace.get("description", ""),
         ),
     )
 
